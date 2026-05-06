@@ -1,0 +1,12 @@
+# Versions verified against Maven Central and the release pages.
+# Spring ecosystem, Testcontainers, JUnit, Flyway, PostgreSQL driver: managed by the Spring Boot BOM (platform()).
+[versions]
+java = "25"
+spring-boot = "4.1.2"
+spotless = "8.10.4"
+lombok-plugin = "9.8.2"
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+lombok = { id = "io.freefair.lombok", version.ref = "lombok-plugin" }

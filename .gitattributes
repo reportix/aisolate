@@ -1,0 +1,4 @@
+# LF everywhere, so the templates the CLI writes and the tests that read them match on a Windows
+# checkout too; the Windows batch files the templates ship need CRLF.
+* text=auto eol=lf
+*.bat text eol=crlf
