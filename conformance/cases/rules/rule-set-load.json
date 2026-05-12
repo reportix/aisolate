@@ -1,0 +1,190 @@
+{
+  "description" : "A rule-set file (rules/<entity>.json in the project, aisolate/rules/<entity>.json in a Java jar) is refused at load, never read as a wider rule set (RuleSet.parse, Rule, RowFilter). expect.valid true, or expect.error: the exact message, or expect.error_prefix where the text after it is the JSON parser's own.",
+  "cases" : [ {
+    "id" : "valid-rule-set",
+    "json" : "{\"entity\":\"hr.compensation\",\"classification\":\"restricted\",\"rules\":[{\"name\":\"all\",\"principals\":{\"role\":\"employee\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "valid" : true
+    }
+  }, {
+    "id" : "valid-without-classification-or-rules",
+    "json" : "{\"entity\":\"hr.compensation\"}",
+    "expect" : {
+      "valid" : true
+    }
+  }, {
+    "id" : "row-filter-spacing-free",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"  dept=='r-d_1'  \"}]}",
+    "expect" : {
+      "valid" : true
+    }
+  }, {
+    "id" : "row-filter-true-padded",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\" true \"}]}",
+    "expect" : {
+      "valid" : true
+    }
+  }, {
+    "id" : "unknown-top-level-key",
+    "json" : "{\"entity\":\"x\",\"classification\":\"c\",\"rules\":[],\"scope\":{\"airlock\":\"a\"}}",
+    "expect" : {
+      "error" : "unknown key 'scope' (a rule set has entity, classification and rules)"
+    }
+  }, {
+    "id" : "no-entity",
+    "json" : "{\"classification\":\"c\",\"rules\":[]}",
+    "expect" : {
+      "error" : "a rule set needs an entity"
+    }
+  }, {
+    "id" : "blank-entity",
+    "json" : "{\"entity\":\" \",\"classification\":\"c\",\"rules\":[]}",
+    "expect" : {
+      "error" : "a rule set needs an entity"
+    }
+  }, {
+    "id" : "not-an-object",
+    "json" : "[]",
+    "expect" : {
+      "error" : "a rule set is a JSON object"
+    }
+  }, {
+    "id" : "not-json",
+    "json" : "not json",
+    "expect" : {
+      "error_prefix" : "Invalid rules JSON: "
+    }
+  }, {
+    "id" : "duplicate-key",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"a == principal.b\",\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "error_prefix" : "Invalid rules JSON: "
+    }
+  }, {
+    "id" : "unknown-key-in-a-rule",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"true\",\"where\":\"1=1\"}]}",
+    "expect" : {
+      "error_prefix" : "Invalid rules JSON: "
+    }
+  }, {
+    "id" : "missing-effect",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "error" : "rule r: effect is required (allow or deny)"
+    }
+  }, {
+    "id" : "unknown-effect",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"permit\",\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "error_prefix" : "Invalid rules JSON: "
+    }
+  }, {
+    "id" : "missing-role",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "error" : "rule r: principals.role is required"
+    }
+  }, {
+    "id" : "blank-role",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\" \"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "error" : "rule r: principals.role is required"
+    }
+  }, {
+    "id" : "selector-other-than-role",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\",\"group\":\"g\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "error" : "rule r: unknown principals selector 'group' (only 'role' is supported)"
+    }
+  }, {
+    "id" : "no-actions",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[],\"effect\":\"allow\",\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "error" : "rule r: actions must name read or aggregate"
+    }
+  }, {
+    "id" : "unknown-action",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"write\"],\"effect\":\"allow\",\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "error_prefix" : "Invalid rules JSON: "
+    }
+  }, {
+    "id" : "allow-without-row-filter",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\"}]}",
+    "expect" : {
+      "error" : "row_filter is required on an allow rule"
+    }
+  }, {
+    "id" : "deny-with-row-filter",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"deny\",\"row_filter\":\"true\"}]}",
+    "expect" : {
+      "error" : "rule r: a deny takes no row_filter, columns or aggregation; it drops every row for its role and actions"
+    }
+  }, {
+    "id" : "deny-with-columns",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"deny\",\"columns\":{\"iban\":\"mask\"}}]}",
+    "expect" : {
+      "error" : "rule r: a deny takes no row_filter, columns or aggregation; it drops every row for its role and actions"
+    }
+  }, {
+    "id" : "min-group-size-zero",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"aggregate\"],\"effect\":\"allow\",\"row_filter\":\"true\",\"aggregation\":{\"min_group_size\":0}}]}",
+    "expect" : {
+      "error" : "rule r: aggregation.min_group_size must be at least 1"
+    }
+  }, {
+    "id" : "unknown-column-action",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"true\",\"columns\":{\"iban\":\"redact\"}}]}",
+    "expect" : {
+      "error_prefix" : "Invalid rules JSON: "
+    }
+  }, {
+    "id" : "row-filter-double-quoted-literal",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"audience == \\\"all\\\"\"}]}",
+    "expect" : {
+      "error" : "row_filter must be 'true', '<column> == principal.<attribute>' or \"<column> == '<literal>'\": audience == \"all\""
+    }
+  }, {
+    "id" : "row-filter-uppercase-literal",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"audience == 'All'\"}]}",
+    "expect" : {
+      "error" : "row_filter must be 'true', '<column> == principal.<attribute>' or \"<column> == '<literal>'\": audience == 'All'"
+    }
+  }, {
+    "id" : "row-filter-literal-with-space",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"audience == 'a b'\"}]}",
+    "expect" : {
+      "error" : "row_filter must be 'true', '<column> == principal.<attribute>' or \"<column> == '<literal>'\": audience == 'a b'"
+    }
+  }, {
+    "id" : "row-filter-empty-literal",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"audience == ''\"}]}",
+    "expect" : {
+      "error" : "row_filter must be 'true', '<column> == principal.<attribute>' or \"<column> == '<literal>'\": audience == ''"
+    }
+  }, {
+    "id" : "row-filter-sql",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"1=1 OR true\"}]}",
+    "expect" : {
+      "error" : "row_filter must be 'true', '<column> == principal.<attribute>' or \"<column> == '<literal>'\": 1=1 OR true"
+    }
+  }, {
+    "id" : "row-filter-or",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"audience == 'all' OR true\"}]}",
+    "expect" : {
+      "error" : "row_filter must be 'true', '<column> == principal.<attribute>' or \"<column> == '<literal>'\": audience == 'all' OR true"
+    }
+  }, {
+    "id" : "row-filter-uppercase-column",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"Dept == 'hr'\"}]}",
+    "expect" : {
+      "error" : "row_filter must be 'true', '<column> == principal.<attribute>' or \"<column> == '<literal>'\": Dept == 'hr'"
+    }
+  }, {
+    "id" : "row-filter-true-uppercase",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"read\"],\"effect\":\"allow\",\"row_filter\":\"TRUE\"}]}",
+    "expect" : {
+      "error" : "row_filter must be 'true', '<column> == principal.<attribute>' or \"<column> == '<literal>'\": TRUE"
+    }
+  } ]
+}

@@ -55,6 +55,10 @@ configure(subprojects.filter { it.childProjects.isEmpty() }) {
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
         systemProperty("spring.profiles.active", "test")
+        // The language-neutral cases both runtimes pass; an input so a changed case reruns the tests
+        val conformance = rootProject.file("conformance/cases")
+        inputs.dir(conformance).withPropertyName("conformanceCases").withPathSensitivity(PathSensitivity.RELATIVE)
+        systemProperty("aisolate.conformance.dir", conformance.absolutePath)
         testLogging {
             events("failed")
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
