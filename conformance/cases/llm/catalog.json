@@ -1,0 +1,267 @@
+{
+  "description": "The LLMs and data sources an airlock sees: the Global's, its Space's and its own, one map by id in that order, a nearer id replacing the farther whole; sorted by id. The main LLM is the entry whose id is the airlock's spec.llm, null while it names none (an airlock runs nothing until a deploy brings its llm); an openai entry may name the Secret of its API key (secretRef), absent otherwise. The loader refuses a bad Global, a bad LLM entry, and an airlock whose spec.llm resolves to nothing. A case's files are base with the case's own merged over it by file name (null removes the file); every document is written as its own file (JSON is YAML) and the directory loaded. expect is the catalog of Airlock hr (llms, main, data_sources), or problems: the loader's exact lines, compared as a set.",
+  "base": {
+    "Global-aisolate.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Global", "metadata": {"name": "aisolate"}, "spec": {
+      "llms": [
+        {"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"},
+        {"id": "nomic", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "nomic-embed-text"}
+      ],
+      "dataSources": []}},
+    "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+      "displayName": "Acme", "access": {"users": ["elena@acme.example"]}}},
+    "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
+      "space": "acme", "displayName": "HR", "access": {"callers": ["acme-chat"]},
+      "llm": "granite", "prompt": "Answer HR questions."}}
+  },
+  "cases": [
+    {
+      "id": "global-only",
+      "description": "Nothing below the Global defines an LLM: the airlock sees the global ones.",
+      "files": {},
+      "expect": {
+        "llms": [
+          {"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"},
+          {"id": "nomic", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "nomic-embed-text"}
+        ],
+        "main": "granite",
+        "data_sources": []
+      }
+    },
+    {
+      "id": "no-global",
+      "description": "No Global document reads as an empty one, so a space's export loads alone.",
+      "files": {
+        "Global-aisolate.yaml": null,
+        "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+          "access": {"users": ["elena@acme.example"]},
+          "llms": [{"id": "granite", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "granite4.1:8b"}]}}
+      },
+      "expect": {
+        "llms": [{"id": "granite", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "granite4.1:8b"}],
+        "main": "granite",
+        "data_sources": []
+      }
+    },
+    {
+      "id": "union-sorted",
+      "description": "Distinct ids from all three levels: the union, sorted by id, whatever level each came from.",
+      "files": {
+        "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+          "access": {"users": ["elena@acme.example"]},
+          "llms": [{"id": "bge", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "bge-m3"}]}},
+        "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
+          "space": "acme", "access": {"callers": ["acme-chat"]}, "llm": "local", "prompt": "Answer HR questions.",
+          "llms": [
+            {"id": "qwen", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "qwen3.6:27b-q4_K_M"},
+            {"id": "local", "provider": "ollama", "url": "http://localhost:11434", "model": "granite4.1:3b"}
+          ]}}
+      },
+      "expect": {
+        "llms": [
+          {"id": "bge", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "bge-m3"},
+          {"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"},
+          {"id": "local", "provider": "ollama", "url": "http://localhost:11434", "model": "granite4.1:3b"},
+          {"id": "nomic", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "nomic-embed-text"},
+          {"id": "qwen", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "qwen3.6:27b-q4_K_M"}
+        ],
+        "main": "local",
+        "data_sources": []
+      }
+    },
+    {
+      "id": "space-replaces-global",
+      "description": "The space's granite replaces the global one whole: its url and its model, nothing of the global entry kept.",
+      "files": {
+        "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+          "access": {"users": ["elena@acme.example"]},
+          "llms": [{"id": "granite", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "granite4.1:3b"}]}}
+      },
+      "expect": {
+        "llms": [
+          {"id": "granite", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "granite4.1:3b"},
+          {"id": "nomic", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "nomic-embed-text"}
+        ],
+        "main": "granite",
+        "data_sources": []
+      }
+    },
+    {
+      "id": "nearest-wins",
+      "description": "granite on every level: the airlock's own entry is the one seen, and the main LLM.",
+      "files": {
+        "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+          "access": {"users": ["elena@acme.example"]},
+          "llms": [{"id": "granite", "provider": "ollama", "url": "http://space.acme.example:11434", "model": "granite4.1:8b"}]}},
+        "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
+          "space": "acme", "access": {"callers": ["acme-chat"]}, "llm": "granite", "prompt": "Answer HR questions.",
+          "llms": [{"id": "granite", "provider": "ollama", "url": "http://airlock.acme.example:11434", "model": "granite4.1:3b"}]}}
+      },
+      "expect": {
+        "llms": [
+          {"id": "granite", "provider": "ollama", "url": "http://airlock.acme.example:11434", "model": "granite4.1:3b"},
+          {"id": "nomic", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "nomic-embed-text"}
+        ],
+        "main": "granite",
+        "data_sources": []
+      }
+    },
+    {
+      "id": "airlock-replaces-space",
+      "description": "The airlock's nomic replaces the space's, which replaced the global one.",
+      "files": {
+        "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+          "access": {"users": ["elena@acme.example"]},
+          "llms": [{"id": "nomic", "provider": "ollama", "url": "http://space.acme.example:11434", "model": "nomic-embed-text"}]}},
+        "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
+          "space": "acme", "access": {"callers": ["acme-chat"]}, "llm": "granite", "prompt": "Answer HR questions.",
+          "llms": [{"id": "nomic", "provider": "ollama", "url": "http://airlock.acme.example:11434", "model": "nomic-embed-text:v1.5"}]}}
+      },
+      "expect": {
+        "llms": [
+          {"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"},
+          {"id": "nomic", "provider": "ollama", "url": "http://airlock.acme.example:11434", "model": "nomic-embed-text:v1.5"}
+        ],
+        "main": "granite",
+        "data_sources": []
+      }
+    },
+    {
+      "id": "openai-with-api-key",
+      "description": "An OpenAI-compatible model names the Secret that holds its API key; the documents never hold the key.",
+      "files": {
+        "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+          "access": {"users": ["elena@acme.example"]},
+          "llms": [{"id": "gpt", "provider": "openai", "url": "https://api.openai.example/v1", "model": "gpt-4o-mini", "secretRef": "acme-llm-gpt-a1b2c3"}]}}
+      },
+      "expect": {
+        "llms": [
+          {"id": "gpt", "provider": "openai", "url": "https://api.openai.example/v1", "model": "gpt-4o-mini", "secretRef": "acme-llm-gpt-a1b2c3"},
+          {"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"},
+          {"id": "nomic", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "nomic-embed-text"}
+        ],
+        "main": "granite",
+        "data_sources": []
+      }
+    },
+    {
+      "id": "data-sources-four-levels",
+      "description": "Data sources resolve alike: the global hr is replaced by the space's, the global wiki is seen as is; sorted by id.",
+      "files": {
+        "Global-aisolate.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Global", "metadata": {"name": "aisolate"}, "spec": {
+          "llms": [{"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"}],
+          "dataSources": [
+            {"id": "wiki", "url": "jdbc:postgresql://wiki.aisolate.svc:5432/wiki", "secretRef": "aisolate-ds-wiki-a1b2c3"},
+            {"id": "hr", "url": "jdbc:postgresql://global.aisolate.svc:5432/hr", "secretRef": "aisolate-ds-hr-d4e5f6"}
+          ]}},
+        "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+          "access": {"users": ["elena@acme.example"]},
+          "dataSources": [{"id": "hr", "url": "jdbc:postgresql://db.acme.example:5432/hr", "secretRef": "acme-ds-hr-g7h8i9"}]}}
+      },
+      "expect": {
+        "llms": [{"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"}],
+        "main": "granite",
+        "data_sources": [
+          {"id": "hr", "url": "jdbc:postgresql://db.acme.example:5432/hr", "secretRef": "acme-ds-hr-g7h8i9"},
+          {"id": "wiki", "url": "jdbc:postgresql://wiki.aisolate.svc:5432/wiki", "secretRef": "aisolate-ds-wiki-a1b2c3"}
+        ]
+      }
+    },
+    {
+      "id": "unresolved",
+      "description": "spec.llm names an id no level defines.",
+      "files": {"Global-aisolate.yaml": null},
+      "expect": {"problems": [
+        "Airlock-hr.yaml: Airlock hr: llm granite is no model of it, of Space acme or of AIsolate"
+      ]}
+    },
+    {
+      "id": "unresolved-other-airlock",
+      "description": "Another airlock's LLM is not this airlock's: the levels are itself and its space only.",
+      "files": {
+        "Global-aisolate.yaml": null,
+        "Airlock-sales.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "sales"}, "spec": {
+          "space": "acme", "access": {"callers": ["acme-chat"]},
+          "llms": [{"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"}]}}
+      },
+      "expect": {"problems": [
+        "Airlock-hr.yaml: Airlock hr: llm granite is no model of it, of Space acme or of AIsolate"
+      ]}
+    },
+    {
+      "id": "global-not-aisolate",
+      "description": "The one Global is named aisolate.",
+      "files": {
+        "Global-other.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Global", "metadata": {"name": "other"}, "spec": {"llms": [], "dataSources": []}}
+      },
+      "expect": {"problems": ["Global-other.yaml: Global other: metadata.name must be aisolate"]}
+    },
+    {
+      "id": "second-global",
+      "description": "A second Global aisolate in another file.",
+      "files": {
+        "Global-second.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Global", "metadata": {"name": "aisolate"}, "spec": {"llms": [], "dataSources": []}}
+      },
+      "expect": {"problems": ["Global-second.yaml: Global aisolate: already defined in Global-aisolate.yaml"]}
+    },
+    {
+      "id": "entry-without-id",
+      "files": {
+        "Global-aisolate.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Global", "metadata": {"name": "aisolate"}, "spec": {
+          "llms": [
+            {"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"},
+            {"provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "nomic-embed-text"}
+          ]}}
+      },
+      "expect": {"problems": ["Global-aisolate.yaml: Global aisolate: spec.llms[1].id is required"]}
+    },
+    {
+      "id": "entry-bad-id",
+      "files": {
+        "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+          "access": {"users": ["elena@acme.example"]},
+          "llms": [{"id": "Granite", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "granite4.1:8b"}]}}
+      },
+      "expect": {"problems": ["Space-acme.yaml: Space acme: spec.llms[0].id Granite: 1 to 41 lowercase letters, digits, _ or -, starting with a letter or digit"]}
+    },
+    {
+      "id": "entry-twice",
+      "description": "One list holds an id once (a nearer level replacing it is no repeat).",
+      "files": {
+        "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
+          "space": "acme", "access": {"callers": ["acme-chat"]},
+          "llms": [
+            {"id": "qwen", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "qwen3.6:27b-q4_K_M"},
+            {"id": "qwen", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "qwen3.6:8b"}
+          ]}}
+      },
+      "expect": {"problems": ["Airlock-hr.yaml: Airlock hr: spec.llms[1].id qwen is listed twice"]}
+    },
+    {
+      "id": "entry-other-provider",
+      "files": {
+        "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
+          "space": "acme", "access": {"callers": ["acme-chat"]}, "llm": "granite", "prompt": "Answer HR questions.",
+          "llms": [{"id": "titan", "provider": "bedrock", "url": "https://bedrock.example", "model": "titan-text"}]}}
+      },
+      "expect": {"problems": ["Airlock-hr.yaml: Airlock hr: spec.llms[0].provider bedrock is not one of [ollama, openai]"]}
+    },
+    {
+      "id": "entry-blank-url",
+      "files": {
+        "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
+          "access": {"users": ["elena@acme.example"]},
+          "llms": [{"id": "bge", "provider": "ollama", "url": " ", "model": "bge-m3"}]}}
+      },
+      "expect": {"problems": ["Space-acme.yaml: Space acme: spec.llms[0].url is required"]}
+    },
+    {
+      "id": "entry-blank-model",
+      "files": {
+        "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
+          "space": "acme", "access": {"callers": ["acme-chat"]},
+          "llms": [{"id": "qwen", "provider": "ollama", "url": "http://gpu.acme.example:11434"}]}}
+      },
+      "expect": {"problems": ["Airlock-hr.yaml: Airlock hr: spec.llms[0].model is required"]}
+    }
+  ]
+}
