@@ -1,0 +1,30 @@
+# Local development environment for the AIsolate demo.
+# Keycloak stands in for the customer's identity provider.
+# All passwords here are development-only.
+name: aisolate
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.3
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./keycloak/realm-acme.json:/opt/keycloak/data/import/realm-acme.json:ro
+      # Login themes; Keycloak reads /opt/keycloak/themes at runtime.
+      - ./keycloak/themes:/opt/keycloak/themes:ro
+    healthcheck:
+      # The image ships no curl; the management port (9000) answers /health/ready.
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000
+          && printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3
+          && grep -q '"status": "UP"' <&3
+      interval: 5s
+      timeout: 5s
+      retries: 30
