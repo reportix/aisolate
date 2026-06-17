@@ -1,0 +1,50 @@
+# AIsolate CI. Public images only.
+stages: [check, test, scan]
+
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle-home"
+
+default:
+  cache:
+    key: gradle-$CI_COMMIT_REF_SLUG
+    paths: [.gradle-home/caches, .gradle-home/wrapper, node_modules]
+
+spotless:
+  stage: check
+  image: eclipse-temurin:25-jdk
+  script: ./gradlew spotlessCheck --console=plain
+
+# Integration tests start Keycloak through Testcontainers (Docker socket needed).
+gradle-test:
+  stage: test
+  image: eclipse-temurin:25-jdk
+  services:
+    - name: docker:29-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    # The runner sets DOCKER_TLS_VERIFY=1; dind here listens without TLS.
+    DOCKER_TLS_VERIFY: "0"
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+    # OOM-killed at the runner's 4Gi default: the 2g-heap Gradle JVM needs ~3 GiB and each
+    # parallel test task forks another JVM, so 8Gi with two workers; dind hosts Postgres 18 and Keycloak 26.
+    KUBERNETES_MEMORY_REQUEST: 6Gi
+    KUBERNETES_MEMORY_LIMIT: 8Gi
+    KUBERNETES_SERVICE_MEMORY_REQUEST: 2Gi
+    KUBERNETES_SERVICE_MEMORY_LIMIT: 4Gi
+  script: ./gradlew test --console=plain --max-workers=2
+  artifacts:
+    when: always
+    reports:
+      junit: "**/build/test-results/*/TEST-*.xml"
+
+# Vulnerabilities in locked dependencies (gradle.lockfile) and leaked secrets.
+trivy:
+  stage: scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy fs --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed .
