@@ -13,5 +13,5 @@ plugins {
 rootProject.name = "aisolate"
 
 include(
-    "libs:config", "libs:identity", "libs:sdk",
+    "libs:config", "libs:identity", "libs:plugins", "libs:sdk",
 )
