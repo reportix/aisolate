@@ -1,0 +1,35 @@
+{
+  "description": "A pod's start: the airlock's code fetched from the backend's GET <AISOLATE_CODE_URL> with the bearer read from AISOLATE_CODE_TOKEN_FILE, written to the pod's scratch directory and its sha256 checked against AISOLATE_CODE_DIGEST. A refusal fails the start, nothing is loaded and no file is left.",
+  "artifact": "the airlock's artifact bytes",
+  "token": "code-token-of-hr-assistant-v1",
+  "cases": [
+    {
+      "id": "fetch-ok",
+      "description": "The backend serves the bytes the digest names: the file holds them.",
+      "status": 200,
+      "served": "the airlock's artifact bytes",
+      "expect": {"loaded": true}
+    },
+    {
+      "id": "digest-mismatch",
+      "description": "Other bytes than the digest names, as from a tampered store or a redeploy since the render: refused.",
+      "status": 200,
+      "served": "tampered bytes",
+      "expect": {"loaded": false, "error": "has digest sha256:"}
+    },
+    {
+      "id": "forbidden",
+      "description": "Another airlock's token, or none the backend admits: refused at once, no retry.",
+      "status": 403,
+      "served": "{\"status\":403,\"title\":\"Forbidden\"}",
+      "expect": {"loaded": false, "error": "answered 403"}
+    },
+    {
+      "id": "not-found",
+      "description": "The backend holds other code for the airlock now: refused at once.",
+      "status": 404,
+      "served": "{\"status\":404,\"title\":\"Not Found\"}",
+      "expect": {"loaded": false, "error": "answered 404"}
+    }
+  ]
+}

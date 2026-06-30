@@ -21,8 +21,8 @@ import java.util.stream.Stream;
 /**
  * How every pod pins the developer's jars: each jar in its plugins directory must carry one of the
  * digests the controller rendered ({@code AISOLATE_PLUGIN_DIGESTS}), the one its Airlock document
- * carries in {@code spec.jar.digest}. A jar nobody pinned, an empty list included, refuses the
- * start.
+ * carries in {@code spec.jar.digest}. A pod fetches its jar ({@link CodeFetch}) and loads it from
+ * here, so this is the pin: a jar nobody pinned, an empty list included, refuses the start.
  */
 public final class JarDigests {
 
