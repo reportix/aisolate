@@ -1,6 +1,6 @@
 # Local development environment for the AIsolate demo.
-# Keycloak stands in for the customer's identity provider.
-# All passwords here are development-only.
+# Keycloak stands in for the customer's identity provider;
+# aisolate-db is AIsolate's own control plane. All passwords here are development-only.
 name: aisolate
 
 services:
@@ -28,3 +28,24 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+
+  aisolate-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: aisolate
+      POSTGRES_USER: aisolate
+      POSTGRES_PASSWORD: aisolate
+    ports:
+      - "5432:5432"
+    # Spaces and airlocks defined in the AIsolate UI live here; `down` keeps them, `down -v` wipes them.
+    # PostgreSQL 18 wants the mount at /var/lib/postgresql, with PGDATA in a subdirectory of it.
+    volumes:
+      - aisolate-db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aisolate -d aisolate"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  aisolate-db-data:

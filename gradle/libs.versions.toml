@@ -4,10 +4,21 @@
 java = "25"
 spring-boot = "4.1.2"
 spotless = "8.10.4"
+archunit = "1.5.1"
 lombok-plugin = "9.8.2"
+fabric8 = "7.9.0"
+springdoc = "3.1.1"
+json-schema-validator = "3.0.8"
+pdfbox = "3.0.8"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+springdoc-openapi = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+fabric8-client = { module = "io.fabric8:kubernetes-client", version.ref = "fabric8" }
+fabric8-server-mock = { module = "io.fabric8:kubernetes-server-mock", version.ref = "fabric8" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

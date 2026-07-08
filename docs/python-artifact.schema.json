@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisolate.dev/schemas/python-artifact-manifest-1.json",
+  "title": "aisolate-manifest.json",
+  "description": "What a Python project's artifact contains, read by the backend without running code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "language", "sdk", "python", "arch", "package", "plugins", "tools", "entities", "handlers", "rules", "vendored"],
+  "properties": {
+    "schema": {"const": 1},
+    "language": {"const": "python"},
+    "sdk": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$", "description": "The aisolate SDK version the build imported."},
+    "python": {"type": "string", "pattern": "^3\\.[0-9]+$", "description": "The Python minor the build ran on; the runtime refuses another."},
+    "arch": {"enum": ["x86_64", "aarch64"], "description": "The Linux CPU the vendored packages are built for; the runtime refuses another."},
+    "package": {"type": "string", "pattern": "^[a-z_][a-z0-9_]*$", "description": "The top-level package under src/ the runtime imports."},
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "class", "data_source", "identity_attribute", "entities", "tools"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "class": {"type": "string", "description": "module.QualName of the ToolPlugin subclass"},
+          "data_source": {"type": ["string", "null"]},
+          "identity_attribute": {"type": ["string", "null"]},
+          "entities": {"type": "array", "items": {"type": "string"}},
+          "tools": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "description", "input_schema", "plugin", "data_source"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-zA-Z0-9_-]{1,64}$"},
+          "description": {"type": "string"},
+          "input_schema": {"type": "object", "description": "JSON Schema of the arguments, as the model sees it"},
+          "plugin": {"type": "string"},
+          "data_source": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "plugin", "data_source", "from", "row_key", "subject", "subject_name", "period", "columns"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "plugin": {"type": "string"},
+          "data_source": {"type": "string"},
+          "from": {"type": "string", "description": "The SQL FROM clause"},
+          "row_key": {"type": "string"},
+          "subject": {"type": "string"},
+          "subject_name": {"type": ["string", "null"]},
+          "period": {"type": ["string", "null"]},
+          "columns": {
+            "type": "array",
+            "description": "Declaration order is the result's column order",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "expression", "type", "unit", "unit_column", "decimals"],
+              "properties": {
+                "name": {"type": "string", "minLength": 1},
+                "expression": {"type": "string", "minLength": 1},
+                "type": {"enum": ["text", "number"]},
+                "unit": {"type": ["string", "null"]},
+                "unit_column": {"type": ["string", "null"]},
+                "decimals": {"type": ["integer", "null"], "minimum": 0},
+                "fact": {"type": "boolean", "description": "A text column whose values, typed in an answer's text, are unsourced; written only when true"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "handlers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "class", "stage", "order", "description"],
+        "properties": {
+          "name": {"type": "string", "description": "The class's __name__: what aisolate.yaml's handlers lists"},
+          "class": {"type": "string", "description": "module.QualName"},
+          "stage": {"enum": ["contextPreparator", "conversationMemory", "answerVerifier"]},
+          "order": {"type": "integer"},
+          "description": {"type": ["string", "null"]},
+          "data_sources": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "The ids of the data sources it reads (data_sources=); absent when it names none"}
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "description": "Paths of the rule files inside the zip, rules/<entity>.json",
+      "items": {"type": "string", "pattern": "^rules/[^/]+\\.json$"}
+    },
+    "vendored": {
+      "type": "array",
+      "description": "The distributions under vendor/, as installed",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version"],
+        "properties": {"name": {"type": "string"}, "version": {"type": "string"}}
+      }
+    }
+  }
+}

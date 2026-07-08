@@ -15,7 +15,7 @@ spotless:
   image: eclipse-temurin:25-jdk
   script: ./gradlew spotlessCheck --console=plain
 
-# Integration tests start Keycloak through Testcontainers (Docker socket needed).
+# Integration tests start Keycloak and PostgreSQL through Testcontainers (Docker socket needed).
 gradle-test:
   stage: test
   image: eclipse-temurin:25-jdk
