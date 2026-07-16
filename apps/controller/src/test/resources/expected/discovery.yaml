@@ -1,0 +1,202 @@
+---
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  labels:
+    aisolate.dev/managed-by: "controller"
+  name: "aisolate-discovery"
+  namespace: "aisolate"
+  ownerReferences:
+  - apiVersion: "aisolate.dev/v1"
+    kind: "Space"
+    name: "hr-acme"
+    uid: "uid-space"
+data:
+  hr-acme.json: "[{\"id\":\"hr-assistant\",\"space\":\"hr-acme\",\"name\":\"Acme HR\
+    \ assistant\",\"description\":\"Answers people, pay and HR document questions.\"\
+    ,\"userKeys\":[\"f5b1eba20c5f95e6b9fb960108a0c2e930000b00be0e7172b15287e381564615\"\
+    ,\"8d282bd5e91b0c8bbf92bef1bd51252be08359085ff80c81422d5c4879f906ac\"],\"callers\"\
+    :[\"*\"],\"tools\":[\"read_records\",\"aggregate_records\"]},{\"id\":\"founders-finance\"\
+    ,\"space\":\"hr-acme\",\"name\":\"Founders finance\",\"description\":\"\",\"userKeys\"\
+    :[\"f5b1eba20c5f95e6b9fb960108a0c2e930000b00be0e7172b15287e381564615\",\"8d282bd5e91b0c8bbf92bef1bd51252be08359085ff80c81422d5c4879f906ac\"\
+    ],\"callers\":[\"*\"],\"tools\":[]}]"
+---
+apiVersion: "networking.k8s.io/v1"
+kind: "NetworkPolicy"
+metadata:
+  labels:
+    aisolate.dev/managed-by: "controller"
+    aisolate.dev/role: "discovery"
+  name: "aisolate-discovery"
+  namespace: "aisolate"
+  ownerReferences:
+  - apiVersion: "aisolate.dev/v1"
+    kind: "Space"
+    name: "hr-acme"
+    uid: "uid-space"
+spec:
+  egress:
+  - ports:
+    - port: 53
+      protocol: "UDP"
+    - port: 53
+      protocol: "TCP"
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: "kube-system"
+      podSelector:
+        matchLabels:
+          k8s-app: "kube-dns"
+  - ports:
+    - port: 4318
+      protocol: "TCP"
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: "aisolate-monitoring"
+      podSelector:
+        matchLabels:
+          app: "tempo"
+  - ports:
+    - port: 8080
+      protocol: "TCP"
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: "aisolate-dev"
+      podSelector:
+        matchLabels:
+          app: "keycloak"
+  - ports:
+    - port: 3128
+      protocol: "TCP"
+    to:
+    - podSelector:
+        matchLabels:
+          aisolate.dev/role: "egress-proxy"
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: "ingress-nginx"
+    ports:
+    - port: 8080
+      protocol: "TCP"
+  - from:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          aisolate.dev/scraper: "true"
+    ports:
+    - port: 9464
+      protocol: "TCP"
+  podSelector:
+    matchLabels:
+      aisolate.dev/role: "discovery"
+  policyTypes:
+  - "Ingress"
+  - "Egress"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  labels:
+    aisolate.dev/managed-by: "controller"
+    aisolate.dev/role: "discovery"
+  name: "aisolate-discovery"
+  namespace: "aisolate"
+  ownerReferences:
+  - apiVersion: "aisolate.dev/v1"
+    kind: "Space"
+    name: "hr-acme"
+    uid: "uid-space"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      aisolate.dev/role: "discovery"
+  strategy:
+    type: "Recreate"
+  template:
+    metadata:
+      labels:
+        aisolate.dev/managed-by: "controller"
+        aisolate.dev/role: "discovery"
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - env:
+        - name: "AISOLATE_CONFIG_DISCOVERY_DIR"
+          value: "/etc/aisolate-discovery"
+        - name: "AISOLATE_PUBLIC_URL"
+          value: "http://aisolate.localtest.me"
+        - name: "AISOLATE_CORS_ALLOWED_ORIGINS"
+          value: "http://chat.localtest.me"
+        - name: "AISOLATE_API_DOCS"
+          value: "false"
+        - name: "AISOLATE_ISSUER_URI"
+          value: "http://keycloak.localtest.me/realms/acme"
+        - name: "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI"
+          value: "http://keycloak.aisolate-dev.svc:8080/realms/acme/protocol/openid-connect/certs"
+        - name: "AISOLATE_ROLES_CLAIM"
+          value: "org.roles"
+        - name: "JDK_JAVA_OPTIONS"
+          value: "-Dhttps.proxyHost=egress -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts=*.cluster.local|*.svc|acme-db.aisolate.svc|host.minikube.internal|keycloak.aisolate-dev.svc|keycloak.localtest.me|localhost|tempo.aisolate-monitoring.svc"
+        - name: "MANAGEMENT_OTLP_TRACING_ENDPOINT"
+          value: "http://tempo.aisolate-monitoring.svc:4318"
+        image: "aisolate/airlock:dev"
+        imagePullPolicy: "Never"
+        livenessProbe:
+          httpGet:
+            path: "/actuator/health/liveness"
+            port: 9464
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        name: "discovery"
+        ports:
+        - containerPort: 8080
+          name: "http"
+        - containerPort: 9464
+          name: "management"
+        readinessProbe:
+          failureThreshold: 30
+          httpGet:
+            path: "/actuator/health/readiness"
+            port: 9464
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: "2"
+            ephemeral-storage: "1Gi"
+            memory: "1536Mi"
+          requests:
+            cpu: "250m"
+            ephemeral-storage: "256Mi"
+            memory: "768Mi"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - "ALL"
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: "/tmp"
+          name: "tmp"
+          readOnly: false
+        - mountPath: "/etc/aisolate-discovery"
+          name: "discovery"
+          readOnly: true
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: "RuntimeDefault"
+      volumes:
+      - emptyDir:
+          sizeLimit: "256Mi"
+        name: "tmp"
+      - configMap:
+          name: "aisolate-discovery"
+          optional: true
+        name: "discovery"

@@ -13,6 +13,6 @@ plugins {
 rootProject.name = "aisolate"
 
 include(
-    "apps:backend",
+    "apps:backend", "apps:controller",
     "libs:config", "libs:identity", "libs:plugins", "libs:sdk",
 )

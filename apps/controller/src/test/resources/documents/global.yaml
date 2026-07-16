@@ -1,0 +1,11 @@
+apiVersion: aisolate.dev/v1
+kind: Global
+metadata: {name: aisolate}
+spec:
+  llms:
+    - {id: granite, provider: ollama, url: https://models.example.com, model: "granite4.1:8b"}
+    - {id: nomic, provider: ollama, url: http://host.minikube.internal:11434, model: nomic-embed-text}
+  dataSources:
+    - id: audit_log
+      url: jdbc:postgresql://acme-db.aisolate.svc:5432/audit
+      secretRef: aisolate-ds-audit-log-j1k2l3

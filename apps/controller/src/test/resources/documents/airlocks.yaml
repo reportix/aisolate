@@ -1,0 +1,47 @@
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: hr-assistant}
+spec:
+  space: hr-acme
+  displayName: Acme HR assistant
+  description: Answers people, pay and HR document questions.
+  access:
+    users: [eric@example.com, nora@example.com]
+    callers: ["*"]
+  preLLM:
+    contextPreparator:
+      handlers: [HrDocumentsContextPreparator]
+    conversationMemory:
+      handlers: [SessionMemory]
+  llm: granite
+  prompt: |
+    You are the Acme HR assistant. All amounts are in EUR.
+  tools: [read_records, aggregate_records]
+  postLLM:
+    answerVerifier:
+      handlers: [SalaryVerifier]
+  llms:
+    - {id: nomic, provider: ollama, url: http://host.minikube.internal:11434, model: "nomic-embed-text:v1.5"}
+  dataSources:
+    - id: hr-documents
+      url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
+      secretRef: hr-acme-hr-assistant-ds-hr-documents-d4e5f6
+  jar: {digest: "sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f", tools: [read_records, aggregate_records]}
+---
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: founders-finance}
+spec:
+  space: hr-acme
+  displayName: Founders finance
+  access:
+    users: [nora@example.com]
+    callers: ["*"]
+  llm: qwen
+  prompt: |
+    You answer the founders only.
+  dataSources:
+    - id: acme_hr
+      url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
+      secretRef: hr-acme-founders-finance-ds-acme-hr-g7h8i9
+  jar: {digest: "sha256:72b809e39ab62fe6d73761c68268c80699a7b45bac07f07be1ea02646e09e412", tools: [forecast]}
