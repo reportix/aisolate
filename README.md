@@ -14,6 +14,11 @@ model over the organisation's existing databases. Every request carries the end 
 organisation's identity provider, and every tool call runs under that identity. Row and column access is
 compiled into the SQL at the data boundary. The model enforces nothing.
 
+## Documentation
+
+- [Release](docs/release.md): a headless install: documents, Secrets, hosts, validate, apply, status, roll back.
+- [AUTHORS.md](AUTHORS.md): the team behind AIsolate.
+
 ## License
 
 AIsolate is free software under the GNU Affero General Public License, version 3 only (`LICENSE`, SPDX
