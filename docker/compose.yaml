@@ -1,5 +1,5 @@
 # Local development environment for the AIsolate demo.
-# Keycloak stands in for the customer's identity provider;
+# Keycloak stands in for the customer's identity provider; acme-db is the customer's database;
 # aisolate-db is AIsolate's own control plane. All passwords here are development-only.
 name: aisolate
 
@@ -28,6 +28,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+
+  acme-db:
+    # PostgreSQL 18 with pgvector: the hr and clients schemas, their documents with the context preparators' vectors.
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_DB: acme
+      POSTGRES_USER: acme
+      POSTGRES_PASSWORD: acme
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./postgres/acme:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acme -d acme"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   aisolate-db:
     image: postgres:18
