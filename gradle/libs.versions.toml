@@ -3,6 +3,7 @@
 [versions]
 java = "25"
 spring-boot = "4.1.2"
+spring-ai = "2.0.2"
 spotless = "8.10.4"
 archunit = "1.5.1"
 lombok-plugin = "9.8.2"
@@ -14,6 +15,7 @@ pdfbox = "3.0.8"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-ai-bom = { module = "org.springframework.ai:spring-ai-bom", version.ref = "spring-ai" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 springdoc-openapi = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 fabric8-client = { module = "io.fabric8:kubernetes-client", version.ref = "fabric8" }
