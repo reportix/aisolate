@@ -1,0 +1,11 @@
+{
+  "entity": "hr.compensation",
+  "classification": "restricted",
+  "rules": [
+    {"name": "own-record", "principals": {"role": "employee"}, "actions": ["read"], "effect": "allow",
+     "row_filter": "employee_id == principal.employee_id",
+     "columns": {"iban": "mask", "internal_notes": "hide"}},
+    {"name": "leadership", "principals": {"role": "ceo"}, "actions": ["read", "aggregate"], "effect": "allow",
+     "row_filter": "true", "columns": {"iban": "mask"}, "aggregation": {"min_group_size": 3}}
+  ]
+}

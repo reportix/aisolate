@@ -1,0 +1,511 @@
+{
+  "description" : "Many readings per patient: the subject (patient_id) is not the row key, so a minimum group size counts people, not rows, and the identity attribute (clinician_id) is no subject, so no row is the asker's own.",
+  "fixture" : {
+    "entity" : {
+      "name" : "cardiology.vitals",
+      "from" : "conf.vitals v",
+      "row_key" : "vital_id",
+      "subject" : "patient_id",
+      "subject_name" : "patient",
+      "period" : "measured_on",
+      "columns" : [ {
+        "name" : "vital_id",
+        "expression" : "v.vital_id",
+        "type" : "number"
+      }, {
+        "name" : "patient_id",
+        "expression" : "v.patient_id",
+        "type" : "number"
+      }, {
+        "name" : "patient",
+        "expression" : "v.patient",
+        "type" : "text"
+      }, {
+        "name" : "age_group",
+        "expression" : "v.age_group",
+        "type" : "text"
+      }, {
+        "name" : "systolic",
+        "expression" : "v.systolic",
+        "type" : "number",
+        "unit" : "mmHg"
+      }, {
+        "name" : "national_id",
+        "expression" : "v.national_id",
+        "type" : "text"
+      }, {
+        "name" : "clinician",
+        "expression" : "v.clinician",
+        "type" : "text"
+      }, {
+        "name" : "measured_on",
+        "expression" : "v.measured_on",
+        "type" : "text"
+      } ]
+    },
+    "identity_attribute" : "clinician_id",
+    "rule_version" : "0123456789ab",
+    "table" : {
+      "name" : "conf.vitals",
+      "columns" : {
+        "vital_id" : "integer",
+        "patient_id" : "integer",
+        "patient" : "text",
+        "age_group" : "text",
+        "systolic" : "integer",
+        "national_id" : "text",
+        "clinician" : "text",
+        "measured_on" : "text"
+      },
+      "rows" : [ {
+        "vital_id" : 1,
+        "patient_id" : 1,
+        "patient" : "Julian Hart",
+        "age_group" : "40-59",
+        "systolic" : 140,
+        "national_id" : "NID-0001",
+        "clinician" : "c-101",
+        "measured_on" : "2026-09-01"
+      }, {
+        "vital_id" : 2,
+        "patient_id" : 1,
+        "patient" : "Julian Hart",
+        "age_group" : "40-59",
+        "systolic" : 136,
+        "national_id" : "NID-0001",
+        "clinician" : "c-101",
+        "measured_on" : "2026-09-15"
+      }, {
+        "vital_id" : 3,
+        "patient_id" : 1,
+        "patient" : "Julian Hart",
+        "age_group" : "40-59",
+        "systolic" : 132,
+        "national_id" : "NID-0001",
+        "clinician" : "c-101",
+        "measured_on" : "2026-10-01"
+      }, {
+        "vital_id" : 4,
+        "patient_id" : 2,
+        "patient" : "Mira Olsen",
+        "age_group" : "40-59",
+        "systolic" : 120,
+        "national_id" : "NID-0002",
+        "clinician" : "c-102",
+        "measured_on" : "2026-09-03"
+      }, {
+        "vital_id" : 5,
+        "patient_id" : 3,
+        "patient" : "Tomas Berg",
+        "age_group" : "40-59",
+        "systolic" : 128,
+        "national_id" : "NID-0003",
+        "clinician" : "c-101",
+        "measured_on" : "2026-09-04"
+      }, {
+        "vital_id" : 6,
+        "patient_id" : 4,
+        "patient" : "Hana Ito",
+        "age_group" : "40-59",
+        "systolic" : 118,
+        "national_id" : "NID-0004",
+        "clinician" : "c-102",
+        "measured_on" : "2026-09-05"
+      }, {
+        "vital_id" : 7,
+        "patient_id" : 5,
+        "patient" : "Paul Wren",
+        "age_group" : "40-59",
+        "systolic" : 122,
+        "national_id" : "NID-0005",
+        "clinician" : "c-102",
+        "measured_on" : "2026-09-06"
+      }, {
+        "vital_id" : 8,
+        "patient_id" : 6,
+        "patient" : "Rosa Lind",
+        "age_group" : "60-79",
+        "systolic" : 150,
+        "national_id" : "NID-0006",
+        "clinician" : "c-101",
+        "measured_on" : "2026-09-07"
+      }, {
+        "vital_id" : 9,
+        "patient_id" : 6,
+        "patient" : "Rosa Lind",
+        "age_group" : "60-79",
+        "systolic" : 148,
+        "national_id" : "NID-0006",
+        "clinician" : "c-101",
+        "measured_on" : "2026-09-14"
+      }, {
+        "vital_id" : 10,
+        "patient_id" : 6,
+        "patient" : "Rosa Lind",
+        "age_group" : "60-79",
+        "systolic" : 146,
+        "national_id" : "NID-0006",
+        "clinician" : "c-101",
+        "measured_on" : "2026-09-21"
+      }, {
+        "vital_id" : 11,
+        "patient_id" : 7,
+        "patient" : "Karl Moe",
+        "age_group" : "60-79",
+        "systolic" : 152,
+        "national_id" : "NID-0007",
+        "clinician" : "c-102",
+        "measured_on" : "2026-09-08"
+      }, {
+        "vital_id" : 12,
+        "patient_id" : 7,
+        "patient" : "Karl Moe",
+        "age_group" : "60-79",
+        "systolic" : 150,
+        "national_id" : "NID-0007",
+        "clinician" : "c-102",
+        "measured_on" : "2026-09-15"
+      }, {
+        "vital_id" : 13,
+        "patient_id" : 7,
+        "patient" : "Karl Moe",
+        "age_group" : "60-79",
+        "systolic" : 154,
+        "national_id" : "NID-0007",
+        "clinician" : "c-102",
+        "measured_on" : "2026-09-22"
+      } ]
+    }
+  },
+  "rule_sets" : {
+    "cardiology" : {
+      "entity" : "cardiology.vitals",
+      "classification" : "restricted",
+      "rules" : [ {
+        "name" : "patient-care",
+        "principals" : {
+          "role" : "doctor"
+        },
+        "actions" : [ "read" ],
+        "effect" : "allow",
+        "row_filter" : "clinician == principal.clinician_id",
+        "columns" : {
+          "national_id" : "mask",
+          "clinician" : "hide"
+        }
+      }, {
+        "name" : "chief-statistics",
+        "principals" : {
+          "role" : "chief"
+        },
+        "actions" : [ "aggregate" ],
+        "effect" : "allow",
+        "row_filter" : "true",
+        "columns" : {
+          "national_id" : "mask",
+          "clinician" : "hide",
+          "patient" : "hide",
+          "patient_id" : "hide",
+          "vital_id" : "hide",
+          "measured_on" : "hide"
+        },
+        "aggregation" : {
+          "min_group_size" : 5
+        }
+      } ]
+    }
+  },
+  "cases" : [ {
+    "id" : "doctor-reads-own-patients-readings",
+    "description" : "rows where clinician = the doctor's clinician_id; national_id masked, clinician hidden; no self column",
+    "rule_set" : "cardiology",
+    "principal" : {
+      "sub" : "u-noah",
+      "email" : "noah@hospital.example",
+      "roles" : [ "doctor" ],
+      "attributes" : {
+        "clinician_id" : "c-101"
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : false,
+        "rows" : [ {
+          "column" : "clinician",
+          "value" : "c-101"
+        } ],
+        "hidden" : [ "clinician" ],
+        "masked" : [ "national_id" ],
+        "min_group_size" : null,
+        "matched_rules" : [ "patient-care" ]
+      },
+      "sql" : "SELECT v.vital_id AS vital_id, v.patient_id AS patient_id, v.patient AS patient, v.age_group AS age_group, v.systolic AS systolic, '****' AS national_id, v.measured_on AS measured_on FROM conf.vitals v WHERE (v.clinician = ?) ORDER BY v.vital_id LIMIT ?",
+      "params" : [ "c-101", 100 ],
+      "sql_hash" : "f2a2be081170",
+      "result" : {
+        "entity" : "cardiology.vitals",
+        "row_count" : 7,
+        "columns" : [ "vital_id", "patient_id", "patient", "age_group", "systolic", "national_id", "measured_on" ],
+        "rows" : [ {
+          "vital_id" : 1,
+          "patient_id" : 1,
+          "patient" : "Julian Hart",
+          "age_group" : "40-59",
+          "systolic" : 140,
+          "national_id" : "****",
+          "measured_on" : "2026-09-01"
+        }, {
+          "vital_id" : 2,
+          "patient_id" : 1,
+          "patient" : "Julian Hart",
+          "age_group" : "40-59",
+          "systolic" : 136,
+          "national_id" : "****",
+          "measured_on" : "2026-09-15"
+        }, {
+          "vital_id" : 3,
+          "patient_id" : 1,
+          "patient" : "Julian Hart",
+          "age_group" : "40-59",
+          "systolic" : 132,
+          "national_id" : "****",
+          "measured_on" : "2026-10-01"
+        }, {
+          "vital_id" : 5,
+          "patient_id" : 3,
+          "patient" : "Tomas Berg",
+          "age_group" : "40-59",
+          "systolic" : 128,
+          "national_id" : "****",
+          "measured_on" : "2026-09-04"
+        }, {
+          "vital_id" : 8,
+          "patient_id" : 6,
+          "patient" : "Rosa Lind",
+          "age_group" : "60-79",
+          "systolic" : 150,
+          "national_id" : "****",
+          "measured_on" : "2026-09-07"
+        }, {
+          "vital_id" : 9,
+          "patient_id" : 6,
+          "patient" : "Rosa Lind",
+          "age_group" : "60-79",
+          "systolic" : 148,
+          "national_id" : "****",
+          "measured_on" : "2026-09-14"
+        }, {
+          "vital_id" : 10,
+          "patient_id" : 6,
+          "patient" : "Rosa Lind",
+          "age_group" : "60-79",
+          "systolic" : 146,
+          "national_id" : "****",
+          "measured_on" : "2026-09-21"
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "patient-care" ],
+        "sql_hash" : "f2a2be081170",
+        "labels" : {
+          "row_key" : "vital_id",
+          "subject" : "patient",
+          "period" : "measured_on",
+          "units" : {
+            "systolic" : "mmHg"
+          },
+          "unit_columns" : { },
+          "decimals" : { },
+          "masked" : [ "national_id" ],
+          "function" : null
+        }
+      }
+    }
+  }, {
+    "id" : "doctor-without-clinician-id-denied",
+    "description" : "the identity join found no clinician: denied",
+    "rule_set" : "cardiology",
+    "principal" : {
+      "sub" : "u-clara",
+      "email" : "clara@hospital.example",
+      "roles" : [ "doctor" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "cardiology.vitals",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  }, {
+    "id" : "chief-reads-no-rows",
+    "description" : "chief-statistics grants aggregate only",
+    "rule_set" : "cardiology",
+    "principal" : {
+      "sub" : "u-grace",
+      "email" : "grace@hospital.example",
+      "roles" : [ "chief" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "cardiology.vitals",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  }, {
+    "id" : "group-minimum-counts-people-not-rows",
+    "description" : "40-59 has 5 patients (7 readings): kept, n counts readings; 60-79 has 6 readings of 2 patients: left out",
+    "rule_set" : "cardiology",
+    "principal" : {
+      "sub" : "u-grace",
+      "email" : "grace@hospital.example",
+      "roles" : [ "chief" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "systolic",
+        "group_by" : "age_group"
+      }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ ],
+        "hidden" : [ "clinician", "measured_on", "patient", "patient_id", "vital_id" ],
+        "masked" : [ "national_id" ],
+        "min_group_size" : 5,
+        "matched_rules" : [ "chief-statistics" ]
+      },
+      "sql" : "SELECT v.age_group AS age_group, avg(v.systolic) AS value, count(*) AS n FROM conf.vitals v GROUP BY v.age_group HAVING count(DISTINCT v.patient_id) >= ? LIMIT ?",
+      "params" : [ 5, 100 ],
+      "sql_hash" : "4c7777581051",
+      "result" : {
+        "entity" : "cardiology.vitals",
+        "row_count" : 1,
+        "columns" : [ "age_group", "value", "n" ],
+        "rows" : [ {
+          "age_group" : "40-59",
+          "value" : 128,
+          "n" : 7
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "chief-statistics" ],
+        "sql_hash" : "4c7777581051",
+        "labels" : {
+          "row_key" : "age_group",
+          "subject" : null,
+          "period" : null,
+          "units" : {
+            "value" : "mmHg"
+          },
+          "unit_columns" : { },
+          "decimals" : { },
+          "masked" : [ ],
+          "function" : "avg"
+        }
+      }
+    }
+  }, {
+    "id" : "chief-cannot-group-by-a-hidden-column",
+    "description" : "patient_id is hidden for the chief",
+    "rule_set" : "cardiology",
+    "principal" : {
+      "sub" : "u-grace",
+      "email" : "grace@hospital.example",
+      "roles" : [ "chief" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "systolic",
+        "group_by" : "patient_id"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is not available: patient_id"
+    }
+  }, {
+    "id" : "chief-max-refused",
+    "description" : "max under a minimum group size is one person's value",
+    "rule_set" : "cardiology",
+    "principal" : {
+      "sub" : "u-grace",
+      "email" : "grace@hospital.example",
+      "roles" : [ "chief" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "max",
+        "column" : "systolic"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: function MAX is not allowed here; use sum, avg or count"
+    }
+  }, {
+    "id" : "doctor-aggregate-denied",
+    "description" : "patient-care grants read only",
+    "rule_set" : "cardiology",
+    "principal" : {
+      "sub" : "u-noah",
+      "email" : "noah@hospital.example",
+      "roles" : [ "doctor" ],
+      "attributes" : {
+        "clinician_id" : "c-101"
+      }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "count",
+        "column" : "systolic"
+      }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "cardiology.vitals",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  } ]
+}

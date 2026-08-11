@@ -1,0 +1,21 @@
+{
+  "description": "A tool call that fails reading its data (GovernedToolsConfig.call / app.py call_tool): the result is isError true, one text content, the sentence of its error below (never the driver's message or the statement), and _meta {\"error\": <error>, \"data_source\": <the data source of the tool's plugin, or null>}, which the airlock passes on to the chat. The error comes from the failure and everything it wraps (causes, a SQLException's next exceptions): a SQLSTATE of class 28 anywhere is login_refused; else one of class 08, or a network failure (connection refused, unknown host, no route to host, a connect or socket timeout), is unreachable; anything else is failed. A failure is built as each runtime's driver raises it: sqlstate a database error with that SQLSTATE, network the socket's own exception wrapped in a driver error without one, cause what it wraps. Invalid arguments stay 'Invalid arguments: ...' without _meta.",
+  "texts": {
+    "login_refused": "The data source refused the login",
+    "unreachable": "The data source could not be reached",
+    "failed": "The tool could not complete the request"
+  },
+  "cases": [
+    {"id": "wrong-password", "failure": {"sqlstate": "28P01"}, "error": "login_refused"},
+    {"id": "no-such-role", "failure": {"sqlstate": "28000"}, "error": "login_refused"},
+    {"id": "login-refused-behind-a-connection-error", "failure": {"sqlstate": "08001", "cause": {"sqlstate": "28P01"}}, "error": "login_refused"},
+    {"id": "connection-failure", "failure": {"sqlstate": "08006"}, "error": "unreachable"},
+    {"id": "connection-refused", "failure": {"network": "refused"}, "error": "unreachable"},
+    {"id": "unknown-host", "failure": {"network": "unknown_host"}, "error": "unreachable"},
+    {"id": "no-route-to-host", "failure": {"network": "no_route"}, "error": "unreachable"},
+    {"id": "timeout", "failure": {"network": "timeout"}, "error": "unreachable"},
+    {"id": "statement-refused", "failure": {"sqlstate": "22021"}, "error": "failed"},
+    {"id": "query-canceled", "failure": {"sqlstate": "57014"}, "error": "failed"},
+    {"id": "plugin-failure", "failure": {}, "error": "failed"}
+  ]
+}

@@ -1,0 +1,55 @@
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: hr-assistant}
+spec:
+  space: hr-acme
+  displayName: Acme HR assistant
+  description: Answers people, pay and HR document questions.
+  # eric here only; nora through the space.
+  access: {users: [eric@example.com], callers: ["*"]}
+  preLLM:
+    contextPreparator:
+      handlers: [HrDocumentsContextPreparator]
+    conversationMemory:
+      handlers: [SessionMemory]
+  llm: qwen
+  prompt: |
+    You are the Acme HR assistant. All amounts are in EUR.
+  tools: [read_records, aggregate_records]
+  postLLM:
+    answerVerifier:
+      handlers: [SalaryVerifier]
+  dataSources:
+    - id: hr-documents
+      url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
+      secretRef: hr-acme-hr-assistant-ds-hr-documents-d4e5f6
+  jar: {digest: "sha256:9f2c", tools: [read_records, aggregate_records]}
+---
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: founders-finance}
+spec:
+  space: hr-acme
+  displayName: Founders finance
+  description: Payslips for the founders.
+  # The space's users alone, through the Acme chat alone.
+  access: {users: [], callers: [acme-chat]}
+  llm: qwen
+  prompt: |
+    You answer the founders only.
+  tools: [read_records, export_payslips]
+  jar: {digest: "sha256:5e1a", tools: [read_records, export_payslips]}
+---
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: hr-archive}
+spec:
+  space: hr-acme
+  displayName: HR archive
+  # Its data source answers nothing: a call past every gate fails at the database.
+  access: {users: [], callers: ["*"]}
+  llm: qwen
+  prompt: |
+    You read the HR archive.
+  tools: [read_archive]
+  jar: {digest: "sha256:7b3d", tools: [read_archive]}

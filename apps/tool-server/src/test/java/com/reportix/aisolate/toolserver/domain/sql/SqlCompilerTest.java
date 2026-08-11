@@ -8,6 +8,7 @@ import com.reportix.aisolate.sdk.Entity;
 import com.reportix.aisolate.sdk.Filter;
 import com.reportix.aisolate.sdk.GovernedQuery.Fn;
 import com.reportix.aisolate.sdk.Result;
+import com.reportix.aisolate.toolserver.application.GovernedToolsConfig;
 import com.reportix.aisolate.toolserver.domain.rules.Obligations;
 import com.reportix.aisolate.toolserver.domain.rules.RowPredicate;
 import java.util.List;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import tools.jackson.databind.JsonNode;
 
 class SqlCompilerTest {
 
@@ -339,5 +341,52 @@ class SqlCompilerTest {
     assertThat(labels.rowKey()).isEqualTo(groupBy);
     assertThat(labels.subject()).isNull();
     assertThat(labels.function()).isEqualTo(function.name().toLowerCase(java.util.Locale.ROOT));
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      nullValues = "NULL",
+      value = {"NULL|NULL|drug,dose", "drug|NULL|dose", "NULL|dose|drug", "drug|dose|NULL"})
+  void givenFactColumns_whenCompileRead_thenLabelsListTheReadableOnesOnlyWhenAny(
+      String hidden, String masked, String facts) {
+    // Arrange
+    Obligations obligations =
+        new Obligations(
+            true,
+            List.of(),
+            hidden == null ? Set.of() : Set.of(hidden),
+            masked == null ? Set.of() : Set.of(masked),
+            null,
+            List.of("all"));
+    List<String> readable = facts == null ? List.of() : List.of(facts.split(","));
+
+    // Act
+    Result.Labels labels =
+        compiler
+            .compileRead(MEDICATIONS, obligations, new ToolArgs.ReadArgs(List.of(), 10), null)
+            .labels();
+    JsonNode written = GovernedToolsConfig.RESULT_JSON.valueToTree(labels);
+
+    // Assert: absent when none, so a result without facts is written as before
+    assertThat(labels.facts()).isEqualTo(readable);
+    assertThat(written.path("facts").valueStream().map(JsonNode::asString).toList())
+        .isEqualTo(readable);
+    assertThat(written.has("facts")).isEqualTo(facts != null);
+  }
+
+  @Test
+  void givenFactColumn_whenCompileAggregate_thenLabelsCarryNoFacts() {
+    // Arrange
+    Obligations obligations =
+        new Obligations(true, List.of(), Set.of(), Set.of(), null, List.of("all"));
+    ToolArgs.AggregateArgs args = new ToolArgs.AggregateArgs(Fn.COUNT, "id", "drug", List.of());
+
+    // Act
+    Result.Labels labels = compiler.compileAggregate(MEDICATIONS, obligations, args).labels();
+
+    // Assert
+    assertThat(labels.facts()).isEmpty();
+    assertThat(GovernedToolsConfig.RESULT_JSON.valueToTree(labels).has("facts")).isFalse();
   }
 }

@@ -1,0 +1,42 @@
+{
+  "description": "Gate 5's gates before any lookup or query (GovernedQueryService.call): the policy pinned by _meta {airlock, revision} (both JSON strings, the revision the one this pod loaded), the same admission as the airlock over this server's own reading of the token, and the tool in the airlock's tools. A call turned away is never an error: the tool result is the empty result below (plus data_source, which GovernedToolsConfig adds from the plugin publishing the tool whatever the outcome), the call counts once in aisolate.tool.queries{airlock, tool, outcome=denied} with airlock 'none' when no served policy was pinned, and no identity join or SQL runs. An admitted call proceeds to the rules (cases/rules).",
+  "served_revision": "0123456789ab",
+  "space": {"users": ["nora@example.com"]},
+  "policies": [
+    {"airlock": "hr-assistant", "users": ["eric@example.com"], "callers": ["*"], "clients": ["knime"], "tools": ["read_records", "aggregate_records"]},
+    {"airlock": "founders-finance", "users": [], "callers": ["acme-chat"], "tools": ["export_payslips"]}
+  ],
+  "published_tools": {"read_records": "acme_hr", "aggregate_records": "acme_hr", "export_payslips": "acme_payroll"},
+  "cases": [
+    {"id": "listed-machine-client-admitted", "claims": {"sub": "sa-knime", "azp": "knime"}, "meta": {"airlock": "hr-assistant", "revision": "0123456789ab"}, "tool": "read_records",
+     "expect": {"admitted": true}},
+    {"id": "machine-client-of-a-sibling-airlock", "claims": {"sub": "sa-knime", "azp": "knime"}, "meta": {"airlock": "founders-finance", "revision": "0123456789ab"}, "tool": "export_payslips",
+     "expect": {"admitted": false, "metric": {"airlock": "founders-finance", "outcome": "denied"},
+                "result": {"entity": "", "row_count": 0, "columns": [], "rows": [], "rule_version": "0123456789ab", "rules": [], "sql_hash": "", "labels": null, "data_source": "acme_payroll"}}},
+    {"id": "pinned-admitted-declared", "claims": {"sub": "u-2", "email": "eric@example.com", "azp": "acme-chat"}, "meta": {"airlock": "hr-assistant", "revision": "0123456789ab"}, "tool": "read_records",
+     "expect": {"admitted": true}},
+    {"id": "space-user-on-any-airlock", "claims": {"sub": "u-1", "email": "NORA@example.com", "azp": "acme-chat"}, "meta": {"airlock": "founders-finance", "revision": "0123456789ab"}, "tool": "export_payslips",
+     "expect": {"admitted": true}},
+    {"id": "no-meta", "claims": {"sub": "u-2", "email": "eric@example.com", "azp": "acme-chat"}, "meta": null, "tool": "read_records",
+     "expect": {"admitted": false, "metric": {"airlock": "none", "outcome": "denied"},
+                "result": {"entity": "", "row_count": 0, "columns": [], "rows": [], "rule_version": "", "rules": [], "sql_hash": "", "labels": null, "data_source": "acme_hr"}}},
+    {"id": "meta-without-revision", "claims": {"sub": "u-2", "email": "eric@example.com", "azp": "acme-chat"}, "meta": {"airlock": "hr-assistant"}, "tool": "read_records",
+     "expect": {"admitted": false, "metric": {"airlock": "none", "outcome": "denied"},
+                "result": {"entity": "", "row_count": 0, "columns": [], "rows": [], "rule_version": "", "rules": [], "sql_hash": "", "labels": null, "data_source": "acme_hr"}}},
+    {"id": "another-revision", "claims": {"sub": "u-2", "email": "eric@example.com", "azp": "acme-chat"}, "meta": {"airlock": "hr-assistant", "revision": "fedcba987654"}, "tool": "read_records",
+     "expect": {"admitted": false, "metric": {"airlock": "none", "outcome": "denied"},
+                "result": {"entity": "", "row_count": 0, "columns": [], "rows": [], "rule_version": "", "rules": [], "sql_hash": "", "labels": null, "data_source": "acme_hr"}}},
+    {"id": "unknown-airlock", "claims": {"sub": "u-2", "email": "eric@example.com", "azp": "acme-chat"}, "meta": {"airlock": "no-such-app", "revision": "0123456789ab"}, "tool": "read_records",
+     "expect": {"admitted": false, "metric": {"airlock": "none", "outcome": "denied"},
+                "result": {"entity": "", "row_count": 0, "columns": [], "rows": [], "rule_version": "", "rules": [], "sql_hash": "", "labels": null, "data_source": "acme_hr"}}},
+    {"id": "user-of-a-sibling-airlock", "claims": {"sub": "u-2", "email": "eric@example.com", "azp": "acme-chat"}, "meta": {"airlock": "founders-finance", "revision": "0123456789ab"}, "tool": "export_payslips",
+     "expect": {"admitted": false, "metric": {"airlock": "founders-finance", "outcome": "denied"},
+                "result": {"entity": "", "row_count": 0, "columns": [], "rows": [], "rule_version": "0123456789ab", "rules": [], "sql_hash": "", "labels": null, "data_source": "acme_payroll"}}},
+    {"id": "client-not-a-caller", "claims": {"sub": "u-1", "email": "nora@example.com", "azp": "partner-app"}, "meta": {"airlock": "founders-finance", "revision": "0123456789ab"}, "tool": "export_payslips",
+     "expect": {"admitted": false, "metric": {"airlock": "founders-finance", "outcome": "denied"},
+                "result": {"entity": "", "row_count": 0, "columns": [], "rows": [], "rule_version": "0123456789ab", "rules": [], "sql_hash": "", "labels": null, "data_source": "acme_payroll"}}},
+    {"id": "tool-the-airlock-does-not-declare", "claims": {"sub": "u-1", "email": "nora@example.com", "azp": "acme-chat"}, "meta": {"airlock": "hr-assistant", "revision": "0123456789ab"}, "tool": "export_payslips",
+     "expect": {"admitted": false, "metric": {"airlock": "hr-assistant", "outcome": "denied"},
+                "result": {"entity": "", "row_count": 0, "columns": [], "rows": [], "rule_version": "0123456789ab", "rules": [], "sql_hash": "", "labels": null, "data_source": "acme_payroll"}}}
+  ]
+}

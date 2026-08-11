@@ -1,0 +1,7 @@
+{
+  "entity": "hr.archive",
+  "classification": "restricted",
+  "rules": [
+    {"name": "leadership", "principals": {"role": "ceo"}, "actions": ["read"], "effect": "allow", "row_filter": "true"}
+  ]
+}

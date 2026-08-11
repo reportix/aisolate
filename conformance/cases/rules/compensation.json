@@ -1,0 +1,1522 @@
+{
+  "description" : "One row per employee: the subject is the row key, the identity join yields the asking user's employee_id, so their own row is marked self. Rule set hr is the tool server's test rule set (apps/tool-server/src/test/resources/aisolate/rules/hr.compensation.json).",
+  "fixture" : {
+    "entity" : {
+      "name" : "hr.compensation",
+      "from" : "conf.compensation c",
+      "row_key" : "employee_id",
+      "subject" : "employee_id",
+      "subject_name" : "full_name",
+      "period" : null,
+      "columns" : [ {
+        "name" : "employee_id",
+        "expression" : "c.employee_id",
+        "type" : "number"
+      }, {
+        "name" : "full_name",
+        "expression" : "c.full_name",
+        "type" : "text"
+      }, {
+        "name" : "department",
+        "expression" : "c.department",
+        "type" : "text"
+      }, {
+        "name" : "gross_salary",
+        "expression" : "c.gross_salary",
+        "type" : "number",
+        "unit_column" : "currency"
+      }, {
+        "name" : "currency",
+        "expression" : "c.currency",
+        "type" : "text"
+      }, {
+        "name" : "bonus",
+        "expression" : "c.bonus",
+        "type" : "number",
+        "unit" : "EUR",
+        "decimals" : 2
+      }, {
+        "name" : "iban",
+        "expression" : "c.iban",
+        "type" : "text"
+      }, {
+        "name" : "internal_notes",
+        "expression" : "c.internal_notes",
+        "type" : "text"
+      } ]
+    },
+    "identity_attribute" : "employee_id",
+    "rule_version" : "0123456789ab",
+    "table" : {
+      "name" : "conf.compensation",
+      "columns" : {
+        "employee_id" : "integer",
+        "full_name" : "text",
+        "department" : "text",
+        "gross_salary" : "numeric(12,2)",
+        "currency" : "text",
+        "bonus" : "numeric(12,2)",
+        "iban" : "text",
+        "internal_notes" : "text"
+      },
+      "rows" : [ {
+        "employee_id" : 1,
+        "full_name" : "Nora Varga",
+        "department" : "executive",
+        "gross_salary" : 150000.00,
+        "currency" : "EUR",
+        "bonus" : 30000.00,
+        "iban" : "DE00100000000000000001",
+        "internal_notes" : "Board seat"
+      }, {
+        "employee_id" : 2,
+        "full_name" : "Eric Lindholm",
+        "department" : "engineering",
+        "gross_salary" : 78000.00,
+        "currency" : "EUR",
+        "bonus" : 5000.00,
+        "iban" : "DE00100000000000000002",
+        "internal_notes" : "Promotion due"
+      }, {
+        "employee_id" : 3,
+        "full_name" : "Ali Demir",
+        "department" : "engineering",
+        "gross_salary" : 82000.00,
+        "currency" : "EUR",
+        "bonus" : 6000.00,
+        "iban" : "DE00100000000000000003",
+        "internal_notes" : "Mentor"
+      }, {
+        "employee_id" : 4,
+        "full_name" : "Maya Koch",
+        "department" : "engineering",
+        "gross_salary" : 86000.00,
+        "currency" : "EUR",
+        "bonus" : 7000.00,
+        "iban" : "DE00100000000000000004",
+        "internal_notes" : "Relocating"
+      }, {
+        "employee_id" : 5,
+        "full_name" : "Lea Brandt",
+        "department" : "finance",
+        "gross_salary" : 70000.00,
+        "currency" : "EUR",
+        "bonus" : 4000.00,
+        "iban" : "DE00100000000000000005",
+        "internal_notes" : "Part time"
+      }, {
+        "employee_id" : 6,
+        "full_name" : "Omar Haddad",
+        "department" : "finance",
+        "gross_salary" : 72000.00,
+        "currency" : "EUR",
+        "bonus" : 4000.00,
+        "iban" : "DE00100000000000000006",
+        "internal_notes" : "New hire"
+      }, {
+        "employee_id" : 7,
+        "full_name" : "Ida Nyberg",
+        "department" : "executive",
+        "gross_salary" : 140000.00,
+        "currency" : "EUR",
+        "bonus" : 25000.00,
+        "iban" : "DE00100000000000000007",
+        "internal_notes" : "Retiring"
+      } ]
+    }
+  },
+  "rule_sets" : {
+    "hr" : {
+      "entity" : "hr.compensation",
+      "classification" : "restricted",
+      "rules" : [ {
+        "name" : "own-record",
+        "principals" : {
+          "role" : "employee"
+        },
+        "actions" : [ "read" ],
+        "effect" : "allow",
+        "row_filter" : "employee_id == principal.employee_id",
+        "columns" : {
+          "iban" : "mask",
+          "internal_notes" : "hide"
+        }
+      }, {
+        "name" : "leadership",
+        "principals" : {
+          "role" : "ceo"
+        },
+        "actions" : [ "read", "aggregate" ],
+        "effect" : "allow",
+        "row_filter" : "true",
+        "columns" : {
+          "iban" : "mask"
+        },
+        "aggregation" : {
+          "min_group_size" : 3
+        }
+      } ]
+    },
+    "hr-with-deny" : {
+      "entity" : "hr.compensation",
+      "classification" : "restricted",
+      "rules" : [ {
+        "name" : "own-record",
+        "principals" : {
+          "role" : "employee"
+        },
+        "actions" : [ "read" ],
+        "effect" : "allow",
+        "row_filter" : "employee_id == principal.employee_id",
+        "columns" : {
+          "iban" : "mask",
+          "internal_notes" : "hide"
+        }
+      }, {
+        "name" : "no-contractors",
+        "principals" : {
+          "role" : "contractor"
+        },
+        "actions" : [ "read", "aggregate" ],
+        "effect" : "deny"
+      } ]
+    },
+    "hr-desks" : {
+      "entity" : "hr.compensation",
+      "classification" : "restricted",
+      "rules" : [ {
+        "name" : "own-record",
+        "principals" : {
+          "role" : "employee"
+        },
+        "actions" : [ "read" ],
+        "effect" : "allow",
+        "row_filter" : "employee_id == principal.employee_id",
+        "columns" : {
+          "iban" : "mask",
+          "internal_notes" : "hide"
+        }
+      }, {
+        "name" : "finance-desk",
+        "principals" : {
+          "role" : "finance-desk"
+        },
+        "actions" : [ "read" ],
+        "effect" : "allow",
+        "row_filter" : "department == 'finance'",
+        "columns" : {
+          "bonus" : "mask",
+          "internal_notes" : "hide"
+        }
+      }, {
+        "name" : "team-lead",
+        "principals" : {
+          "role" : "lead"
+        },
+        "actions" : [ "read" ],
+        "effect" : "allow",
+        "row_filter" : "department == 'finance'",
+        "columns" : {
+          "iban" : "hide"
+        }
+      } ]
+    },
+    "hr-stats" : {
+      "entity" : "hr.compensation",
+      "classification" : "restricted",
+      "rules" : [ {
+        "name" : "stats-analyst",
+        "principals" : {
+          "role" : "analyst"
+        },
+        "actions" : [ "aggregate" ],
+        "effect" : "allow",
+        "row_filter" : "true",
+        "aggregation" : {
+          "min_group_size" : 2
+        }
+      }, {
+        "name" : "stats-auditor",
+        "principals" : {
+          "role" : "auditor"
+        },
+        "actions" : [ "aggregate" ],
+        "effect" : "allow",
+        "row_filter" : "true",
+        "aggregation" : {
+          "min_group_size" : 3
+        }
+      } ]
+    }
+  },
+  "cases" : [ {
+    "id" : "employee-reads-own-row",
+    "description" : "own-record: one row, iban masked, internal_notes hidden, the row marked self",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-eric",
+      "email" : "eric@example.com",
+      "roles" : [ "employee" ],
+      "attributes" : {
+        "employee_id" : 2
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : false,
+        "rows" : [ {
+          "column" : "employee_id",
+          "value" : 2
+        } ],
+        "hidden" : [ "internal_notes" ],
+        "masked" : [ "iban" ],
+        "min_group_size" : null,
+        "matched_rules" : [ "own-record" ]
+      },
+      "sql" : "SELECT (c.employee_id = ?) AS self, c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban FROM conf.compensation c WHERE (c.employee_id = ?) ORDER BY self DESC, c.employee_id LIMIT ?",
+      "params" : [ 2, 2, 100 ],
+      "sql_hash" : "555da8aaaa6b",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 1,
+        "columns" : [ "self", "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban" ],
+        "rows" : [ {
+          "self" : true,
+          "employee_id" : 2,
+          "full_name" : "Eric Lindholm",
+          "department" : "engineering",
+          "gross_salary" : 78000.00,
+          "currency" : "EUR",
+          "bonus" : 5000.00,
+          "iban" : "****"
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "own-record" ],
+        "sql_hash" : "555da8aaaa6b",
+        "labels" : {
+          "row_key" : "employee_id",
+          "subject" : "full_name",
+          "period" : null,
+          "units" : {
+            "bonus" : "EUR"
+          },
+          "unit_columns" : {
+            "gross_salary" : "currency"
+          },
+          "decimals" : {
+            "bonus" : 2
+          },
+          "masked" : [ "iban" ],
+          "function" : null
+        }
+      }
+    }
+  }, {
+    "id" : "ceo-reads-all-rows-own-flagged-self",
+    "description" : "leadership: every row, iban masked, notes visible; only the asker's row is self",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-nora",
+      "email" : "nora@example.com",
+      "roles" : [ "ceo" ],
+      "attributes" : {
+        "employee_id" : 1
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ ],
+        "hidden" : [ ],
+        "masked" : [ "iban" ],
+        "min_group_size" : 3,
+        "matched_rules" : [ "leadership" ]
+      },
+      "sql" : "SELECT (c.employee_id = ?) AS self, c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c ORDER BY self DESC, c.employee_id LIMIT ?",
+      "params" : [ 1, 100 ],
+      "sql_hash" : "c89ff5e5fa1d",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 7,
+        "columns" : [ "self", "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+        "rows" : [ {
+          "self" : true,
+          "employee_id" : 1,
+          "full_name" : "Nora Varga",
+          "department" : "executive",
+          "gross_salary" : 150000.00,
+          "currency" : "EUR",
+          "bonus" : 30000.00,
+          "iban" : "****",
+          "internal_notes" : "Board seat"
+        }, {
+          "self" : false,
+          "employee_id" : 2,
+          "full_name" : "Eric Lindholm",
+          "department" : "engineering",
+          "gross_salary" : 78000.00,
+          "currency" : "EUR",
+          "bonus" : 5000.00,
+          "iban" : "****",
+          "internal_notes" : "Promotion due"
+        }, {
+          "self" : false,
+          "employee_id" : 3,
+          "full_name" : "Ali Demir",
+          "department" : "engineering",
+          "gross_salary" : 82000.00,
+          "currency" : "EUR",
+          "bonus" : 6000.00,
+          "iban" : "****",
+          "internal_notes" : "Mentor"
+        }, {
+          "self" : false,
+          "employee_id" : 4,
+          "full_name" : "Maya Koch",
+          "department" : "engineering",
+          "gross_salary" : 86000.00,
+          "currency" : "EUR",
+          "bonus" : 7000.00,
+          "iban" : "****",
+          "internal_notes" : "Relocating"
+        }, {
+          "self" : false,
+          "employee_id" : 5,
+          "full_name" : "Lea Brandt",
+          "department" : "finance",
+          "gross_salary" : 70000.00,
+          "currency" : "EUR",
+          "bonus" : 4000.00,
+          "iban" : "****",
+          "internal_notes" : "Part time"
+        }, {
+          "self" : false,
+          "employee_id" : 6,
+          "full_name" : "Omar Haddad",
+          "department" : "finance",
+          "gross_salary" : 72000.00,
+          "currency" : "EUR",
+          "bonus" : 4000.00,
+          "iban" : "****",
+          "internal_notes" : "New hire"
+        }, {
+          "self" : false,
+          "employee_id" : 7,
+          "full_name" : "Ida Nyberg",
+          "department" : "executive",
+          "gross_salary" : 140000.00,
+          "currency" : "EUR",
+          "bonus" : 25000.00,
+          "iban" : "****",
+          "internal_notes" : "Retiring"
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "leadership" ],
+        "sql_hash" : "c89ff5e5fa1d",
+        "labels" : {
+          "row_key" : "employee_id",
+          "subject" : "full_name",
+          "period" : null,
+          "units" : {
+            "bonus" : "EUR"
+          },
+          "unit_columns" : {
+            "gross_salary" : "currency"
+          },
+          "decimals" : {
+            "bonus" : 2
+          },
+          "masked" : [ "iban" ],
+          "function" : null
+        }
+      }
+    }
+  }, {
+    "id" : "two-roles-union-of-rows-strictest-columns",
+    "description" : "employee + ceo: every row (union), internal_notes hidden (strictest), own row first though its id sorts second",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-eric",
+      "email" : "eric@example.com",
+      "roles" : [ "employee", "ceo" ],
+      "attributes" : {
+        "employee_id" : 2
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ {
+          "column" : "employee_id",
+          "value" : 2
+        } ],
+        "hidden" : [ "internal_notes" ],
+        "masked" : [ "iban" ],
+        "min_group_size" : 3,
+        "matched_rules" : [ "own-record", "leadership" ]
+      },
+      "sql" : "SELECT (c.employee_id = ?) AS self, c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban FROM conf.compensation c ORDER BY self DESC, c.employee_id LIMIT ?",
+      "params" : [ 2, 100 ],
+      "sql_hash" : "2aee1f454325",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 7,
+        "columns" : [ "self", "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban" ],
+        "rows" : [ {
+          "self" : true,
+          "employee_id" : 2,
+          "full_name" : "Eric Lindholm",
+          "department" : "engineering",
+          "gross_salary" : 78000.00,
+          "currency" : "EUR",
+          "bonus" : 5000.00,
+          "iban" : "****"
+        }, {
+          "self" : false,
+          "employee_id" : 1,
+          "full_name" : "Nora Varga",
+          "department" : "executive",
+          "gross_salary" : 150000.00,
+          "currency" : "EUR",
+          "bonus" : 30000.00,
+          "iban" : "****"
+        }, {
+          "self" : false,
+          "employee_id" : 3,
+          "full_name" : "Ali Demir",
+          "department" : "engineering",
+          "gross_salary" : 82000.00,
+          "currency" : "EUR",
+          "bonus" : 6000.00,
+          "iban" : "****"
+        }, {
+          "self" : false,
+          "employee_id" : 4,
+          "full_name" : "Maya Koch",
+          "department" : "engineering",
+          "gross_salary" : 86000.00,
+          "currency" : "EUR",
+          "bonus" : 7000.00,
+          "iban" : "****"
+        }, {
+          "self" : false,
+          "employee_id" : 5,
+          "full_name" : "Lea Brandt",
+          "department" : "finance",
+          "gross_salary" : 70000.00,
+          "currency" : "EUR",
+          "bonus" : 4000.00,
+          "iban" : "****"
+        }, {
+          "self" : false,
+          "employee_id" : 6,
+          "full_name" : "Omar Haddad",
+          "department" : "finance",
+          "gross_salary" : 72000.00,
+          "currency" : "EUR",
+          "bonus" : 4000.00,
+          "iban" : "****"
+        }, {
+          "self" : false,
+          "employee_id" : 7,
+          "full_name" : "Ida Nyberg",
+          "department" : "executive",
+          "gross_salary" : 140000.00,
+          "currency" : "EUR",
+          "bonus" : 25000.00,
+          "iban" : "****"
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "own-record", "leadership" ],
+        "sql_hash" : "2aee1f454325",
+        "labels" : {
+          "row_key" : "employee_id",
+          "subject" : "full_name",
+          "period" : null,
+          "units" : {
+            "bonus" : "EUR"
+          },
+          "unit_columns" : {
+            "gross_salary" : "currency"
+          },
+          "decimals" : {
+            "bonus" : 2
+          },
+          "masked" : [ "iban" ],
+          "function" : null
+        }
+      }
+    }
+  }, {
+    "id" : "missing-principal-attribute-denies",
+    "description" : "the identity join found no row: a row filter on principal.employee_id denies, never widens",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-x",
+      "email" : "x@example.com",
+      "roles" : [ "employee" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  }, {
+    "id" : "missing-attribute-in-one-matched-rule-denies-all",
+    "description" : "employee + ceo without an employee_id: one matched rule cannot bind its value, so the whole evaluation denies, the ceo's 'true' included",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-x",
+      "email" : "x@example.com",
+      "roles" : [ "employee", "ceo" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  }, {
+    "id" : "no-rule-for-the-action",
+    "description" : "own-record grants read only: an employee's aggregate gets nothing",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-eric",
+      "email" : "eric@example.com",
+      "roles" : [ "employee" ],
+      "attributes" : {
+        "employee_id" : 2
+      }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "gross_salary"
+      }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  }, {
+    "id" : "no-rule-for-the-role",
+    "description" : "default deny",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-ivy",
+      "email" : "ivy@example.com",
+      "roles" : [ "intern" ],
+      "attributes" : {
+        "employee_id" : 9
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  }, {
+    "id" : "role-names-are-exact",
+    "description" : "a role matches its rule by exact, case-sensitive name",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-nora",
+      "email" : "nora@example.com",
+      "roles" : [ "CEO" ],
+      "attributes" : {
+        "employee_id" : 1
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  }, {
+    "id" : "explicit-deny-wins",
+    "description" : "a matching deny beside a matching allow drops every row",
+    "rule_set" : "hr-with-deny",
+    "principal" : {
+      "sub" : "u-z",
+      "email" : "z@example.com",
+      "roles" : [ "employee", "contractor" ],
+      "attributes" : {
+        "employee_id" : 4
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  }, {
+    "id" : "denied-user-invalid-column-is-still-silent",
+    "description" : "evaluation runs before the arguments are checked against the entity: a denied user's filter on a hidden column gets the empty result, not a tool error",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-ivy",
+      "email" : "ivy@example.com",
+      "roles" : [ "intern" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "internal_notes",
+          "op" : "eq",
+          "value" : "x"
+        } ]
+      }
+    },
+    "expect" : {
+      "obligations" : null,
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 0,
+        "columns" : [ ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ ],
+        "sql_hash" : "",
+        "labels" : null
+      }
+    }
+  }, {
+    "id" : "denied-user-unknown-op-is-a-tool-error",
+    "description" : "the SDK shapes the arguments inside the tool, before any query: an unknown op is a tool error even for a denied user",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-ivy",
+      "email" : "ivy@example.com",
+      "roles" : [ "intern" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "department",
+          "op" : "regex",
+          "value" : ".*"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: unknown op: regex"
+    }
+  }, {
+    "id" : "filter-cannot-widen-the-row-filter",
+    "description" : "an employee filtering to another employee's id gets zero rows (the filter is ANDed)",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-eric",
+      "email" : "eric@example.com",
+      "roles" : [ "employee" ],
+      "attributes" : {
+        "employee_id" : 2
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "employee_id",
+          "op" : "eq",
+          "value" : "1"
+        } ]
+      }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : false,
+        "rows" : [ {
+          "column" : "employee_id",
+          "value" : 2
+        } ],
+        "hidden" : [ "internal_notes" ],
+        "masked" : [ "iban" ],
+        "min_group_size" : null,
+        "matched_rules" : [ "own-record" ]
+      },
+      "sql" : "SELECT (c.employee_id = ?) AS self, c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban FROM conf.compensation c WHERE (c.employee_id = ?) AND (c.employee_id = ?) ORDER BY self DESC, c.employee_id LIMIT ?",
+      "params" : [ 2, 2, 1, 100 ],
+      "sql_hash" : "60251bdf2557",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 0,
+        "columns" : [ "self", "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban" ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "own-record" ],
+        "sql_hash" : "60251bdf2557",
+        "labels" : {
+          "row_key" : "employee_id",
+          "subject" : "full_name",
+          "period" : null,
+          "units" : {
+            "bonus" : "EUR"
+          },
+          "unit_columns" : {
+            "gross_salary" : "currency"
+          },
+          "decimals" : {
+            "bonus" : 2
+          },
+          "masked" : [ "iban" ],
+          "function" : null
+        }
+      }
+    }
+  }, {
+    "id" : "filter-on-masked-column-refused",
+    "description" : "a predicate on a masked column would be a value oracle",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-nora",
+      "email" : "nora@example.com",
+      "roles" : [ "ceo" ],
+      "attributes" : {
+        "employee_id" : 1
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "iban",
+          "op" : "ilike",
+          "value" : "DE00%"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is not available: iban"
+    }
+  }, {
+    "id" : "filter-on-hidden-column-refused",
+    "description" : "internal_notes is hidden for the employee",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-eric",
+      "email" : "eric@example.com",
+      "roles" : [ "employee" ],
+      "attributes" : {
+        "employee_id" : 2
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "internal_notes",
+          "op" : "eq",
+          "value" : "Promotion due"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is not available: internal_notes"
+    }
+  }, {
+    "id" : "ilike-means-contains",
+    "description" : "ilike without wildcards is wrapped in %...%",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-nora",
+      "email" : "nora@example.com",
+      "roles" : [ "ceo" ],
+      "attributes" : {
+        "employee_id" : 1
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "full_name",
+          "op" : "ilike",
+          "value" : "LIND"
+        } ]
+      }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ ],
+        "hidden" : [ ],
+        "masked" : [ "iban" ],
+        "min_group_size" : 3,
+        "matched_rules" : [ "leadership" ]
+      },
+      "sql" : "SELECT (c.employee_id = ?) AS self, c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c WHERE (c.full_name ILIKE ?) ORDER BY self DESC, c.employee_id LIMIT ?",
+      "params" : [ 1, "%LIND%", 100 ],
+      "sql_hash" : "3c1f6b6e4c5c",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 1,
+        "columns" : [ "self", "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+        "rows" : [ {
+          "self" : false,
+          "employee_id" : 2,
+          "full_name" : "Eric Lindholm",
+          "department" : "engineering",
+          "gross_salary" : 78000.00,
+          "currency" : "EUR",
+          "bonus" : 5000.00,
+          "iban" : "****",
+          "internal_notes" : "Promotion due"
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "leadership" ],
+        "sql_hash" : "3c1f6b6e4c5c",
+        "labels" : {
+          "row_key" : "employee_id",
+          "subject" : "full_name",
+          "period" : null,
+          "units" : {
+            "bonus" : "EUR"
+          },
+          "unit_columns" : {
+            "gross_salary" : "currency"
+          },
+          "decimals" : {
+            "bonus" : 2
+          },
+          "masked" : [ "iban" ],
+          "function" : null
+        }
+      }
+    }
+  }, {
+    "id" : "numeric-filter-value-from-text",
+    "description" : "the model's '80000' is bound as a number for a numeric column",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-nora",
+      "email" : "nora@example.com",
+      "roles" : [ "ceo" ],
+      "attributes" : {
+        "employee_id" : 1
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "gross_salary",
+          "op" : "gt",
+          "value" : "80000"
+        } ],
+        "limit" : 3
+      }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ ],
+        "hidden" : [ ],
+        "masked" : [ "iban" ],
+        "min_group_size" : 3,
+        "matched_rules" : [ "leadership" ]
+      },
+      "sql" : "SELECT (c.employee_id = ?) AS self, c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c WHERE (c.gross_salary > ?) ORDER BY self DESC, c.employee_id LIMIT ?",
+      "params" : [ 1, 80000, 3 ],
+      "sql_hash" : "e411b69beed7",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 3,
+        "columns" : [ "self", "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+        "rows" : [ {
+          "self" : true,
+          "employee_id" : 1,
+          "full_name" : "Nora Varga",
+          "department" : "executive",
+          "gross_salary" : 150000.00,
+          "currency" : "EUR",
+          "bonus" : 30000.00,
+          "iban" : "****",
+          "internal_notes" : "Board seat"
+        }, {
+          "self" : false,
+          "employee_id" : 3,
+          "full_name" : "Ali Demir",
+          "department" : "engineering",
+          "gross_salary" : 82000.00,
+          "currency" : "EUR",
+          "bonus" : 6000.00,
+          "iban" : "****",
+          "internal_notes" : "Mentor"
+        }, {
+          "self" : false,
+          "employee_id" : 4,
+          "full_name" : "Maya Koch",
+          "department" : "engineering",
+          "gross_salary" : 86000.00,
+          "currency" : "EUR",
+          "bonus" : 7000.00,
+          "iban" : "****",
+          "internal_notes" : "Relocating"
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "leadership" ],
+        "sql_hash" : "e411b69beed7",
+        "labels" : {
+          "row_key" : "employee_id",
+          "subject" : "full_name",
+          "period" : null,
+          "units" : {
+            "bonus" : "EUR"
+          },
+          "unit_columns" : {
+            "gross_salary" : "currency"
+          },
+          "decimals" : {
+            "bonus" : 2
+          },
+          "masked" : [ "iban" ],
+          "function" : null
+        }
+      }
+    }
+  }, {
+    "id" : "literal-row-filter-and-masked-number",
+    "description" : "department == 'finance'; a masked numeric column arrives as the string ****; no identity attribute, so no self column",
+    "rule_set" : "hr-desks",
+    "principal" : {
+      "sub" : "u-fin",
+      "email" : "desk@example.com",
+      "roles" : [ "finance-desk" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : false,
+        "rows" : [ {
+          "column" : "department",
+          "value" : "finance"
+        } ],
+        "hidden" : [ "internal_notes" ],
+        "masked" : [ "bonus" ],
+        "min_group_size" : null,
+        "matched_rules" : [ "finance-desk" ]
+      },
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, '****' AS bonus, c.iban AS iban FROM conf.compensation c WHERE (c.department = ?) ORDER BY c.employee_id LIMIT ?",
+      "params" : [ "finance", 100 ],
+      "sql_hash" : "e0c422199a32",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 2,
+        "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban" ],
+        "rows" : [ {
+          "employee_id" : 5,
+          "full_name" : "Lea Brandt",
+          "department" : "finance",
+          "gross_salary" : 70000.00,
+          "currency" : "EUR",
+          "bonus" : "****",
+          "iban" : "DE00100000000000000005"
+        }, {
+          "employee_id" : 6,
+          "full_name" : "Omar Haddad",
+          "department" : "finance",
+          "gross_salary" : 72000.00,
+          "currency" : "EUR",
+          "bonus" : "****",
+          "iban" : "DE00100000000000000006"
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "finance-desk" ],
+        "sql_hash" : "e0c422199a32",
+        "labels" : {
+          "row_key" : "employee_id",
+          "subject" : "full_name",
+          "period" : null,
+          "units" : { },
+          "unit_columns" : {
+            "gross_salary" : "currency"
+          },
+          "decimals" : { },
+          "masked" : [ "bonus" ],
+          "function" : null
+        }
+      }
+    }
+  }, {
+    "id" : "union-of-row-filters-hide-beats-mask",
+    "description" : "own row OR finance; iban masked by one rule, hidden by the other: hidden",
+    "rule_set" : "hr-desks",
+    "principal" : {
+      "sub" : "u-eric",
+      "email" : "eric@example.com",
+      "roles" : [ "employee", "lead" ],
+      "attributes" : {
+        "employee_id" : 2
+      }
+    },
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : false,
+        "rows" : [ {
+          "column" : "employee_id",
+          "value" : 2
+        }, {
+          "column" : "department",
+          "value" : "finance"
+        } ],
+        "hidden" : [ "iban", "internal_notes" ],
+        "masked" : [ ],
+        "min_group_size" : null,
+        "matched_rules" : [ "own-record", "team-lead" ]
+      },
+      "sql" : "SELECT (c.employee_id = ?) AS self, c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus FROM conf.compensation c WHERE (c.employee_id = ? OR c.department = ?) ORDER BY self DESC, c.employee_id LIMIT ?",
+      "params" : [ 2, 2, "finance", 100 ],
+      "sql_hash" : "97c3acddaf81",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 3,
+        "columns" : [ "self", "employee_id", "full_name", "department", "gross_salary", "currency", "bonus" ],
+        "rows" : [ {
+          "self" : true,
+          "employee_id" : 2,
+          "full_name" : "Eric Lindholm",
+          "department" : "engineering",
+          "gross_salary" : 78000.00,
+          "currency" : "EUR",
+          "bonus" : 5000.00
+        }, {
+          "self" : false,
+          "employee_id" : 5,
+          "full_name" : "Lea Brandt",
+          "department" : "finance",
+          "gross_salary" : 70000.00,
+          "currency" : "EUR",
+          "bonus" : 4000.00
+        }, {
+          "self" : false,
+          "employee_id" : 6,
+          "full_name" : "Omar Haddad",
+          "department" : "finance",
+          "gross_salary" : 72000.00,
+          "currency" : "EUR",
+          "bonus" : 4000.00
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "own-record", "team-lead" ],
+        "sql_hash" : "97c3acddaf81",
+        "labels" : {
+          "row_key" : "employee_id",
+          "subject" : "full_name",
+          "period" : null,
+          "units" : {
+            "bonus" : "EUR"
+          },
+          "unit_columns" : {
+            "gross_salary" : "currency"
+          },
+          "decimals" : {
+            "bonus" : 2
+          },
+          "masked" : [ ],
+          "function" : null
+        }
+      }
+    }
+  }, {
+    "id" : "grouped-aggregate-drops-small-groups",
+    "description" : "min_group_size 3: engineering (3 people) stays, finance and executive (2 each) are left out",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-nora",
+      "email" : "nora@example.com",
+      "roles" : [ "ceo" ],
+      "attributes" : {
+        "employee_id" : 1
+      }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "gross_salary",
+        "group_by" : "department"
+      }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ ],
+        "hidden" : [ ],
+        "masked" : [ "iban" ],
+        "min_group_size" : 3,
+        "matched_rules" : [ "leadership" ]
+      },
+      "sql" : "SELECT c.department AS department, avg(c.gross_salary) AS value, count(*) AS n FROM conf.compensation c GROUP BY c.department HAVING count(DISTINCT c.employee_id) >= ? LIMIT ?",
+      "params" : [ 3, 100 ],
+      "sql_hash" : "f93aca6bc063",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 1,
+        "columns" : [ "department", "value", "n" ],
+        "rows" : [ {
+          "department" : "engineering",
+          "value" : 82000,
+          "n" : 3
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "leadership" ],
+        "sql_hash" : "f93aca6bc063",
+        "labels" : {
+          "row_key" : "department",
+          "subject" : null,
+          "period" : null,
+          "units" : { },
+          "unit_columns" : { },
+          "decimals" : { },
+          "masked" : [ ],
+          "function" : "avg"
+        }
+      }
+    }
+  }, {
+    "id" : "ungrouped-aggregate-over-a-small-group-is-empty",
+    "description" : "no GROUP BY, two people in finance: zero rows, but the rules that matched and the columns are reported",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-nora",
+      "email" : "nora@example.com",
+      "roles" : [ "ceo" ],
+      "attributes" : {
+        "employee_id" : 1
+      }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "gross_salary",
+        "filters" : [ {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "finance"
+        } ]
+      }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ ],
+        "hidden" : [ ],
+        "masked" : [ "iban" ],
+        "min_group_size" : 3,
+        "matched_rules" : [ "leadership" ]
+      },
+      "sql" : "SELECT avg(c.gross_salary) AS value, count(*) AS n FROM conf.compensation c WHERE (c.department = ?) HAVING count(DISTINCT c.employee_id) >= ? LIMIT ?",
+      "params" : [ "finance", 3, 100 ],
+      "sql_hash" : "688c63c69205",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 0,
+        "columns" : [ "value", "n" ],
+        "rows" : [ ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "leadership" ],
+        "sql_hash" : "688c63c69205",
+        "labels" : {
+          "row_key" : null,
+          "subject" : null,
+          "period" : null,
+          "units" : { },
+          "unit_columns" : { },
+          "decimals" : { },
+          "masked" : [ ],
+          "function" : "avg"
+        }
+      }
+    }
+  }, {
+    "id" : "ungrouped-sum-over-everyone",
+    "description" : "seven people, over the minimum",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-nora",
+      "email" : "nora@example.com",
+      "roles" : [ "ceo" ],
+      "attributes" : {
+        "employee_id" : 1
+      }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "sum",
+        "column" : "gross_salary"
+      }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ ],
+        "hidden" : [ ],
+        "masked" : [ "iban" ],
+        "min_group_size" : 3,
+        "matched_rules" : [ "leadership" ]
+      },
+      "sql" : "SELECT sum(c.gross_salary) AS value, count(*) AS n FROM conf.compensation c HAVING count(DISTINCT c.employee_id) >= ? LIMIT ?",
+      "params" : [ 3, 100 ],
+      "sql_hash" : "d4a4ed5897e7",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 1,
+        "columns" : [ "value", "n" ],
+        "rows" : [ {
+          "value" : 678000.00,
+          "n" : 7
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "leadership" ],
+        "sql_hash" : "d4a4ed5897e7",
+        "labels" : {
+          "row_key" : null,
+          "subject" : null,
+          "period" : null,
+          "units" : { },
+          "unit_columns" : { },
+          "decimals" : { },
+          "masked" : [ ],
+          "function" : "sum"
+        }
+      }
+    }
+  }, {
+    "id" : "min-under-a-group-minimum-refused",
+    "description" : "the minimum of a group is one person's value",
+    "rule_set" : "hr",
+    "principal" : {
+      "sub" : "u-nora",
+      "email" : "nora@example.com",
+      "roles" : [ "ceo" ],
+      "attributes" : {
+        "employee_id" : 1
+      }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "min",
+        "column" : "gross_salary",
+        "group_by" : "department"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: function MIN is not allowed here; use sum, avg or count"
+    }
+  }, {
+    "id" : "strictest-group-minimum-wins",
+    "description" : "analyst (2) + auditor (3): the larger minimum applies",
+    "rule_set" : "hr-stats",
+    "principal" : {
+      "sub" : "u-a",
+      "email" : "a@example.com",
+      "roles" : [ "analyst", "auditor" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "gross_salary",
+        "group_by" : "department"
+      }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ ],
+        "hidden" : [ ],
+        "masked" : [ ],
+        "min_group_size" : 3,
+        "matched_rules" : [ "stats-analyst", "stats-auditor" ]
+      },
+      "sql" : "SELECT c.department AS department, avg(c.gross_salary) AS value, count(*) AS n FROM conf.compensation c GROUP BY c.department HAVING count(DISTINCT c.employee_id) >= ? LIMIT ?",
+      "params" : [ 3, 100 ],
+      "sql_hash" : "f93aca6bc063",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 1,
+        "columns" : [ "department", "value", "n" ],
+        "rows" : [ {
+          "department" : "engineering",
+          "value" : 82000,
+          "n" : 3
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "stats-analyst", "stats-auditor" ],
+        "sql_hash" : "f93aca6bc063",
+        "labels" : {
+          "row_key" : "department",
+          "subject" : null,
+          "period" : null,
+          "units" : { },
+          "unit_columns" : { },
+          "decimals" : { },
+          "masked" : [ ],
+          "function" : "avg"
+        }
+      }
+    }
+  }, {
+    "id" : "lower-group-minimum-alone",
+    "description" : "analyst alone: groups of two are returned",
+    "rule_set" : "hr-stats",
+    "principal" : {
+      "sub" : "u-a",
+      "email" : "a@example.com",
+      "roles" : [ "analyst" ],
+      "attributes" : { }
+    },
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "gross_salary",
+        "group_by" : "department"
+      }
+    },
+    "expect" : {
+      "obligations" : {
+        "all_rows" : true,
+        "rows" : [ ],
+        "hidden" : [ ],
+        "masked" : [ ],
+        "min_group_size" : 2,
+        "matched_rules" : [ "stats-analyst" ]
+      },
+      "sql" : "SELECT c.department AS department, avg(c.gross_salary) AS value, count(*) AS n FROM conf.compensation c GROUP BY c.department HAVING count(DISTINCT c.employee_id) >= ? LIMIT ?",
+      "params" : [ 2, 100 ],
+      "sql_hash" : "f93aca6bc063",
+      "result" : {
+        "entity" : "hr.compensation",
+        "row_count" : 3,
+        "columns" : [ "department", "value", "n" ],
+        "rows" : [ {
+          "department" : "engineering",
+          "value" : 82000,
+          "n" : 3
+        }, {
+          "department" : "executive",
+          "value" : 145000,
+          "n" : 2
+        }, {
+          "department" : "finance",
+          "value" : 71000,
+          "n" : 2
+        } ],
+        "rule_version" : "0123456789ab",
+        "rules" : [ "stats-analyst" ],
+        "sql_hash" : "f93aca6bc063",
+        "labels" : {
+          "row_key" : "department",
+          "subject" : null,
+          "period" : null,
+          "units" : { },
+          "unit_columns" : { },
+          "decimals" : { },
+          "masked" : [ ],
+          "function" : "avg"
+        }
+      }
+    }
+  } ]
+}

@@ -1,0 +1,983 @@
+{
+  "description" : "The model's raw tool arguments, shaped by the SDK and checked against the entity, compiled under fixed obligations (no rule evaluation). Either a tool error with its exact text, or the exact parameterised statement: every identifier from the entity, every value a parameter.",
+  "fixture" : "rules/compensation.json",
+  "obligations" : {
+    "own_row" : {
+      "all_rows" : false,
+      "rows" : [ {
+        "column" : "employee_id",
+        "value" : 2
+      } ],
+      "hidden" : [ "internal_notes" ],
+      "masked" : [ "iban" ],
+      "min_group_size" : null,
+      "matched_rules" : [ "own-record" ]
+    },
+    "all_rows" : {
+      "all_rows" : true,
+      "rows" : [ ],
+      "hidden" : [ ],
+      "masked" : [ "iban" ],
+      "min_group_size" : null,
+      "matched_rules" : [ "leadership" ]
+    },
+    "all_rows_min5" : {
+      "all_rows" : true,
+      "rows" : [ ],
+      "hidden" : [ ],
+      "masked" : [ "iban" ],
+      "min_group_size" : 5,
+      "matched_rules" : [ "leadership" ]
+    },
+    "union" : {
+      "all_rows" : true,
+      "rows" : [ {
+        "column" : "employee_id",
+        "value" : 2
+      } ],
+      "hidden" : [ "internal_notes" ],
+      "masked" : [ "iban" ],
+      "min_group_size" : 5,
+      "matched_rules" : [ "own-record", "leadership" ]
+    }
+  },
+  "cases" : [ {
+    "id" : "quote-in-value-is-bound",
+    "obligations" : "own_row",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "engineering' OR '1'='1"
+        } ]
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban FROM conf.compensation c WHERE (c.employee_id = ?) AND (c.department = ?) ORDER BY c.employee_id LIMIT ?",
+      "params" : [ 2, "engineering' OR '1'='1", 100 ],
+      "sql_hash" : "c01f836af9fb",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "comment-and-semicolon-in-value-are-bound",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "full_name",
+          "op" : "eq",
+          "value" : "x'; DROP TABLE conf.compensation; --"
+        } ]
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c WHERE (c.full_name = ?) ORDER BY c.employee_id LIMIT ?",
+      "params" : [ "x'; DROP TABLE conf.compensation; --", 100 ],
+      "sql_hash" : "e8a0d4195656",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "sql-in-column-name-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "salary; drop table",
+          "op" : "eq",
+          "value" : "x"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is not available: salary; drop table"
+    }
+  }, {
+    "id" : "expression-as-column-name-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "c.gross_salary",
+          "op" : "gt",
+          "value" : "0"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is not available: c.gross_salary"
+    }
+  }, {
+    "id" : "hidden-column-filter-refused",
+    "obligations" : "own_row",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "internal_notes",
+          "op" : "eq",
+          "value" : "x"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is not available: internal_notes"
+    }
+  }, {
+    "id" : "masked-column-filter-refused",
+    "obligations" : "own_row",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "iban",
+          "op" : "ilike",
+          "value" : "DE00%"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is not available: iban"
+    }
+  }, {
+    "id" : "unknown-op-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "department",
+          "op" : "regex",
+          "value" : ".*"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: unknown op: regex"
+    }
+  }, {
+    "id" : "sql-as-op-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "department",
+          "op" : "= 'x' OR 1=1 --",
+          "value" : "x"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: unknown op: = 'x' OR 1=1 --"
+    }
+  }, {
+    "id" : "op-case-and-spaces-ignored",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "gross_salary",
+          "op" : " Gte ",
+          "value" : "80000"
+        } ]
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c WHERE (c.gross_salary >= ?) ORDER BY c.employee_id LIMIT ?",
+      "params" : [ 80000, 100 ],
+      "sql_hash" : "0c37ab00c21f",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "every-op",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "employee_id",
+          "op" : "eq",
+          "value" : 1
+        }, {
+          "column" : "employee_id",
+          "op" : "neq",
+          "value" : 2
+        }, {
+          "column" : "gross_salary",
+          "op" : "gt",
+          "value" : 1
+        }, {
+          "column" : "gross_salary",
+          "op" : "gte",
+          "value" : 2
+        }, {
+          "column" : "bonus",
+          "op" : "lt",
+          "value" : 3
+        }, {
+          "column" : "bonus",
+          "op" : "lte",
+          "value" : 4.5
+        }, {
+          "column" : "full_name",
+          "op" : "ilike",
+          "value" : "a"
+        } ]
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c WHERE (c.employee_id = ?) AND (c.employee_id <> ?) AND (c.gross_salary > ?) AND (c.gross_salary >= ?) AND (c.bonus < ?) AND (c.bonus <= ?) AND (c.full_name ILIKE ?) ORDER BY c.employee_id LIMIT ?",
+      "params" : [ 1, 2, 1, 2, 3, 4.5, "%a%", 100 ],
+      "sql_hash" : "75ced52dceed",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "non-numeric-value-for-numeric-column-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "gross_salary",
+          "op" : "gt",
+          "value" : "lots"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: value for numeric column gross_salary is not a number: lots"
+    }
+  }, {
+    "id" : "boolean-for-numeric-column-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "gross_salary",
+          "op" : "eq",
+          "value" : true
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: value for numeric column gross_salary is not a number: true"
+    }
+  }, {
+    "id" : "number-and-boolean-for-text-column-become-text",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "department",
+          "op" : "eq",
+          "value" : 42
+        }, {
+          "column" : "currency",
+          "op" : "neq",
+          "value" : true
+        } ]
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c WHERE (c.department = ?) AND (c.currency <> ?) ORDER BY c.employee_id LIMIT ?",
+      "params" : [ "42", "true", 100 ],
+      "sql_hash" : "1d3978b4d7be",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "ilike-on-numeric-column-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "gross_salary",
+          "op" : "ilike",
+          "value" : "7"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: op ilike needs a text column, got: gross_salary"
+    }
+  }, {
+    "id" : "ilike-with-own-wildcards-kept",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "full_name",
+          "op" : "ilike",
+          "value" : "Lind%"
+        }, {
+          "column" : "department",
+          "op" : "ilike",
+          "value" : "fin_nce"
+        } ]
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c WHERE (c.full_name ILIKE ?) AND (c.department ILIKE ?) ORDER BY c.employee_id LIMIT ?",
+      "params" : [ "Lind%", "fin_nce", 100 ],
+      "sql_hash" : "2ecced4e5899",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "missing-value-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "department",
+          "op" : "eq"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: value is required for filter on department"
+    }
+  }, {
+    "id" : "missing-column-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "op" : "eq",
+          "value" : "x"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is required"
+    }
+  }, {
+    "id" : "missing-op-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "department",
+          "value" : "x"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: op is required"
+    }
+  }, {
+    "id" : "filters-not-a-list-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : "department = x"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: filters must be a list"
+    }
+  }, {
+    "id" : "filter-not-an-object-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ "department = x" ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: each filter must be an object"
+    }
+  }, {
+    "id" : "more-than-ten-filters-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "filters" : [ {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        }, {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "a"
+        } ]
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: at most 10 filters"
+    }
+  }, {
+    "id" : "limit-capped-at-100",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "limit" : 5000
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c ORDER BY c.employee_id LIMIT ?",
+      "params" : [ 100 ],
+      "sql_hash" : "7a9fe7cb2e71",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "limit-zero-becomes-one",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "limit" : 0
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c ORDER BY c.employee_id LIMIT ?",
+      "params" : [ 1 ],
+      "sql_hash" : "7a9fe7cb2e71",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "negative-limit-becomes-one",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "limit" : -5
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c ORDER BY c.employee_id LIMIT ?",
+      "params" : [ 1 ],
+      "sql_hash" : "7a9fe7cb2e71",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "fractional-limit-truncated",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "limit" : 2.9
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c ORDER BY c.employee_id LIMIT ?",
+      "params" : [ 2 ],
+      "sql_hash" : "7a9fe7cb2e71",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "limit-as-text-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "limit" : "10"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: limit must be a number"
+    }
+  }, {
+    "id" : "own-key-marks-self-and-sorts-first",
+    "obligations" : "all_rows",
+    "self_key" : 13,
+    "query" : {
+      "action" : "read",
+      "args" : {
+        "limit" : 10
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT (c.employee_id = ?) AS self, c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban, c.internal_notes AS internal_notes FROM conf.compensation c ORDER BY self DESC, c.employee_id LIMIT ?",
+      "params" : [ 13, 10 ],
+      "sql_hash" : "c89ff5e5fa1d",
+      "columns" : [ "self", "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban", "internal_notes" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "union-with-all-rows-has-no-where",
+    "obligations" : "union",
+    "query" : {
+      "action" : "read",
+      "args" : { }
+    },
+    "expect" : {
+      "sql" : "SELECT c.employee_id AS employee_id, c.full_name AS full_name, c.department AS department, c.gross_salary AS gross_salary, c.currency AS currency, c.bonus AS bonus, '****' AS iban FROM conf.compensation c ORDER BY c.employee_id LIMIT ?",
+      "params" : [ 100 ],
+      "sql_hash" : "dbdfab5af829",
+      "columns" : [ "employee_id", "full_name", "department", "gross_salary", "currency", "bonus", "iban" ],
+      "labels" : {
+        "row_key" : "employee_id",
+        "subject" : "full_name",
+        "period" : null,
+        "units" : {
+          "bonus" : "EUR"
+        },
+        "unit_columns" : {
+          "gross_salary" : "currency"
+        },
+        "decimals" : {
+          "bonus" : 2
+        },
+        "masked" : [ "iban" ],
+        "function" : null
+      }
+    }
+  }, {
+    "id" : "aggregate-grouped-with-minimum",
+    "obligations" : "all_rows_min5",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "gross_salary",
+        "group_by" : "department"
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.department AS department, avg(c.gross_salary) AS value, count(*) AS n FROM conf.compensation c GROUP BY c.department HAVING count(DISTINCT c.employee_id) >= ? LIMIT ?",
+      "params" : [ 5, 100 ],
+      "sql_hash" : "f93aca6bc063",
+      "columns" : [ "department", "value", "n" ],
+      "labels" : {
+        "row_key" : "department",
+        "subject" : null,
+        "period" : null,
+        "units" : { },
+        "unit_columns" : { },
+        "decimals" : { },
+        "masked" : [ ],
+        "function" : "avg"
+      }
+    }
+  }, {
+    "id" : "aggregate-ungrouped-with-minimum-and-filter",
+    "obligations" : "all_rows_min5",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "gross_salary",
+        "filters" : [ {
+          "column" : "department",
+          "op" : "eq",
+          "value" : "finance"
+        } ]
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT avg(c.gross_salary) AS value, count(*) AS n FROM conf.compensation c WHERE (c.department = ?) HAVING count(DISTINCT c.employee_id) >= ? LIMIT ?",
+      "params" : [ "finance", 5, 100 ],
+      "sql_hash" : "688c63c69205",
+      "columns" : [ "value", "n" ],
+      "labels" : {
+        "row_key" : null,
+        "subject" : null,
+        "period" : null,
+        "units" : { },
+        "unit_columns" : { },
+        "decimals" : { },
+        "masked" : [ ],
+        "function" : "avg"
+      }
+    }
+  }, {
+    "id" : "aggregate-under-row-filter",
+    "obligations" : "own_row",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "sum",
+        "column" : "gross_salary"
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT sum(c.gross_salary) AS value, count(*) AS n FROM conf.compensation c WHERE (c.employee_id = ?) LIMIT ?",
+      "params" : [ 2, 100 ],
+      "sql_hash" : "4bd56cdac1c4",
+      "columns" : [ "value", "n" ],
+      "labels" : {
+        "row_key" : null,
+        "subject" : null,
+        "period" : null,
+        "units" : { },
+        "unit_columns" : { },
+        "decimals" : { },
+        "masked" : [ ],
+        "function" : "sum"
+      }
+    }
+  }, {
+    "id" : "aggregate-min-without-minimum-allowed",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "min",
+        "column" : "gross_salary"
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT min(c.gross_salary) AS value, count(*) AS n FROM conf.compensation c LIMIT ?",
+      "params" : [ 100 ],
+      "sql_hash" : "8ad369aa0622",
+      "columns" : [ "value", "n" ],
+      "labels" : {
+        "row_key" : null,
+        "subject" : null,
+        "period" : null,
+        "units" : { },
+        "unit_columns" : { },
+        "decimals" : { },
+        "masked" : [ ],
+        "function" : "min"
+      }
+    }
+  }, {
+    "id" : "aggregate-max-under-minimum-refused",
+    "obligations" : "all_rows_min5",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "max",
+        "column" : "gross_salary",
+        "group_by" : "department"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: function MAX is not allowed here; use sum, avg or count"
+    }
+  }, {
+    "id" : "aggregate-avg-of-text-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "avg",
+        "column" : "department"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: AVG needs a numeric column, got: department"
+    }
+  }, {
+    "id" : "aggregate-count-of-text-allowed",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "count",
+        "column" : "full_name",
+        "group_by" : "currency"
+      }
+    },
+    "expect" : {
+      "sql" : "SELECT c.currency AS currency, count(c.full_name) AS value, count(*) AS n FROM conf.compensation c GROUP BY c.currency LIMIT ?",
+      "params" : [ 100 ],
+      "sql_hash" : "627064bba574",
+      "columns" : [ "currency", "value", "n" ],
+      "labels" : {
+        "row_key" : "currency",
+        "subject" : null,
+        "period" : null,
+        "units" : { },
+        "unit_columns" : { },
+        "decimals" : { },
+        "masked" : [ ],
+        "function" : "count"
+      }
+    }
+  }, {
+    "id" : "aggregate-of-masked-column-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "count",
+        "column" : "iban"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is not available: iban"
+    }
+  }, {
+    "id" : "aggregate-group-by-hidden-column-refused",
+    "obligations" : "own_row",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "count",
+        "column" : "full_name",
+        "group_by" : "internal_notes"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: column is not available: internal_notes"
+    }
+  }, {
+    "id" : "aggregate-unknown-function-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "median",
+        "column" : "gross_salary"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: unknown function: median"
+    }
+  }, {
+    "id" : "aggregate-missing-function-refused",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "column" : "gross_salary"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: function is required"
+    }
+  }, {
+    "id" : "aggregate-function-checked-before-filters",
+    "obligations" : "all_rows",
+    "query" : {
+      "action" : "aggregate",
+      "args" : {
+        "function" : "median",
+        "column" : "gross_salary",
+        "filters" : "not a list"
+      }
+    },
+    "expect" : {
+      "error" : "Invalid arguments: unknown function: median"
+    }
+  } ]
+}
