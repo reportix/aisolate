@@ -1,0 +1,1 @@
+{"ts":"2026-10-16T20:15:30.123Z","event":"refusal","trace_id":"0af7651916cd43dd8448eb211c80319c","space":"hr-acme","airlock":"acme-hr","revision":"7b2280eab4b5","user":"ivy@example.com","client":"acme-chat","question":"hi","answer":null,"outcome":"refused","reason":"user","tools":[],"evidence":[],"verifiers":[],"figures":null,"grounding":null,"model":null,"duration_ms":3}

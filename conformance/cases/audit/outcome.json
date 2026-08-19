@@ -1,0 +1,148 @@
+{
+  "description" : "An exchange event's outcome and reason (ExchangeAudit.toEvent with Answers.isDontKnow): error when the exchange failed or the model never answered (answer null), with reason llm_unavailable | no_model_endpoint | deadline | internal; else dont_know when the answer, after leading whitespace and the marks * _ > \" ' ` “ ‘, is blank or begins with \"I don't know\" (ASCII case-insensitive, ' or ’) not followed by an ASCII letter or digit; else answered, reason null. A refusal is outcome refused with reason user | client (cases/admission).",
+  "cases" : [ {
+    "id" : "plain",
+    "answer" : "Your gross salary is 78,000 EUR.",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "answered",
+      "reason" : null,
+      "answer_on_the_line" : "Your gross salary is 78,000 EUR."
+    }
+  }, {
+    "id" : "dont-know",
+    "answer" : "I don't know",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "dont_know",
+      "reason" : null,
+      "answer_on_the_line" : "I don't know"
+    }
+  }, {
+    "id" : "dont-know-sentence-goes-on",
+    "answer" : "I don't know. The list records no reason. [ev-1]",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "dont_know",
+      "reason" : null,
+      "answer_on_the_line" : "I don't know. The list records no reason. [ev-1]"
+    }
+  }, {
+    "id" : "dont-know-curly-apostrophe",
+    "answer" : "I don’t know.",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "dont_know",
+      "reason" : null,
+      "answer_on_the_line" : "I don’t know."
+    }
+  }, {
+    "id" : "dont-know-upper-case",
+    "answer" : "I DON'T KNOW",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "dont_know",
+      "reason" : null,
+      "answer_on_the_line" : "I DON'T KNOW"
+    }
+  }, {
+    "id" : "dont-know-after-markdown",
+    "answer" : "  **I don't know**",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "dont_know",
+      "reason" : null,
+      "answer_on_the_line" : "  **I don't know**"
+    }
+  }, {
+    "id" : "dont-know-after-quote-marks",
+    "answer" : "> “I don't know”",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "dont_know",
+      "reason" : null,
+      "answer_on_the_line" : "> “I don't know”"
+    }
+  }, {
+    "id" : "empty-answer",
+    "answer" : "",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "dont_know",
+      "reason" : null,
+      "answer_on_the_line" : ""
+    }
+  }, {
+    "id" : "blank-answer",
+    "answer" : "   ",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "dont_know",
+      "reason" : null,
+      "answer_on_the_line" : "   "
+    }
+  }, {
+    "id" : "dont-know-later-in-the-text",
+    "answer" : "Sorry, I don't know.",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "answered",
+      "reason" : null,
+      "answer_on_the_line" : "Sorry, I don't know."
+    }
+  }, {
+    "id" : "dont-know-glued-to-a-word",
+    "answer" : "I don't knowledge",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "answered",
+      "reason" : null,
+      "answer_on_the_line" : "I don't knowledge"
+    }
+  }, {
+    "id" : "do-not-know-is-an-answer",
+    "answer" : "I do not know that.",
+    "failure" : null,
+    "expect" : {
+      "outcome" : "answered",
+      "reason" : null,
+      "answer_on_the_line" : "I do not know that."
+    }
+  }, {
+    "id" : "no-answer",
+    "answer" : null,
+    "failure" : null,
+    "expect" : {
+      "outcome" : "error",
+      "reason" : "internal",
+      "answer_on_the_line" : null
+    }
+  }, {
+    "id" : "model-unavailable",
+    "answer" : null,
+    "failure" : "llm_unavailable",
+    "expect" : {
+      "outcome" : "error",
+      "reason" : "llm_unavailable",
+      "answer_on_the_line" : null
+    }
+  }, {
+    "id" : "no-model-endpoint",
+    "answer" : null,
+    "failure" : "no_model_endpoint",
+    "expect" : {
+      "outcome" : "error",
+      "reason" : "no_model_endpoint",
+      "answer_on_the_line" : null
+    }
+  }, {
+    "id" : "deadline-after-a-partial-answer",
+    "answer" : "Your gross",
+    "failure" : "deadline",
+    "expect" : {
+      "outcome" : "error",
+      "reason" : "deadline",
+      "answer_on_the_line" : "Your gross"
+    }
+  } ]
+}

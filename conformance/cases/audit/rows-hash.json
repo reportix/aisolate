@@ -1,0 +1,73 @@
+{
+  "description" : "rows_hash of an audit event's tool call (ChatExchange.rowsHash): sha256, lower-case hex, of the rows as compact JSON (no spaces), each row's keys sorted, every number (not a boolean) replaced by its plain decimal text without trailing zeros ('78000.00' -> \"78000\", '1E+3' -> \"1000\", '-0.0' -> \"0\"), strings, booleans and nulls as they are, non-ASCII characters unescaped, control characters escaped as Jackson writes them (\\t \\n \\r \\b \\f short, the rest \\u00XX with UPPER-case hex). Parse each case's rows keeping decimals exact (Java USE_BIG_DECIMAL_FOR_FLOATS, Python parse_float=Decimal).",
+  "cases" : [ {
+    "id" : "pinned-by-the-java-test",
+    "rows" : [ {
+      "self" : true,
+      "full_name" : "Søren Ørsted",
+      "gross_salary" : 78000.00,
+      "bonus" : null,
+      "year" : 2026,
+      "rate" : -0.0,
+      "big" : 1E+3
+    } ],
+    "canonical" : "[{\"big\":\"1000\",\"bonus\":null,\"full_name\":\"Søren Ørsted\",\"gross_salary\":\"78000\",\"rate\":\"0\",\"self\":true,\"year\":\"2026\"}]",
+    "rows_hash" : "900634e46048bb5653237677339da64b0a436180fc1662664d9e21292ce5fb8e"
+  }, {
+    "id" : "scale-and-key-order-do-not-matter-a",
+    "rows" : [ {
+      "full_name" : "Eric Lindholm",
+      "gross_salary" : 78000.00
+    } ],
+    "canonical" : "[{\"full_name\":\"Eric Lindholm\",\"gross_salary\":\"78000\"}]",
+    "rows_hash" : "b2005cf519b70cd15ce2a867d02d8726da8a7d4a5d8e173f006d0a326b3c047d"
+  }, {
+    "id" : "scale-and-key-order-do-not-matter-b",
+    "rows" : [ {
+      "gross_salary" : 78000,
+      "full_name" : "Eric Lindholm"
+    } ],
+    "canonical" : "[{\"full_name\":\"Eric Lindholm\",\"gross_salary\":\"78000\"}]",
+    "rows_hash" : "b2005cf519b70cd15ce2a867d02d8726da8a7d4a5d8e173f006d0a326b3c047d"
+  }, {
+    "id" : "no-rows",
+    "rows" : [ ],
+    "canonical" : "[]",
+    "rows_hash" : "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  }, {
+    "id" : "masked-and-aggregate",
+    "rows" : [ {
+      "department" : "engineering",
+      "value" : 82000.0000000000000000,
+      "n" : 3,
+      "iban" : "****"
+    } ],
+    "canonical" : "[{\"department\":\"engineering\",\"iban\":\"****\",\"n\":\"3\",\"value\":\"82000\"}]",
+    "rows_hash" : "216cc4cd04c08f1fa1c68b9dd0e09247b9874ef87dc81fad970b0760251c8f9e"
+  }, {
+    "id" : "row-order-matters-a",
+    "rows" : [ {
+      "a" : 0.10
+    }, {
+      "a" : 1.5E+2
+    } ],
+    "canonical" : "[{\"a\":\"0.1\"},{\"a\":\"150\"}]",
+    "rows_hash" : "9c7fc52515318abb52103266c181866e74d991c8f4f2434d6096518576db99fb"
+  }, {
+    "id" : "row-order-matters-b",
+    "rows" : [ {
+      "a" : 1.5E+2
+    }, {
+      "a" : 0.10
+    } ],
+    "canonical" : "[{\"a\":\"150\"},{\"a\":\"0.1\"}]",
+    "rows_hash" : "1e3c5e143e40c171629c1defe51c65eed4ca0356819fb36355a3d66611d16c6b"
+  }, {
+    "id" : "control-characters",
+    "rows" : [ {
+      "note" : "line\nbreak\ttab\u001FUS"
+    } ],
+    "canonical" : "[{\"note\":\"line\\nbreak\\ttab\\u001FUS\"}]",
+    "rows_hash" : "ec2b2e80f0117d9b4eb187ead4cda2d5cf6c05e0035984211c5cc823498e9bed"
+  } ]
+}

@@ -1,0 +1,14 @@
+apiVersion: aisolate.dev/v1
+kind: Space
+metadata: {name: hr-acme}
+spec:
+  displayName: HR Acme
+  description: Acme people and compensation data for the HR assistant.
+  access:
+    users: [nora@example.com]
+  llms:
+    - {id: qwen, provider: ollama, url: http://localhost:11434, model: "qwen3.6:27b-q4_K_M"}
+  dataSources:
+    - id: acme_hr
+      url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
+      secretRef: hr-acme-ds-acme-hr-a1b2c3

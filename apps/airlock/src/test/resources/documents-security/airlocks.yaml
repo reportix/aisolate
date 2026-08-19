@@ -1,0 +1,59 @@
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: acme-hr}
+spec:
+  space: hr-acme
+  displayName: Acme HR assistant
+  # Only its space's users: eric and nora.
+  access: {users: [], callers: ["*"]}
+  llm: scripted
+  prompt: >-
+    You are the Acme HR assistant. Answer questions about employees and compensation using
+    only the tools. All amounts are in EUR. Cite every figure with its evidence id in square
+    brackets, for example [ev-1]. When a tool returns no rows, reply exactly: I don't know.
+  tools: [read_records, aggregate_records]
+  dataSources:
+    - id: hr-documents
+      url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
+      secretRef: hr-acme-acme-hr-ds-hr-documents-d4e5f6
+  jar:
+    digest: "sha256:9f2c"
+    tools: [read_records, aggregate_records]
+---
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: strict-app}
+spec:
+  space: strict-space
+  displayName: Strict app
+  access: {users: [eric@example.com, nora@example.com], callers: [acme-chat]}
+  llm: scripted
+  prompt: >-
+    You are the Acme HR assistant. Answer questions about employees and compensation using
+    only the tools. All amounts are in EUR. Cite every figure with its evidence id in square
+    brackets, for example [ev-1]. When a tool returns no rows, reply exactly: I don't know.
+---
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: short-app}
+spec:
+  space: hr-acme
+  displayName: Short app
+  # Its space's users plus ivy, who may ask this airlock only.
+  access: {users: [ivy@example.com], callers: ["*"]}
+  llm: scripted
+  prompt: >-
+    You are the Acme HR assistant. Answer questions about employees and compensation using
+    only the tools. All amounts are in EUR. Cite every figure with its evidence id in square
+    brackets, for example [ev-1]. When a tool returns no rows, reply exactly: I don't know.
+---
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: closed-app}
+spec:
+  space: strict-space
+  displayName: Closed app
+  # Neither it nor its space lists a user: nobody may ask it.
+  access: {users: [], callers: ["*"]}
+  llm: scripted
+  prompt: You answer no one.

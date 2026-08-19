@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisolate.ai/schemas/audit-event.json",
+  "title": "AIsolate audit event",
+  "description": "One line of the audit trail (AuditEvent, AuditLog): one per exchange and one per refused request. Every field is always present, null or [] when it has nothing; keys in exactly this order on the wire: ts, event, trace_id, space, airlock, revision, user, client, question, answer, outcome, reason, tools, evidence, verifiers, figures, grounding, model, duration_ms. Written compact, one JSON object per line, nothing before it, on the logger aisolate.audit (stdout) and POSTed as the request body to the ingest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ts", "event", "trace_id", "space", "airlock", "revision", "user", "client", "question", "answer", "outcome", "reason", "tools", "evidence", "verifiers", "figures", "grounding", "model", "duration_ms"],
+  "properties": {
+    "ts": {"type": "string", "description": "When the exchange began (admission start), UTC, truncated to the millisecond, ISO-8601 as java.time.Instant prints it: '2026-10-16T20:15:30.123Z', '2026-10-16T20:15:30.100Z', and with no fraction when the millisecond is 0: '2026-10-16T20:15:30Z'.", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"},
+    "event": {"enum": ["exchange", "refusal"]},
+    "trace_id": {"type": ["string", "null"], "pattern": "^[0-9a-f]{32}$", "description": "The exchange's root span's trace id; null only where nothing traces."},
+    "space": {"type": "string"},
+    "airlock": {"type": "string"},
+    "revision": {"type": "string"},
+    "user": {"type": ["string", "null"], "description": "The token's email claim as sent (case kept); null when it has none."},
+    "client": {"type": ["string", "null"], "description": "The token's azp."},
+    "question": {"type": "string", "description": "The message as sent."},
+    "answer": {"type": ["string", "null"], "description": "The answer chunks concatenated; null when the model never answered. An error after partial chunks keeps them."},
+    "outcome": {"enum": ["answered", "dont_know", "refused", "error"]},
+    "reason": {"enum": [null, "user", "client", "llm_unavailable", "no_model_endpoint", "deadline", "internal"]},
+    "tools": {"type": "array", "description": "One per tool call the model made, in call order. All but name, data_source and error are null when the call produced no evidence (failed).", "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "args", "data_source", "rows", "rule_version", "sql_hash", "rows_hash", "error"],
+      "properties": {
+        "name": {"type": "string"},
+        "args": {"type": ["object", "null"], "description": "The arguments as the model wrote them, once the tool server ran them."},
+        "data_source": {"type": ["string", "null"]},
+        "rows": {"type": ["integer", "null"], "minimum": 0},
+        "rule_version": {"type": ["string", "null"], "description": "The revision of the policy the tool server applied; '' for a call that pinned no served policy."},
+        "sql_hash": {"type": ["string", "null"], "description": "First 12 hex digits of sha256 of the statement; '' when nothing ran."},
+        "rows_hash": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$", "description": "cases/audit/rows-hash.json."},
+        "error": {"enum": [null, "login_refused", "unreachable", "failed"], "description": "Null when the call returned evidence; else its data source refused the login, could not be reached, or anything else failed."}
+      }}},
+    "evidence": {"type": "array", "items": {"type": "string"}, "description": "The evidence ids the answer cites (its sourced/computed figures, sourced tables, quoted quotes, and any [ev-n] its text names), in the order the exchange produced them."},
+    "verifiers": {"type": "array", "items": {
+      "type": "object", "additionalProperties": false, "required": ["name", "verdict"],
+      "properties": {"name": {"type": "string", "description": "The handler's name."}, "verdict": {"enum": ["PASS", "WARN", "FAIL"]}}}},
+    "figures": {"type": ["object", "null"], "additionalProperties": false,
+      "required": ["sourced", "computed", "unsourced", "mismatch"],
+      "properties": {"sourced": {"type": "integer"}, "computed": {"type": "integer"}, "unsourced": {"type": "integer"}, "mismatch": {"type": "integer"}}},
+    "grounding": {"type": ["object", "null"], "description": "The chat answer's segments, figures, tables and quotes, with every key named value, subject, period or unit removed at any depth (cases/audit/grounding-strip.json).",
+      "additionalProperties": false, "required": ["segments", "figures", "tables", "quotes"],
+      "properties": {"segments": {"type": "array"}, "figures": {"type": "array"}, "tables": {"type": "array"}, "quotes": {"type": "array"}}},
+    "model": {"type": ["object", "null"], "additionalProperties": false,
+      "required": ["provider", "name", "calls", "input_tokens", "output_tokens"],
+      "properties": {
+        "provider": {"type": ["string", "null"], "description": "The provider id the airlock names its model by."},
+        "name": {"type": ["string", "null"]},
+        "calls": {"type": "integer", "minimum": 0, "description": "Model calls, a failed one included."},
+        "input_tokens": {"type": ["integer", "null"], "description": "Summed over the calls; null when the provider reported none."},
+        "output_tokens": {"type": ["integer", "null"]}}},
+    "duration_ms": {"type": "integer", "minimum": 0}
+  },
+  "allOf": [
+    {"if": {"properties": {"event": {"const": "refusal"}}},
+     "then": {"properties": {"outcome": {"const": "refused"}, "reason": {"enum": ["user", "client"]}, "answer": {"const": null},
+              "tools": {"maxItems": 0}, "evidence": {"maxItems": 0}, "verifiers": {"maxItems": 0},
+              "figures": {"const": null}, "grounding": {"const": null}, "model": {"const": null}}}},
+    {"if": {"properties": {"event": {"const": "exchange"}}},
+     "then": {"properties": {"outcome": {"enum": ["answered", "dont_know", "error"]}, "model": {"type": "object"}}}},
+    {"if": {"properties": {"outcome": {"const": "error"}}},
+     "then": {"properties": {"reason": {"enum": ["llm_unavailable", "no_model_endpoint", "deadline", "internal"]}, "figures": {"const": null}, "grounding": {"const": null}}}},
+    {"if": {"properties": {"outcome": {"enum": ["answered", "dont_know"]}}},
+     "then": {"properties": {"reason": {"const": null}}}}
+  ]
+}

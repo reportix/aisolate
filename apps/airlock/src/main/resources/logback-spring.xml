@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <!-- Spring Boot's own console output, as it is without this file -->
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+  <!-- The audit trail: one JSON object per line, nothing else on it and nothing of it in the log -->
+  <appender name="AUDIT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%msg%n</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+  </appender>
+  <logger name="aisolate.audit" level="INFO" additivity="false">
+    <appender-ref ref="AUDIT"/>
+  </logger>
+
+  <!-- Spring AI warns with the model's tool name as given, newlines and all: a prompt-injected name
+       would put a line that reads as an audit line on stdout. -->
+  <logger name="org.springframework.ai.model.tool" level="ERROR"/>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+</configuration>

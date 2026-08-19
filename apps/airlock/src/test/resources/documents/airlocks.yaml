@@ -1,0 +1,35 @@
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: hr-assistant}
+spec:
+  space: hr-acme
+  displayName: Acme HR assistant
+  description: Answers people, pay and HR document questions.
+  # eric here only; nora through the space.
+  access: {users: [eric@example.com], callers: ["*"]}
+  llm: qwen
+  prompt: |
+    You are the Acme HR assistant. All amounts are in EUR.
+  tools: [read_records, aggregate_records]
+  dataSources:
+    - id: hr-documents
+      url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
+      secretRef: hr-acme-hr-assistant-ds-hr-documents-d4e5f6
+  jar:
+    digest: "sha256:9f2c"
+    tools: [read_records, aggregate_records]
+---
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata: {name: founders-finance}
+spec:
+  space: hr-acme
+  displayName: Founders finance
+  access: {users: [], callers: ["*"]}
+  llm: qwen
+  prompt: |
+    You answer the founders only.
+  tools: [aggregate_records]
+  jar:
+    digest: "sha256:7e1a"
+    tools: [aggregate_records]

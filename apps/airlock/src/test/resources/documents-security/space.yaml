@@ -1,0 +1,24 @@
+apiVersion: aisolate.dev/v1
+kind: Space
+metadata: {name: hr-acme}
+spec:
+  displayName: HR Acme
+  # Inherited by acme-hr and short-app.
+  access:
+    users: [eric@example.com, nora@example.com]
+  llms:
+    - {id: scripted, provider: ollama, url: http://host.minikube.internal:11434, model: scripted}
+  dataSources:
+    - id: acme_hr
+      url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
+      secretRef: hr-acme-ds-acme-hr-a1b2c3
+---
+apiVersion: aisolate.dev/v1
+kind: Space
+metadata: {name: strict-space}
+spec:
+  displayName: Strict space
+  access:
+    users: []
+  llms:
+    - {id: scripted, provider: ollama, url: http://host.minikube.internal:11434, model: scripted}

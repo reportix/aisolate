@@ -1,0 +1,19 @@
+{
+  "description": "What AuditLog keeps of the chat answer's grounding: the same tree with every object key named value, subject, period or unit removed, at any depth (AuditLog.stripRowValues); everything else, display text included, unchanged. The second case's table and computed shapes are illustrative: it pins the walk, not the chat schema.",
+  "cases": [
+    {"id": "figure-source-cells-dropped",
+     "grounding": {"segments": [{"text": "Your gross salary is "}, {"figure": "f1"}, {"text": "."}],
+                   "figures": [{"id": "f1", "display": "78,000 EUR", "value": "78000", "status": "sourced",
+                                "source": {"evidence": "ev-1", "entity": "hr.compensation", "column": "gross_salary", "row_key": "3", "subject": "Eric Lindholm", "unit": "EUR"}}],
+                   "tables": [], "quotes": []},
+     "expect": {"segments": [{"text": "Your gross salary is "}, {"figure": "f1"}, {"text": "."}],
+                "figures": [{"id": "f1", "display": "78,000 EUR", "status": "sourced",
+                             "source": {"evidence": "ev-1", "entity": "hr.compensation", "column": "gross_salary", "row_key": "3"}}],
+                "tables": [], "quotes": []}},
+    {"id": "nested-arrays-and-period",
+     "grounding": {"segments": [], "figures": [{"id": "f1", "value": "12.5", "computed": {"of": [{"evidence": "ev-2", "value": "10", "period": "2025"}, {"evidence": "ev-2", "value": "2.5", "period": "2026"}]}}],
+                   "tables": [{"id": "t1", "evidence": "ev-2", "rows": [{"cells": [{"column": "year", "value": "2025", "unit": null}]}]}], "quotes": [{"id": "q1", "evidence": "ev-3", "status": "quoted"}]},
+     "expect": {"segments": [], "figures": [{"id": "f1", "computed": {"of": [{"evidence": "ev-2"}, {"evidence": "ev-2"}]}}],
+                "tables": [{"id": "t1", "evidence": "ev-2", "rows": [{"cells": [{"column": "year"}]}]}], "quotes": [{"id": "q1", "evidence": "ev-3", "status": "quoted"}]}}
+  ]
+}
