@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AIsolate Audit taxonomy 2026-10-26: one row per question put to an airlock, one per tool call, one per verifier run. (c) AIsolate. -->
+<xs:schema targetNamespace="https://aisolate.ai/xbrl/audit/2026-10-26" elementFormDefault="qualified" attributeFormDefault="unqualified"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:aisolate="https://aisolate.ai/xbrl/audit/2026-10-26" xmlns:xbrli="http://www.xbrl.org/2003/instance"
+    xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xbrldt="http://xbrl.org/2005/xbrldt">
+  <xs:annotation>
+    <xs:appinfo>
+      <link:linkbaseRef xlink:type="simple" xlink:href="aisolate-audit-2026-10-26-lab.xml" xlink:role="http://www.xbrl.org/2003/role/labelLinkbaseRef" xlink:arcrole="http://www.w3.org/1999/xlink/properties/linkbase"/>
+      <link:linkbaseRef xlink:type="simple" xlink:href="aisolate-audit-2026-10-26-def.xml" xlink:role="http://www.xbrl.org/2003/role/definitionLinkbaseRef" xlink:arcrole="http://www.w3.org/1999/xlink/properties/linkbase"/>
+      <link:linkbaseRef xlink:type="simple" xlink:href="aisolate-audit-2026-10-26-for.xml" xlink:arcrole="http://www.w3.org/1999/xlink/properties/linkbase"/>
+      <link:roleType roleURI="https://aisolate.ai/xbrl/audit/2026-10-26/role/Exchanges" id="Exchanges">
+        <link:definition>[100] Exchanges</link:definition>
+        <link:usedOn>link:definitionLink</link:usedOn>
+      </link:roleType>
+      <link:roleType roleURI="https://aisolate.ai/xbrl/audit/2026-10-26/role/ToolCalls" id="ToolCalls">
+        <link:definition>[200] Tool calls</link:definition>
+        <link:usedOn>link:definitionLink</link:usedOn>
+      </link:roleType>
+      <link:roleType roleURI="https://aisolate.ai/xbrl/audit/2026-10-26/role/Verifiers" id="Verifiers">
+        <link:definition>[300] Verifiers</link:definition>
+        <link:usedOn>link:definitionLink</link:usedOn>
+      </link:roleType>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:import namespace="http://www.xbrl.org/2003/instance" schemaLocation="http://www.xbrl.org/2003/xbrl-instance-2003-12-31.xsd"/>
+  <xs:import namespace="http://xbrl.org/2005/xbrldt" schemaLocation="http://www.xbrl.org/2005/xbrldt-2005.xsd"/>
+
+  <xs:element name="Space" id="aisolate_Space" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="Airlock" id="aisolate_Airlock" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="ExchangeTime" id="aisolate_ExchangeTime" type="xbrli:dateTimeItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="User" id="aisolate_User" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="Question" id="aisolate_Question" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="Answer" id="aisolate_Answer" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="Outcome" id="aisolate_Outcome" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="Model" id="aisolate_Model" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="InputTokens" id="aisolate_InputTokens" type="xbrli:nonNegativeIntegerItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="OutputTokens" id="aisolate_OutputTokens" type="xbrli:nonNegativeIntegerItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="Duration" id="aisolate_Duration" type="xbrli:durationItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="ToolName" id="aisolate_ToolName" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="DataSource" id="aisolate_DataSource" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="RowsReturned" id="aisolate_RowsReturned" type="xbrli:nonNegativeIntegerItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="VerifierName" id="aisolate_VerifierName" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+  <xs:element name="VerifierVerdict" id="aisolate_VerifierVerdict" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true"/>
+
+  <xs:element name="ExchangeLineItems" id="aisolate_ExchangeLineItems" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true" abstract="true"/>
+  <xs:element name="ToolCallLineItems" id="aisolate_ToolCallLineItems" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true" abstract="true"/>
+  <xs:element name="VerifierLineItems" id="aisolate_VerifierLineItems" type="xbrli:stringItemType" substitutionGroup="xbrli:item" xbrli:periodType="duration" nillable="true" abstract="true"/>
+  <xs:element name="ExchangeHypercube" id="aisolate_ExchangeHypercube" type="xbrli:stringItemType" substitutionGroup="xbrldt:hypercubeItem" xbrli:periodType="duration" nillable="true" abstract="true"/>
+  <xs:element name="ToolCallHypercube" id="aisolate_ToolCallHypercube" type="xbrli:stringItemType" substitutionGroup="xbrldt:hypercubeItem" xbrli:periodType="duration" nillable="true" abstract="true"/>
+  <xs:element name="VerifierHypercube" id="aisolate_VerifierHypercube" type="xbrli:stringItemType" substitutionGroup="xbrldt:hypercubeItem" xbrli:periodType="duration" nillable="true" abstract="true"/>
+  <xs:element name="ExchangeAxis" id="aisolate_ExchangeAxis" type="xbrli:stringItemType" substitutionGroup="xbrldt:dimensionItem" xbrli:periodType="duration" nillable="true" abstract="true" xbrldt:typedDomainRef="#aisolate_ExchangeId"/>
+  <xs:element name="ToolCallAxis" id="aisolate_ToolCallAxis" type="xbrli:stringItemType" substitutionGroup="xbrldt:dimensionItem" xbrli:periodType="duration" nillable="true" abstract="true" xbrldt:typedDomainRef="#aisolate_ToolCallPosition"/>
+  <xs:element name="VerifierAxis" id="aisolate_VerifierAxis" type="xbrli:stringItemType" substitutionGroup="xbrldt:dimensionItem" xbrli:periodType="duration" nillable="true" abstract="true" xbrldt:typedDomainRef="#aisolate_VerifierPosition"/>
+  <xs:element name="ExchangeId" id="aisolate_ExchangeId" type="xs:string"/>
+  <xs:element name="ToolCallPosition" id="aisolate_ToolCallPosition" type="xs:positiveInteger"/>
+  <xs:element name="VerifierPosition" id="aisolate_VerifierPosition" type="xs:positiveInteger"/>
+</xs:schema>

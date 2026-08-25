@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.xbrl.org/2003/linkbase http://www.xbrl.org/2003/xbrl-linkbase-2003-12-31.xsd">
+  <link:labelLink xlink:type="extended" xlink:role="http://www.xbrl.org/2003/role/link">
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Space" xlink:label="Space"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="Space" xlink:to="Space_lbl"/>
+    <link:label xlink:type="resource" xlink:label="Space_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Space</link:label>
+    <link:label xlink:type="resource" xlink:label="Space_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The space of the airlock the question was put to: its id.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Airlock" xlink:label="Airlock"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="Airlock" xlink:to="Airlock_lbl"/>
+    <link:label xlink:type="resource" xlink:label="Airlock_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Airlock</link:label>
+    <link:label xlink:type="resource" xlink:label="Airlock_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The airlock the question was put to: its id.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeTime" xlink:label="ExchangeTime"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="ExchangeTime" xlink:to="ExchangeTime_lbl"/>
+    <link:label xlink:type="resource" xlink:label="ExchangeTime_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Exchange time</link:label>
+    <link:label xlink:type="resource" xlink:label="ExchangeTime_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">When the question reached the airlock, in UTC.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_User" xlink:label="User"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="User" xlink:to="User_lbl"/>
+    <link:label xlink:type="resource" xlink:label="User_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">User</link:label>
+    <link:label xlink:type="resource" xlink:label="User_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">Who asked: the user's identifier at the organisation's identity provider.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Question" xlink:label="Question"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="Question" xlink:to="Question_lbl"/>
+    <link:label xlink:type="resource" xlink:label="Question_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Question</link:label>
+    <link:label xlink:type="resource" xlink:label="Question_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The question, as asked.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Answer" xlink:label="Answer"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="Answer" xlink:to="Answer_lbl"/>
+    <link:label xlink:type="resource" xlink:label="Answer_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Answer</link:label>
+    <link:label xlink:type="resource" xlink:label="Answer_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The answer, as given; absent unless the question was answered.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Outcome" xlink:label="Outcome"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="Outcome" xlink:to="Outcome_lbl"/>
+    <link:label xlink:type="resource" xlink:label="Outcome_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Outcome</link:label>
+    <link:label xlink:type="resource" xlink:label="Outcome_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">What came of the question: answered, dont_know, refused or error.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Model" xlink:label="Model"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="Model" xlink:to="Model_lbl"/>
+    <link:label xlink:type="resource" xlink:label="Model_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Model</link:label>
+    <link:label xlink:type="resource" xlink:label="Model_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The language model that answered, as provider/model, such as ollama/granite4.1:8b.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_InputTokens" xlink:label="InputTokens"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="InputTokens" xlink:to="InputTokens_lbl"/>
+    <link:label xlink:type="resource" xlink:label="InputTokens_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Input tokens</link:label>
+    <link:label xlink:type="resource" xlink:label="InputTokens_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">Tokens sent to the model; absent when the provider reported none.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_OutputTokens" xlink:label="OutputTokens"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="OutputTokens" xlink:to="OutputTokens_lbl"/>
+    <link:label xlink:type="resource" xlink:label="OutputTokens_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Output tokens</link:label>
+    <link:label xlink:type="resource" xlink:label="OutputTokens_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">Tokens the model returned; absent when the provider reported none.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Duration" xlink:label="Duration"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="Duration" xlink:to="Duration_lbl"/>
+    <link:label xlink:type="resource" xlink:label="Duration_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Duration</link:label>
+    <link:label xlink:type="resource" xlink:label="Duration_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">How long the airlock took to answer, such as PT3.2S.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ToolName" xlink:label="ToolName"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="ToolName" xlink:to="ToolName_lbl"/>
+    <link:label xlink:type="resource" xlink:label="ToolName_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Tool</link:label>
+    <link:label xlink:type="resource" xlink:label="ToolName_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The tool the airlock called.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_DataSource" xlink:label="DataSource"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="DataSource" xlink:to="DataSource_lbl"/>
+    <link:label xlink:type="resource" xlink:label="DataSource_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Data source</link:label>
+    <link:label xlink:type="resource" xlink:label="DataSource_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The data source the tool read.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_RowsReturned" xlink:label="RowsReturned"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="RowsReturned" xlink:to="RowsReturned_lbl"/>
+    <link:label xlink:type="resource" xlink:label="RowsReturned_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Rows returned</link:label>
+    <link:label xlink:type="resource" xlink:label="RowsReturned_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">How many data rows the tool returned; never the rows themselves.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierName" xlink:label="VerifierName"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="VerifierName" xlink:to="VerifierName_lbl"/>
+    <link:label xlink:type="resource" xlink:label="VerifierName_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Verifier</link:label>
+    <link:label xlink:type="resource" xlink:label="VerifierName_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The check run on the answer before it was given.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierVerdict" xlink:label="VerifierVerdict"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="VerifierVerdict" xlink:to="VerifierVerdict_lbl"/>
+    <link:label xlink:type="resource" xlink:label="VerifierVerdict_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Verdict</link:label>
+    <link:label xlink:type="resource" xlink:label="VerifierVerdict_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The verifier's verdict: pass, warn or fail.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeAxis" xlink:label="ExchangeAxis"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="ExchangeAxis" xlink:to="ExchangeAxis_lbl"/>
+    <link:label xlink:type="resource" xlink:label="ExchangeAxis_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Exchange</link:label>
+    <link:label xlink:type="resource" xlink:label="ExchangeAxis_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">One question put to an airlock, named by its trace id.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ToolCallAxis" xlink:label="ToolCallAxis"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="ToolCallAxis" xlink:to="ToolCallAxis_lbl"/>
+    <link:label xlink:type="resource" xlink:label="ToolCallAxis_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Tool call</link:label>
+    <link:label xlink:type="resource" xlink:label="ToolCallAxis_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The tool call's position within the exchange, from 1.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierAxis" xlink:label="VerifierAxis"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="VerifierAxis" xlink:to="VerifierAxis_lbl"/>
+    <link:label xlink:type="resource" xlink:label="VerifierAxis_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Verifier run</link:label>
+    <link:label xlink:type="resource" xlink:label="VerifierAxis_lbl" xlink:role="http://www.xbrl.org/2003/role/documentation" xml:lang="en">The verifier's position within the exchange, from 1.</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeLineItems" xlink:label="ExchangeLineItems"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="ExchangeLineItems" xlink:to="ExchangeLineItems_lbl"/>
+    <link:label xlink:type="resource" xlink:label="ExchangeLineItems_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Exchanges line items</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ToolCallLineItems" xlink:label="ToolCallLineItems"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="ToolCallLineItems" xlink:to="ToolCallLineItems_lbl"/>
+    <link:label xlink:type="resource" xlink:label="ToolCallLineItems_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Tool calls line items</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierLineItems" xlink:label="VerifierLineItems"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="VerifierLineItems" xlink:to="VerifierLineItems_lbl"/>
+    <link:label xlink:type="resource" xlink:label="VerifierLineItems_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Verifiers line items</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeHypercube" xlink:label="ExchangeHypercube"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="ExchangeHypercube" xlink:to="ExchangeHypercube_lbl"/>
+    <link:label xlink:type="resource" xlink:label="ExchangeHypercube_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Exchanges hypercube</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ToolCallHypercube" xlink:label="ToolCallHypercube"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="ToolCallHypercube" xlink:to="ToolCallHypercube_lbl"/>
+    <link:label xlink:type="resource" xlink:label="ToolCallHypercube_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Tool calls hypercube</link:label>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierHypercube" xlink:label="VerifierHypercube"/>
+    <link:labelArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/concept-label" xlink:from="VerifierHypercube" xlink:to="VerifierHypercube_lbl"/>
+    <link:label xlink:type="resource" xlink:label="VerifierHypercube_lbl" xlink:role="http://www.xbrl.org/2003/role/label" xml:lang="en">Verifiers hypercube</link:label>
+  </link:labelLink>
+</link:linkbase>

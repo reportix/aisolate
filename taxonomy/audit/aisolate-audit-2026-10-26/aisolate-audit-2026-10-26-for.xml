@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:gen="http://xbrl.org/2008/generic" xmlns:variable="http://xbrl.org/2008/variable" xmlns:va="http://xbrl.org/2008/assertion/value" xmlns:cf="http://xbrl.org/2008/filter/concept" xmlns:df="http://xbrl.org/2008/filter/dimension" xmlns:gf="http://xbrl.org/2008/filter/general" xmlns:msg="http://xbrl.org/2010/message"
+    xmlns:aisolate="https://aisolate.ai/xbrl/audit/2026-10-26" xmlns:xfi="http://www.xbrl.org/2008/function/instance" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xsi:schemaLocation="http://www.xbrl.org/2003/linkbase http://www.xbrl.org/2003/xbrl-linkbase-2003-12-31.xsd http://xbrl.org/2008/generic http://www.xbrl.org/2008/generic-link.xsd http://xbrl.org/2008/variable http://www.xbrl.org/2008/variable.xsd http://xbrl.org/2008/assertion/value http://www.xbrl.org/2008/value-assertion.xsd http://xbrl.org/2008/filter/concept http://www.xbrl.org/2008/concept-filter.xsd http://xbrl.org/2008/filter/dimension http://www.xbrl.org/2008/dimension-filter.xsd http://xbrl.org/2008/filter/general http://www.xbrl.org/2008/general-filter.xsd http://xbrl.org/2010/message http://www.xbrl.org/2010/generic-message.xsd http://xbrl.org/2010/message/validation http://www.xbrl.org/2010/validation-message.xsd">
+  <link:roleRef roleURI="http://www.xbrl.org/2008/role/link" xlink:type="simple" xlink:href="http://www.xbrl.org/2008/generic-link.xsd#standard-link-role"/>
+  <link:roleRef roleURI="http://www.xbrl.org/2010/role/message" xlink:type="simple" xlink:href="http://www.xbrl.org/2010/generic-message.xsd#standard-message"/>
+  <link:arcroleRef arcroleURI="http://xbrl.org/arcrole/2008/variable-set" xlink:type="simple" xlink:href="http://www.xbrl.org/2008/variable.xsd#variable-set"/>
+  <link:arcroleRef arcroleURI="http://xbrl.org/arcrole/2008/variable-filter" xlink:type="simple" xlink:href="http://www.xbrl.org/2008/variable.xsd#variable-filter"/>
+  <link:arcroleRef arcroleURI="http://xbrl.org/arcrole/2010/assertion-unsatisfied-message" xlink:type="simple" xlink:href="http://www.xbrl.org/2010/validation-message.xsd#assertion-unsatisfied-message"/>
+  <gen:link xlink:type="extended" xlink:role="http://www.xbrl.org/2008/role/link">
+    <!-- A refused exchange has no ToolName. $tools covers the tool call axis, so it matches $refused on the exchange alone. -->
+    <va:valueAssertion xlink:type="resource" xlink:label="RefusalCallsNoTool" id="RefusalCallsNoTool" aspectModel="dimensional" implicitFiltering="true" test="empty($tools)"/>
+    <msg:message xlink:type="resource" xlink:label="RefusalCallsNoTool_message" xlink:role="http://www.xbrl.org/2010/role/message" xml:lang="en">A refused question calls no tool: exchange {string(xfi:fact-typed-dimension-value($refused, xs:QName('aisolate:ExchangeAxis')))} was refused but reports {count($tools)} tool call(s).</msg:message>
+    <gen:arc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2010/assertion-unsatisfied-message" xlink:from="RefusalCallsNoTool" xlink:to="RefusalCallsNoTool_message"/>
+
+    <variable:factVariable xlink:type="resource" xlink:label="refused" bindAsSequence="false"/>
+    <variable:variableArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/variable-set" xlink:from="RefusalCallsNoTool" xlink:to="refused" name="refused"/>
+    <cf:conceptName xlink:type="resource" xlink:label="Outcome">
+      <cf:concept><cf:qname>aisolate:Outcome</cf:qname></cf:concept>
+    </cf:conceptName>
+    <gf:general xlink:type="resource" xlink:label="isRefused" test="string(.) eq 'refused'"/>
+    <variable:variableFilterArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/variable-filter" xlink:from="refused" xlink:to="Outcome" complement="false" cover="true"/>
+    <variable:variableFilterArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/variable-filter" xlink:from="refused" xlink:to="isRefused" complement="false" cover="true"/>
+
+    <variable:factVariable xlink:type="resource" xlink:label="tools" bindAsSequence="true" fallbackValue="()"/>
+    <variable:variableArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/variable-set" xlink:from="RefusalCallsNoTool" xlink:to="tools" name="tools"/>
+    <cf:conceptName xlink:type="resource" xlink:label="ToolName">
+      <cf:concept><cf:qname>aisolate:ToolName</cf:qname></cf:concept>
+    </cf:conceptName>
+    <df:typedDimension xlink:type="resource" xlink:label="anyToolCall">
+      <df:dimension><df:qname>aisolate:ToolCallAxis</df:qname></df:dimension>
+    </df:typedDimension>
+    <variable:variableFilterArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/variable-filter" xlink:from="tools" xlink:to="ToolName" complement="false" cover="true"/>
+    <variable:variableFilterArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/variable-filter" xlink:from="tools" xlink:to="anyToolCall" complement="false" cover="true"/>
+  </gen:link>
+</link:linkbase>

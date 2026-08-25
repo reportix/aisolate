@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tp:taxonomyPackage xmlns:tp="http://xbrl.org/2016/taxonomy-package" xml:lang="en">
+  <tp:identifier>https://aisolate.ai/xbrl/audit/2026-10-26</tp:identifier>
+  <tp:name>AIsolate Audit</tp:name>
+  <tp:description>One row per question put to an airlock, one per tool call it made, one per verifier run on the answer.</tp:description>
+  <tp:version>1.0</tp:version>
+  <tp:publisher>AIsolate</tp:publisher>
+  <tp:publisherURL>https://aisolate.ai</tp:publisherURL>
+  <tp:publicationDate>2026-10-26</tp:publicationDate>
+  <tp:entryPoints>
+    <tp:entryPoint>
+      <tp:name>AIsolate Audit</tp:name>
+      <tp:entryPointDocument href="https://aisolate.ai/xbrl/audit/2026-10-26/aisolate-audit-2026-10-26.xsd"/>
+    </tp:entryPoint>
+  </tp:entryPoints>
+</tp:taxonomyPackage>

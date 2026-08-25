@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xbrldt="http://xbrl.org/2005/xbrldt" xsi:schemaLocation="http://www.xbrl.org/2003/linkbase http://www.xbrl.org/2003/xbrl-linkbase-2003-12-31.xsd">
+  <link:roleRef roleURI="https://aisolate.ai/xbrl/audit/2026-10-26/role/Exchanges" xlink:type="simple" xlink:href="aisolate-audit-2026-10-26.xsd#Exchanges"/>
+  <link:roleRef roleURI="https://aisolate.ai/xbrl/audit/2026-10-26/role/ToolCalls" xlink:type="simple" xlink:href="aisolate-audit-2026-10-26.xsd#ToolCalls"/>
+  <link:roleRef roleURI="https://aisolate.ai/xbrl/audit/2026-10-26/role/Verifiers" xlink:type="simple" xlink:href="aisolate-audit-2026-10-26.xsd#Verifiers"/>
+  <link:arcroleRef arcroleURI="http://xbrl.org/int/dim/arcrole/all" xlink:type="simple" xlink:href="http://www.xbrl.org/2005/xbrldt-2005.xsd#all"/>
+  <link:arcroleRef arcroleURI="http://xbrl.org/int/dim/arcrole/hypercube-dimension" xlink:type="simple" xlink:href="http://www.xbrl.org/2005/xbrldt-2005.xsd#hypercube-dimension"/>
+  <link:arcroleRef arcroleURI="http://xbrl.org/int/dim/arcrole/domain-member" xlink:type="simple" xlink:href="http://www.xbrl.org/2005/xbrldt-2005.xsd#domain-member"/>
+  <link:definitionLink xlink:type="extended" xlink:role="https://aisolate.ai/xbrl/audit/2026-10-26/role/Exchanges">
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeLineItems" xlink:label="ExchangeLineItems"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeHypercube" xlink:label="ExchangeHypercube"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeAxis" xlink:label="ExchangeAxis"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Space" xlink:label="Space"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Airlock" xlink:label="Airlock"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeTime" xlink:label="ExchangeTime"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_User" xlink:label="User"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Question" xlink:label="Question"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Answer" xlink:label="Answer"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Outcome" xlink:label="Outcome"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Model" xlink:label="Model"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_InputTokens" xlink:label="InputTokens"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_OutputTokens" xlink:label="OutputTokens"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_Duration" xlink:label="Duration"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/all" xlink:from="ExchangeLineItems" xlink:to="ExchangeHypercube" order="1" xbrldt:closed="true" xbrldt:contextElement="scenario"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/hypercube-dimension" xlink:from="ExchangeHypercube" xlink:to="ExchangeAxis" order="1"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="Space" order="1"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="Airlock" order="2"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="ExchangeTime" order="4"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="User" order="5"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="Question" order="6"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="Answer" order="7"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="Outcome" order="8"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="Model" order="9"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="InputTokens" order="10"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="OutputTokens" order="11"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ExchangeLineItems" xlink:to="Duration" order="12"/>
+  </link:definitionLink>
+  <link:definitionLink xlink:type="extended" xlink:role="https://aisolate.ai/xbrl/audit/2026-10-26/role/ToolCalls">
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ToolCallLineItems" xlink:label="ToolCallLineItems"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ToolCallHypercube" xlink:label="ToolCallHypercube"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeAxis" xlink:label="ExchangeAxis"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ToolCallAxis" xlink:label="ToolCallAxis"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ToolName" xlink:label="ToolName"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_DataSource" xlink:label="DataSource"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_RowsReturned" xlink:label="RowsReturned"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/all" xlink:from="ToolCallLineItems" xlink:to="ToolCallHypercube" order="1" xbrldt:closed="true" xbrldt:contextElement="scenario"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/hypercube-dimension" xlink:from="ToolCallHypercube" xlink:to="ExchangeAxis" order="1"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/hypercube-dimension" xlink:from="ToolCallHypercube" xlink:to="ToolCallAxis" order="2"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ToolCallLineItems" xlink:to="ToolName" order="1"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ToolCallLineItems" xlink:to="DataSource" order="2"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="ToolCallLineItems" xlink:to="RowsReturned" order="3"/>
+  </link:definitionLink>
+  <link:definitionLink xlink:type="extended" xlink:role="https://aisolate.ai/xbrl/audit/2026-10-26/role/Verifiers">
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierLineItems" xlink:label="VerifierLineItems"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierHypercube" xlink:label="VerifierHypercube"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_ExchangeAxis" xlink:label="ExchangeAxis"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierAxis" xlink:label="VerifierAxis"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierName" xlink:label="VerifierName"/>
+    <link:loc xlink:type="locator" xlink:href="aisolate-audit-2026-10-26.xsd#aisolate_VerifierVerdict" xlink:label="VerifierVerdict"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/all" xlink:from="VerifierLineItems" xlink:to="VerifierHypercube" order="1" xbrldt:closed="true" xbrldt:contextElement="scenario"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/hypercube-dimension" xlink:from="VerifierHypercube" xlink:to="ExchangeAxis" order="1"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/hypercube-dimension" xlink:from="VerifierHypercube" xlink:to="VerifierAxis" order="2"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="VerifierLineItems" xlink:to="VerifierName" order="1"/>
+    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/int/dim/arcrole/domain-member" xlink:from="VerifierLineItems" xlink:to="VerifierVerdict" order="2"/>
+  </link:definitionLink>
+</link:linkbase>
