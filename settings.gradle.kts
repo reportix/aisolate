@@ -14,5 +14,5 @@ rootProject.name = "aisolate"
 
 include(
     "apps:airlock", "apps:backend", "apps:controller", "apps:tool-server",
-    "libs:config", "libs:identity", "libs:plugins", "libs:sdk",
+    "libs:audit-report", "libs:config", "libs:identity", "libs:plugins", "libs:sdk",
 )
