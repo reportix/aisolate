@@ -17,6 +17,7 @@ compiled into the SQL at the data boundary. The model enforces nothing.
 ## Documentation
 
 - [Release](docs/release.md): a headless install: documents, Secrets, hosts, validate, apply, status, roll back.
+- [Integrate](docs/integrate.md): call an airlock from a workflow tool (n8n, KNIME): the JSON answer, the sign-in, the templates and the KNIME nodes in the `integrations` repository.
 - [AUTHORS.md](AUTHORS.md): the team behind AIsolate.
 
 ## License
