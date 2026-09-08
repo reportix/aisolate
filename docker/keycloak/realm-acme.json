@@ -324,6 +324,54 @@
       ]
     },
     {
+      "clientId": "aisolate-cli",
+      "name": "AIsolate CLI",
+      "description": "aisolate login: browser sign-in with PKCE and a loopback redirect (RFC 8252)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://127.0.0.1/*"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "login_theme": "aisolate-ui"
+      },
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "realm-roles-in-id-token",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email",
+        "aisolate"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ]
+    },
+    {
       "clientId": "expiring-app",
       "name": "Test client: AIsolate audience, 1-second access tokens",
       "enabled": true,

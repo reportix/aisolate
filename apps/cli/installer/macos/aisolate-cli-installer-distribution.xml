@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>AIsolate CLI</title>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <license file="LICENSE"/>
+    <conclusion file="conclusion.html" mime-type="text/html"/>
+    <options customize="never" require-scripts="false" rootVolumeOnly="true"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.reportix.aisolate.cli"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.reportix.aisolate.cli" visible="false">
+        <pkg-ref id="com.reportix.aisolate.cli"/>
+    </choice>
+    <pkg-ref id="com.reportix.aisolate.cli" version="${version}" onConclusion="none">aisolate-component.pkg</pkg-ref>
+</installer-gui-script>

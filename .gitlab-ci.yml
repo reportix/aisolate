@@ -1,5 +1,5 @@
 # AIsolate CI. Public images only.
-stages: [check, test, scan]
+stages: [check, test, scan, package]
 
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
@@ -48,3 +48,30 @@ trivy:
     entrypoint: [""]
   script:
     - trivy fs --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed .
+
+# The Windows CLI's installer. A native image is built on the system it runs on, so aisolate.exe is built on a
+# Windows machine; this job packages it with NSIS. Run it by hand with WINDOWS_EXE_URL (where the runner can
+# download that exe) and WINDOWS_EXE_SHA256 set; never in an MR pipeline.
+cli-windows-installer:
+  stage: package
+  needs: []
+  inherit:
+    default: false
+  image: debian:bookworm-slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - when: manual
+      allow_failure: true
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends ca-certificates curl nsis
+  script:
+    - test -n "$WINDOWS_EXE_URL" && test -n "$WINDOWS_EXE_SHA256" || { echo "Set WINDOWS_EXE_URL and WINDOWS_EXE_SHA256."; exit 1; }
+    - mkdir -p apps/cli/build/win-installer
+    - cp apps/cli/installer/windows/aisolate-cli-installer.nsi apps/cli/installer/LICENSE apps/cli/build/win-installer/
+    - curl -fsSL -o apps/cli/build/win-installer/aisolate.exe "$WINDOWS_EXE_URL"
+    - echo "$WINDOWS_EXE_SHA256  apps/cli/build/win-installer/aisolate.exe" | sha256sum -c -
+    - cd apps/cli/build/win-installer && makensis aisolate-cli-installer.nsi
+  artifacts:
+    paths: [apps/cli/build/win-installer/aisolate-cli-installer.exe]
+    expire_in: 30 days

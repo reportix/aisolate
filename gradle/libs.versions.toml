@@ -9,6 +9,8 @@ mcp = "2.1.0"
 spotless = "8.10.4"
 archunit = "1.5.1"
 lombok-plugin = "9.8.2"
+picocli = "4.7.7"
+graalvm-native = "1.1.17"
 fabric8 = "7.9.0"
 josdk = "5.6.2"
 springdoc = "3.1.1"
@@ -21,6 +23,8 @@ spring-ai-bom = { module = "org.springframework.ai:spring-ai-bom", version.ref =
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 mcp-sdk = { module = "io.modelcontextprotocol.sdk:mcp", version.ref = "mcp" }
 springdoc-openapi = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
 fabric8-client = { module = "io.fabric8:kubernetes-client", version.ref = "fabric8" }
 fabric8-server-mock = { module = "io.fabric8:kubernetes-server-mock", version.ref = "fabric8" }
 fabric8-crd-generator = { module = "io.fabric8:crd-generator-api-v2", version.ref = "fabric8" }
@@ -32,3 +36,4 @@ pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 lombok = { id = "io.freefair.lombok", version.ref = "lombok-plugin" }
+graalvm-native = { id = "org.graalvm.buildtools.native", version.ref = "graalvm-native" }
