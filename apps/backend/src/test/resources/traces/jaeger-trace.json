@@ -1,0 +1,653 @@
+{
+ "data": [
+  {
+   "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+   "spans": [
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "21cf45aa4d597f6b",
+     "operationName": "http post /v1/spaces/{spaceId}/airlocks/{airlockId}/versions/{version}/chat",
+     "references": [],
+     "startTime": 1792399413459030,
+     "duration": 8565698,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.airlock"
+      },
+      {
+       "key": "http.request.method",
+       "type": "string",
+       "value": "POST"
+      },
+      {
+       "key": "http.response.status_code",
+       "type": "int64",
+       "value": 200
+      },
+      {
+       "key": "http.route",
+       "type": "string",
+       "value": "/v1/spaces/{spaceId}/airlocks/{airlockId}/versions/{version}/chat"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p2"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "dd087839bc678e53",
+     "operationName": "exchange hr/v1",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "21cf45aa4d597f6b"
+      }
+     ],
+     "startTime": 1792399413459061,
+     "duration": 8565647,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.airlock"
+      },
+      {
+       "key": "aisolate.airlock",
+       "type": "string",
+       "value": "hr"
+      },
+      {
+       "key": "aisolate.client",
+       "type": "string",
+       "value": "acme-chat"
+      },
+      {
+       "key": "aisolate.figures.computed",
+       "type": "string",
+       "value": "0"
+      },
+      {
+       "key": "aisolate.figures.mismatch",
+       "type": "string",
+       "value": "0"
+      },
+      {
+       "key": "aisolate.figures.sourced",
+       "type": "string",
+       "value": "1"
+      },
+      {
+       "key": "aisolate.figures.unsourced",
+       "type": "string",
+       "value": "0"
+      },
+      {
+       "key": "aisolate.outcome",
+       "type": "string",
+       "value": "answered"
+      },
+      {
+       "key": "aisolate.revision",
+       "type": "string",
+       "value": "594b56a06935"
+      },
+      {
+       "key": "aisolate.space",
+       "type": "string",
+       "value": "hr-acme"
+      },
+      {
+       "key": "aisolate.version",
+       "type": "string",
+       "value": "v1"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p2"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "ac78b0dd621b1feb",
+     "operationName": "admission",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "dd087839bc678e53"
+      }
+     ],
+     "startTime": 1792399413459091,
+     "duration": 40,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.airlock"
+      },
+      {
+       "key": "aisolate.admitted",
+       "type": "string",
+       "value": "true"
+      },
+      {
+       "key": "aisolate.airlock",
+       "type": "string",
+       "value": "hr"
+      },
+      {
+       "key": "aisolate.revision",
+       "type": "string",
+       "value": "594b56a06935"
+      },
+      {
+       "key": "aisolate.space",
+       "type": "string",
+       "value": "hr-acme"
+      },
+      {
+       "key": "aisolate.version",
+       "type": "string",
+       "value": "v1"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p2"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "53ebc70baa68ff26",
+     "operationName": "Read HR documents",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "dd087839bc678e53"
+      }
+     ],
+     "startTime": 1792399413459331,
+     "duration": 56047,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.airlock"
+      },
+      {
+       "key": "aisolate.airlock",
+       "type": "string",
+       "value": "hr"
+      },
+      {
+       "key": "aisolate.data_source",
+       "type": "string",
+       "value": "hr"
+      },
+      {
+       "key": "aisolate.handler",
+       "type": "string",
+       "value": "HrDocumentsContextPreparator"
+      },
+      {
+       "key": "aisolate.passages",
+       "type": "string",
+       "value": "2"
+      },
+      {
+       "key": "aisolate.revision",
+       "type": "string",
+       "value": "594b56a06935"
+      },
+      {
+       "key": "aisolate.space",
+       "type": "string",
+       "value": "hr-acme"
+      },
+      {
+       "key": "aisolate.stage",
+       "type": "string",
+       "value": "pre_llm"
+      },
+      {
+       "key": "aisolate.version",
+       "type": "string",
+       "value": "v1"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p2"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "0a88eb3bf870c5d1",
+     "operationName": "embedding",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "53ebc70baa68ff26"
+      }
+     ],
+     "startTime": 1792399413460333,
+     "duration": 12449,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.airlock"
+      },
+      {
+       "key": "gen_ai.usage.input_tokens",
+       "type": "string",
+       "value": "9"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p2"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "3d2b0698a722f696",
+     "operationName": "chat granite4.1:8b",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "dd087839bc678e53"
+      }
+     ],
+     "startTime": 1792399413515832,
+     "duration": 2104108,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.airlock"
+      },
+      {
+       "key": "gen_ai.operation.name",
+       "type": "string",
+       "value": "chat"
+      },
+      {
+       "key": "gen_ai.request.model",
+       "type": "string",
+       "value": "granite4.1:8b"
+      },
+      {
+       "key": "gen_ai.system",
+       "type": "string",
+       "value": "ollama"
+      },
+      {
+       "key": "gen_ai.usage.input_tokens",
+       "type": "string",
+       "value": "2829"
+      },
+      {
+       "key": "gen_ai.usage.output_tokens",
+       "type": "string",
+       "value": "53"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p2"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "4989febb723e2fd9",
+     "operationName": "tool read_records",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "dd087839bc678e53"
+      }
+     ],
+     "startTime": 1792399415620220,
+     "duration": 9469,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.airlock"
+      },
+      {
+       "key": "aisolate.airlock",
+       "type": "string",
+       "value": "hr"
+      },
+      {
+       "key": "aisolate.revision",
+       "type": "string",
+       "value": "594b56a06935"
+      },
+      {
+       "key": "aisolate.rows",
+       "type": "string",
+       "value": "1"
+      },
+      {
+       "key": "aisolate.space",
+       "type": "string",
+       "value": "hr-acme"
+      },
+      {
+       "key": "aisolate.tool",
+       "type": "string",
+       "value": "read_records"
+      },
+      {
+       "key": "aisolate.version",
+       "type": "string",
+       "value": "v1"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p2"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "1e0f617404eefad6",
+     "operationName": "http post /mcp",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "4989febb723e2fd9"
+      }
+     ],
+     "startTime": 1792399415625058,
+     "duration": 4052,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.toolserver"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "server"
+      }
+     ],
+     "logs": [],
+     "processID": "p1"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "18f3c7015db69b79",
+     "operationName": "governed query read_records",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "1e0f617404eefad6"
+      }
+     ],
+     "startTime": 1792399415626110,
+     "duration": 2145,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.toolserver"
+      },
+      {
+       "key": "aisolate.airlock",
+       "type": "string",
+       "value": "hr"
+      },
+      {
+       "key": "aisolate.data_source",
+       "type": "string",
+       "value": "hr"
+      },
+      {
+       "key": "aisolate.entity",
+       "type": "string",
+       "value": "hr.compensation"
+      },
+      {
+       "key": "aisolate.outcome",
+       "type": "string",
+       "value": "rows"
+      },
+      {
+       "key": "aisolate.revision",
+       "type": "string",
+       "value": "594b56a06935"
+      },
+      {
+       "key": "aisolate.rows",
+       "type": "int64",
+       "value": 1
+      },
+      {
+       "key": "aisolate.tool",
+       "type": "string",
+       "value": "read_records"
+      },
+      {
+       "key": "aisolate.version",
+       "type": "string",
+       "value": "v1"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p1"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "ca37c9288923845c",
+     "operationName": "sql hr",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "18f3c7015db69b79"
+      }
+     ],
+     "startTime": 1792399415627191,
+     "duration": 980,
+     "tags": [
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "aisolate.toolserver"
+      },
+      {
+       "key": "aisolate.airlock",
+       "type": "string",
+       "value": "hr"
+      },
+      {
+       "key": "aisolate.data_source",
+       "type": "string",
+       "value": "hr"
+      },
+      {
+       "key": "aisolate.entity",
+       "type": "string",
+       "value": "hr.compensation"
+      },
+      {
+       "key": "aisolate.revision",
+       "type": "string",
+       "value": "594b56a06935"
+      },
+      {
+       "key": "aisolate.version",
+       "type": "string",
+       "value": "v1"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p1"
+    },
+    {
+     "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+     "spanID": "00f1e2d3c4b5a697",
+     "operationName": "Check the totals",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "946b9e0f36ba5d0e7242812bc15b0b26",
+       "spanID": "dd087839bc678e53"
+      }
+     ],
+     "startTime": 1792399422024208,
+     "duration": 400,
+     "tags": [
+      {
+       "key": "aisolate.handler",
+       "type": "string",
+       "value": "TotalsVerifier"
+      },
+      {
+       "key": "aisolate.verdict",
+       "type": "string",
+       "value": "FAIL"
+      },
+      {
+       "key": "aisolate.stage",
+       "type": "string",
+       "value": "post_llm"
+      },
+      {
+       "key": "aisolate.space",
+       "type": "string",
+       "value": "hr-acme"
+      },
+      {
+       "key": "error",
+       "type": "bool",
+       "value": true
+      },
+      {
+       "key": "error.type",
+       "type": "string",
+       "value": "java.lang.IllegalStateException"
+      },
+      {
+       "key": "otel.status_code",
+       "type": "string",
+       "value": "ERROR"
+      },
+      {
+       "key": "otel.status_description",
+       "type": "string",
+       "value": "a description no span may carry"
+      }
+     ],
+     "logs": [],
+     "processID": "p2"
+    }
+   ],
+   "processes": {
+    "p1": {
+     "serviceName": "tool-server",
+     "tags": [
+      {
+       "key": "service.instance.id",
+       "type": "string",
+       "value": "ecc262b7-fa06-4c82-b5bd-359fa58d374f"
+      },
+      {
+       "key": "telemetry.sdk.language",
+       "type": "string",
+       "value": "python"
+      },
+      {
+       "key": "telemetry.sdk.name",
+       "type": "string",
+       "value": "opentelemetry"
+      },
+      {
+       "key": "telemetry.sdk.version",
+       "type": "string",
+       "value": "1.45.1"
+      }
+     ]
+    },
+    "p2": {
+     "serviceName": "aisolate-airlock",
+     "tags": [
+      {
+       "key": "service.instance.id",
+       "type": "string",
+       "value": "7b761474-2ac6-4c58-8a5f-a26cd33f3533"
+      },
+      {
+       "key": "telemetry.sdk.language",
+       "type": "string",
+       "value": "python"
+      },
+      {
+       "key": "telemetry.sdk.name",
+       "type": "string",
+       "value": "opentelemetry"
+      },
+      {
+       "key": "telemetry.sdk.version",
+       "type": "string",
+       "value": "1.45.1"
+      }
+     ]
+    }
+   },
+   "warnings": null
+  }
+ ],
+ "total": 0,
+ "limit": 0,
+ "offset": 0,
+ "errors": null
+}

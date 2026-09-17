@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(platform(libs.spring.boot.bom))
+    implementation(project(":libs:audit-report"))
     implementation(project(":libs:config"))
     implementation(project(":libs:identity"))
     implementation(project(":libs:plugins"))
@@ -21,6 +22,8 @@ dependencies {
     implementation(libs.fabric8.client)
     // A Python artifact's manifest, checked against docs/python-artifact.schema.json
     implementation(libs.json.schema.validator)
+    // The audit export's PDF; Apache-2.0, as every dependency's licence must be permissive
+    implementation(libs.pdfbox)
     runtimeOnly("org.postgresql:postgresql")
     // /actuator/prometheus, for the scraper the chart's NetworkPolicy rule admits
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")

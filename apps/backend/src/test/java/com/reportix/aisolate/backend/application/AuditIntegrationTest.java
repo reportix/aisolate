@@ -14,18 +14,28 @@ import com.reportix.aisolate.config.AuditIngestToken;
 import com.reportix.aisolate.identity.testing.Http;
 import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.catalina.connector.Connector;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -36,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ContextConfiguration;
+import org.w3c.dom.NodeList;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -363,14 +374,15 @@ class AuditIntegrationTest {
 
   @ParameterizedTest
   @CsvSource({
-    "andrew, 200, 200, 200, 1",
-    "auditor, 200, 200, 200, 1",
-    // A developer of hr-acme only: the list leaves this space out; its event and chain are 403
-    "jasmine, 200, 403, 403, 0",
-    "eric, 403, 403, 403, 0"
+    "andrew, 200, 200, 200, 200, 1",
+    "auditor, 200, 200, 200, 200, 1",
+    // A developer of hr-acme only: the list and the export leave this space out; its event,
+    // chain and an export of it are 403
+    "jasmine, 200, 403, 403, 403, 0",
+    "eric, 403, 403, 403, 403, 0"
   })
   void givenAUser_whenReadingTheAudit_thenAllowedByRoleAndSpace(
-      String username, int list, int event, int verify, int seen) {
+      String username, int list, int event, int verify, int export, int seen) {
     // Arrange
     String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
     long id = JSON.readTree(ingest(token, line(space, airlock, "q")).body()).path("id").asLong();
@@ -381,17 +393,178 @@ class AuditIntegrationTest {
         Stream.of(
                 "/v1/audit/events",
                 "/v1/audit/events/" + id,
-                "/v1/audit/verify?space=" + space + "&airlock=" + airlock)
+                "/v1/audit/verify?space=" + space + "&airlock=" + airlock,
+                "/v1/audit/export?format=json&space=" + space,
+                "/v1/audit/events/" + id + "/export?format=json")
             .map(path -> send(path, user).statusCode())
             .toList();
     HttpResponse<String> listed = send("/v1/audit/events?trace_id=trace-" + space + "-q", user);
+    HttpResponse<String> exported = send("/v1/audit/export?format=json&q=" + space, user);
 
     // Assert
-    assertThat(statuses).containsExactly(list, event, verify);
+    // An event's export is read like the event itself
+    assertThat(statuses).containsExactly(list, event, verify, export, event);
     assertThat(questions(JSON.readTree(listed.body()))).hasSize(seen);
+    assertThat(JSON.readTree(exported.body()).path("events").size()).isEqualTo(seen);
   }
 
   // Export
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "json|application/json|json|{\"events\":",
+        "pdf|application/pdf|pdf|%PDF-",
+        "xbrl|application/xml|xbrl|<?xml"
+      })
+  void givenALine_whenExported_thenAFileOfTheFormatNamedForToday(
+      String format, String contentType, String extension, String marker) {
+    // Arrange
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    ingest(token, line(space, airlock, "salary"));
+
+    // Act
+    HttpResponse<byte[]> response = export("format=" + format + "&space=" + space);
+
+    // Assert
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.headers().firstValue("Content-Type").orElseThrow()).startsWith(contentType);
+    assertThat(response.headers().firstValue("Content-Disposition"))
+        .contains("attachment; filename=\"" + today() + "." + extension + "\"");
+    assertThat(new String(response.body(), StandardCharsets.ISO_8859_1)).startsWith(marker);
+  }
+
+  @Test
+  void givenMoreLinesThanAPage_whenExportedAsJson_thenEveryLineNewestFirstWithItsLink() {
+    // Arrange
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    IntStream.rangeClosed(1, 201).forEach(i -> ingest(token, line(space, airlock, "q" + i)));
+
+    // Act
+    JsonNode events = JSON.readTree(export("format=json&space=" + space).body()).path("events");
+
+    // Assert
+    assertThat(events.size()).isEqualTo(201);
+    assertThat(events.path(0).path("event").path("question").asString()).isEqualTo("q201");
+    assertThat(events.path(200).path("event").path("question").asString()).isEqualTo("q1");
+    assertThat(events.path(0).path("prev_hash").asString())
+        .isEqualTo(events.path(1).path("hash").asString());
+    assertThat(events.path(200).path("prev_hash").asString()).isEqualTo(AuditLine.GENESIS);
+  }
+
+  @Test
+  void givenASearchAndAPeriod_whenExportedAsPdf_thenItsHeadingAndABlockPerExchangeFound()
+      throws IOException {
+    // Arrange
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    for (String question : List.of("salary", "leave")) {
+      ingest(token, line(space, airlock, question));
+    }
+
+    // Act
+    byte[] pdf = export("format=pdf&space=" + space + "&q=SALARY&from=2026-10-18").body();
+
+    // Assert
+    String text;
+    try (PDDocument document = Loader.loadPDF(pdf)) {
+      text = new PDFTextStripper().getText(document);
+    }
+    assertThat(text)
+        .contains(
+            "AIsolate audit report",
+            "SALARY",
+            "2026-10-18 to now",
+            "by Audit Reader (auditor@example.com)",
+            "2026-10-18 09:11:57 UTC",
+            space + " / hr",
+            "elena@example.com",
+            "Your gross salary is 78,000 EUR.",
+            "read_my_records (1 row)",
+            "1,840 in, 212 out",
+            "6.1 s")
+        .doesNotContain("leave");
+  }
+
+  static Stream<Arguments> xbrlPeriods() {
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
+    return Stream.of(
+        arguments("&from=2026-10-01&to=2026-10-31", "2026-10-01", "2026-10-31"),
+        // Without bounds: from the oldest line's day to today
+        arguments("", "2026-10-18", today.toString()));
+  }
+
+  @ParameterizedTest
+  @MethodSource("xbrlPeriods")
+  void givenTwoExchanges_whenExportedAsXbrl_thenAContextPerExchangeAndToolCallOverThePeriod(
+      String bounds, String from, String to) throws Exception {
+    // Arrange
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    for (String question : List.of("salary", "leave")) {
+      ingest(token, line(space, airlock, question));
+    }
+
+    // Act
+    byte[] xml = export("format=xbrl&space=" + space + bounds).body();
+
+    // Assert
+    // A context per exchange and per tool call
+    assertThat(texts(xml, "startDate")).hasSize(4).containsOnly(from);
+    assertThat(texts(xml, "endDate")).hasSize(4).containsOnly(to);
+    // No AISOLATE_AUDIT_ENTITY: the install, by its public URL
+    assertThat(texts(xml, "identifier")).hasSize(4).containsOnly("aisolate");
+    assertThat(texts(xml, "ExchangeId"))
+        .containsExactlyInAnyOrder(
+            "trace-" + space + "-salary",
+            "trace-" + space + "-leave",
+            "trace-" + space + "-salary",
+            "trace-" + space + "-leave");
+    assertThat(texts(xml, "Space")).containsExactly(space, space);
+    assertThat(texts(xml, "ToolName")).containsExactly("read_my_records", "read_my_records");
+    assertThat(texts(xml, "RowsReturned")).containsExactly("1", "1");
+  }
+
+  @Test
+  void givenTwoExchanges_whenOneIsExportedAsXbrl_thenItsReportHoldsThatExchangeAlone()
+      throws Exception {
+    // Arrange
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    long salary =
+        JSON.readTree(ingest(token, line(space, airlock, "salary")).body()).path("id").asLong();
+    ingest(token, line(space, airlock, "leave"));
+
+    // Act
+    HttpResponse<byte[]> response =
+        Http.send(
+            Http.bearer(
+                    HttpRequest.newBuilder(
+                        URI.create(
+                            "http://localhost:"
+                                + port
+                                + "/v1/audit/events/"
+                                + salary
+                                + "/export?format=xbrl")),
+                    auditor())
+                .GET()
+                .build(),
+            HttpResponse.BodyHandlers.ofByteArray());
+
+    // Assert
+    assertThat(response.headers().firstValue("Content-Disposition"))
+        .contains("attachment; filename=\"aisolate-audit-event-" + salary + ".xbrl\"");
+    // Its exchange's context and its tool call's
+    assertThat(texts(response.body(), "ExchangeId"))
+        .containsExactly("trace-" + space + "-salary", "trace-" + space + "-salary");
+  }
+
+  @Test
+  void givenAnUnknownFormat_whenExported_then400() {
+    // Arrange / Act
+    HttpResponse<byte[]> response = export("format=csv");
+
+    // Assert
+    assertThat(response.statusCode()).isEqualTo(400);
+  }
 
   @ParameterizedTest
   @CsvSource({
@@ -465,6 +638,35 @@ class AuditIntegrationTest {
   /** The line's tool call as a failed one: no rows, its error category. */
   private static String failedWith(String error, String line) {
     return line.replace("\"rows\":1,", "\"rows\":null,\"error\":\"" + error + "\",");
+  }
+
+  /** The auditor's export, its bytes as sent. */
+  private HttpResponse<byte[]> export(String query) {
+    return Http.send(
+        Http.bearer(
+                HttpRequest.newBuilder(
+                    URI.create("http://localhost:" + port + "/v1/audit/export?" + query)),
+                auditor())
+            .GET()
+            .build(),
+        HttpResponse.BodyHandlers.ofByteArray());
+  }
+
+  /** The export's name, of today in UTC. */
+  private static String today() {
+    return "aisolate-audit-" + LocalDate.now(ZoneOffset.UTC);
+  }
+
+  /** The texts of the XML's elements of that local name, in document order. */
+  private static List<String> texts(byte[] xml, String name) throws Exception {
+    NodeList nodes =
+        DocumentBuilderFactory.newNSInstance()
+            .newDocumentBuilder()
+            .parse(new ByteArrayInputStream(xml))
+            .getElementsByTagNameNS("*", name);
+    return IntStream.range(0, nodes.getLength())
+        .mapToObj(i -> nodes.item(i).getTextContent())
+        .toList();
   }
 
   private static List<String> questions(JsonNode page) {

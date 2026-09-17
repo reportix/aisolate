@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -130,6 +131,29 @@ public class AuditService {
     boolean more = rows.size() > limit;
     List<AuditRepository.Row> shown = more ? rows.subList(0, limit) : rows;
     return new Page(shown, more ? String.valueOf(shown.getLast().id()) : null);
+  }
+
+  /**
+   * Every line {@link #list} finds for the search and the period, newest first, with its body: the
+   * export's. All in memory, as the PDF and the zip are built; stream if exports outgrow the heap.
+   */
+  public List<AuditRepository.Row> all(
+      String space, List<String> spaces, String search, String from, String to) {
+    List<AuditRepository.Row> rows = new ArrayList<>();
+    String cursor = null;
+    do {
+      Page page =
+          list(space, spaces, null, null, null, null, null, search, from, to, cursor, MAX_PAGE);
+      Map<Long, String> bodies =
+          bodies(page.events().stream().map(AuditRepository.Row::id).toList());
+      for (AuditRepository.Row r : page.events()) {
+        rows.add(
+            new AuditRepository.Row(
+                r.id(), r.receivedAt(), r.columns(), r.prevHash(), r.hash(), bodies.get(r.id())));
+      }
+      cursor = page.nextCursor();
+    } while (cursor != null);
+    return rows;
   }
 
   /**

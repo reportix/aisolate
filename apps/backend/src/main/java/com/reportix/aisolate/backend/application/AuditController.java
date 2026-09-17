@@ -1,15 +1,27 @@
 package com.reportix.aisolate.backend.application;
 
 import com.fasterxml.jackson.annotation.JsonRawValue;
+import com.reportix.aisolate.backend.domain.Creator;
+import com.reportix.aisolate.backend.domain.audit.AuditException;
+import com.reportix.aisolate.backend.domain.audit.AuditExport;
 import com.reportix.aisolate.backend.domain.audit.AuditLine;
 import com.reportix.aisolate.backend.domain.audit.AuditRepository;
 import com.reportix.aisolate.backend.domain.audit.AuditService;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +41,7 @@ import tools.jackson.databind.annotation.JsonNaming;
 public class AuditController {
 
   private final AuditService audit;
+  private final AuditExport exports;
   private final Access access;
 
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -98,6 +111,9 @@ public class AuditController {
     }
   }
 
+  /** The JSON export: each line as {@code GET /events/{id}} gives it, newest first. */
+  public record ExportDTO(List<EventDTO> events) {}
+
   @GetMapping("/events")
   @PreAuthorize(Access.AUDIT_READER)
   public PageDTO list(
@@ -135,6 +151,92 @@ public class AuditController {
     AuditRepository.Row row = audit.find(id);
     requireAudited(row.columns().space());
     return EventDTO.of(row);
+  }
+
+  /** Every line the list finds for the search and the period, as one file to download. */
+  @GetMapping("/export")
+  @PreAuthorize(Access.AUDIT_READER)
+  public ResponseEntity<?> export(
+      @AuthenticationPrincipal Jwt jwt,
+      @RequestParam String format,
+      @RequestParam(required = false) String space,
+      @RequestParam(required = false) String q,
+      @RequestParam(required = false) String from,
+      @RequestParam(required = false) String to) {
+    requireFormat(format);
+    requireAudited(space);
+    List<AuditRepository.Row> rows = audit.all(space, access.auditedSpaces(), q, from, to);
+    Instant now = Instant.now();
+    return file(
+        jwt,
+        format,
+        rows,
+        "aisolate-audit-" + LocalDate.ofInstant(now, ZoneOffset.UTC),
+        space,
+        q,
+        from,
+        to,
+        now);
+  }
+
+  /** One event alone, as one file to download: the report of that exchange or refusal. */
+  @GetMapping("/events/{id}/export")
+  @PreAuthorize(Access.AUDIT_READER)
+  public ResponseEntity<?> exportEvent(
+      @AuthenticationPrincipal Jwt jwt, @PathVariable long id, @RequestParam String format) {
+    requireFormat(format);
+    AuditRepository.Row row = audit.find(id);
+    String space = row.columns().space();
+    requireAudited(space);
+    return file(
+        jwt,
+        format,
+        List.of(row),
+        "aisolate-audit-event-" + id,
+        space,
+        null,
+        null,
+        null,
+        Instant.now());
+  }
+
+  private static void requireFormat(String format) {
+    if (!List.of("pdf", "json", "xbrl").contains(format)) {
+      throw new AuditException(HttpStatus.BAD_REQUEST, "format: pdf, json or xbrl");
+    }
+  }
+
+  private ResponseEntity<?> file(
+      Jwt jwt,
+      String format,
+      List<AuditRepository.Row> rows,
+      String name,
+      String space,
+      String q,
+      String from,
+      String to,
+      Instant now) {
+    return switch (format) {
+      case "json" ->
+          attachment(name + ".json", MediaType.APPLICATION_JSON)
+              .body(new ExportDTO(rows.stream().map(EventDTO::of).toList()));
+      case "pdf" -> {
+        String email = jwt.getClaimAsString("email");
+        String by = Creator.of(jwt.getClaims()).name() + (email == null ? "" : " (" + email + ")");
+        yield attachment(name + ".pdf", MediaType.APPLICATION_PDF)
+            .body(exports.pdf(rows, new AuditExport.Heading(space, q, from, to, now, by)));
+      }
+      default ->
+          attachment(name + ".xbrl", MediaType.APPLICATION_XML).body(exports.xbrl(rows, from, to));
+    };
+  }
+
+  private static ResponseEntity.BodyBuilder attachment(String filename, MediaType type) {
+    return ResponseEntity.ok()
+        .contentType(type)
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            ContentDisposition.attachment().filename(filename).build().toString());
   }
 
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

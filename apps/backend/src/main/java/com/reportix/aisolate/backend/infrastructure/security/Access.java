@@ -23,7 +23,7 @@ import org.springframework.web.context.request.RequestContextHolder;
  * expressions (ArchitectureTest).
  *
  * <p>The checks that read every space ({@link #developerAnywhere}, {@link #developedSpaces}, so the
- * audit reads) list them once per request: a handler runs one such check in its
+ * audit, trace and metrics reads) list them once per request: a handler runs one such check in its
  * {@code @PreAuthorize} and again in its body.
  */
 @Component("access")
@@ -92,6 +92,7 @@ public class Access {
     return has(AUDITOR_AUTHORITY) ? null : developedSpaces();
   }
 
+  /** The spaces whose traces the caller reads; null for every space (the admin). */
   public List<String> developedSpaces() {
     return admin() ? null : listed().stream().filter(this::develops).map(Space::id).toList();
   }
