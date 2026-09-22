@@ -16,7 +16,7 @@ import java.util.zip.ZipOutputStream;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
-/** A Python project's artifact, editable per test. */
+/** A Python project's artifact as {@code python -m aisolate build} writes it, editable per test. */
 public final class PythonArtifacts {
 
   private static final JsonMapper JSON = JsonMapper.builder().build();

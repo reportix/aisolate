@@ -1,6 +1,8 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 
 plugins {
+    // check and build at the root, so pythonTest runs with them
+    base
     alias(libs.plugins.spring.boot) apply false
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.lombok) apply false
@@ -76,3 +78,35 @@ configure(subprojects.filter { it.childProjects.isEmpty() }) {
         }
     }
 }
+
+// The Python suites: each module's pytest under its own uv.lock.
+// A module without tests/ yet is skipped; a failing test fails the build.
+interface PythonExecOps {
+    @get:javax.inject.Inject
+    val execOps: org.gradle.process.ExecOperations
+}
+val pythonExec = objects.newInstance<PythonExecOps>()
+val pythonTest = tasks.register("pythonTest") {
+    group = "verification"
+    description = "Runs the Python modules' tests with uv."
+    val root = rootDir
+    doLast {
+        val path = System.getenv("PATH").orEmpty().split(File.pathSeparator)
+        if (path.none { File(it, "uv").canExecute() || File(it, "uv.exe").canExecute() }) {
+            throw GradleException("pythonTest needs uv on the PATH: https://docs.astral.sh/uv/getting-started/installation/")
+        }
+        fun pytest(project: String, vararg args: String) {
+            // --frozen with a lock: the build never rewrites one
+            val frozen = if (File(root, "$project/uv.lock").isFile) listOf("--frozen") else listOf()
+            logger.lifecycle("pytest ${args.joinToString(" ").ifEmpty { project }}")
+            pythonExec.execOps.exec {
+                workingDir = if (args.isEmpty()) File(root, project) else root
+                commandLine(listOf("uv", "run", "--project", File(root, project).path) + frozen + "pytest" + args)
+            }
+        }
+        for (module in listOf("libs/sdk-python")) {
+            if (File(root, "$module/tests").isDirectory) pytest(module) else logger.lifecycle("pytest $module: no tests yet, skipped")
+        }
+    }
+}
+tasks.named("check") { dependsOn(pythonTest) }

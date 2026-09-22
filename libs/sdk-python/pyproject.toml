@@ -1,0 +1,29 @@
+[project]
+name = "aisolate"
+version = "0.1.0"
+description = "The AIsolate SDK: tools, context preparators, memories and verifiers of an AIsolate project in Python."
+license = "AGPL-3.0-only"
+requires-python = ">=3.13,<3.14"
+# No dependencies on purpose, like the Java SDK: a project reaches data only through the governed
+# query and a data source the runtime opens, never through a driver the SDK would pin.
+dependencies = []
+
+[project.scripts]
+aisolate-build = "aisolate.build:main"
+
+[dependency-groups]
+dev = ["pytest==9.1.1"]
+
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aisolate"]
+
+[tool.uv]
+# Modules install this one from its path, not editable: rebuild it when a source file changes.
+cache-keys = [{ file = "pyproject.toml" }, { file = "src/**/*.py" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

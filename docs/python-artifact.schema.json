@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aisolate.dev/schemas/python-artifact-manifest-1.json",
   "title": "aisolate-manifest.json",
-  "description": "What a Python project's artifact contains, read by the backend without running code.",
+  "description": "What a Python project's artifact contains, written by `python -m aisolate build` and read by the backend without running code.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "language", "sdk", "python", "arch", "package", "plugins", "tools", "entities", "handlers", "rules", "vendored"],

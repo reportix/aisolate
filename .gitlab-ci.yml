@@ -40,6 +40,21 @@ gradle-test:
     reports:
       junit: "**/build/test-results/*/TEST-*.xml"
 
+# The Python modules' and templates' tests (./gradlew pythonTest); uv brings Python 3.13.
+python-test:
+  stage: test
+  image: eclipse-temurin:25-jdk
+  variables:
+    UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+  cache:
+    key: uv-$CI_COMMIT_REF_SLUG
+    paths: [.uv-cache, .gradle-home/caches, .gradle-home/wrapper]
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends ca-certificates curl
+    - curl -LsSf https://astral.sh/uv/0.13.5/install.sh | sh
+    - export PATH="$HOME/.local/bin:$PATH"
+  script: ./gradlew pythonTest --console=plain
+
 # Vulnerabilities in locked dependencies (gradle.lockfile) and leaked secrets.
 trivy:
   stage: scan
