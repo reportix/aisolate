@@ -1,0 +1,41 @@
+[project]
+name = "aisolate-runtime"
+version = "0.1.0"
+description = "What both Python runtimes share: configuration, tokens and admission, the project artifact, data sources, telemetry."
+license = "AGPL-3.0-only"
+requires-python = ">=3.13,<3.14"
+# The runtime's pinned set: exact versions, permissive licenses only.
+dependencies = [
+    "aisolate",
+    "anyio==4.15.1",
+    "httpx2==2.16.0",
+    "opentelemetry-api==1.45.1",
+    "opentelemetry-exporter-otlp-proto-common==1.45.1",
+    "opentelemetry-sdk==1.45.1",
+    "pg8000==1.31.5",
+    "prometheus-client==0.26.0",
+    "pyjwt[crypto]==2.15.1",
+    "pyyaml==6.0.3",
+    "starlette==1.9.0",
+    "uvicorn==0.54.0",
+]
+
+[tool.uv.sources]
+aisolate = { path = "../sdk-python" }
+
+[dependency-groups]
+dev = ["pytest==9.1.1"]
+
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aisolate_runtime"]
+
+[tool.uv]
+# Modules install this one from its path, not editable: rebuild it when a source file changes.
+cache-keys = [{ file = "pyproject.toml" }, { file = "src/**/*.py" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

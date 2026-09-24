@@ -1,0 +1,21 @@
+{
+  "description": "Two pods' documents ConfigMaps and the revision the Java controller rendered for each (apps/controller/src/test/resources/expected/release.yaml).",
+  "releases": [
+    {
+      "revision": "b0000bb01ada",
+      "files": {
+        "Global-aisolate.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Global\nmetadata:\n  name: aisolate\nspec:\n  llms:\n  - id: granite\n    provider: ollama\n    url: https://models.example.com\n    model: granite4.1:8b\n  - id: nomic\n    provider: ollama\n    url: http://host.minikube.internal:11434\n    model: nomic-embed-text\n  dataSources:\n  - id: audit_log\n    url: jdbc:postgresql://acme-db.aisolate.svc:5432/audit\n    secretRef: aisolate-ds-audit-log-j1k2l3\n",
+        "Space-hr-acme.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Space\nmetadata:\n  name: hr-acme\nspec:\n  displayName: HR Acme\n  description: Acme people and compensation data for the HR assistant.\n  access:\n    users:\n    - eric@example.com\n    - nora@example.com\n  llms:\n  - id: qwen\n    provider: ollama\n    url: https://models.example.com\n    model: qwen3.6:27b-q4_K_M\n  dataSources:\n  - id: acme_hr\n    url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr\n    secretRef: hr-acme-ds-acme-hr-a1b2c3\n",
+        "Airlock-hr-assistant.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Airlock\nmetadata:\n  name: hr-assistant\nspec:\n  space: hr-acme\n  displayName: Acme HR assistant\n  description: \"Answers people, pay and HR document questions.\"\n  access:\n    users:\n    - eric@example.com\n    - nora@example.com\n    callers:\n    - '*'\n  preLLM:\n    contextPreparator:\n      handlers:\n      - HrDocumentsContextPreparator\n    conversationMemory:\n      handlers:\n      - SessionMemory\n  llm: granite\n  prompt: |\n    You are the Acme HR assistant. All amounts are in EUR.\n  tools:\n  - read_records\n  - aggregate_records\n  postLLM:\n    answerVerifier:\n      handlers:\n      - SalaryVerifier\n  llms:\n  - id: nomic\n    provider: ollama\n    url: http://host.minikube.internal:11434\n    model: nomic-embed-text:v1.5\n  dataSources:\n  - id: hr-documents\n    url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr\n    secretRef: hr-acme-hr-assistant-ds-hr-documents-d4e5f6\n  jar:\n    digest: sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f\n    tools:\n    - read_records\n    - aggregate_records\n"
+      }
+    },
+    {
+      "revision": "155bdf605ab8",
+      "files": {
+        "Global-aisolate.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Global\nmetadata:\n  name: aisolate\nspec:\n  llms:\n  - id: granite\n    provider: ollama\n    url: https://models.example.com\n    model: granite4.1:8b\n  - id: nomic\n    provider: ollama\n    url: http://host.minikube.internal:11434\n    model: nomic-embed-text\n  dataSources:\n  - id: audit_log\n    url: jdbc:postgresql://acme-db.aisolate.svc:5432/audit\n    secretRef: aisolate-ds-audit-log-j1k2l3\n",
+        "Space-hr-acme.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Space\nmetadata:\n  name: hr-acme\nspec:\n  displayName: HR Acme\n  description: Acme people and compensation data for the HR assistant.\n  access:\n    users:\n    - eric@example.com\n    - nora@example.com\n  llms:\n  - id: qwen\n    provider: ollama\n    url: https://models.example.com\n    model: qwen3.6:27b-q4_K_M\n  dataSources:\n  - id: acme_hr\n    url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr\n    secretRef: hr-acme-ds-acme-hr-a1b2c3\n",
+        "Airlock-founders-finance.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Airlock\nmetadata:\n  name: founders-finance\nspec:\n  space: hr-acme\n  displayName: Founders finance\n  access:\n    users:\n    - nora@example.com\n    callers:\n    - '*'\n  llm: qwen\n  prompt: |\n    You answer the founders only.\n  tools: []\n  llms: []\n  dataSources:\n  - id: acme_hr\n    url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr\n    secretRef: hr-acme-founders-finance-ds-acme-hr-g7h8i9\n  jar:\n    digest: sha256:72b809e39ab62fe6d73761c68268c80699a7b45bac07f07be1ea02646e09e412\n    tools:\n    - forecast\n"
+      }
+    }
+  ]
+}

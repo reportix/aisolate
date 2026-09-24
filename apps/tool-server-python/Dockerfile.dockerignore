@@ -1,0 +1,12 @@
+# Context is the repository root; only what the image installs.
+*
+!libs/sdk-python/pyproject.toml
+!libs/sdk-python/src/**
+!libs/runtime-python/pyproject.toml
+!libs/runtime-python/uv.lock
+!libs/runtime-python/check_licenses.py
+!libs/runtime-python/src/**
+!apps/tool-server-python/pyproject.toml
+!apps/tool-server-python/uv.lock
+!apps/tool-server-python/src/**
+**/__pycache__
