@@ -1,0 +1,10 @@
+# Build context: the repository root; only what the image is built from.
+*
+!libs/sdk-python/pyproject.toml
+!libs/sdk-python/src/**
+!libs/runtime-python/pyproject.toml
+!libs/runtime-python/src/**
+!apps/airlock-python/pyproject.toml
+!apps/airlock-python/uv.lock
+!apps/airlock-python/src/**
+**/__pycache__

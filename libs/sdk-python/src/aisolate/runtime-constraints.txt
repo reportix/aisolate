@@ -1,5 +1,7 @@
-# The runtime's pinned set: what the Python images install. A project's build resolves its
-# own dependencies against it.
+# The runtime's pinned set: what the Python images install, as
+# uv export --project apps/<image> --frozen --no-dev --no-hashes --no-header --no-annotate --no-emit-project --no-emit-local
+# prints it for apps/airlock-python and apps/tool-server-python. A project's build resolves its own
+# dependencies against it; tests/test_build.py fails when it drifts from the images' uv.lock files.
 annotated-types==0.8.0
 anyio==4.15.1
 asn1crypto==1.5.1

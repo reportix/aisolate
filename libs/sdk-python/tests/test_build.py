@@ -1,4 +1,6 @@
 import json
+import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -401,3 +403,23 @@ def test_given_tabulate_from_pypi_when_built_then_vendored(project: Path) -> Non
     # Assert
     assert "vendor/tabulate/__init__.py" in names
     assert vendored == [{"name": "tabulate", "version": "0.10.0"}]
+
+
+def test_given_runtime_images_locks_when_exported_then_the_sdk_constraints_match() -> None:
+    # Arrange
+    root = Path(__file__).resolve().parents[3]
+    uv = os.environ.get("UV") or shutil.which("uv")
+    locked: set[tuple[str, str]] = set()
+    for image in ("apps/airlock-python", "apps/tool-server-python"):
+        exported = subprocess.run(
+            [uv, "export", "--project", str(root / image), "--frozen", "--no-dev", "--no-hashes", "--no-header",
+             "--no-annotate", "--no-emit-project", "--no-emit-local"], capture_output=True, text=True, check=True).stdout
+        locked |= {build._pin(line) for line in exported.splitlines() if line.strip() and not line.startswith(("#", "-"))}
+
+    # Act
+    shipped = {build._pin(line) for line in build.CONSTRAINTS.read_text().splitlines()
+               if line.strip() and not line.startswith("#")}
+
+    # Assert
+    assert shipped == locked, "regenerate src/aisolate/runtime-constraints.txt as its header says"
+    assert len({name for name, _ in locked}) == len(locked), "the two images lock one package at two versions"

@@ -1,0 +1,39 @@
+[project]
+name = "aisolate-airlock"
+version = "0.1.0"
+description = "The AIsolate airlock for Python projects: one airlock per pod, as the Java airlock."
+license = "AGPL-3.0-only"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "aisolate",
+    "aisolate-runtime",
+    "starlette==1.9.0",
+    "uvicorn==0.54.0",
+    "sse-starlette==3.5.1",
+    "mcp==2.3.0",
+    "httpx2==2.16.0",
+    "anyio==4.15.1",
+    "opentelemetry-api==1.45.1",
+    "opentelemetry-sdk==1.45.1",
+    "opentelemetry-exporter-otlp-proto-common==1.45.1",
+    "prometheus-client==0.26.0",
+    "PyYAML==6.0.3",
+]
+
+[dependency-groups]
+dev = ["pytest==9.1.1"]
+
+[tool.uv.sources]
+aisolate = { path = "../../libs/sdk-python" }
+aisolate-runtime = { path = "../../libs/runtime-python" }
+
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aisolate_airlock"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]

@@ -104,7 +104,7 @@ val pythonTest = tasks.register("pythonTest") {
                 commandLine(listOf("uv", "run", "--project", File(root, project).path) + frozen + "pytest" + args)
             }
         }
-        for (module in listOf("libs/sdk-python", "libs/runtime-python", "apps/tool-server-python")) {
+        for (module in listOf("libs/sdk-python", "libs/runtime-python", "apps/tool-server-python", "apps/airlock-python")) {
             if (File(root, "$module/tests").isDirectory) pytest(module) else logger.lifecycle("pytest $module: no tests yet, skipped")
         }
     }
