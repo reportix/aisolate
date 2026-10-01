@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
  * The airlocks of a space as the AIsolate UI edits them, under {@code /spaces/{space}/airlocks}.
  * Every write is applied to the cluster before it answers ({@link ClusterHeader}). Airlock ids are
  * unique across spaces, which keeps the airlock pods' paths flat. What runs ({@code llm}, {@code
- * prompt}, the handlers, the tools, the code) comes from the deploy, never from here.
+ * prompt}, the handlers, the tools, the code) comes from {@code aisolate deploy}, never from here.
  */
 @Tag(name = "Airlocks", description = "The AIsolate UI's airlocks under /spaces/{space}/airlocks.")
 @RestController

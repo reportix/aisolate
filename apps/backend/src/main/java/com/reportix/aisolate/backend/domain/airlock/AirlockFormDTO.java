@@ -20,9 +20,10 @@ import tools.jackson.databind.json.JsonMapper;
  * the context preparators and the memory handlers; the LLM that answers, by id, with the prompt and
  * the tools the model may call; after the model, the verifiers; and its own LLMs and data sources,
  * beside the space's and the global ones, an id of theirs replacing it. The UI's form carries the
- * first part; the deploy brings what runs, with the code. Tools and handlers are its code's, listed
- * by tool name and class simple name, and checked against the code by {@link AirlockService}.
- * Stored flat as the airlock's definition JSON, the id, name and description in their own columns.
+ * first part; {@code aisolate deploy} brings what runs, with the code. Tools and handlers are its
+ * code's, listed by tool name and class simple name, and checked against the code by {@link
+ * AirlockService}. Stored flat as the airlock's definition JSON, the id, name and description in
+ * their own columns.
  */
 @With
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -118,7 +119,7 @@ public record AirlockFormDTO(
 
   /**
    * This form with what runs as {@code stored} holds it: the AIsolate UI's form never changes the
-   * handlers, the LLM, the prompt or the tools, which the deploy brings with the code.
+   * handlers, the LLM, the prompt or the tools, which {@code aisolate deploy} brings with the code.
    *
    * @param stored null for none, a new airlock's
    */

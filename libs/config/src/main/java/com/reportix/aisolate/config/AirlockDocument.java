@@ -4,13 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
 /**
- * An airlock as the AIsolate UI creates it and a deploy completes it: the space it belongs to, its
- * name, its description, who may ask it, and, in the order an exchange runs, what runs before the
- * model, the LLM that answers with its prompt and tools, what runs after, and the LLMs and data
- * sources its code reads beside the space's and the global ones. Handlers and tools are listed by
- * class simple name and tool name, and are its code's; a data source's credentials never sit in a
- * document. Without an {@code llm} or a {@code prompt} it is valid and runs nothing: the first
- * deploy brings them.
+ * An airlock as the AIsolate UI creates it and {@code aisolate deploy} completes it: the space it
+ * belongs to, its name, its description, who may ask it, and, in the order an exchange runs, what
+ * runs before the model, the LLM that answers with its prompt and tools, what runs after, and the
+ * LLMs and data sources its code reads beside the space's and the global ones. Handlers and tools
+ * are listed by class simple name and tool name, and are its code's; a data source's credentials
+ * never sit in a document. Without an {@code llm} or a {@code prompt} it is valid and runs nothing:
+ * the first deploy brings them.
  */
 public record AirlockDocument(Metadata metadata, Spec spec) {
 

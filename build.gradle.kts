@@ -79,7 +79,8 @@ configure(subprojects.filter { it.childProjects.isEmpty() }) {
     }
 }
 
-// The Python suites: each module's pytest under its own uv.lock.
+// The Python suites: each module's pytest under its own uv.lock, and the Python templates' tests with
+// the SDK's environment (a template's own libs/aisolate-sdk exists only in a created project).
 // A module without tests/ yet is skipped; a failing test fails the build.
 interface PythonExecOps {
     @get:javax.inject.Inject
@@ -88,7 +89,7 @@ interface PythonExecOps {
 val pythonExec = objects.newInstance<PythonExecOps>()
 val pythonTest = tasks.register("pythonTest") {
     group = "verification"
-    description = "Runs the Python modules' tests with uv."
+    description = "Runs the Python modules' and the Python templates' tests with uv."
     val root = rootDir
     doLast {
         val path = System.getenv("PATH").orEmpty().split(File.pathSeparator)
@@ -106,6 +107,10 @@ val pythonTest = tasks.register("pythonTest") {
         }
         for (module in listOf("libs/sdk-python", "libs/runtime-python", "apps/tool-server-python", "apps/airlock-python")) {
             if (File(root, "$module/tests").isDirectory) pytest(module) else logger.lifecycle("pytest $module: no tests yet, skipped")
+        }
+        val templates = File(root, "apps/cli/src/main/templates-python")
+        templates.listFiles { f -> File(f, "pyproject.toml").isFile }.orEmpty().sorted().forEach {
+            pytest("libs/sdk-python", it.relativeTo(root).path)
         }
     }
 }

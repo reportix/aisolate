@@ -1,0 +1,41 @@
+# The contracts airlock, in the order an exchange runs. The space it deploys into is
+# AISOLATE_SPACE in .env; the space is created in the AIsolate UI, where it lists its users. The
+# LLMs and data sources are the admin's, defined for all of AIsolate or on the space or the
+# airlock: this file names them by id and holds no credential.
+# The Airlock below is created or updated on every deploy: each field it writes replaces
+# the airlock's, a field left out keeps what the AIsolate UI set.
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata:
+  name: ${AIRLOCK}
+spec:
+  displayName: HR contracts
+  description: "Employment contracts: position, pay, working time, notice and confidentiality."
+  access:
+    users: [employee@acme.example]   # its own users, besides the space's
+
+  # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
+  preLLM:
+    contextPreparator:
+      handlers: [ContractsContextPreparator]
+    conversationMemory:
+      handlers: [SessionMemory]
+
+  # LLM, the model writes the answer: the LLM granite, by id. The admin defines the LLMs, for
+  # all of AIsolate or on the space or the airlock; the code names one the same way, as the
+  # context preparator's aisolate.llm("nomic") does to embed. No tools: the contracts are all
+  # it reads.
+  llm: granite
+  prompt: >-
+    You are the Acme contracts assistant. Answer only from the employment contract passages
+    provided to you; each passage's title names whose contract it is. A question about my
+    contract (me, my, I) is about the asking user's own contract, the passages marked as theirs;
+    a question about a person is answered only from that person's contract. Quote the words
+    that answer, copied from the passage character for character: the text holds no digit, and
+    every number is only inside a quote. When no passage answers, reply exactly: I don't know.
+    Your reply is only the JSON object of the answer format, for example
+    {"text":"After the probation period your notice period is {q1}.","figures":[],"quotes":[{"id":"q1","passage":{"evidence":"ev-1","index":2},"text":"three months to the end of a calendar month"}],"dont_know":false}.
+
+  # No dataSources and no credentials: the code names its database by id, a handler with
+  # aisolate.dataSource(id), here hr. The admin defines it, with its role's password, for all of
+  # AIsolate or on the space or the airlock.

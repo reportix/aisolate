@@ -25,7 +25,33 @@ dependencies {
     testImplementation("org.assertj:assertj-core")
 }
 
+// The templates' Java is the sample code customers start from: compiled and tested against this
+// SDK in every build, offline, so an SDK change that breaks it fails here and not in a new project.
+// Their packages differ, so all templates share one source set.
+val templates: SourceSet = sourceSets.create("templates") {
+    java.srcDirs(
+        listOf("company-hr").flatMap { template ->
+            listOf("main", "test").map { "src/main/templates/$template/src/$it/java" }
+        },
+    )
+}
+dependencies {
+    "templatesImplementation"(project(":libs:sdk"))
+    "templatesImplementation"(platform(libs.spring.boot.bom))
+    "templatesImplementation"("org.junit.jupiter:junit-jupiter")
+    "templatesImplementation"("org.assertj:assertj-core")
+    "templatesRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+}
+val templateTest = tasks.register<Test>("templateTest") {
+    description = "Runs the templates' own tests against this checkout's SDK."
+    group = "verification"
+    testClassesDirs = templates.output.classesDirs
+    classpath = templates.runtimeClasspath
+}
+
 tasks.test {
+    // `test` is what CI runs.
+    dependsOn(templateTest)
     // The tests pin their endpoint and space in the project's .env; a developer's shell must not
     // override them.
     environment = environment.filterKeys { it != "AISOLATE_ENDPOINT" && it != "AISOLATE_SPACE" }
@@ -62,6 +88,49 @@ public final class VersionConstants {
 }
 tasks.named("compileJava") { dependsOn("generateVersionConstants") }
 
+// The templates a `create` can extract, zipped from src/main/templates/<name>/**, and the SDK jar a
+// project compiles against, both generated resources so a fresh checkout builds them.
+val generatedResources = layout.buildDirectory.dir("generated-resources")
+sourceSets["main"].resources.srcDir(generatedResources)
+tasks.register<Zip>("createTemplateZip") {
+    from(layout.projectDirectory.dir("src/main/templates"))
+    includeEmptyDirs = true
+    destinationDirectory.set(generatedResources)
+    archiveFileName.set("templates.zip")
+    setMetadataCharset("UTF-8")
+}
+// The Python templates, from src/main/templates-python/<name>/**, without what their test runs leave.
+val pythonLeftovers =
+    listOf("**/__pycache__/**", "**/*.pyc", "**/.pytest_cache/**", "**/.venv/**", "**/build/**", "**/libs/aisolate-sdk/**", "**/uv.lock")
+tasks.register<Zip>("createPythonTemplateZip") {
+    from(layout.projectDirectory.dir("src/main/templates-python")) {
+        exclude(pythonLeftovers)
+    }
+    includeEmptyDirs = true
+    destinationDirectory.set(generatedResources)
+    archiveFileName.set("templates-python.zip")
+    setMetadataCharset("UTF-8")
+}
+// The Python SDK a project's pyproject points to (libs/aisolate-sdk): its pyproject and package only.
+tasks.register<Zip>("createPythonSdkZip") {
+    from(rootProject.file("libs/sdk-python")) {
+        include("pyproject.toml", "src/aisolate/**")
+        exclude(pythonLeftovers)
+        into("aisolate-sdk")
+    }
+    destinationDirectory.set(generatedResources)
+    archiveFileName.set("aisolate-sdk-python.zip")
+}
+// The bundled SDK jar is what a project compiles against.
+tasks.register<Copy>("copySdkJar") {
+    from(project(":libs:sdk").tasks.named("jar"))
+    into(generatedResources.map { it.dir("sdk") })
+    rename { "aisolate-sdk.jar" }
+}
+tasks.named("processResources") {
+    dependsOn("createTemplateZip", "createPythonTemplateZip", "createPythonSdkZip", "copySdkJar")
+}
+
 graalvmNative {
     metadataRepository { enabled.set(true) }
     binaries {
@@ -70,6 +139,7 @@ graalvmNative {
             mainClass.set("com.reportix.aisolate.cli.AIsolateCli")
             sharedLibrary.set(false)
             buildArgs.add("-J-Xmx4g")
+            buildArgs.add("-H:IncludeResources=templates.zip|templates-python.zip|aisolate-sdk-python.zip|sdk/.*")
         }
     }
 }

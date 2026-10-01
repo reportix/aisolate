@@ -18,11 +18,11 @@ import tools.jackson.databind.node.StringNode;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
- * A project's documents as a deploy sends them: the cluster's documents, except that a data source
- * holds a {@code username} and {@code password} instead of a {@code secretRef}. Any string value
- * may read a variable, {@code ${NAME}} or {@code ${NAME:-fallback}} (the project's {@code .env},
- * the shell winning), the same rules as {@code aisolate.yaml}. Splitting yields the documents the
- * cluster stores and the credentials the backend turns into Secrets.
+ * A project's documents as {@code aisolate deploy} sends them: the cluster's documents, except that
+ * a data source holds a {@code username} and {@code password} instead of a {@code secretRef}. Any
+ * string value may read a variable, {@code ${NAME}} or {@code ${NAME:-fallback}} (the project's
+ * {@code .env}, the shell winning), the same rules as {@code aisolate.yaml}. Splitting yields the
+ * documents the cluster stores and the credentials the backend turns into Secrets.
  */
 public final class ProjectDocuments {
 

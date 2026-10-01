@@ -17,6 +17,22 @@ class AIsolateCliTest {
   private final ByteArrayOutputStream out = new ByteArrayOutputStream();
   private final ByteArrayOutputStream err = new ByteArrayOutputStream();
 
+  /** The banner prints before picocli dispatches, so one command stands for all of them. */
+  @Test
+  void givenNoProject_whenBuildExecuted_thenBannerThenTheErrorAndExit1() {
+    // Arrange
+    String[] args = {"build", "-p=" + empty};
+
+    // Act
+    int exit = execute(args);
+
+    // Assert
+    assertThat(err.toString(StandardCharsets.UTF_8))
+        .startsWith("╭─ AIsolate v" + VersionConstants.VERSION + " ")
+        .contains("no aisolate.yaml in ");
+    assertThat(exit).isEqualTo(1);
+  }
+
   @Test
   void givenVersionOption_whenExecuted_thenStdoutIsTheVersionLineAlone() {
     // Arrange

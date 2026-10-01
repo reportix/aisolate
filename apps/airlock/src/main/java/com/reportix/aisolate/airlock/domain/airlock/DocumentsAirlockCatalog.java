@@ -40,7 +40,7 @@ public final class DocumentsAirlockCatalog implements AirlockCatalog {
     }
   }
 
-  /** Blank llm or prompt: nothing to run until a deploy brings them. */
+  /** Blank llm or prompt: nothing to run until aisolate deploy brings them. */
   private static boolean runs(AirlockDocument airlock) {
     return !blank(airlock.spec().llm()) && !blank(airlock.spec().prompt());
   }

@@ -106,7 +106,7 @@ def test_given_python_code_when_loaded_then_language_read(tmp_path: Path) -> Non
 @pytest.mark.parametrize("missing", ["  llm: granite\n", "  prompt: |\n    You are the Acme HR assistant. All amounts are in EUR.\n"],
                          ids=["no-llm", "no-prompt"])
 def test_given_airlock_without_llm_or_prompt_when_loaded_then_valid_but_not_served(tmp_path: Path, missing: str) -> None:
-    # Arrange: a deploy brings them; until then the airlock runs nothing
+    # Arrange: aisolate deploy brings them; until then the airlock runs nothing
     files = _with_airlock(lambda t: t.replace(missing, ""))
     assert files[AIRLOCK_FILE] != RENDERED["releases"][0]["files"][AIRLOCK_FILE]
 

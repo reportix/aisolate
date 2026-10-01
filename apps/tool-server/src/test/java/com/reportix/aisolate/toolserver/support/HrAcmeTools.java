@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A compensation entity, as an HR plugin declares it: the entity behind the seeded demo database in
- * {@code docker/postgres/acme} and the two tools, so the tests need no other repository on the
- * classpath. Found through {@code META-INF/services}.
+ * Test copy of the compensation entity of the {@code company-hr} template's plugin: the entity
+ * behind the seeded demo database in {@code docker/postgres/acme} and the two tools, so the tests
+ * need no other repository on the classpath. Found through {@code META-INF/services}.
  */
 public final class HrAcmeTools implements ToolPlugin {
 

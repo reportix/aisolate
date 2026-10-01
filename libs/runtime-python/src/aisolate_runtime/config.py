@@ -275,7 +275,7 @@ def _client_problems(clients: list[str | None] | None) -> list[str]:
 
 def _resolve(documents: dict[str, dict[str, Any]], file_of: dict[str, str], problems: list[str]) -> dict[str, Airlock]:
     """The references the pods must not serve without, and every airlock that runs resolved. One without an
-    llm or a prompt is valid but runs nothing (a deploy brings them): left out, never refused."""
+    llm or a prompt is valid but runs nothing (``aisolate deploy`` brings them): left out, never refused."""
     spaces = documents["Space"]
     global_spec = _get(documents["Global"].get(GLOBAL), "spec") or {}  # none reads as empty
     airlocks = {}

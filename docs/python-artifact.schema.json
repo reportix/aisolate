@@ -11,7 +11,7 @@
     "language": {"const": "python"},
     "sdk": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$", "description": "The aisolate SDK version the build imported."},
     "python": {"type": "string", "pattern": "^3\\.[0-9]+$", "description": "The Python minor the build ran on; the runtime refuses another."},
-    "arch": {"enum": ["x86_64", "aarch64"], "description": "The Linux CPU the vendored packages are built for; the runtime refuses another."},
+    "arch": {"enum": ["x86_64", "aarch64"], "description": "The Linux CPU the vendored packages are built for (aisolate build --arch); the runtime refuses another."},
     "package": {"type": "string", "pattern": "^[a-z_][a-z0-9_]*$", "description": "The top-level package under src/ the runtime imports."},
     "plugins": {
       "type": "array",

@@ -14,8 +14,8 @@ import tools.jackson.databind.annotation.JsonNaming;
  * One airlock as the AIsolate UI shows it: who may ask it besides its space's users (its own users,
  * the clients they may call from, and the machine clients it admits without an e-mail), the LLMs
  * and data sources it sees beside the space's and the global ones, the endpoint it serves on, the
- * form the UI edits, the LLM that answers and, read-only, the code the deploy brought, null before
- * the first deploy. {@code revision} counts its saves.
+ * form the UI edits, the LLM that answers and, read-only, the code {@code aisolate deploy} brought,
+ * null before the first deploy. {@code revision} counts its saves.
  *
  * <p>The {@code form} holds the name, description, users, callers, clients, LLMs and data sources
  * once; the record answers them from there ({@link #name()} and the like; the id stays a record

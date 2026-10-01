@@ -18,7 +18,7 @@ import io.fabric8.kubernetes.model.annotation.Version;
  * besides the space's users (none of its own is fine; a calling client is required), the model that
  * answers with its prompt and tools, its code, and the LLMs and data sources it sees beside the
  * space's. One pod pair per airlock; no {@code llm} or {@code prompt} is admitted (the AIsolate UI
- * creates it so, a deploy brings them) and runs nothing.
+ * creates it so, {@code aisolate deploy} brings them) and runs nothing.
  */
 @ValidationRule(
     value = "self.metadata.name.matches('^[a-z][a-z0-9-]{1,40}$')",

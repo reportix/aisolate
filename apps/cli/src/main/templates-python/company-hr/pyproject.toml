@@ -1,0 +1,18 @@
+[project]
+name = "company-hr"
+version = "0.1.0"
+requires-python = ">=3.13,<3.14"
+# The project depends on the AIsolate SDK alone (libs/aisolate-sdk, written by `aisolate create`):
+# a tool can never reach a connection, the rules or the policy through it.
+dependencies = ["aisolate"]
+
+[tool.uv.sources]
+aisolate = { path = "libs/aisolate-sdk" }
+
+[dependency-groups]
+dev = ["pytest==9.1.1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
+addopts = ["--import-mode=importlib"]
