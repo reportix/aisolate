@@ -87,7 +87,7 @@ class CreateCommandTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"company-hr, hr-contracts, acme_hr"})
+  @CsvSource({"company-hr, hr-contracts, acme_hr", "company-sales, sales, acme_sales"})
   void givenPythonLanguage_whenCreate_thenThePythonTreeWithItsSdkAndNoPlaceholderLeft(
       String template, String airlock, String pkg) throws Exception {
     // Arrange
@@ -125,7 +125,7 @@ class CreateCommandTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"company-hr, hr-contracts"})
+  @CsvSource({"company-hr, hr-contracts", "company-sales, sales"})
   void givenNoAirlock_whenCreate_thenTheTemplatesAirlockInItsOwnDirectory(
       String template, String airlock) throws Exception {
     // Arrange
@@ -332,7 +332,7 @@ class CreateCommandTest {
 
     // Assert
     assertThat(exit).isEqualTo(2);
-    assertThat(err.toString()).contains("company-hr");
+    assertThat(err.toString()).contains("company-hr", "company-sales");
     assertThat(parent).isEmptyDirectory();
   }
 

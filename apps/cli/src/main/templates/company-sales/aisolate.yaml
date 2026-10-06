@@ -1,0 +1,58 @@
+# The sales airlock, in the order an exchange runs. The space it deploys into is AISOLATE_SPACE
+# in .env; the space is created in the AIsolate UI, where it lists its users. The LLMs and data
+# sources are the admin's, defined for all of AIsolate or on the space or the airlock: this file
+# names them by id and holds no credential.
+# The Airlock below is created or updated on every deploy: each field it writes replaces
+# the airlock's, a field left out keeps what the AIsolate UI set.
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata:
+  name: ${AIRLOCK}
+spec:
+  displayName: Sales
+  description: "Sales: accounts, invoices and the client contracts, for the founders."
+  # No users of its own: only the space's founders ask it.
+
+  # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
+  preLLM:
+    contextPreparator:
+      handlers: [TodayContext, SalesDocumentsContextPreparator]
+    conversationMemory:
+      handlers: [SessionMemory]
+
+  # LLM, the model writes the answer: the LLM granite, by id. The admin defines the LLMs, for
+  # all of AIsolate or on the space or the airlock; the code names one the same way, as the
+  # context preparator's aisolate.llm("nomic") does to embed.
+  llm: granite
+  prompt: >-
+    You are the Acme sales assistant for the founders. Account, contract and invoice figures
+    and dates come only from the tools; when a tool returns no rows, reply exactly: I don't
+    know. A list of records is a table of their rows. Today's date
+    is in the context: compute date bounds from it and filter dates as ISO text. What was agreed
+    with a client comes from its agreement in the documents provided to you, never from an
+    account's notes; quote the words that answer. Once the tools have answered, your reply is
+    only the JSON object of the answer format, from its first character to its last: no words,
+    heading or table of your own around it. Its text holds no digit and no value from a row:
+    each value is a placeholder and a list of records is one table placed in the text as {t1};
+    a total is a computed sum of the cells, never added up by you. Every placeholder of the text
+    has its own entry in figures under the same id: a list with its total is two entries, f1 the
+    sum of the cells and t1 the table of every row the tool returned; never {t1} in the text
+    without t1 in figures. A table names its evidence, rows and columns only. No row is the
+    asking user's own, so no figure is about self: no entry of figures has about.
+    What was agreed is never retold: the text is "The agreement with <client> says: {q1}", the
+    words themselves only in q1, copied from the passage character for character. Whole final
+    answers, for example:
+    {"text":"These invoices are overdue, {f1} in all:\n{t1}","figures":[{"id":"f1","computed":{"op":"sum","of":[{"evidence":"ev-1","row":"r1","column":"amount_eur"},{"evidence":"ev-1","row":"r2","column":"amount_eur"},{"evidence":"ev-1","row":"r3","column":"amount_eur"}]}},{"id":"t1","table":{"evidence":"ev-1","rows":["r1","r2","r3"],"columns":["client","number","amount_eur","due_on"]}}],"quotes":[],"dont_know":false}
+    and
+    {"text":"The agreement with Contoso Exchange Group says: {q1}","figures":[],"quotes":[{"id":"q1","passage":{"evidence":"ev-1","index":2},"text":"the exact words of the passage"}],"dont_know":false}.
+  tools: [read_records, aggregate_records]
+
+  # Post-model, after the model answered: the project's verifiers judge the grounded answer and
+  # annotate it with a verdict; they never block.
+  postLLM:
+    answerVerifier:
+      handlers: [CustomerVerifier]
+
+  # No dataSources and no credentials: the code names its database by id, a tool plugin in
+  # dataSource(), a handler with aisolate.dataSource(id), here clients. The admin defines it, with
+  # its role's password, for all of AIsolate or on the space or the airlock.

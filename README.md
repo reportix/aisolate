@@ -14,6 +14,11 @@ model over the organisation's existing databases. Every request carries the end 
 organisation's identity provider, and every tool call runs under that identity. Row and column access is
 compiled into the SQL at the data boundary. The model enforces nothing.
 
+The demo is a fictional company, Acme Financial Group, with two spaces and an airlock each. In the HR contracts
+airlock its people ask about their employment contract: an employee reads only their own, the CEO reads every
+one. In the Sales airlock the founders ask about client accounts, invoices and what was agreed with a client; an
+employee does not see that airlock at all. A refusal reads "I don't know".
+
 ## Documentation
 
 - [Release](docs/release.md): a headless install: documents, Secrets, hosts, validate, apply, status, roll back.

@@ -30,7 +30,7 @@ dependencies {
 // Their packages differ, so all templates share one source set.
 val templates: SourceSet = sourceSets.create("templates") {
     java.srcDirs(
-        listOf("company-hr").flatMap { template ->
+        listOf("company-hr", "company-sales").flatMap { template ->
             listOf("main", "test").map { "src/main/templates/$template/src/$it/java" }
         },
     )

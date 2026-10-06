@@ -1,0 +1,8 @@
+{
+  "entity": "clients.accounts",
+  "classification": "confidential",
+  "rules": [
+    {"name": "founders", "principals": {"role": "founder"}, "actions": ["read", "aggregate"], "effect": "allow",
+     "row_filter": "true"}
+  ]
+}

@@ -30,7 +30,8 @@ import picocli.CommandLine.Option;
 final class CreateCommand implements Callable<Integer> {
 
   enum Template {
-    company_hr("hr-contracts");
+    company_hr("hr-contracts"),
+    company_sales("sales");
 
     /** The airlock the project deploys when {@code --airlock} names none. */
     final String airlock;
@@ -83,7 +84,7 @@ final class CreateCommand implements Callable<Integer> {
       names = {"-a", "--airlock"},
       description =
           "The airlock the project deploys, written into aisolate.yaml (default: the"
-              + " template's: hr-contracts).")
+              + " template's: hr-contracts, sales).")
   String airlock;
 
   @Option(
