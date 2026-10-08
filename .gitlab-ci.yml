@@ -15,6 +15,18 @@ spotless:
   image: eclipse-temurin:25-jdk
   script: ./gradlew spotlessCheck --console=plain
 
+# One npm workspace: the shared UI package and the AIsolate UI, installed once from the root.
+web-check:
+  stage: check
+  image: node:24
+  script:
+    - npm ci
+    - npm run lint
+    - npm run format
+    - npm test
+    - npm run build
+    - npm audit --audit-level=high
+
 # Integration tests start Keycloak and PostgreSQL through Testcontainers (Docker socket needed).
 gradle-test:
   stage: test
@@ -55,7 +67,7 @@ python-test:
     - export PATH="$HOME/.local/bin:$PATH"
   script: ./gradlew pythonTest --console=plain
 
-# Vulnerabilities in locked dependencies (gradle.lockfile) and leaked secrets.
+# Vulnerabilities in locked dependencies (gradle.lockfile, package-lock.json) and leaked secrets.
 trivy:
   stage: scan
   image:

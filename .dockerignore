@@ -1,0 +1,10 @@
+# Build context for apps/frontend/Dockerfile: the npm workspace only.
+*
+!package.json
+!package-lock.json
+!tsconfig.base.json
+!libs/ui/**
+!apps/frontend/**
+libs/ui/node_modules
+apps/frontend/node_modules
+apps/frontend/.next

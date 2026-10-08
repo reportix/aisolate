@@ -1,0 +1,181 @@
+/* Design tokens: a neutral scheme with a near-black #1F2125 pen, #222 ink, #F5F5F5 ground, white paper,
+   #E5E5E5 hairlines. Light only. */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #ebebeb;
+  --border-primary: #e5e5e5;
+  --border-secondary: #dddddd;
+  /* A field's border, where something can be typed: 3.69:1 on paper, 3.38 on desk, 3.10 on panel. */
+  --border-control: #858585;
+  /* Focus alone is blue: 4.42:1 on paper, 4.05 on desk, 3.65 against the pen. */
+  --border-focus: #3a74e0;
+  --text-primary: #222222;
+  --text-secondary: #555555;
+  --text-tertiary: #666666;
+  --text-inverse: #ffffff;
+  /* #222 with a faint blue cast. */
+  --accent-primary: #1f2125;
+  --accent-primary-hover: #2e3036;
+  --accent-primary-pressed: #16171a;
+  --accent-surface: rgba(31, 33, 37, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 0 3px rgba(58, 116, 224, 0.2);
+  --error: #b91c1c;
+  --error-wash: #fef2f2;
+  --error-border: #fecaca;
+  --ok: #15803d;
+  /* A figure the model typed itself: the chat's amber, never an error. */
+  --warn: #b45309;
+  /* Barely tinted grays for the stat tiles, one per section; never a state. */
+  --tint-lavender: #f4f3f8;
+  --tint-sand: #f8f6f2;
+  --tint-mint: #f0f5f3;
+  --tint-rose: #f8f3f4;
+  /* One hue per kind of graph step, its label and tile; never a state. Each clears 4.5:1 on paper
+     and on its own wash. */
+  --step-context: #a16207;
+  --step-context-wash: #fdf6e3;
+  --step-memory: #1d4ed8;
+  --step-memory-wash: #e8effd;
+  --step-llm: #5b47c8;
+  --step-llm-wash: #efecfc;
+  --step-verifier: #15803d;
+  --step-verifier-wash: #e9f5ee;
+}
+
+@theme inline {
+  --color-paper: var(--bg-primary);
+  --color-desk: var(--bg-secondary);
+  --color-panel: var(--bg-tertiary);
+  --color-hairline: var(--border-primary);
+  --color-hairline-strong: var(--border-secondary);
+  --color-control: var(--border-control);
+  --color-ink: var(--text-primary);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-tertiary: var(--text-tertiary);
+  --color-ink-inverse: var(--text-inverse);
+  --color-pen: var(--accent-primary);
+  --color-tint-lavender: var(--tint-lavender);
+  --color-tint-sand: var(--tint-sand);
+  --color-tint-mint: var(--tint-mint);
+  --color-tint-rose: var(--tint-rose);
+  --color-step-context: var(--step-context);
+  --color-step-context-wash: var(--step-context-wash);
+  --color-step-memory: var(--step-memory);
+  --color-step-memory-wash: var(--step-memory-wash);
+  --color-step-llm: var(--step-llm);
+  --color-step-llm-wash: var(--step-llm-wash);
+  --color-step-verifier: var(--step-verifier);
+  --color-step-verifier-wash: var(--step-verifier-wash);
+  --color-pen-hover: var(--accent-primary-hover);
+  --color-pen-press: var(--accent-primary-pressed);
+  --color-pen-wash: var(--accent-surface);
+  --color-error: var(--error);
+  --color-error-wash: var(--error-wash);
+  --color-error-border: var(--error-border);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "Courier New", monospace;
+  /* Heading tracking: -0.02em on the headline, -0.03em on the figure, -0.01em on section titles. */
+  --tracking-tight: -0.02em;
+  --tracking-tighter: -0.03em;
+  --tracking-snug: -0.01em;
+  --shadow-overlay: var(--shadow-md);
+}
+
+body {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  caret-color: var(--accent-primary);
+}
+
+/* The browser's own surfaces carry the palette too; light even when the OS is dark, so a native menu
+   (Safari, Firefox) opens light. */
+:root {
+  color-scheme: light;
+}
+
+::selection {
+  background: rgba(58, 116, 224, 0.2);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-secondary) transparent;
+}
+
+/* Keyboard focus is always visible: 1.5px blue outline plus the soft ring. */
+:focus-visible {
+  outline: 1.5px solid var(--border-focus);
+  outline-offset: 1px;
+  box-shadow: var(--shadow-glow);
+}
+
+/* A field in focus draws its own border blue and doubled, with no outline or halo around it. */
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
+
+/* Every select draws the kit's 16px chevron (ink-secondary) instead of the browser's, inset 12px from
+   the right border as the text is from the left; unlayered, so it beats the field's px-3. */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555555' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 36px;
+}
+
+/* Where the browser has the customizable select, the open list is the kit's popover under the field
+   (GitLab's listbox), not the OS menu over it; it stays a real select for keyboard and screen readers. */
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+
+  select::picker-icon {
+    display: none;
+  }
+
+  /* The button shows the chosen option as text in an internal box no selector reaches, so no
+     ellipsis: a long name stays on one line and is cut at the content edge, clear of the chevron. */
+  select {
+    white-space: nowrap;
+    overflow: clip;
+    overflow-clip-margin: content-box;
+  }
+
+  ::picker(select) {
+    margin-top: 4px;
+    padding: 4px;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-overlay);
+  }
+
+  option {
+    padding: 6px 8px;
+    border-radius: 4px;
+    color: var(--text-primary);
+  }
+
+  option:hover,
+  option:focus-visible {
+    background: var(--bg-secondary);
+    outline: none;
+    box-shadow: none;
+  }
+
+  option::checkmark {
+    color: var(--border-focus);
+  }
+}

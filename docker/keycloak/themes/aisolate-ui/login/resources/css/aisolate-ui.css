@@ -1,7 +1,7 @@
 /* AIsolate UI: product line under the headline. Layout and colours come from the parent theme `aisolate`. */
 :root {
   --login-subtitle: "Sign in to access AIsolate.";
-  /* The UI's "AI⬡" mark, as a mask so it takes the name's colour. */
+  /* The UI's "AI⬡" mark (libs/ui icons.tsx AIsolateMark), as a mask so it takes the name's colour. */
   --login-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1011 400'%3E%3Cpolygon points='0,400 203.8,0 322.4,0 526.3,400 407.6,400 263.1,116.4 118.6,400'/%3E%3Cpolygon points='386.6,0 505.3,0 709.1,400 590.4,400'/%3E%3Cpolygon points='668.2,193.8 614.1,87.6 664.6,0 895.5,0 1011,200 895.5,400 773.3,400 722.3,300 837.8,300 895.6,200 837.8,100 722.3,100'/%3E%3Cpolygon points='726.1,200 753.1,153.2 807.1,153.2 834.1,200 807.1,246.8 753.1,246.8'/%3E%3C/svg%3E");
 }
 

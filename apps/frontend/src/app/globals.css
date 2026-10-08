@@ -1,0 +1,74 @@
+@import "tailwindcss";
+@import "../../../../libs/ui/src/theme.css";
+@source "../../../../libs/ui/src";
+
+/* Tailwind 4's preflight leaves a button on the arrow while a link keeps the hand: every control that
+   does something on a click says so the same way. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+}
+
+/* Monitoring's hues, from the data-viz reference palette (validated together on paper, light): a
+   trace step's look (model, tool, data) and, in this fixed order, a chart's series. Identity, never
+   state; text stays in the ink tokens beside them. */
+:root {
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #6250d6;
+  --series-8: #e34948;
+}
+
+@theme inline {
+  --color-trace-model: var(--series-7);
+  --color-trace-tool: var(--series-3);
+  --color-trace-data: var(--series-4);
+  --color-focus: var(--border-focus);
+}
+
+/* The graph's arrows: fine gray dashes that march toward an open chevron, the way the exchange flows. */
+.graph-wire {
+  position: relative;
+  flex: none;
+  height: 8px;
+  padding-right: 6px;
+  background-image: linear-gradient(90deg, #9aa1ab 5px, transparent 5px);
+  background-size: 9px 1px;
+  background-repeat: repeat-x;
+  background-position: 0 50%;
+  background-origin: content-box;
+  background-clip: content-box;
+  animation: graph-march 0.5s linear infinite;
+}
+.graph-wire::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-top: 1.5px solid #9aa1ab;
+  border-right: 1.5px solid #9aa1ab;
+  transform: rotate(45deg);
+}
+@keyframes graph-march {
+  from {
+    background-position: 0 50%;
+  }
+  to {
+    background-position: 9px 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .graph-wire {
+    animation: none;
+  }
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -110 376 376" role="img" aria-label="AIsolate">
+  <!-- The geometric "AI⬡" mark, centred in a square: the favicon keeps it, the rail shows the designer's wordmark. Ink, white on a dark tab. -->
+  <style>g { fill: #222222 } @media (prefers-color-scheme: dark) { g { fill: #ffffff } }</style>
+  <g>
+    <polygon points="0,156 78,0 124,0 202,156 156,156 101,46 46,156"/>
+    <polygon points="150,0 196,0 274,156 228,156"/>
+    <polygon points="258,0 348,0 376,50 376,104 348,156 298,156 279,116 326,116 344,84 344,72 324,40 276,40 258,72 238,36"/>
+    <polygon points="291,60 309,60 320,78 309,96 291,96 280,78"/>
+  </g>
+</svg>
