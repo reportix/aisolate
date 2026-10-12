@@ -112,6 +112,9 @@ val pythonTest = tasks.register("pythonTest") {
         templates.listFiles { f -> File(f, "pyproject.toml").isFile }.orEmpty().sorted().forEach {
             pytest("libs/sdk-python", it.relativeTo(root).path)
         }
+        if (File(templates, "test_same_as_java.py").isFile) {
+            pytest("libs/sdk-python", File(templates, "test_same_as_java.py").relativeTo(root).path)
+        }
     }
 }
 tasks.named("check") { dependsOn(pythonTest) }

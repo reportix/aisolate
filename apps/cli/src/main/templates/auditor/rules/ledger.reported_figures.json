@@ -1,0 +1,8 @@
+{
+  "entity": "ledger.reported_figures",
+  "classification": "internal",
+  "rules": [
+    {"name": "auditor", "principals": {"role": "auditor"}, "actions": ["read", "aggregate"], "effect": "allow",
+     "row_filter": "true"}
+  ]
+}

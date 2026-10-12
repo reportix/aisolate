@@ -1,5 +1,5 @@
 {
-  "description" : "Many readings per patient: the subject (patient_id) is not the row key, so a minimum group size counts people, not rows, and the identity attribute (clinician_id) is no subject, so no row is the asker's own.",
+  "description" : "Many readings per patient: the subject (patient_id) is not the row key, so a minimum group size counts people, not rows, and the identity attribute (clinician_id) is no subject, so no row is the asker's own. Rule set cardiology mirrors the hospital template's cardiology.vitals rules.",
   "fixture" : {
     "entity" : {
       "name" : "cardiology.vitals",

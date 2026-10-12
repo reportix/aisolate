@@ -1,0 +1,8 @@
+{
+  "entity": "ledger.contracts",
+  "classification": "confidential",
+  "rules": [
+    {"name": "auditor", "principals": {"role": "auditor"}, "actions": ["read", "aggregate"], "effect": "allow",
+     "row_filter": "true"}
+  ]
+}

@@ -30,7 +30,7 @@ dependencies {
 // Their packages differ, so all templates share one source set.
 val templates: SourceSet = sourceSets.create("templates") {
     java.srcDirs(
-        listOf("company-hr", "company-sales").flatMap { template ->
+        listOf("company-hr", "company-sales", "auditor", "hospital").flatMap { template ->
             listOf("main", "test").map { "src/main/templates/$template/src/$it/java" }
         },
     )
@@ -105,6 +105,7 @@ val pythonLeftovers =
 tasks.register<Zip>("createPythonTemplateZip") {
     from(layout.projectDirectory.dir("src/main/templates-python")) {
         exclude(pythonLeftovers)
+        exclude("test_same_as_java.py")
     }
     includeEmptyDirs = true
     destinationDirectory.set(generatedResources)

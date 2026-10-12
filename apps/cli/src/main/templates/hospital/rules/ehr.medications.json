@@ -1,0 +1,12 @@
+{
+  "entity": "ehr.medications",
+  "classification": "restricted",
+  "rules": [
+    {"name": "cardiology-care", "principals": {"role": "doctor"}, "actions": ["read"], "effect": "allow",
+     "row_filter": "cardiology_clinician == principal.clinician_id", "columns": {"national_id": "mask", "cardiology_clinician": "hide", "psychiatry_clinician": "hide"}},
+    {"name": "psychiatry-care", "principals": {"role": "doctor"}, "actions": ["read"], "effect": "allow",
+     "row_filter": "psychiatry_clinician == principal.clinician_id", "columns": {"national_id": "mask", "cardiology_clinician": "hide", "psychiatry_clinician": "hide"}},
+    {"name": "chief-statistics", "principals": {"role": "chief"}, "actions": ["aggregate"], "effect": "allow",
+     "row_filter": "true", "columns": {"national_id": "mask", "cardiology_clinician": "hide", "psychiatry_clinician": "hide", "patient": "hide", "patient_id": "hide", "medication_id": "hide", "started_on": "hide", "stopped_on": "hide"}, "aggregation": {"min_group_size": 5}}
+  ]
+}

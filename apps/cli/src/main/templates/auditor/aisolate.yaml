@@ -1,0 +1,60 @@
+# The ${AIRLOCK} airlock: the audit assistant for one audited company, in the order an exchange
+# runs. The space it deploys into is AISOLATE_SPACE in .env; the space (the audit firm) is created
+# in the AIsolate UI, where it lists its auditors. The LLMs are the admin's, defined for all of
+# AIsolate or on the space: this file names one by id. The airlock is one per audited company; its
+# own data source ledger is set in the AIsolate UI.
+# The Airlock below is created or updated on every deploy: each field it writes replaces
+# the airlock's, a field left out keeps what the AIsolate UI set.
+apiVersion: aisolate.dev/v1
+kind: Airlock
+metadata:
+  name: ${AIRLOCK}
+spec:
+  displayName: ${AIRLOCK_NAME}
+  description: "${AIRLOCK_DESCRIPTION}"
+  # No users of its own: the firm's auditors are the space's.
+
+  # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
+  preLLM:
+    contextPreparator:
+      handlers: [AuditDocumentsContextPreparator]
+    conversationMemory:
+      handlers: [SessionMemory]
+
+  # LLM, the model writes the answer: the LLM granite, by id. The admin defines the LLMs, for
+  # all of AIsolate or on the space or the airlock; the code names one the same way, as the
+  # context preparator's aisolate.llm("nomic") does to embed.
+  llm: granite
+  prompt: >-
+    You are the Halvard & Finch audit assistant for the one audited company whose books this
+    airlock reads. Never restate the question: an answer listing entries opens with a sentence
+    that holds no figure, then gives the entries, even a single one, as a table of their rows.
+    A threshold from a policy is a quote of the policy. Figures come only from a tool result or
+    a document provided to you; never compute, round or estimate one in your head: a sum, a
+    difference or a share is a computed figure. For payments to related parties call related_party_payments; for
+    invoices without a matching contract call
+    invoices_without_contract; for anything else in the books call read_records or
+    aggregate_records with the entity that holds it. A tool returns at most 50 rows, oldest
+    first: for the latest entries or one period, filter by date; for the largest or smallest,
+    rank the rows read. When a tool returns no
+    rows, reply exactly: I don't know. What the board decided and what the company's policies
+    say comes from the documents provided to you; quote the words that say it. Bank account numbers arrive masked as ****: never ask for them.
+    The text of your final answer holds no digit and no value from a row: each value is a
+    placeholder, and entries are one table placed in the text as {t1}, of the columns that
+    answer. Leave about out. Whole final answers, for example:
+    {"text":"These payments to related parties are above the threshold:\n{t1}","figures":[{"id":"t1","table":{"evidence":"ev-2","rows":["r1","r2"],"columns":["counterparty","entry_date","amount_eur"]}}],"quotes":[],"dont_know":false}
+    and, only when the question asks for the largest or smallest, a ranking, its rows from the
+    highest amount down:
+    {"text":"The three largest invoices:\n{t1}","figures":[{"id":"t1","table":{"evidence":"ev-1","rows":["r4","r1","r6"],"columns":["supplier","amount_eur"],"rank":{"op":"top_n","by":"amount_eur"}}}],"quotes":[],"dont_know":false}.
+  tools: [read_records, aggregate_records, related_party_payments, invoices_without_contract]
+
+  # Post-model, after the model answered: the project's verifiers judge the grounded answer and
+  # annotate it with a verdict; they never block.
+  postLLM:
+    answerVerifier:
+      handlers: [PeriodVerifier]
+
+  # No dataSources: the code reads the data source ledger, which each company's airlock defines
+  # in the AIsolate UI (its URL and its own database role). The code of every company's airlock
+  # is the same; the airlock decides whose books it reads, so one company's answer can never
+  # draw on another's data. A ledger defined here would replace the airlock's: don't.

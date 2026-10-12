@@ -1,0 +1,10 @@
+{
+  "entity": "psychiatry.sessions",
+  "classification": "restricted",
+  "rules": [
+    {"name": "patient-care", "principals": {"role": "doctor"}, "actions": ["read"], "effect": "allow",
+     "row_filter": "psychiatry_clinician == principal.clinician_id", "columns": {"national_id": "mask", "psychiatry_clinician": "hide"}},
+    {"name": "chief-statistics", "principals": {"role": "chief"}, "actions": ["aggregate"], "effect": "allow",
+     "row_filter": "true", "columns": {"national_id": "mask", "psychiatry_clinician": "hide", "patient": "hide", "patient_id": "hide", "note": "hide", "session_id": "hide", "session_date": "hide", "session_no": "hide"}, "aggregation": {"min_group_size": 5}}
+  ]
+}

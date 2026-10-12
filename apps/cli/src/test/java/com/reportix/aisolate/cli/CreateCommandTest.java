@@ -87,7 +87,12 @@ class CreateCommandTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"company-hr, hr-contracts, acme_hr", "company-sales, sales, acme_sales"})
+  @CsvSource({
+    "company-hr, hr-contracts, acme_hr",
+    "company-sales, sales, acme_sales",
+    "auditor, northbeck, halvardfinch_audit",
+    "hospital, cardiology, aldermoor_ehr"
+  })
   void givenPythonLanguage_whenCreate_thenThePythonTreeWithItsSdkAndNoPlaceholderLeft(
       String template, String airlock, String pkg) throws Exception {
     // Arrange
@@ -125,7 +130,7 @@ class CreateCommandTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"company-hr, hr-contracts", "company-sales, sales"})
+  @CsvSource({"company-hr, hr-contracts", "company-sales, sales", "hospital, cardiology"})
   void givenNoAirlock_whenCreate_thenTheTemplatesAirlockInItsOwnDirectory(
       String template, String airlock) throws Exception {
     // Arrange
@@ -142,7 +147,37 @@ class CreateCommandTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"company-hr, people"})
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "auditor|northbeck|Northbeck Logistics GmbH|'  # No users of its own'",
+        "auditor|harwick|Harwick|'  # No users of its own'",
+        "hospital|cardiology|Cardiology|'  access: {users: [noah@aldermoor.example]}'",
+        "hospital|psychiatry|Psychiatry|'  access: {users: [clara@aldermoor.example]}'",
+        "hospital|neurology|Neurology|'  # access: {users: [...]}'"
+      })
+  void givenParameterisedTemplate_whenCreate_thenItsAirlockDocumentNamesTheAirlockAndItsUsers(
+      String template, String airlock, String name, String access) throws Exception {
+    // Arrange: an airlock the templates do not know is named after its id
+    CommandLine cli = cli();
+
+    // Act
+    int exit =
+        cli.execute("create", "-s=lab", "-t=" + template, "--airlock=" + airlock, "-p=" + parent);
+
+    // Assert
+    assertThat(exit).isZero();
+    assertThat(Files.readString(parent.resolve(template + "-" + airlock).resolve("aisolate.yaml")))
+        .contains(
+            "kind: Airlock\nmetadata:\n  name: " + airlock + "\n",
+            "  displayName: " + name + "\n",
+            "  description: \"" + name + ": ",
+            access)
+        .doesNotContain("${");
+  }
+
+  @ParameterizedTest
+  @CsvSource({"auditor, northbeck", "hospital, psychiatry", "company-hr, people"})
   void givenAirlock_whenCreate_thenItsIdInADirectoryOfTemplateAndAirlock(
       String template, String airlock) throws Exception {
     // Arrange
@@ -162,6 +197,39 @@ class CreateCommandTest {
     assertThat(console.lines)
         .first()
         .isEqualTo("Created " + project + " from the " + template + " template.");
+  }
+
+  @Test
+  void givenAuditorWithoutAirlock_whenCreate_thenOneLineAndExit2() {
+    // Arrange
+    CommandLine cli = cli();
+
+    // Act
+    int exit = cli.execute("create", "-s=lab", "-t=auditor", "-p=" + parent);
+
+    // Assert
+    assertThat(exit).isEqualTo(2);
+    assertThat(console.errors)
+        .containsExactly("the auditor template needs --airlock=<company>: one airlock per company");
+    assertThat(parent).isEmptyDirectory();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"Cardiology", "../x", "a", "cardiology-"})
+  void givenAirlockTheServerRefuses_whenCreate_thenOneLineAndExit2(String airlock) {
+    // Arrange
+    CommandLine cli = cli();
+
+    // Act
+    int exit = cli.execute("create", "-s=lab", "-t=hospital", "-a=" + airlock, "-p=" + parent);
+
+    // Assert
+    assertThat(exit).isEqualTo(2);
+    assertThat(console.errors)
+        .containsExactly(
+            "airlock must be 2 to 41 lowercase letters, digits or hyphens, starting with a letter"
+                + " and not ending with a hyphen");
+    assertThat(parent).isEmptyDirectory();
   }
 
   @Test
@@ -332,7 +400,7 @@ class CreateCommandTest {
 
     // Assert
     assertThat(exit).isEqualTo(2);
-    assertThat(err.toString()).contains("company-hr", "company-sales");
+    assertThat(err.toString()).contains("company-hr", "company-sales", "auditor", "hospital");
     assertThat(parent).isEmptyDirectory();
   }
 

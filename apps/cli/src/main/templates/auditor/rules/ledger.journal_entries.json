@@ -1,0 +1,8 @@
+{
+  "entity": "ledger.journal_entries",
+  "classification": "confidential",
+  "rules": [
+    {"name": "auditor", "principals": {"role": "auditor"}, "actions": ["read", "aggregate"], "effect": "allow",
+     "row_filter": "true", "columns": {"counterparty_iban": "mask"}}
+  ]
+}
