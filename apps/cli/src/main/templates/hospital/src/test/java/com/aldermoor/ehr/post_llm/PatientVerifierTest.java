@@ -31,7 +31,7 @@ class PatientVerifierTest {
   private static final String AMIRA_FOR_JULIAN =
       "the figure 128 mmHg is about Amira Haddad; the question asks about Julian Marek";
 
-  // The evidence as the runtime hands it to a verifier: passages are a JSON
+  // The evidence as the runtime hands it to a verifier, the golden set's: passages are a JSON
   // list, a tool result is an object.
   private static final Evidence PASSAGES =
       new Evidence(

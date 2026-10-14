@@ -34,7 +34,7 @@ class LatestReadingVerifierTest {
       "the answer cites the 2026-10-01 06:10 Troponin T;"
           + " the latest in the records is 2026-10-03 07:40";
 
-  // The evidence as the runtime hands it to a verifier: passages are a JSON
+  // The evidence as the runtime hands it to a verifier, the golden set's: passages are a JSON
   // list, a tool result is an object.
   private static final Evidence PASSAGES =
       new Evidence(

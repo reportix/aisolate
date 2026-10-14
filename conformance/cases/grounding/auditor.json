@@ -1,0 +1,859 @@
+{
+  "template": "auditor",
+  "about": "An auditor asks about Northbeck's books: its related-party payments and reported figures.",
+  "evidence": [
+    {
+      "id": "ev-1",
+      "source": "audit-documents",
+      "passages": [
+        {
+          "title": "Related party policy",
+          "section": "Approval",
+          "body": "Payments to related parties above 10,000 EUR need the prior approval of the supervisory board."
+        }
+      ]
+    },
+    {
+      "id": "ev-2",
+      "tool": "related_party_payments",
+      "args": {},
+      "entity": "ledger.journal_entries",
+      "columns": [
+        "entry_id",
+        "entry_date",
+        "account",
+        "description",
+        "counterparty",
+        "counterparty_iban",
+        "entry_type",
+        "amount_eur",
+        "related_party",
+        "relationship"
+      ],
+      "labels": {
+        "row_key": "entry_id",
+        "subject": "counterparty",
+        "period": "entry_date",
+        "units": {
+          "amount_eur": "EUR"
+        },
+        "unit_columns": {},
+        "masked": [
+          "counterparty_iban"
+        ],
+        "function": null
+      },
+      "rows": {
+        "r1": {
+          "entry_id": 1,
+          "entry_date": "2025-10-03",
+          "account": "6310 Rent",
+          "description": "Warehouse 4 rent Q4 2025",
+          "counterparty": "Harbour Lane Properties GmbH",
+          "counterparty_iban": "****",
+          "entry_type": "payment",
+          "amount_eur": 48500.0,
+          "related_party": "yes",
+          "relationship": "Owned by the CEO"
+        },
+        "r2": {
+          "entry_id": 7,
+          "entry_date": "2025-11-20",
+          "account": "6800 Consulting",
+          "description": "Strategy review",
+          "counterparty": "Finch Advisory UG",
+          "counterparty_iban": "****",
+          "entry_type": "payment",
+          "amount_eur": 22000.0,
+          "related_party": "yes",
+          "relationship": "Spouse of the CFO"
+        },
+        "r3": {
+          "entry_id": 12,
+          "entry_date": "2026-01-15",
+          "account": "6310 Rent",
+          "description": "Warehouse 4 rent Q1 2026",
+          "counterparty": "Harbour Lane Properties GmbH",
+          "counterparty_iban": "****",
+          "entry_type": "payment",
+          "amount_eur": 48500.0,
+          "related_party": "yes",
+          "relationship": "Owned by the CEO"
+        }
+      }
+    },
+    {
+      "id": "ev-3",
+      "tool": "read_records",
+      "args": {
+        "entity": "ledger.reported_figures"
+      },
+      "entity": "ledger.reported_figures",
+      "columns": [
+        "figure_id",
+        "concept",
+        "label",
+        "period",
+        "value_eur"
+      ],
+      "labels": {
+        "row_key": "figure_id",
+        "subject": null,
+        "period": "period",
+        "units": {
+          "value_eur": "EUR"
+        },
+        "unit_columns": {},
+        "masked": [],
+        "function": null
+      },
+      "rows": {
+        "r4": {
+          "figure_id": "ifrs-full:Revenue 2025",
+          "concept": "ifrs-full:Revenue",
+          "label": "Revenue",
+          "period": "2025",
+          "value_eur": 12400000.0
+        },
+        "r5": {
+          "figure_id": "ifrs-full:Revenue 2024",
+          "concept": "ifrs-full:Revenue",
+          "label": "Revenue",
+          "period": "2024",
+          "value_eur": 11100000.0
+        },
+        "r6": {
+          "figure_id": "ifrs-full:ProfitLoss 2025",
+          "concept": "ifrs-full:ProfitLoss",
+          "label": "Profit for the year",
+          "period": "2025",
+          "value_eur": 860000.0
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "error": "correct",
+      "name": "payments to related parties as a table",
+      "question": "Which payments to related parties are above 10,000 EUR?",
+      "answer": {
+        "text": "Payments found:\n{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-2",
+              "rows": [
+                "r1",
+                "r2",
+                "r3"
+              ],
+              "columns": [
+                "entry_date",
+                "counterparty",
+                "amount_eur"
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "sourced"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "their total, summed by AIsolate",
+      "question": "How much was paid to related parties?",
+      "answer": {
+        "text": "In total {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "sum",
+              "of": [
+                {
+                  "evidence": "ev-2",
+                  "row": "r1",
+                  "column": "amount_eur"
+                },
+                {
+                  "evidence": "ev-2",
+                  "row": "r2",
+                  "column": "amount_eur"
+                },
+                {
+                  "evidence": "ev-2",
+                  "row": "r3",
+                  "column": "amount_eur"
+                }
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      },
+      "rendered": "In total 119,000 EUR."
+    },
+    {
+      "error": "correct",
+      "name": "revenue growth computed",
+      "question": "How much did revenue grow in 2025?",
+      "answer": {
+        "text": "Revenue grew by {f1} in 2025.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "percent_change",
+              "of": [
+                {
+                  "evidence": "ev-3",
+                  "row": "r5",
+                  "column": "value_eur"
+                },
+                {
+                  "evidence": "ev-3",
+                  "row": "r4",
+                  "column": "value_eur"
+                }
+              ]
+            },
+            "about": {
+              "concept": "Revenue"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      },
+      "rendered": "Revenue grew by 11.71% in 2025."
+    },
+    {
+      "error": "correct",
+      "name": "revenue of a concept row",
+      "question": "What revenue did Northbeck report for 2025?",
+      "answer": {
+        "text": "Northbeck reported revenue of {f1} for 2025.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r4",
+              "column": "value_eur"
+            },
+            "about": {
+              "period": "2025",
+              "concept": "Revenue"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced"
+      },
+      "rendered": "Northbeck reported revenue of 12,400,000 EUR for 2025."
+    },
+    {
+      "error": "correct",
+      "name": "the threshold quoted from the policy",
+      "question": "Which payments need the board's approval?",
+      "answer": {
+        "text": "Payments to related parties {q1}.",
+        "figures": [],
+        "quotes": [
+          {
+            "id": "q1",
+            "passage": {
+              "evidence": "ev-1",
+              "index": 1
+            },
+            "text": "above 10,000 EUR need the prior approval of the supervisory board"
+          }
+        ],
+        "dont_know": false
+      },
+      "expect": {},
+      "quotes": {
+        "q1": "quoted"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "the largest payment, tied",
+      "question": "Which was the largest payment?",
+      "answer": {
+        "text": "The largest: {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-2",
+                "column": "amount_eur"
+              },
+              "rows": [
+                "r3"
+              ],
+              "n": 1
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "the two largest, tied in either order",
+      "question": "Which were the two largest payments?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-2",
+              "rows": [
+                "r3",
+                "r1"
+              ],
+              "columns": [
+                "entry_date",
+                "amount_eur"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "amount_eur"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "sourced"
+      }
+    },
+    {
+      "error": "wrong_subject",
+      "name": "the consultant's payment as the landlord's",
+      "question": "What was paid to Harbour Lane?",
+      "answer": {
+        "text": "Harbour Lane was paid {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "amount_eur"
+            },
+            "about": {
+              "subject": "Harbour Lane Properties"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "about Finch Advisory UG, not Harbour Lane Properties"
+    },
+    {
+      "error": "wrong_period",
+      "name": "2024 revenue for 2025",
+      "question": "What revenue did Northbeck report for 2025?",
+      "answer": {
+        "text": "Revenue for 2025 was {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r5",
+              "column": "value_eur"
+            },
+            "about": {
+              "period": "2025",
+              "concept": "Revenue"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "about 2024, not 2025"
+    },
+    {
+      "error": "wrong_concept",
+      "name": "profit for revenue",
+      "question": "What revenue did Northbeck report for 2025?",
+      "answer": {
+        "text": "Revenue for 2025 was {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r6",
+              "column": "value_eur"
+            },
+            "about": {
+              "period": "2025",
+              "concept": "Revenue"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "not Revenue"
+    },
+    {
+      "error": "wrong_unit",
+      "name": "EUR written as USD",
+      "question": "What revenue did Northbeck report for 2025?",
+      "answer": {
+        "text": "Revenue for 2025 was {f1} USD.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r4",
+              "column": "value_eur"
+            },
+            "about": {
+              "period": "2025",
+              "concept": "Revenue"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "calls it USD, the row says EUR"
+    },
+    {
+      "error": "wrong_scope",
+      "name": "a reported figure cited as a payment",
+      "question": "What was paid to Harbour Lane?",
+      "answer": {
+        "text": "Harbour Lane was paid {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r4",
+              "column": "amount_eur"
+            },
+            "about": {
+              "subject": "Harbour Lane"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "r4 is a row of ev-3, not of ev-2"
+    },
+    {
+      "error": "wrong_scope",
+      "name": "the payments of another evidence summed",
+      "question": "How much was paid to related parties?",
+      "answer": {
+        "text": "In total {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "sum",
+              "of": [
+                {
+                  "evidence": "ev-2",
+                  "row": "r1",
+                  "column": "amount_eur"
+                },
+                {
+                  "evidence": "ev-3",
+                  "row": "r6",
+                  "column": "amount_eur"
+                }
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "has no column amount_eur"
+    },
+    {
+      "error": "typed_computation",
+      "name": "the total typed",
+      "question": "How much was paid to related parties?",
+      "answer": {
+        "text": "In total 119,000 EUR was paid to related parties.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "fabricated",
+      "name": "a growth rate typed",
+      "question": "How much did revenue grow in 2025?",
+      "answer": {
+        "text": "Revenue grew by 12% in 2025.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "scale",
+      "name": "million beside a full amount",
+      "question": "What revenue did Northbeck report for 2025?",
+      "answer": {
+        "text": "Revenue for 2025 was {f1} million.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r4",
+              "column": "value_eur"
+            },
+            "about": {
+              "period": "2025",
+              "concept": "Revenue"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "scales it"
+    },
+    {
+      "error": "scale",
+      "name": "a scaled number typed",
+      "question": "What revenue did Northbeck report for 2025?",
+      "answer": {
+        "text": "Revenue for 2025 was 12.4 million EUR.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "sign",
+      "name": "a sign before a profit",
+      "question": "What was the profit for 2025?",
+      "answer": {
+        "text": "The result for 2025 was -{f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r6",
+              "column": "value_eur"
+            },
+            "about": {
+              "period": "2025"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "sign"
+    },
+    {
+      "error": "sign",
+      "name": "a loss typed for a profit",
+      "question": "What was the profit for 2025?",
+      "answer": {
+        "text": "The result for 2025 was a loss of -860,000 EUR.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "masked",
+      "name": "a masked bank account cited",
+      "question": "Which account was Harbour Lane paid to?",
+      "answer": {
+        "text": "Harbour Lane was paid to {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "counterparty_iban"
+            },
+            "about": {
+              "subject": "Harbour Lane"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "masked"
+    },
+    {
+      "error": "table_wrong_order",
+      "name": "ranked table out of order",
+      "question": "Which were the two largest payments?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-2",
+              "rows": [
+                "r2",
+                "r1"
+              ],
+              "columns": [
+                "counterparty",
+                "amount_eur"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "amount_eur"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "out of order"
+    },
+    {
+      "error": "table_missing_row",
+      "name": "ranked table missing a tied top row",
+      "question": "Which were the two largest payments?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-2",
+              "rows": [
+                "r1",
+                "r2"
+              ],
+              "columns": [
+                "counterparty",
+                "amount_eur"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "amount_eur"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "not in the top 2"
+    },
+    {
+      "error": "table_other_evidence",
+      "name": "a reported figure in the payments table",
+      "question": "Which payments to related parties are above 10,000 EUR?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-2",
+              "rows": [
+                "r1",
+                "r6"
+              ],
+              "columns": [
+                "counterparty",
+                "amount_eur"
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "r6 is a row of ev-3, not of ev-2"
+    },
+    {
+      "error": "ranking_wrong_order",
+      "name": "smallest first in a top list",
+      "question": "Which were the three largest payments?",
+      "answer": {
+        "text": "{f1}",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-2",
+                "column": "amount_eur"
+              },
+              "rows": [
+                "r2",
+                "r1",
+                "r3"
+              ],
+              "n": 3
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "out of order"
+    },
+    {
+      "error": "ranking_missing_row",
+      "name": "the smaller payment as the largest",
+      "question": "Which was the largest payment?",
+      "answer": {
+        "text": "{f1}",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-2",
+                "column": "amount_eur"
+              },
+              "rows": [
+                "r2"
+              ],
+              "n": 1
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "not in the top 1"
+    },
+    {
+      "error": "ranking_other_evidence",
+      "name": "a reported figure ranked among payments",
+      "question": "Which were the two largest payments?",
+      "answer": {
+        "text": "{f1}",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-2",
+                "column": "amount_eur"
+              },
+              "rows": [
+                "r1",
+                "r4"
+              ],
+              "n": 2
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "r4 is a row of ev-3, not of ev-2"
+    }
+  ]
+}

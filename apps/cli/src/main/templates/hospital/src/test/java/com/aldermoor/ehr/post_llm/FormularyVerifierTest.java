@@ -51,7 +51,7 @@ class FormularyVerifierTest {
           new Object[] {"Sertraline"},
           new Object[] {"Metformin"});
 
-  // read_medications as the tool server returns it for Julian, as ev-3.
+  // read_medications as the tool server returns it for Julian, the golden set's ev-3.
   private static final Evidence MEDICATIONS =
       medications(
           medication(41, "Apixaban", "Anticoagulant", "5 mg", "twice daily", "cardiology"),

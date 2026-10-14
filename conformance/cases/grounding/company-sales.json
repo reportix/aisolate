@@ -1,0 +1,985 @@
+{
+  "template": "company-sales",
+  "about": "A founder asks: every client's accounts and invoices.",
+  "evidence": [
+    {
+      "id": "ev-1",
+      "source": "sales-documents",
+      "passages": [
+        {
+          "title": "Master agreement Northwind Bank AG",
+          "section": "Pricing",
+          "body": "Price increases are capped at 3 percent per contract year through 2028 and require three months' written notice."
+        }
+      ]
+    },
+    {
+      "id": "ev-2",
+      "tool": "read_records",
+      "args": {
+        "entity": "clients.invoices",
+        "filters": [
+          {
+            "column": "status",
+            "op": "eq",
+            "value": "overdue"
+          }
+        ]
+      },
+      "entity": "clients.invoices",
+      "columns": [
+        "invoice_id",
+        "client",
+        "number",
+        "amount_eur",
+        "issued_on",
+        "due_on",
+        "paid_on",
+        "status"
+      ],
+      "labels": {
+        "row_key": "invoice_id",
+        "subject": "client",
+        "period": "issued_on",
+        "units": {
+          "amount_eur": "EUR"
+        },
+        "unit_columns": {},
+        "masked": [],
+        "function": null
+      },
+      "rows": {
+        "r1": {
+          "invoice_id": 412,
+          "client": "Northwind Bank AG",
+          "number": "INV-2026-0412",
+          "amount_eur": 18400.0,
+          "issued_on": "2026-08-14",
+          "due_on": "2026-09-13",
+          "paid_on": null,
+          "status": "overdue"
+        },
+        "r2": {
+          "invoice_id": 433,
+          "client": "Northwind Bank AG",
+          "number": "INV-2026-0433",
+          "amount_eur": 6250.0,
+          "issued_on": "2026-09-02",
+          "due_on": "2026-10-02",
+          "paid_on": null,
+          "status": "overdue"
+        },
+        "r3": {
+          "invoice_id": 388,
+          "client": "Fabrikam Logistics",
+          "number": "INV-2026-0388",
+          "amount_eur": 12900.0,
+          "issued_on": "2026-07-30",
+          "due_on": "2026-08-29",
+          "paid_on": null,
+          "status": "overdue"
+        }
+      }
+    },
+    {
+      "id": "ev-3",
+      "tool": "read_records",
+      "args": {
+        "entity": "clients.accounts"
+      },
+      "entity": "clients.accounts",
+      "columns": [
+        "account_id",
+        "name",
+        "industry",
+        "country",
+        "product",
+        "account_owner",
+        "contract_value_eur",
+        "contract_start",
+        "renewal_date",
+        "status",
+        "notes"
+      ],
+      "labels": {
+        "row_key": "account_id",
+        "subject": "name",
+        "period": null,
+        "units": {
+          "contract_value_eur": "EUR"
+        },
+        "unit_columns": {},
+        "masked": [],
+        "function": null
+      },
+      "rows": {
+        "r4": {
+          "account_id": 1,
+          "name": "Northwind Bank AG",
+          "industry": "Banking",
+          "country": "DE",
+          "product": "Reporting Suite",
+          "account_owner": "Leo Brandt",
+          "contract_value_eur": 240000.0,
+          "contract_start": "2024-01-01",
+          "renewal_date": "2027-01-01",
+          "status": "active",
+          "notes": ""
+        },
+        "r5": {
+          "account_id": 2,
+          "name": "Contoso Retail",
+          "industry": "Retail",
+          "country": "NL",
+          "product": "Reporting Suite",
+          "account_owner": "Leo Brandt",
+          "contract_value_eur": 112800.0,
+          "contract_start": "2024-01-01",
+          "renewal_date": "2027-01-01",
+          "status": "active",
+          "notes": ""
+        },
+        "r6": {
+          "account_id": 3,
+          "name": "Fabrikam Logistics",
+          "industry": "Logistics",
+          "country": "PL",
+          "product": "Reporting Suite",
+          "account_owner": "Leo Brandt",
+          "contract_value_eur": 98000.0,
+          "contract_start": "2024-01-01",
+          "renewal_date": "2027-01-01",
+          "status": "active",
+          "notes": ""
+        },
+        "r7": {
+          "account_id": 4,
+          "name": "Tailspin Air",
+          "industry": "Aviation",
+          "country": "IE",
+          "product": "Reporting Suite",
+          "account_owner": "Leo Brandt",
+          "contract_value_eur": 310000.0,
+          "contract_start": "2024-01-01",
+          "renewal_date": "2027-01-01",
+          "status": "active",
+          "notes": ""
+        }
+      }
+    },
+    {
+      "id": "ev-4",
+      "tool": "aggregate_records",
+      "args": {
+        "entity": "clients.invoices",
+        "function": "sum",
+        "column": "amount_eur",
+        "group_by": "client"
+      },
+      "entity": "clients.invoices",
+      "columns": [
+        "client",
+        "value",
+        "n"
+      ],
+      "labels": {
+        "row_key": "client",
+        "subject": "client",
+        "period": null,
+        "units": {
+          "value": "EUR"
+        },
+        "unit_columns": {},
+        "masked": [],
+        "function": "sum"
+      },
+      "rows": {
+        "r8": {
+          "client": "Northwind Bank AG",
+          "value": 24650.0,
+          "n": 2
+        },
+        "r9": {
+          "client": "Fabrikam Logistics",
+          "value": 12900.0,
+          "n": 1
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "error": "correct",
+      "name": "overdue invoices as a table",
+      "question": "Which invoices of Northwind are overdue?",
+      "answer": {
+        "text": "Two invoices are overdue:\n{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-2",
+              "rows": [
+                "r1",
+                "r2"
+              ],
+              "columns": [
+                "number",
+                "amount_eur",
+                "due_on"
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "sourced"
+      },
+      "rendered": "Two invoices are overdue:\n| number | amount_eur | due_on |\n| --- | --- | --- |\n| INV-2026-0412 | 18,400 EUR | 2026-09-13 |\n| INV-2026-0433 | 6,250 EUR | 2026-10-02 |\n"
+    },
+    {
+      "error": "correct",
+      "name": "the status word in prose",
+      "question": "What does Northwind still owe?",
+      "answer": {
+        "text": "The overdue invoices of Northwind:\n{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-2",
+              "rows": [
+                "r1",
+                "r2"
+              ],
+              "columns": [
+                "number",
+                "amount_eur",
+                "due_on"
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "sourced"
+      },
+      "rendered": "The overdue invoices of Northwind:\n| number | amount_eur | due_on |\n| --- | --- | --- |\n| INV-2026-0412 | 18,400 EUR | 2026-09-13 |\n| INV-2026-0433 | 6,250 EUR | 2026-10-02 |\n"
+    },
+    {
+      "error": "correct",
+      "name": "what Northwind owes, summed by AIsolate",
+      "question": "What does Northwind owe in total?",
+      "answer": {
+        "text": "Northwind owes {f1} in total.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "sum",
+              "of": [
+                {
+                  "evidence": "ev-2",
+                  "row": "r1",
+                  "column": "amount_eur"
+                },
+                {
+                  "evidence": "ev-2",
+                  "row": "r2",
+                  "column": "amount_eur"
+                }
+              ]
+            },
+            "about": {
+              "subject": "Northwind"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      },
+      "rendered": "Northwind owes 24,650 EUR in total."
+    },
+    {
+      "error": "correct",
+      "name": "what Northwind owes, from the aggregate",
+      "question": "What does Northwind owe in total?",
+      "answer": {
+        "text": "Northwind owes {f1} in total.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-4",
+              "row": "r8",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Northwind Bank AG"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "the price cap quoted",
+      "question": "What did we agree with Northwind on the price cap?",
+      "answer": {
+        "text": "Price increases are {q1}.",
+        "figures": [],
+        "quotes": [
+          {
+            "id": "q1",
+            "passage": {
+              "evidence": "ev-1",
+              "index": 1
+            },
+            "text": "capped at 3 percent per contract year through 2028"
+          }
+        ],
+        "dont_know": false
+      },
+      "expect": {},
+      "quotes": {
+        "q1": "quoted"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "the three largest accounts",
+      "question": "Which are our three largest accounts?",
+      "answer": {
+        "text": "Our three largest accounts: {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-3",
+                "column": "contract_value_eur"
+              },
+              "rows": [
+                "r7",
+                "r4",
+                "r5"
+              ],
+              "n": 3
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      },
+      "rendered": "Our three largest accounts: Tailspin Air, Northwind Bank AG, Contoso Retail."
+    },
+    {
+      "error": "correct",
+      "name": "the two largest as a ranked table",
+      "question": "Which are our two largest accounts?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-3",
+              "rows": [
+                "r7",
+                "r4"
+              ],
+              "columns": [
+                "name",
+                "contract_value_eur"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "contract_value_eur"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "sourced"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "the smallest account",
+      "question": "Which is our smallest account?",
+      "answer": {
+        "text": "The smallest: {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "bottom_n",
+              "by": {
+                "evidence": "ev-3",
+                "column": "contract_value_eur"
+              },
+              "rows": [
+                "r6"
+              ],
+              "n": 1
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "a percentage change computed",
+      "question": "How much larger is Contoso's contract than Fabrikam's?",
+      "answer": {
+        "text": "Contoso's contract is {f1} larger than Fabrikam's.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "percent_change",
+              "of": [
+                {
+                  "evidence": "ev-3",
+                  "row": "r6",
+                  "column": "contract_value_eur"
+                },
+                {
+                  "evidence": "ev-3",
+                  "row": "r5",
+                  "column": "contract_value_eur"
+                }
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      },
+      "rendered": "Contoso's contract is 15.1% larger than Fabrikam's."
+    },
+    {
+      "error": "wrong_subject",
+      "name": "Northwind's invoice for Fabrikam",
+      "question": "What does Fabrikam owe?",
+      "answer": {
+        "text": "Fabrikam owes {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "amount_eur"
+            },
+            "about": {
+              "subject": "Fabrikam"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "about Northwind Bank AG, not Fabrikam"
+    },
+    {
+      "error": "wrong_period",
+      "name": "the August invoice for September",
+      "question": "Which Northwind invoice was issued in September?",
+      "answer": {
+        "text": "The September invoice is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "amount_eur"
+            },
+            "about": {
+              "subject": "Northwind",
+              "period": "2026-09"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "about 2026-08-14, not 2026-09"
+    },
+    {
+      "error": "wrong_concept",
+      "name": "the account id for the contract value",
+      "question": "What is Northwind's contract value?",
+      "answer": {
+        "text": "Northwind's contract value is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r4",
+              "column": "account_id"
+            },
+            "about": {
+              "subject": "Northwind",
+              "concept": "contract value"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "account_id, not contract value"
+    },
+    {
+      "error": "wrong_unit",
+      "name": "EUR written as USD",
+      "question": "What is Contoso's contract worth?",
+      "answer": {
+        "text": "Contoso's contract is worth {f1} USD.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r5",
+              "column": "contract_value_eur"
+            },
+            "about": {
+              "subject": "Contoso"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "calls it USD, the row says EUR"
+    },
+    {
+      "error": "wrong_unit",
+      "name": "a dollar sign before a EUR amount",
+      "question": "What is Contoso's contract worth?",
+      "answer": {
+        "text": "Contoso's contract is worth ${f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r5",
+              "column": "contract_value_eur"
+            },
+            "about": {
+              "subject": "Contoso"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "calls it $, the row says EUR"
+    },
+    {
+      "error": "wrong_scope",
+      "name": "Fabrikam's total for Northwind",
+      "question": "What does Northwind owe in total?",
+      "answer": {
+        "text": "Northwind owes {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-4",
+              "row": "r9",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Northwind"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "about Fabrikam Logistics, not Northwind"
+    },
+    {
+      "error": "wrong_scope",
+      "name": "an account row cited as an invoice",
+      "question": "What does Northwind owe?",
+      "answer": {
+        "text": "Northwind owes {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r4",
+              "column": "amount_eur"
+            },
+            "about": {
+              "subject": "Northwind"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "r4 is a row of ev-3, not of ev-2"
+    },
+    {
+      "error": "typed_computation",
+      "name": "the total typed",
+      "question": "What does Northwind owe in total?",
+      "answer": {
+        "text": "Northwind owes 24,650 EUR in total.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      },
+      "reason": "ev-4 r8 value holds the same value"
+    },
+    {
+      "error": "fabricated",
+      "name": "a payment date typed from nowhere",
+      "question": "Has Fabrikam paid invoice INV-2026-0388?",
+      "answer": {
+        "text": "Yes, Fabrikam paid INV-2026-0388 on 2026-09-01.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "scale",
+      "name": "a k after the figure",
+      "question": "What is Tailspin's contract worth?",
+      "answer": {
+        "text": "Tailspin's contract is worth {f1}k.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r7",
+              "column": "contract_value_eur"
+            },
+            "about": {
+              "subject": "Tailspin Air"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "scales it"
+    },
+    {
+      "error": "scale",
+      "name": "a scaled number typed",
+      "question": "What is Tailspin's contract worth?",
+      "answer": {
+        "text": "Tailspin's contract is worth 310k EUR.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "sign",
+      "name": "minus before an amount owed",
+      "question": "What does Fabrikam owe?",
+      "answer": {
+        "text": "Fabrikam's balance is minus {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r3",
+              "column": "amount_eur"
+            },
+            "about": {
+              "subject": "Fabrikam"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "sign"
+    },
+    {
+      "error": "sign",
+      "name": "a negative amount typed",
+      "question": "What does Fabrikam owe?",
+      "answer": {
+        "text": "Fabrikam's balance is -12,900 EUR.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "table_wrong_order",
+      "name": "ranked table out of order",
+      "question": "Which are our two largest accounts?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-3",
+              "rows": [
+                "r4",
+                "r7"
+              ],
+              "columns": [
+                "name",
+                "contract_value_eur"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "contract_value_eur"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "out of order"
+    },
+    {
+      "error": "table_missing_row",
+      "name": "ranked table missing the largest",
+      "question": "Which are our two largest accounts?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-3",
+              "rows": [
+                "r4",
+                "r5"
+              ],
+              "columns": [
+                "name",
+                "contract_value_eur"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "contract_value_eur"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "Tailspin Air (r7) belongs in the top 2 by contract_value_eur and is missing"
+    },
+    {
+      "error": "table_other_evidence",
+      "name": "an account row in the invoice table",
+      "question": "Which invoices of Northwind are overdue?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-2",
+              "rows": [
+                "r1",
+                "r5"
+              ],
+              "columns": [
+                "number",
+                "amount_eur"
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "r5 is a row of ev-3, not of ev-2"
+    },
+    {
+      "error": "ranking_wrong_order",
+      "name": "top three out of order",
+      "question": "Which are our three largest accounts?",
+      "answer": {
+        "text": "{f1}",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-3",
+                "column": "contract_value_eur"
+              },
+              "rows": [
+                "r4",
+                "r7",
+                "r5"
+              ],
+              "n": 3
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "out of order"
+    },
+    {
+      "error": "ranking_missing_row",
+      "name": "top three missing one",
+      "question": "Which are our three largest accounts?",
+      "answer": {
+        "text": "{f1}",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-3",
+                "column": "contract_value_eur"
+              },
+              "rows": [
+                "r7",
+                "r4",
+                "r6"
+              ],
+              "n": 3
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "not in the top 3"
+    },
+    {
+      "error": "ranking_other_evidence",
+      "name": "an invoice row among the accounts",
+      "question": "Which are our three largest accounts?",
+      "answer": {
+        "text": "{f1}",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-3",
+                "column": "contract_value_eur"
+              },
+              "rows": [
+                "r7",
+                "r4",
+                "r1"
+              ],
+              "n": 3
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "r1 is a row of ev-2, not of ev-3"
+    }
+  ]
+}

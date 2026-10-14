@@ -20,6 +20,9 @@ dependencies {
     implementation(libs.picocli)
     annotationProcessor(libs.picocli.codegen)
 
+    // The template build test reads the generated project like the backend would.
+    testImplementation(project(":libs:config"))
+    testImplementation(project(":libs:sdk"))
     testImplementation(platform(libs.spring.boot.bom))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core")
@@ -49,9 +52,14 @@ val templateTest = tasks.register<Test>("templateTest") {
     classpath = templates.runtimeClasspath
 }
 
+// TemplateBuildTest's build of a created project is opt-in (network): -Daisolate.template.build=true.
 tasks.test {
     // `test` is what CI runs.
     dependsOn(templateTest)
+    systemProperty("aisolate.template.build", System.getProperty("aisolate.template.build", "false"))
+    // TemplateBuildTest loads the templates' plugins from here, apart from its own classpath.
+    inputs.files(templates.output.classesDirs)
+    systemProperty("aisolate.templates.classes", templates.output.classesDirs.asPath)
     // The tests pin their endpoint and space in the project's .env; a developer's shell must not
     // override them.
     environment = environment.filterKeys { it != "AISOLATE_ENDPOINT" && it != "AISOLATE_SPACE" }

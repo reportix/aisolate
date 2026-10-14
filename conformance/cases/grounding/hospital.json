@@ -1,0 +1,1086 @@
+{
+  "template": "hospital",
+  "about": "A cardiologist on Julian Marek's care team asks; national ids arrive masked.",
+  "evidence": [
+    {
+      "id": "ev-1",
+      "source": "clinical-notes",
+      "passages": [
+        {
+          "title": "Cardiology note Julian Marek",
+          "section": "2026-10-03",
+          "body": "Chest pain resolved overnight; troponin trending down. Continue apixaban 5 mg twice daily."
+        }
+      ]
+    },
+    {
+      "id": "ev-2",
+      "tool": "read_cardiology_records",
+      "args": {
+        "entity": "cardiology.labs",
+        "filters": [
+          {
+            "column": "patient",
+            "op": "ilike",
+            "value": "Julian"
+          }
+        ]
+      },
+      "entity": "cardiology.labs",
+      "columns": [
+        "patient",
+        "patient_id",
+        "national_id",
+        "age_group",
+        "lab_id",
+        "taken_at",
+        "test",
+        "value",
+        "unit",
+        "reference_range"
+      ],
+      "labels": {
+        "row_key": "lab_id",
+        "subject": "patient",
+        "period": "taken_at",
+        "units": {},
+        "unit_columns": {
+          "value": "unit"
+        },
+        "masked": [
+          "national_id"
+        ],
+        "function": null
+      },
+      "rows": {
+        "r1": {
+          "patient": "Julian Marek",
+          "patient_id": 17,
+          "national_id": "****",
+          "age_group": "60-79",
+          "lab_id": 301,
+          "taken_at": "2026-10-01 06:10",
+          "test": "Troponin T",
+          "value": 52,
+          "unit": "ng/L",
+          "reference_range": "<14"
+        },
+        "r2": {
+          "patient": "Julian Marek",
+          "patient_id": 17,
+          "national_id": "****",
+          "age_group": "60-79",
+          "lab_id": 305,
+          "taken_at": "2026-10-03 07:40",
+          "test": "Troponin T",
+          "value": 38,
+          "unit": "ng/L",
+          "reference_range": "<14"
+        },
+        "r3": {
+          "patient": "Julian Marek",
+          "patient_id": 17,
+          "national_id": "****",
+          "age_group": "60-79",
+          "lab_id": 306,
+          "taken_at": "2026-10-03 07:40",
+          "test": "Potassium",
+          "value": 4.1,
+          "unit": "mmol/L",
+          "reference_range": "3.5-5.1"
+        }
+      }
+    },
+    {
+      "id": "ev-3",
+      "tool": "read_medications",
+      "args": {
+        "filters": [
+          {
+            "column": "patient",
+            "op": "ilike",
+            "value": "Julian"
+          }
+        ]
+      },
+      "entity": "ehr.medications",
+      "columns": [
+        "patient",
+        "patient_id",
+        "national_id",
+        "age_group",
+        "medication_id",
+        "drug",
+        "drug_class",
+        "dose",
+        "frequency",
+        "prescribed_by",
+        "indication",
+        "started_on",
+        "stopped_on"
+      ],
+      "labels": {
+        "row_key": "medication_id",
+        "subject": "patient",
+        "period": "started_on",
+        "units": {},
+        "unit_columns": {},
+        "masked": [
+          "national_id"
+        ],
+        "function": null,
+        "facts": [
+          "drug",
+          "dose",
+          "frequency"
+        ]
+      },
+      "rows": {
+        "r4": {
+          "patient": "Julian Marek",
+          "patient_id": 17,
+          "national_id": "****",
+          "age_group": "60-79",
+          "medication_id": 41,
+          "drug": "Apixaban",
+          "drug_class": "Anticoagulant",
+          "dose": "5 mg",
+          "frequency": "twice daily",
+          "prescribed_by": "cardiology",
+          "indication": "unknown: the medication list records no reason",
+          "started_on": "2026-09-30",
+          "stopped_on": null
+        },
+        "r5": {
+          "patient": "Julian Marek",
+          "patient_id": 17,
+          "national_id": "****",
+          "age_group": "60-79",
+          "medication_id": 42,
+          "drug": "Aspirin",
+          "drug_class": "Antiplatelet",
+          "dose": "100 mg",
+          "frequency": "once daily",
+          "prescribed_by": "cardiology",
+          "indication": "unknown: the medication list records no reason",
+          "started_on": "2026-09-30",
+          "stopped_on": null
+        },
+        "r6": {
+          "patient": "Julian Marek",
+          "patient_id": 17,
+          "national_id": "****",
+          "age_group": "60-79",
+          "medication_id": 43,
+          "drug": "Sertraline",
+          "drug_class": "SSRI",
+          "dose": "50 mg",
+          "frequency": "once daily",
+          "prescribed_by": "psychiatry",
+          "indication": "unknown: the medication list records no reason",
+          "started_on": "2026-06-12",
+          "stopped_on": null
+        }
+      }
+    },
+    {
+      "id": "ev-4",
+      "tool": "read_cardiology_records",
+      "args": {
+        "entity": "cardiology.vitals"
+      },
+      "entity": "cardiology.vitals",
+      "columns": [
+        "patient",
+        "patient_id",
+        "national_id",
+        "age_group",
+        "vital_id",
+        "measured_on",
+        "systolic_bp",
+        "diastolic_bp",
+        "heart_rate"
+      ],
+      "labels": {
+        "row_key": "vital_id",
+        "subject": "patient",
+        "period": "measured_on",
+        "units": {
+          "systolic_bp": "mmHg",
+          "diastolic_bp": "mmHg",
+          "heart_rate": "bpm"
+        },
+        "unit_columns": {},
+        "masked": [
+          "national_id"
+        ],
+        "function": null
+      },
+      "rows": {
+        "r7": {
+          "patient": "Julian Marek",
+          "patient_id": 17,
+          "national_id": "****",
+          "age_group": "60-79",
+          "vital_id": 901,
+          "measured_on": "2026-10-02",
+          "systolic_bp": 142,
+          "diastolic_bp": 88,
+          "heart_rate": 76
+        },
+        "r8": {
+          "patient": "Amira Haddad",
+          "patient_id": 23,
+          "national_id": "****",
+          "age_group": "40-59",
+          "vital_id": 902,
+          "measured_on": "2026-10-02",
+          "systolic_bp": 128,
+          "diastolic_bp": 82,
+          "heart_rate": 64
+        },
+        "r9": {
+          "patient": "Julian Marek",
+          "patient_id": 17,
+          "national_id": "****",
+          "age_group": "60-79",
+          "vital_id": 903,
+          "measured_on": "2026-10-03",
+          "systolic_bp": 135,
+          "diastolic_bp": 84,
+          "heart_rate": 72
+        }
+      }
+    },
+    {
+      "id": "ev-5",
+      "tool": "aggregate_cardiology_records",
+      "args": {
+        "entity": "cardiology.vitals",
+        "function": "avg",
+        "column": "systolic_bp",
+        "group_by": "age_group"
+      },
+      "entity": "cardiology.vitals",
+      "columns": [
+        "age_group",
+        "value",
+        "n"
+      ],
+      "labels": {
+        "row_key": "age_group",
+        "subject": null,
+        "period": null,
+        "units": {
+          "value": "mmHg"
+        },
+        "unit_columns": {},
+        "masked": [],
+        "function": "avg"
+      },
+      "rows": {
+        "r10": {
+          "age_group": "18-39",
+          "value": 119.25,
+          "n": 8
+        },
+        "r11": {
+          "age_group": "40-59",
+          "value": 137.33,
+          "n": 9
+        },
+        "r12": {
+          "age_group": "60-79",
+          "value": 139.11,
+          "n": 9
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "error": "correct",
+      "name": "the last troponin",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "Julian's last troponin T was {f1}, taken {f2}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Julian Marek",
+              "period": "2026-10-03"
+            }
+          },
+          {
+            "id": "f2",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "taken_at"
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced",
+        "f2": "sourced"
+      },
+      "rendered": "Julian's last troponin T was 38 ng/L, taken 2026-10-03 07:40."
+    },
+    {
+      "error": "correct",
+      "name": "the blood thinners as a table",
+      "question": "Which blood thinners is Julian on?",
+      "answer": {
+        "text": "Julian takes:\n{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-3",
+              "rows": [
+                "r4",
+                "r5"
+              ],
+              "columns": [
+                "drug",
+                "dose",
+                "frequency"
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "sourced"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "averages by age group",
+      "question": "Average blood pressure by age group",
+      "answer": {
+        "text": "Average systolic blood pressure by age group:\n{t1}\nGroups under the minimum size are not shown.",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-5",
+              "rows": [
+                "r10",
+                "r11",
+                "r12"
+              ],
+              "columns": [
+                "age_group",
+                "value"
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "sourced"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "the highest reading and whose it is",
+      "question": "Which reading had the highest systolic pressure?",
+      "answer": {
+        "text": "The highest was Julian's: {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "max",
+              "by": {
+                "evidence": "ev-4",
+                "column": "systolic_bp"
+              }
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      },
+      "rendered": "The highest was Julian's: 142 mmHg."
+    },
+    {
+      "error": "correct",
+      "name": "the troponin drop computed",
+      "question": "How much did Julian's troponin fall?",
+      "answer": {
+        "text": "It fell by {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "subtract",
+              "of": [
+                {
+                  "evidence": "ev-2",
+                  "row": "r1",
+                  "column": "value"
+                },
+                {
+                  "evidence": "ev-2",
+                  "row": "r2",
+                  "column": "value"
+                }
+              ]
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      },
+      "rendered": "It fell by 14 ng/L."
+    },
+    {
+      "error": "correct",
+      "name": "the note quoted",
+      "question": "How is Julian's chest pain?",
+      "answer": {
+        "text": "The note says: {q1}.",
+        "figures": [],
+        "quotes": [
+          {
+            "id": "q1",
+            "passage": {
+              "evidence": "ev-1",
+              "index": 1
+            },
+            "text": "Chest pain resolved overnight;\n troponin trending down"
+          }
+        ],
+        "dont_know": false
+      },
+      "expect": {},
+      "quotes": {
+        "q1": "quoted"
+      }
+    },
+    {
+      "error": "wrong_subject",
+      "name": "another patient's reading",
+      "question": "What was Julian's blood pressure on 2026-10-02?",
+      "answer": {
+        "text": "Julian's systolic pressure was {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-4",
+              "row": "r8",
+              "column": "systolic_bp"
+            },
+            "about": {
+              "subject": "Julian Marek",
+              "period": "2026-10-02"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "about Amira Haddad, not Julian Marek"
+    },
+    {
+      "error": "wrong_period",
+      "name": "the earlier troponin as the last",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "The last troponin was {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Julian",
+              "period": "2026-10-03"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "about 2026-10-01 06:10, not 2026-10-03"
+    },
+    {
+      "error": "wrong_concept",
+      "name": "potassium for troponin",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "The last troponin was {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r3",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Julian",
+              "concept": "troponin"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "not troponin"
+    },
+    {
+      "error": "wrong_unit",
+      "name": "ng/L claimed as µg/L",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "The last troponin was {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Julian",
+              "unit": "µg/L"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "in ng/L, not µg/L"
+    },
+    {
+      "error": "wrong_unit",
+      "name": "another test's unit written beside it",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "The last troponin was {f1} mmol/L.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "calls it mmol/L, the row says ng/L"
+    },
+    {
+      "error": "wrong_scope",
+      "name": "an age group's average as one patient's",
+      "question": "What is Julian's blood pressure?",
+      "answer": {
+        "text": "Julian's systolic pressure is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-5",
+              "row": "r12",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "avg of a group (60-79), not about Julian"
+    },
+    {
+      "error": "wrong_scope",
+      "name": "a medication row as a lab",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "The last troponin was {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r4",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "r4 is a row of ev-3, not of ev-2"
+    },
+    {
+      "error": "typed_computation",
+      "name": "the drop typed",
+      "question": "How much did Julian's troponin fall?",
+      "answer": {
+        "text": "It fell by 14 ng/L.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "fabricated",
+      "name": "a troponin typed from nowhere",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "Julian's last troponin was 48 ng/L.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "fabricated",
+      "name": "the copied value typed: still unsourced",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "Julian's last troponin was 38 ng/L.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      },
+      "reason": "ev-2 r2 value holds the same value"
+    },
+    {
+      "error": "typed_text_fact",
+      "name": "a drug typed from a row",
+      "question": "What dose does Julian take?",
+      "answer": {
+        "text": "Julian takes Apixaban {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r4",
+              "column": "dose"
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced",
+        "f1": "sourced"
+      },
+      "reason": "ev-3 r4 drug holds the same value",
+      "rendered": "Julian takes Apixaban 5 mg."
+    },
+    {
+      "error": "typed_text_fact",
+      "name": "a frequency typed from a row",
+      "question": "What does Julian take, and how often?",
+      "answer": {
+        "text": "Julian takes {f1} twice daily.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r4",
+              "column": "drug"
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced",
+        "u1": "unsourced"
+      },
+      "reason": "ev-3 r4 frequency holds the same value"
+    },
+    {
+      "error": "scale",
+      "name": "thousand beside a reading",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "The last troponin was {f1} thousand.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "scales it"
+    },
+    {
+      "error": "scale",
+      "name": "a reading typed tenfold",
+      "question": "What was Julian's last troponin?",
+      "answer": {
+        "text": "The last troponin was 380 ng/L.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "sign",
+      "name": "a sign before a reading",
+      "question": "How did Julian's troponin change?",
+      "answer": {
+        "text": "It changed by -{f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "sign"
+    },
+    {
+      "error": "sign",
+      "name": "a negative reading typed",
+      "question": "How did Julian's troponin change?",
+      "answer": {
+        "text": "It changed by -14 ng/L.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "masked",
+      "name": "a masked national id cited",
+      "question": "What is Julian's national id?",
+      "answer": {
+        "text": "Julian's national id is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-4",
+              "row": "r7",
+              "column": "national_id"
+            },
+            "about": {
+              "subject": "Julian"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "masked"
+    },
+    {
+      "error": "table_wrong_order",
+      "name": "readings ranked out of order",
+      "question": "Which readings were highest?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-4",
+              "rows": [
+                "r9",
+                "r7"
+              ],
+              "columns": [
+                "patient",
+                "measured_on",
+                "systolic_bp"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "systolic_bp"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "out of order"
+    },
+    {
+      "error": "table_missing_row",
+      "name": "the highest reading missing",
+      "question": "Which readings were highest?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-4",
+              "rows": [
+                "r9",
+                "r8"
+              ],
+              "columns": [
+                "patient",
+                "systolic_bp"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "systolic_bp"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "Julian Marek (r7) belongs in the top 2 by systolic_bp and is missing"
+    },
+    {
+      "error": "table_other_evidence",
+      "name": "a lab row in the vitals table",
+      "question": "Show Julian's readings",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-4",
+              "rows": [
+                "r7",
+                "r2"
+              ],
+              "columns": [
+                "measured_on",
+                "systolic_bp"
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "r2 is a row of ev-2, not of ev-4"
+    },
+    {
+      "error": "ranking_wrong_order",
+      "name": "lowest first in a bottom list, reversed",
+      "question": "Which readings were lowest?",
+      "answer": {
+        "text": "{f1}",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "bottom_n",
+              "by": {
+                "evidence": "ev-4",
+                "column": "systolic_bp"
+              },
+              "rows": [
+                "r9",
+                "r8"
+              ],
+              "n": 2
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "out of order"
+    },
+    {
+      "error": "ranking_missing_row",
+      "name": "the lowest reading missing",
+      "question": "Which readings were lowest?",
+      "answer": {
+        "text": "{f1}",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "bottom_n",
+              "by": {
+                "evidence": "ev-4",
+                "column": "systolic_bp"
+              },
+              "rows": [
+                "r9",
+                "r7"
+              ],
+              "n": 2
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "Amira Haddad (r8) belongs in the bottom 2 by systolic_bp and is missing"
+    },
+    {
+      "error": "ranking_other_evidence",
+      "name": "a lab row ranked among vitals",
+      "question": "Which readings were lowest?",
+      "answer": {
+        "text": "{f1}",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "bottom_n",
+              "by": {
+                "evidence": "ev-4",
+                "column": "systolic_bp"
+              },
+              "rows": [
+                "r8",
+                "r3"
+              ],
+              "n": 2
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "r3 is a row of ev-2, not of ev-4"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package com.reportix.aisolate.airlock.domain.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -17,7 +18,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
-/** The answer format's parser, its text, values and hashes. */
+/** What the golden set does not show case by case: the format's parser, text, values, hashes. */
 class GroundingTest {
 
   private static final JsonMapper JSON =
@@ -322,6 +323,54 @@ class GroundingTest {
     assertThat(read.facts()).isEqualTo(list(facts));
   }
 
+  @Test
+  void givenDoseTyped_whenGrounded_thenOneUnsourcedFigureNamingTheRowThatHoldsIt() {
+    // Arrange
+    Grounding grounding =
+        GoldenSetTest.grounding(GoldenSetTest.fixture("hospital"), "What does Julian take?");
+
+    // Act
+    GroundedAnswer answer = grounding.ground(typed("Julian takes 5 mg.", List.of()));
+
+    // Assert: "5 mg" is one value of a fact column, not the number 5
+    assertThat(answer.figures())
+        .containsExactly(
+            new GroundedAnswer.Figure(
+                "u1",
+                "5 mg",
+                null,
+                Grounding.UNSOURCED,
+                null,
+                null,
+                "typed in the text, not referenced; ev-3 r4 dose holds the same value"));
+    assertThat(answer.answer()).isEqualTo("Julian takes 5 mg.");
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "Does Julian take apixaban?|Yes, Julian takes APIXABAN.|",
+        "Does he take it twice  daily?|Yes, twice\\ndaily.|",
+        "Is Julian on 5 mg of it?|Yes, 5 mg.|",
+        "Is Julian on 25 mg of anything?|No, 5 mg.|5 mg",
+        "Is Julian on 2.5 mg of anything?|No, 5 mg.|5 mg"
+      })
+  void givenFactValueInTheQuestion_whenTyped_thenExemptOnlyAsAWholePhraseOfIt(
+      String question, String text, String typed) {
+    // Arrange
+    AnswerFormat.ModelAnswer answer = typed(text.replace("\\n", "\n"), List.of());
+
+    // Act
+    GroundedAnswer grounded =
+        GoldenSetTest.grounding(GoldenSetTest.fixture("hospital"), question).ground(answer);
+
+    // Assert
+    assertThat(grounded.figures())
+        .extracting(GroundedAnswer.Figure::display)
+        .isEqualTo(list(typed));
+  }
+
   @ParameterizedTest
   @CsvSource(
       delimiter = '|',
@@ -339,6 +388,59 @@ class GroundingTest {
     assertThat(grounded.figures())
         .extracting(GroundedAnswer.Figure::display)
         .isEqualTo(list(typed));
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "Julian takes Apixaban 2.5 mg.|2.5|" + TYPED,
+        "Julian takes Apixaban 5 mg, daily.|5 mg|" + TYPED + "; ev-3 r4 dose holds the same value",
+        // a fact value before a separator and a digit: the number is one token too
+        "Julian takes Aspirin-100.|Aspirin-100|" + TYPED
+      })
+  void givenFactValueInsideANumber_whenTyped_thenTheNumberIsOneToken(
+      String text, String display, String reason) {
+    // Arrange
+    AnswerFormat.ModelAnswer answer = typed(text, List.of());
+
+    // Act
+    GroundedAnswer grounded =
+        GoldenSetTest.grounding(
+                GoldenSetTest.fixture("hospital"), "How much Apixaban does Julian take?")
+            .ground(answer);
+
+    // Assert
+    assertThat(grounded.figures())
+        .extracting(GroundedAnswer.Figure::display, GroundedAnswer.Figure::reason)
+        .containsExactly(tuple(display, reason));
+  }
+
+  @Test
+  void givenFactsAndNumbersInterleaved_whenTyped_thenNumberedInTextOrder() {
+    // Arrange
+    AnswerFormat.ModelAnswer answer =
+        typed("Take 3 tablets: Aspirin 100 mg, then 7 days Aspirin.", List.of());
+
+    // Act
+    GroundedAnswer grounded =
+        GoldenSetTest.grounding(GoldenSetTest.fixture("hospital"), "What does Julian take?")
+            .ground(answer);
+
+    // Assert
+    String aspirin = TYPED + "; ev-3 r5 drug holds the same value";
+    assertThat(grounded.figures())
+        .extracting(
+            GroundedAnswer.Figure::id,
+            GroundedAnswer.Figure::display,
+            GroundedAnswer.Figure::reason)
+        .containsExactly(
+            tuple("u1", "3", TYPED),
+            tuple("u2", "Aspirin", aspirin),
+            tuple("u3", "100 mg", TYPED + "; ev-3 r5 dose holds the same value"),
+            tuple("u4", "7", TYPED),
+            tuple("u5", "Aspirin", aspirin));
+    assertThat(grounded.answer()).isEqualTo("Take 3 tablets: Aspirin 100 mg, then 7 days Aspirin.");
   }
 
   @Test
@@ -371,6 +473,28 @@ class GroundingTest {
             TYPED + "; ev-1 r2 brand holds the same value",
             TYPED + "; ev-1 r2 drug holds the same value",
             TYPED + "; ev-1 r1 brand holds the same value");
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "Continue apixaban 5 mg twice daily.|",
+        "Continue apixaban 5 mg once daily.|apixaban,5 mg,once daily"
+      })
+  void givenQuote_whenGrounded_thenItsFactsUnsourcedOnlyWhenNotVerbatim(
+      String quoted, String typed) {
+    // Arrange
+    Grounding grounding =
+        GoldenSetTest.grounding(GoldenSetTest.fixture("hospital"), "How is Julian treated?");
+    Map<String, Object> quote =
+        Map.of("id", "q1", "passage", Map.of("evidence", "ev-1", "index", 1), "text", quoted);
+
+    // Act
+    GroundedAnswer answer = grounding.ground(typed("The note says {q1}.", List.of(quote)));
+
+    // Assert
+    assertThat(answer.figures()).extracting(GroundedAnswer.Figure::display).isEqualTo(list(typed));
   }
 
   @ParameterizedTest

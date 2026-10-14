@@ -1,6 +1,7 @@
 """Turns the model's answer into the user's: each placeholder resolved against this exchange's evidence
 and written in by AIsolate, each claim checked, every number and fact value the model typed flagged.
-Deterministic, no model asked. A port of ``Grounding.java`` and ``GroundedAnswer.java``, method by method.
+Deterministic, no model asked. A port of ``Grounding.java`` and ``GroundedAnswer.java``, method by method;
+the golden set (``conformance/cases/grounding``) is the contract.
 """
 
 from __future__ import annotations

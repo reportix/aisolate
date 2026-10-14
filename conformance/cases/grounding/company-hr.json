@@ -1,0 +1,1259 @@
+{
+  "template": "company-hr",
+  "about": "The CEO, Nora Varga, asks: every employee's row, her own marked self.",
+  "evidence": [
+    {
+      "id": "ev-1",
+      "source": "hr-documents",
+      "passages": [
+        {
+          "title": "Employee Handbook",
+          "section": "Remote work",
+          "body": "Employees may work remotely up to three days a week; the team agrees a common office day. The company pays a home office allowance of 30 EUR per month with the salary."
+        },
+        {
+          "title": "Employment Contract Nora Varga",
+          "section": "Notice period",
+          "body": "The employment contract of Nora Varga can be terminated by either party with a notice period of six months to the end of a calendar quarter."
+        }
+      ]
+    },
+    {
+      "id": "ev-2",
+      "tool": "read_my_records",
+      "args": {
+        "entity": "hr.compensation"
+      },
+      "entity": "hr.compensation",
+      "columns": [
+        "self",
+        "employee_id",
+        "full_name",
+        "department",
+        "title",
+        "gross_salary",
+        "currency",
+        "target_bonus",
+        "iban"
+      ],
+      "labels": {
+        "row_key": "employee_id",
+        "subject": "full_name",
+        "period": null,
+        "units": {},
+        "unit_columns": {
+          "gross_salary": "currency",
+          "target_bonus": "currency"
+        },
+        "masked": [
+          "iban"
+        ],
+        "function": null
+      },
+      "rows": {
+        "r1": {
+          "self": true,
+          "employee_id": 1,
+          "full_name": "Nora Varga",
+          "department": "Management",
+          "title": "Chief Executive Officer",
+          "gross_salary": 235000.0,
+          "currency": "EUR",
+          "target_bonus": 55000.0,
+          "iban": "****"
+        },
+        "r2": {
+          "self": false,
+          "employee_id": 2,
+          "full_name": "Leo Brandt",
+          "department": "Management",
+          "title": "Co-founder",
+          "gross_salary": 190000.0,
+          "currency": "EUR",
+          "target_bonus": 40000.0,
+          "iban": "****"
+        },
+        "r3": {
+          "self": false,
+          "employee_id": 3,
+          "full_name": "Eric Lindholm",
+          "department": "Engineering",
+          "title": "Software Engineer",
+          "gross_salary": 78000.0,
+          "currency": "EUR",
+          "target_bonus": 5000.0,
+          "iban": "****"
+        },
+        "r4": {
+          "self": false,
+          "employee_id": 4,
+          "full_name": "Ivy Novak",
+          "department": "Engineering",
+          "title": "Intern",
+          "gross_salary": 28000.0,
+          "currency": "GBP",
+          "target_bonus": 0.0,
+          "iban": "****"
+        }
+      }
+    },
+    {
+      "id": "ev-3",
+      "tool": "read_my_records",
+      "args": {
+        "entity": "hr.leave"
+      },
+      "entity": "hr.leave",
+      "columns": [
+        "self",
+        "employee_id",
+        "full_name",
+        "department",
+        "year",
+        "entitlement_days",
+        "carried_over_days",
+        "taken_days",
+        "planned_days",
+        "remaining_days"
+      ],
+      "labels": {
+        "row_key": "employee_id",
+        "subject": "full_name",
+        "period": "year",
+        "units": {
+          "entitlement_days": "days",
+          "carried_over_days": "days",
+          "taken_days": "days",
+          "planned_days": "days",
+          "remaining_days": "days"
+        },
+        "unit_columns": {},
+        "masked": [],
+        "function": null
+      },
+      "rows": {
+        "r5": {
+          "self": true,
+          "employee_id": 1,
+          "full_name": "Nora Varga",
+          "department": "Management",
+          "year": 2026,
+          "entitlement_days": 30,
+          "carried_over_days": 5,
+          "taken_days": 12,
+          "planned_days": 4,
+          "remaining_days": 19
+        },
+        "r6": {
+          "self": true,
+          "employee_id": 1,
+          "full_name": "Nora Varga",
+          "department": "Management",
+          "year": 2025,
+          "entitlement_days": 30,
+          "carried_over_days": 0,
+          "taken_days": 25,
+          "planned_days": 0,
+          "remaining_days": 5
+        },
+        "r7": {
+          "self": false,
+          "employee_id": 2,
+          "full_name": "Leo Brandt",
+          "department": "Management",
+          "year": 2026,
+          "entitlement_days": 30,
+          "carried_over_days": 2,
+          "taken_days": 10,
+          "planned_days": 0,
+          "remaining_days": 22
+        }
+      }
+    },
+    {
+      "id": "ev-4",
+      "tool": "aggregate_records",
+      "args": {
+        "entity": "hr.compensation",
+        "function": "avg",
+        "column": "gross_salary",
+        "group_by": "department"
+      },
+      "entity": "hr.compensation",
+      "columns": [
+        "department",
+        "value",
+        "n"
+      ],
+      "labels": {
+        "row_key": "department",
+        "subject": null,
+        "period": null,
+        "units": {},
+        "unit_columns": {},
+        "masked": [],
+        "function": "avg"
+      },
+      "rows": {
+        "r8": {
+          "department": "Engineering",
+          "value": 74500.0,
+          "n": 6
+        },
+        "r9": {
+          "department": "Sales",
+          "value": 68000.0,
+          "n": 5
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "error": "correct",
+      "name": "my gross salary",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross salary is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced"
+      },
+      "rendered": "Your gross salary is 235,000 EUR."
+    },
+    {
+      "error": "correct",
+      "name": "days left this year, its unit not written twice",
+      "question": "How many vacation days do I have left in 2026?",
+      "answer": {
+        "text": "You have {f1} days left in 2026.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r5",
+              "column": "remaining_days"
+            },
+            "about": {
+              "subject": "self",
+              "period": "2026"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced"
+      },
+      "rendered": "You have 19 days left in 2026."
+    },
+    {
+      "error": "correct",
+      "name": "taken and planned, added by AIsolate",
+      "question": "How many days have I taken or planned in 2026?",
+      "answer": {
+        "text": "You have taken or planned {f1} in 2026.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "add",
+              "of": [
+                {
+                  "evidence": "ev-3",
+                  "row": "r5",
+                  "column": "taken_days"
+                },
+                {
+                  "evidence": "ev-3",
+                  "row": "r5",
+                  "column": "planned_days"
+                }
+              ]
+            },
+            "about": {
+              "subject": "self",
+              "period": "2026"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      },
+      "rendered": "You have taken or planned 16 days in 2026."
+    },
+    {
+      "error": "correct",
+      "name": "another person's salary, named",
+      "question": "What does Leo earn?",
+      "answer": {
+        "text": "Leo earns {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "Leo Brandt"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "a number the question holds is no figure",
+      "question": "Is my salary above 200,000?",
+      "answer": {
+        "text": "Yes: {f1} is above 200,000.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "notice period quoted from the contract",
+      "question": "What is my notice period?",
+      "answer": {
+        "text": "Your notice period is {q1}.",
+        "figures": [],
+        "quotes": [
+          {
+            "id": "q1",
+            "passage": {
+              "evidence": "ev-1",
+              "index": 2
+            },
+            "text": "six months to the end of a calendar quarter"
+          }
+        ],
+        "dont_know": false
+      },
+      "expect": {},
+      "quotes": {
+        "q1": "quoted"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "a group's average, unitless",
+      "question": "What is the average salary in Engineering?",
+      "answer": {
+        "text": "The average gross salary in Engineering is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-4",
+              "row": "r8",
+              "column": "value"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced"
+      },
+      "rendered": "The average gross salary in Engineering is 74,500."
+    },
+    {
+      "error": "correct",
+      "name": "most days left, as a table ranked",
+      "question": "Who has the most days left?",
+      "answer": {
+        "text": "Days left:\n{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-3",
+              "rows": [
+                "r7",
+                "r5",
+                "r6"
+              ],
+              "columns": [
+                "full_name",
+                "year",
+                "remaining_days"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "remaining_days"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "sourced"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "the one with most days left",
+      "question": "Who has the most days left?",
+      "answer": {
+        "text": "Leo has the most: {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "max",
+              "by": {
+                "evidence": "ev-3",
+                "column": "remaining_days"
+              },
+              "rows": [
+                "r7"
+              ]
+            },
+            "about": {
+              "subject": "Leo Brandt"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "computed"
+      }
+    },
+    {
+      "error": "correct",
+      "name": "a list item's number is no figure",
+      "question": "What do I take home and what is my bonus?",
+      "answer": {
+        "text": "1. Salary: {f1}\n2. Bonus: {f2}",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "self"
+            }
+          },
+          {
+            "id": "f2",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "target_bonus"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced",
+        "f2": "sourced"
+      }
+    },
+    {
+      "error": "wrong_subject",
+      "name": "Eric's row for Leo",
+      "question": "What does Leo earn?",
+      "answer": {
+        "text": "Leo earns {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r3",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "Leo Brandt"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "about Eric Lindholm, not Leo Brandt"
+    },
+    {
+      "error": "not_own_row",
+      "name": "another's row as mine",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross salary is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "not the asking user's own"
+    },
+    {
+      "error": "not_own_row",
+      "name": "another's row beside mine, whom unsaid",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross salary is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r2",
+              "column": "gross_salary"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "does not say whom"
+    },
+    {
+      "error": "wrong_period",
+      "name": "last year's balance for this year",
+      "question": "How many vacation days do I have left in 2026?",
+      "answer": {
+        "text": "You have {f1} left in 2026.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r6",
+              "column": "remaining_days"
+            },
+            "about": {
+              "subject": "self",
+              "period": "2026"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "about 2025, not 2026"
+    },
+    {
+      "error": "wrong_concept",
+      "name": "the bonus for the salary",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross salary is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "target_bonus"
+            },
+            "about": {
+              "subject": "self",
+              "concept": "gross_salary"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "target_bonus, not gross_salary"
+    },
+    {
+      "error": "wrong_concept",
+      "name": "a column the result does not have",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross salary is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r5",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "has no column gross_salary"
+    },
+    {
+      "error": "wrong_unit",
+      "name": "GBP written as EUR",
+      "question": "What does Ivy earn?",
+      "answer": {
+        "text": "Ivy earns {f1} EUR.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r4",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "Ivy Novak"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "calls it EUR, the row says GBP"
+    },
+    {
+      "error": "wrong_unit",
+      "name": "claimed in EUR",
+      "question": "What does Ivy earn?",
+      "answer": {
+        "text": "Ivy earns {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r4",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "Ivy Novak",
+              "unit": "EUR"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "in GBP, not EUR"
+    },
+    {
+      "error": "wrong_unit",
+      "name": "salaries in two currencies ranked",
+      "question": "Who earns most?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-2",
+              "rows": [
+                "r1",
+                "r2",
+                "r3",
+                "r4"
+              ],
+              "columns": [
+                "full_name",
+                "gross_salary"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "gross_salary"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "EUR and GBP"
+    },
+    {
+      "error": "wrong_scope",
+      "name": "a department's average as my salary",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross salary is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-4",
+              "row": "r8",
+              "column": "value"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "not the asking user's own"
+    },
+    {
+      "error": "wrong_scope",
+      "name": "a department's average as one person's",
+      "question": "What does Eric earn?",
+      "answer": {
+        "text": "Eric earns {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-4",
+              "row": "r8",
+              "column": "value"
+            },
+            "about": {
+              "subject": "Eric Lindholm"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "avg of a group"
+    },
+    {
+      "error": "wrong_scope",
+      "name": "a row of another result",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross salary is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r5",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "r5 is a row of ev-3, not of ev-2"
+    },
+    {
+      "error": "typed_computation",
+      "name": "taken plus planned typed",
+      "question": "How many days have I taken or planned in 2026?",
+      "answer": {
+        "text": "You have taken or planned 16 days in 2026.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "fabricated",
+      "name": "a bonus typed from nowhere",
+      "question": "What is my target bonus?",
+      "answer": {
+        "text": "Your target bonus is 60,000 EUR.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "fabricated",
+      "name": "a reference to evidence that does not exist",
+      "question": "What is my target bonus?",
+      "answer": {
+        "text": "Your target bonus is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-9",
+              "row": "r1",
+              "column": "target_bonus"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "no evidence ev-9"
+    },
+    {
+      "error": "fabricated",
+      "name": "a placeholder without a reference",
+      "question": "What is my target bonus?",
+      "answer": {
+        "text": "Your target bonus is {f2}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "target_bonus"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f2": "mismatch"
+      },
+      "reason": "no reference"
+    },
+    {
+      "error": "scale",
+      "name": "a scale word beside the figure",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross salary is {f1} thousand.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "gross_salary"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "scales it"
+    },
+    {
+      "error": "scale",
+      "name": "a scaled number typed",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross salary is 235 thousand EUR.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "sign",
+      "name": "a sign before the figure",
+      "question": "How many days do I have left in 2026?",
+      "answer": {
+        "text": "Your balance is -{f1} in 2026.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-3",
+              "row": "r5",
+              "column": "remaining_days"
+            },
+            "about": {
+              "subject": "self",
+              "period": "2026"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "sign"
+    },
+    {
+      "error": "sign",
+      "name": "a negative number typed",
+      "question": "How many days do I have left in 2026?",
+      "answer": {
+        "text": "Your balance is -19 days in 2026.",
+        "figures": [],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "u1": "unsourced"
+      }
+    },
+    {
+      "error": "masked",
+      "name": "a masked column cited",
+      "question": "What is my IBAN?",
+      "answer": {
+        "text": "Your IBAN is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-2",
+              "row": "r1",
+              "column": "iban"
+            },
+            "about": {
+              "subject": "self"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "rendered": "Your IBAN is ….",
+      "reason": "masked"
+    },
+    {
+      "error": "table_wrong_order",
+      "name": "ranked table out of order",
+      "question": "Who has the most days left?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-3",
+              "rows": [
+                "r5",
+                "r7"
+              ],
+              "columns": [
+                "full_name",
+                "remaining_days"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "remaining_days"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "out of order"
+    },
+    {
+      "error": "table_missing_row",
+      "name": "ranked table missing the top row",
+      "question": "Who has the most days left?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-3",
+              "rows": [
+                "r5",
+                "r6"
+              ],
+              "columns": [
+                "full_name",
+                "remaining_days"
+              ],
+              "rank": {
+                "op": "top_n",
+                "by": "remaining_days"
+              }
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "missing"
+    },
+    {
+      "error": "table_other_evidence",
+      "name": "a row of the salaries in the leave table",
+      "question": "Who has the most days left?",
+      "answer": {
+        "text": "{t1}",
+        "figures": [
+          {
+            "id": "t1",
+            "table": {
+              "evidence": "ev-3",
+              "rows": [
+                "r7",
+                "r2"
+              ],
+              "columns": [
+                "full_name",
+                "remaining_days"
+              ]
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "t1": "mismatch"
+      },
+      "reason": "r2 is a row of ev-2, not of ev-3"
+    },
+    {
+      "error": "ranking_wrong_order",
+      "name": "top two out of order",
+      "question": "Who has the most days left?",
+      "answer": {
+        "text": "Most days left: {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-3",
+                "column": "remaining_days"
+              },
+              "rows": [
+                "r5",
+                "r7"
+              ],
+              "n": 2
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "out of order"
+    },
+    {
+      "error": "ranking_missing_row",
+      "name": "top two missing one",
+      "question": "Who has the most days left?",
+      "answer": {
+        "text": "Most days left: {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-3",
+                "column": "remaining_days"
+              },
+              "rows": [
+                "r7",
+                "r6"
+              ],
+              "n": 2
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "not in the top 2"
+    },
+    {
+      "error": "ranking_other_evidence",
+      "name": "a row of another result ranked",
+      "question": "Who has the most days left?",
+      "answer": {
+        "text": "Most days left: {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "top_n",
+              "by": {
+                "evidence": "ev-3",
+                "column": "remaining_days"
+              },
+              "rows": [
+                "r7",
+                "r1"
+              ],
+              "n": 2
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "r1 is a row of ev-2, not of ev-3"
+    },
+    {
+      "error": "ranking_wrong_order",
+      "name": "the max claimed for the wrong row",
+      "question": "Who has the most days left?",
+      "answer": {
+        "text": "Nora has the most: {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "computed": {
+              "op": "max",
+              "by": {
+                "evidence": "ev-3",
+                "column": "remaining_days"
+              },
+              "rows": [
+                "r5"
+              ]
+            },
+            "about": {
+              "subject": "Nora Varga"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "does not hold the highest"
+    }
+  ]
+}
