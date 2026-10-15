@@ -23,6 +23,8 @@ employee does not see that airlock at all. A refusal reads "I don't know".
 
 - [Release](docs/release.md): a headless install: documents, Secrets, hosts, validate, apply, status, roll back.
 - [Integrate](docs/integrate.md): call an airlock from a workflow tool (n8n, KNIME): the JSON answer, the sign-in, the templates and the KNIME nodes in the `integrations` repository.
+- [Documents](docs/documents.md): the three document kinds, the project file, rule sets, names and revision, validation.
+- [LLMs and data sources](docs/llms-and-data-sources.md): the model entry, the three levels, how the documents, the API, the controller, the runtimes and the UI carry them, API keys.
 - [AUTHORS.md](AUTHORS.md): the team behind AIsolate.
 
 ## License

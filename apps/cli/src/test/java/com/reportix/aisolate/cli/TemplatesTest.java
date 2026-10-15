@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -18,6 +19,20 @@ import org.junit.jupiter.api.io.TempDir;
 class TemplatesTest {
 
   @TempDir Path parent;
+
+  @Test
+  void givenDocumentsPage_whenRead_thenItsProjectFileIsTheHrTemplatesVerbatim() throws Exception {
+    // Arrange: the page says it shows the file as create writes it, with the template's airlock
+    String template =
+        Files.readString(Path.of("src/main/templates/company-hr/aisolate.yaml"))
+            .replace("${AIRLOCK}", "hr-contracts");
+
+    // Act
+    String page = Files.readString(Path.of("../../docs/documents.md"));
+
+    // Assert
+    assertThat(page).contains("```yaml\n" + template + "```\n");
+  }
 
   @Test
   void givenEntryClimbingOutOfTheTarget_whenExtract_thenRefusedAndNothingWrittenOutside()

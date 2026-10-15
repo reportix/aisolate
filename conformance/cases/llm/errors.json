@@ -1,0 +1,215 @@
+{
+  "description": "The airlock pod's LLM catalog from its env, and project code's llm(id) on it (docs/llms-and-data-sources.md, The runtimes). env is what the controller renders for an airlock that sees granite and nomic; a case's env is merged over it (null removes the variable). A start case expects the catalog read (main, llms in env order) or start_error, the exact message that refuses the start. A call case runs llm(call.llm), then call.op (embed or chat) with call.input, against a stub model server the runner serves in place of every AISOLATE_LLM_<i>_URL's scheme, host and port (its path kept), which answers server.status with server.body; expect.request is what the stub received (path; body: each listed key present with that value, numbers as decimals; headers, by lower-case name: each listed one with that value, null for absent) or null when nothing was sent, then exactly one of result (what the call returned), error (an LlmError / LlmException with exactly this message) or failure (true: it raises, but not an LlmError / LlmException). The 501 and 400 bodies are what Ollama 0.40.6 answered on 2026-10-19 for embed on granite4.1:8b and chat on nomic-embed-text; gpt is an OpenAI-compatible model (provider openai), whose 400 body is what the same Ollama's /v1/chat/completions answered for chat on nomic-embed-text, and whose 501 is the status its /v1/embeddings passes on from /api/embed.",
+  "env": {
+    "AISOLATE_LLM": "granite",
+    "AISOLATE_LLM_0_ID": "granite",
+    "AISOLATE_LLM_0_PROVIDER": "ollama",
+    "AISOLATE_LLM_0_URL": "http://ollama.aisolate.svc:11434",
+    "AISOLATE_LLM_0_MODEL": "granite4.1:8b",
+    "AISOLATE_LLM_1_ID": "nomic",
+    "AISOLATE_LLM_1_PROVIDER": "ollama",
+    "AISOLATE_LLM_1_URL": "http://ollama.aisolate.svc:11434",
+    "AISOLATE_LLM_1_MODEL": "nomic-embed-text",
+    "AISOLATE_LLM_2_ID": "gpt",
+    "AISOLATE_LLM_2_PROVIDER": "openai",
+    "AISOLATE_LLM_2_URL": "https://api.openai.example/v1",
+    "AISOLATE_LLM_2_MODEL": "gpt-4o-mini",
+    "AISOLATE_LLM_2_API_KEY": "sk-test-1234"
+  },
+  "cases": [
+    {
+      "id": "start-ok",
+      "env": {},
+      "expect": {
+        "main": "granite",
+        "llms": [
+          {"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"},
+          {"id": "nomic", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "nomic-embed-text"},
+          {"id": "gpt", "provider": "openai", "url": "https://api.openai.example/v1", "model": "gpt-4o-mini"}
+        ]
+      }
+    },
+    {
+      "id": "start-reads-until-first-missing-id",
+      "description": "AISOLATE_LLM_3_ID is missing, so entry 4 is never read.",
+      "env": {"AISOLATE_LLM_4_ID": "qwen", "AISOLATE_LLM_4_PROVIDER": "ollama", "AISOLATE_LLM_4_URL": "http://ollama.aisolate.svc:11434", "AISOLATE_LLM_4_MODEL": "qwen3.6:27b-q4_K_M"},
+      "expect": {
+        "main": "granite",
+        "llms": [
+          {"id": "granite", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "granite4.1:8b"},
+          {"id": "nomic", "provider": "ollama", "url": "http://ollama.aisolate.svc:11434", "model": "nomic-embed-text"},
+          {"id": "gpt", "provider": "openai", "url": "https://api.openai.example/v1", "model": "gpt-4o-mini"}
+        ]
+      }
+    },
+    {"id": "start-main-missing", "env": {"AISOLATE_LLM": null}, "expect": {"start_error": "AISOLATE_LLM is blank"}},
+    {"id": "start-main-blank", "env": {"AISOLATE_LLM": " "}, "expect": {"start_error": "AISOLATE_LLM is blank"}},
+    {"id": "start-id-blank", "env": {"AISOLATE_LLM_1_ID": ""}, "expect": {"start_error": "AISOLATE_LLM_1_ID is blank"}},
+    {"id": "start-url-blank", "env": {"AISOLATE_LLM_1_URL": null}, "expect": {"start_error": "AISOLATE_LLM_1_URL is blank"}},
+    {"id": "start-model-blank", "env": {"AISOLATE_LLM_0_MODEL": " "}, "expect": {"start_error": "AISOLATE_LLM_0_MODEL is blank"}},
+    {"id": "start-defined-twice", "env": {"AISOLATE_LLM_1_ID": "granite"}, "expect": {"start_error": "model granite is defined twice"}},
+    {"id": "start-other-provider", "env": {"AISOLATE_LLM_1_PROVIDER": "bedrock"}, "expect": {"start_error": "model nomic: provider bedrock is not one of [ollama, openai]"}},
+    {"id": "start-main-not-in-catalog", "env": {"AISOLATE_LLM": "qwen"}, "expect": {"start_error": "AISOLATE_LLM qwen is none of the AISOLATE_LLM_<i>_ID"}},
+    {
+      "id": "start-no-catalog",
+      "env": {"AISOLATE_LLM_0_ID": null},
+      "expect": {"start_error": "AISOLATE_LLM granite is none of the AISOLATE_LLM_<i>_ID"}
+    },
+    {
+      "id": "call-unknown-id",
+      "description": "Raised by llm(id) itself, before any request.",
+      "call": {"llm": "gemma", "op": "embed", "input": "What is my salary?"},
+      "server": null,
+      "expect": {"request": null, "error": "no model named gemma in this airlock's space or globally"}
+    },
+    {
+      "id": "call-embed-text",
+      "call": {"llm": "nomic", "op": "embed", "input": "What is my salary?"},
+      "server": {"status": 200, "body": {"model": "nomic-embed-text", "embeddings": [[0.25, -0.5, 1]], "prompt_eval_count": 6}},
+      "expect": {"request": {"path": "/api/embed", "body": {"model": "nomic-embed-text", "input": "What is my salary?"}, "headers": {"authorization": null}}, "result": [0.25, -0.5, 1]}
+    },
+    {
+      "id": "call-embed-texts",
+      "description": "One vector per text, in order.",
+      "call": {"llm": "nomic", "op": "embed", "input": ["salary", "holidays"]},
+      "server": {"status": 200, "body": {"model": "nomic-embed-text", "embeddings": [[0.25, -0.5], [1, 0]], "prompt_eval_count": 4}},
+      "expect": {"request": {"path": "/api/embed", "body": {"model": "nomic-embed-text", "input": ["salary", "holidays"]}}, "result": [[0.25, -0.5], [1, 0]]}
+    },
+    {
+      "id": "call-embed-on-chat-model",
+      "call": {"llm": "granite", "op": "embed", "input": "What is my salary?"},
+      "server": {"status": 501, "body": {"error": "This server does not support embeddings. Start it with `--embeddings`"}},
+      "expect": {
+        "request": {"path": "/api/embed", "body": {"model": "granite4.1:8b", "input": "What is my salary?"}},
+        "error": "granite4.1:8b (model granite) cannot embed: name an embedding model such as nomic in aisolate.llm(...)"
+      }
+    },
+    {
+      "id": "call-chat",
+      "call": {"llm": "granite", "op": "chat", "input": "Say hello."},
+      "server": {"status": 200, "body": {"model": "granite4.1:8b", "message": {"role": "assistant", "content": "Hello."}, "done": true, "prompt_eval_count": 9, "eval_count": 3}},
+      "expect": {
+        "request": {"path": "/api/chat", "body": {"model": "granite4.1:8b", "messages": [{"role": "user", "content": "Say hello."}], "stream": false, "think": false, "keep_alive": "-1m", "options": {"temperature": 0.1}}},
+        "result": "Hello."
+      }
+    },
+    {
+      "id": "call-chat-on-embedding-model",
+      "call": {"llm": "nomic", "op": "chat", "input": "Say hello."},
+      "server": {"status": 400, "body": {"error": "\"nomic-embed-text\" does not support chat"}},
+      "expect": {
+        "request": {"path": "/api/chat", "body": {"model": "nomic-embed-text", "messages": [{"role": "user", "content": "Say hello."}], "stream": false}},
+        "error": "nomic-embed-text (model nomic) cannot chat: name a chat model such as granite in aisolate.llm(...)"
+      }
+    },
+    {
+      "id": "call-chat-other-400",
+      "description": "A 400 for another reason is no wrong model: it raises as any other failure.",
+      "call": {"llm": "granite", "op": "chat", "input": "Say hello."},
+      "server": {"status": 400, "body": {"error": "invalid message format"}},
+      "expect": {"request": {"path": "/api/chat", "body": {"model": "granite4.1:8b"}}, "failure": true}
+    },
+    {
+      "id": "call-embed-model-not-pulled",
+      "description": "A model the server lacks (Ollama answers 404) is an operator's problem, not a wrong name in code.",
+      "call": {"llm": "nomic", "op": "embed", "input": "salary"},
+      "server": {"status": 404, "body": {"error": "model 'nomic-embed-text' not found"}},
+      "expect": {"request": {"path": "/api/embed", "body": {"model": "nomic-embed-text"}}, "failure": true}
+    },
+    {
+      "id": "call-embed-server-error",
+      "call": {"llm": "nomic", "op": "embed", "input": "salary"},
+      "server": {"status": 500, "body": {"error": "out of memory"}},
+      "expect": {"request": {"path": "/api/embed", "body": {"model": "nomic-embed-text"}}, "failure": true}
+    },
+    {
+      "id": "call-openai-embed-text",
+      "description": "An OpenAI-compatible model embeds at <url>/embeddings with its API key as the bearer.",
+      "env": {"AISOLATE_LLM_2_MODEL": "text-embedding-3-small"},
+      "call": {"llm": "gpt", "op": "embed", "input": "What is my salary?"},
+      "server": {"status": 200, "body": {"object": "list", "data": [{"object": "embedding", "embedding": [0.25, -0.5, 1], "index": 0}], "model": "text-embedding-3-small", "usage": {"prompt_tokens": 6, "total_tokens": 6}}},
+      "expect": {
+        "request": {"path": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": "What is my salary?"}, "headers": {"authorization": "Bearer sk-test-1234"}},
+        "result": [0.25, -0.5, 1]
+      }
+    },
+    {
+      "id": "call-openai-embed-texts",
+      "description": "One vector per text, in the order of their index, whatever order data lists them in.",
+      "env": {"AISOLATE_LLM_2_MODEL": "text-embedding-3-small"},
+      "call": {"llm": "gpt", "op": "embed", "input": ["salary", "holidays"]},
+      "server": {"status": 200, "body": {"object": "list", "data": [{"object": "embedding", "embedding": [1, 0], "index": 1}, {"object": "embedding", "embedding": [0.25, -0.5], "index": 0}], "model": "text-embedding-3-small", "usage": {"prompt_tokens": 4, "total_tokens": 4}}},
+      "expect": {"request": {"path": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": ["salary", "holidays"]}}, "result": [[0.25, -0.5], [1, 0]]}
+    },
+    {
+      "id": "call-openai-embed-without-key",
+      "description": "A model defined without an API key sends no Authorization header: a server such as Ollama's /v1 needs none.",
+      "env": {"AISOLATE_LLM_2_MODEL": "nomic-embed-text", "AISOLATE_LLM_2_API_KEY": null},
+      "call": {"llm": "gpt", "op": "embed", "input": "salary"},
+      "server": {"status": 200, "body": {"object": "list", "data": [{"object": "embedding", "embedding": [0.5], "index": 0}], "model": "nomic-embed-text", "usage": {"prompt_tokens": 2, "total_tokens": 2}}},
+      "expect": {"request": {"path": "/v1/embeddings", "body": {"model": "nomic-embed-text"}, "headers": {"authorization": null}}, "result": [0.5]}
+    },
+    {
+      "id": "call-openai-embed-on-chat-model",
+      "call": {"llm": "gpt", "op": "embed", "input": "What is my salary?"},
+      "server": {"status": 501, "body": {"error": {"message": "This server does not support embeddings. Start it with `--embeddings`", "type": "api_error", "param": null, "code": null}}},
+      "expect": {
+        "request": {"path": "/v1/embeddings", "body": {"model": "gpt-4o-mini", "input": "What is my salary?"}},
+        "error": "gpt-4o-mini (model gpt) cannot embed: name an embedding model such as nomic in aisolate.llm(...)"
+      }
+    },
+    {
+      "id": "call-openai-embed-key-refused",
+      "description": "A 401 names the API key and never quotes it, nor the body that masks it.",
+      "env": {"AISOLATE_LLM_2_MODEL": "text-embedding-3-small"},
+      "call": {"llm": "gpt", "op": "embed", "input": "salary"},
+      "server": {"status": 401, "body": {"error": {"message": "Incorrect API key provided: sk-test-****1234.", "type": "invalid_request_error", "param": null, "code": "invalid_api_key"}}},
+      "expect": {
+        "request": {"path": "/v1/embeddings", "body": {"model": "text-embedding-3-small"}, "headers": {"authorization": "Bearer sk-test-1234"}},
+        "error": "text-embedding-3-small (model gpt): the API key was refused; set it again on the model in AIsolate"
+      }
+    },
+    {
+      "id": "call-openai-chat",
+      "description": "An OpenAI-compatible model chats at <url>/chat/completions with the loop's temperature; the answer is the first choice's content.",
+      "call": {"llm": "gpt", "op": "chat", "input": "Say hello."},
+      "server": {"status": 200, "body": {"id": "chatcmpl-1", "object": "chat.completion", "created": 1760000000, "model": "gpt-4o-mini", "choices": [{"index": 0, "message": {"role": "assistant", "content": "Hello."}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 9, "completion_tokens": 3, "total_tokens": 12}}},
+      "expect": {
+        "request": {"path": "/v1/chat/completions", "body": {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "Say hello."}], "temperature": 0.1}, "headers": {"authorization": "Bearer sk-test-1234"}},
+        "result": "Hello."
+      }
+    },
+    {
+      "id": "call-openai-chat-without-key",
+      "env": {"AISOLATE_LLM_2_API_KEY": null},
+      "call": {"llm": "gpt", "op": "chat", "input": "Say hello."},
+      "server": {"status": 200, "body": {"id": "chatcmpl-2", "object": "chat.completion", "created": 1760000000, "model": "gpt-4o-mini", "choices": [{"index": 0, "message": {"role": "assistant", "content": "Hello."}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 9, "completion_tokens": 3, "total_tokens": 12}}},
+      "expect": {"request": {"path": "/v1/chat/completions", "body": {"model": "gpt-4o-mini"}, "headers": {"authorization": null}}, "result": "Hello."}
+    },
+    {
+      "id": "call-openai-chat-on-embedding-model",
+      "env": {"AISOLATE_LLM_2_MODEL": "nomic-embed-text"},
+      "call": {"llm": "gpt", "op": "chat", "input": "Say hello."},
+      "server": {"status": 400, "body": {"error": {"message": "\"nomic-embed-text\" does not support chat", "type": "invalid_request_error", "param": null, "code": null}}},
+      "expect": {
+        "request": {"path": "/v1/chat/completions", "body": {"model": "nomic-embed-text", "messages": [{"role": "user", "content": "Say hello."}]}},
+        "error": "nomic-embed-text (model gpt) cannot chat: name a chat model such as granite in aisolate.llm(...)"
+      }
+    },
+    {
+      "id": "call-openai-chat-key-refused",
+      "call": {"llm": "gpt", "op": "chat", "input": "Say hello."},
+      "server": {"status": 401, "body": {"error": {"message": "Incorrect API key provided: sk-test-****1234.", "type": "invalid_request_error", "param": null, "code": "invalid_api_key"}}},
+      "expect": {
+        "request": {"path": "/v1/chat/completions", "body": {"model": "gpt-4o-mini"}, "headers": {"authorization": "Bearer sk-test-1234"}},
+        "error": "gpt-4o-mini (model gpt): the API key was refused; set it again on the model in AIsolate"
+      }
+    },
+    {
+      "id": "call-openai-chat-server-error",
+      "call": {"llm": "gpt", "op": "chat", "input": "Say hello."},
+      "server": {"status": 500, "body": {"error": {"message": "out of memory", "type": "api_error", "param": null, "code": null}}},
+      "expect": {"request": {"path": "/v1/chat/completions", "body": {"model": "gpt-4o-mini"}}, "failure": true}
+    }
+  ]
+}

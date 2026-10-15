@@ -8,7 +8,7 @@ state. The same controller renders the same pods as in an install with the AIsol
 ## Write the documents
 
 `<space>.yaml` in the organisation's deployment repository: the `Space` and `Airlock`
-documents, with URLs and Secret names, never a credential.
+documents, with URLs and Secret names, never a credential ([Example documents](documents.md#example-documents)).
 An airlock's code is not in them: the pods fetch it from
 the backend at start, so a
 headless install, which has no backend, runs airlocks without code only; one with code does not start.
@@ -36,7 +36,8 @@ docker run --rm -v "$PWD:/release:ro" aisolate/airlock validate /release
 ```
 
 The command parses the directory, prints every problem and exits 1 or 0 before the application starts. It
-skips documents of other API groups.
+skips documents of other API groups. The
+rules are in [Validation](documents.md#validation).
 
 ## Apply
 
@@ -58,7 +59,8 @@ nothing, and its status says so (`no llm: aisolate deploy brings it`).
 
 ## What the controller renders
 
-Per `Airlock`, everything owned by it:
+Per `Airlock`, everything owned by it, named as [Names, ids and revision](documents.md#names-ids-and-revision)
+lists:
 
 | Object | Airlock pod | MCP server |
 |---|---|---|
@@ -98,7 +100,7 @@ scope and says why on the resource it names: an invalid `Airlock` is held back w
 only a problem of the `Space` or of the install's settings holds back the whole space. So removing a user from
 a `Space` reaches every valid airlock even while another airlock is broken. The problems:
 
-- a problem the loader finds;
+- a problem the loader finds ([Validation](documents.md#validation));
 - a data source an airlock resolves without its URL or its `secretRef`
   (`Airlock <a>: dataSources[<id>].url is required`, `… .secretRef is required`);
 - a host, of an LLM URL or of a data source URL an airlock or its space defines, neither mapped in
