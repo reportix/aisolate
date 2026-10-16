@@ -25,9 +25,9 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The golden set: per template, answers in the format over the evidence its tools return, each with
  * one injected error (or none), and the status every figure must get. No model is asked: the same
- * answer over the same evidence must always come out the same. Fixtures in {@code
- * conformance/cases/grounding}, one per template, shared with the Python airlock; the labels of
- * their evidence are the templates' own entities', which {@code TemplateBuildTest} checks.
+ * answer over the same evidence must always come out the same (docs/verification.md). Fixtures in
+ * {@code conformance/cases/grounding}, one per template, shared with the Python airlock; the labels
+ * of their evidence are the templates' own entities', which {@code TemplateBuildTest} checks.
  */
 class GoldenSetTest {
 

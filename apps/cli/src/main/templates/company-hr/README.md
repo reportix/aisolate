@@ -47,7 +47,7 @@ The template's classes: `ContractsContextPreparator` searches the employment con
 source `hr` for the sections the asking user may read and adds them to the exchange as evidence.
 `SessionMemory` keeps each user's last three questions (200 characters each) while the airlock's
 process runs. Grounding is AIsolate's: it checks that each quote is the contract's own words and
-flags every number typed outside a quote.
+flags every number typed outside a quote (`docs/verification.md`).
 
 ## The one file
 

@@ -57,7 +57,8 @@ today's date, which renewals and overdue invoices need; it adds no evidence.
 client contracts and the board memo in the same data source and adds the closest sections to the
 exchange as evidence. `SessionMemory` keeps each user's last three questions (200 characters each)
 while the airlock's process runs.
-Grounding is AIsolate's: it writes every figure in from the evidence, flags every typed number and shows each figure with the labels the entities declare: whose row
+Grounding is AIsolate's: it writes every figure in from the evidence, flags every typed number
+(`docs/verification.md`) and shows each figure with the labels the entities declare: whose row
 (`withSubjectName("client")`), which period (`withPeriod("issued_on")`) and the unit (`withUnit("EUR")`).
 The verifier is the project's: `CustomerVerifier` checks that every figure is about the customer the question names.
 

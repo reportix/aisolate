@@ -47,7 +47,7 @@ def canonical_rows(rows: list[dict]) -> str:
 
 
 def rows_hash(rows: list[dict]) -> str:
-    """``ChatExchange.rowsHash``: what an auditor re-running the query hashes."""
+    """``ChatExchange.rowsHash``: what an auditor re-running the query hashes (docs/verification.md)."""
     return hashlib.sha256(canonical_rows(rows).encode("utf-8")).hexdigest()
 
 

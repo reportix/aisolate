@@ -9,7 +9,7 @@ import java.util.Map;
  * The answer as the user gets it: the text with every figure written in by AIsolate, the same text
  * as segments, and each figure, table and quote with where it comes from. Every value in it is one
  * the asking user may read: a cell of a tool result, or computed from such cells. A masked or
- * hidden value never reaches the airlock, so it cannot be in here.
+ * hidden value never reaches the airlock, so it cannot be in here (docs/verification.md).
  *
  * @param answer the segments as one text, each figure and table written in
  */

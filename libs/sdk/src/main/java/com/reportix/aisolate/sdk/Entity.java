@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  *
  * <p>The subject's name, the period and the columns' units are a row's labels: AIsolate shows each
  * figure an answer cites with them ("Elena Varga · 2026 · EUR") and checks the model's own claim of
- * whom and which period a figure is about against them.
+ * whom and which period a figure is about against them (docs/verification.md).
  *
  * @param rowKey the column that orders the rows
  * @param subject the column naming whom a row is about, for example {@code patient_id} when one

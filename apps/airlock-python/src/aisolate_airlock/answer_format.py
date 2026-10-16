@@ -1,5 +1,5 @@
 """The model's final answer as AIsolate asks for it: text with placeholders, each a reference into the
-exchange's evidence (Java: ``AnswerFormat``)."""
+exchange's evidence (Java: ``AnswerFormat``; docs/verification.md)."""
 
 from __future__ import annotations
 

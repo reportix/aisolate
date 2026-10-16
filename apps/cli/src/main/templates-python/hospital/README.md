@@ -73,7 +73,7 @@ filter by date for the latest values.
 
 Grounding is AIsolate's: it writes every figure in from the evidence and flags every typed number
 and every typed value of a fact column: `drug`, `dose` and `frequency` of the medication list,
-`diagnosis` and `icd10` of the diagnoses. The verifiers are the project's,
+`diagnosis` and `icd10` of the diagnoses (`docs/verification.md`). The verifiers are the project's,
 `@verifier` classes in `post_llm/` that judge the finished answer and put a sentence under it, never
 blocking it. `LatestReadingVerifier` checks that a question for the last, latest, most recent or
 current reading of a lab test, the vital signs, the ECGs or the therapy sessions is answered with

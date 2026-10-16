@@ -81,10 +81,10 @@ public record AuditEvent(
       String error) {}
 
   /**
-   * The answer's figures by provenance: counts, never a value. {@code grounding} beside it holds
-   * the answer's segments, figures, tables and quotes as the chat returned them, less what the
-   * cells held ({@code value}, {@code subject}, {@code period}, {@code unit}), so the audit shows
-   * the answer with where each figure came from.
+   * The answer's figures by provenance (docs/verification.md): counts, never a value. {@code
+   * grounding} beside it holds the answer's segments, figures, tables and quotes as the chat
+   * returned them, less what the cells held ({@code value}, {@code subject}, {@code period}, {@code
+   * unit}), so the audit shows the answer with where each figure came from.
    */
   public record Figures(int sourced, int computed, int unsourced, int mismatch) {}
 

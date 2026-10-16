@@ -10,8 +10,8 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The model's final answer as AIsolate asks for it, the same for every airlock: text with
  * placeholders, and for each placeholder a reference into the exchange's evidence, never a typed
- * value. The instruction and the schema go into the system message; the final turn is constrained
- * to the schema where the provider supports it.
+ * value (docs/verification.md). The instruction and the schema go into the system message; the
+ * final turn is constrained to the schema where the provider supports it.
  */
 final class AnswerFormat {
 

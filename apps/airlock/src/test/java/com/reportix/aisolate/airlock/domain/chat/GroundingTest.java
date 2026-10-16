@@ -647,7 +647,7 @@ class GroundingTest {
     // Act
     String hash = ChatExchange.rowsHash(List.of(row));
 
-    // Assert
+    // Assert: the Python script of docs/verification.md, run on these rows, prints the same
     assertThat(hash).isEqualTo("900634e46048bb5653237677339da64b0a436180fc1662664d9e21292ce5fb8e");
   }
 }

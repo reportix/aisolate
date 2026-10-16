@@ -41,7 +41,7 @@ curl -s -X POST "$AISOLATE/v1/spaces/acme/airlocks/hr/chat" \
 | Field | Meaning |
 |---|---|
 | `answer` | The text the user gets, every figure written in by AIsolate from the evidence |
-| `segments`, `figures`, `tables`, `quotes` | The answer in pieces and where each figure, table and quote comes from: `status` `sourced`, `computed`, `unsourced` (a number or a fact value the model typed) or `mismatch`, with a `reason` ([API](api.md#the-chat-endpoint)) |
+| `segments`, `figures`, `tables`, `quotes` | The answer in pieces and where each figure, table and quote comes from: `status` `sourced`, `computed`, `unsourced` (a number or a fact value the model typed) or `mismatch`, with a `reason` ([API](api.md#the-chat-endpoint), [Verification](verification.md)) |
 | `provenance` | `status`: `all_sourced`, `has_unsourced`, `has_mismatch` or `no_figures`, and the four counts. A workflow that must not act on an unchecked number branches on it |
 | `dont_know` | `true` when the answer is empty or begins with "I don't know": nothing the caller may read supports one |
 | `evidence` | One entry per thing the answer rests on: `id` (the id the figures cite), `source` (the tool, or the context preparator that added passages), `name` (what it read: the entity), `rows` (how many rows or passages), `data_source` (the data source a tool read, `null` for passages) |

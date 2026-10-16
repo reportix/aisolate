@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * Turns the model's answer into the user's: each placeholder resolved against this exchange's
  * evidence and written in by AIsolate, each claim checked, every number and fact value the model
  * typed itself flagged. Deterministic: the same answer over the same evidence gives the same
- * result, and no model is asked.
+ * result, and no model is asked. What it proves and what it does not: docs/verification.md.
  *
  * <p>A figure is {@code sourced} (a cell that resolves, its labels agreeing with what the model
  * claimed), {@code computed} (an operation AIsolate evaluated over such cells, exact decimals), or

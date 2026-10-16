@@ -63,7 +63,7 @@ another's.
 
 Grounding is AIsolate's: it writes every figure in from the row it cites, with the counterparty or
 supplier, the date and the unit the entities declare, and shows a number the model typed itself as
-unsourced. The verifier is the project's: `PeriodVerifier` checks that
+unsourced (`docs/verification.md`). The verifier is the project's: `PeriodVerifier` checks that
 every figure is for a period the question names, by year: "FY2025", "2025" and a date in 2025 are
 all 2025. A question that names no year is not judged, nor are the cells a computation is made of,
 and a figure for a year such a computation spans is expected.
