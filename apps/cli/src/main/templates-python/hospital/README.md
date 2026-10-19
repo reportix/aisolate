@@ -7,7 +7,7 @@ department is an airlock of it, made from this same template:
 `--airlock=psychiatry`. `aisolate deploy` builds the project and deploys it, together with
 `aisolate.yaml`, into the space `AISOLATE_SPACE` names in `.env`. The airlock is created or updated from the `Airlock` at the top of `aisolate.yaml` on every
 deploy: its name, its description and its own doctors; a field the file leaves out keeps what the AIsolate UI set.
-
+The full walk-through is `docs/develop.md` in the AIsolate repository.
 
 ## One health record, what each department needs
 

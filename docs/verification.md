@@ -200,7 +200,7 @@ Fabrikam. Only the project knows what its questions expect, so an airlock's `Ans
 run after the answer is grounded, on the grounded answer (each figure with its source's entity, column, row key,
 subject, period and unit), the question and the evidence, and return PASS, WARN or FAIL with a sentence; their
 verdicts are `verification` on the answer, apart from the figures. A verdict annotates and never blocks, and a PASS
-says the rule found nothing wrong, not that the answer is right.
+says the rule found nothing wrong, not that the answer is right. To write one: [Write handlers](develop.md#write-handlers).
 
 The templates ship these, one class per language, as reference code for a project's own questions. The title is the
 handler's `@Description`, which the AIsolate UI shows in the airlock's graph.

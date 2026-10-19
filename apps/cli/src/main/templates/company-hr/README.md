@@ -9,7 +9,7 @@ the users who may ask every airlock of it. The LLMs and the data sources are the
 defined for all of AIsolate, on the space or on the airlock: the project names them by id and
 holds no credential. The airlock is created or updated from `aisolate.yaml` on every deploy: its
 name, its description and its own users; a field the file leaves out keeps what the AIsolate UI
-set.
+set. The full walk-through is `docs/develop.md` in the AIsolate repository.
 
 ## The tree
 

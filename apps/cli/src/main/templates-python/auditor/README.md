@@ -6,7 +6,8 @@ airlock of it, made from this same template: `aisolate create
 -s=<space> -t=auditor --airlock=<company>` once per company. `aisolate deploy` builds the project and
 deploys it, together with `aisolate.yaml`, into the space `AISOLATE_SPACE` names in `.env`.
 The airlock is created or updated from the `Airlock` at the top of `aisolate.yaml` on every
-deploy: its name, its description; a field the file leaves out keeps what the AIsolate UI set.
+deploy: its name, its description; a field the file leaves out keeps what the AIsolate UI set. The full walk-through is `docs/develop.md` in the AIsolate
+repository.
 
 ## One airlock per company, one code
 
