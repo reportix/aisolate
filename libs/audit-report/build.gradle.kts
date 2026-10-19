@@ -15,3 +15,10 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.assertj:assertj-core")
 }
+
+tasks.test {
+    // The examples' reports are golden files of their audit logs: an input, so a changed one reruns it
+    val examples = rootProject.file("taxonomy/audit/examples")
+    inputs.dir(examples).withPropertyName("auditExamples").withPathSensitivity(PathSensitivity.RELATIVE)
+    systemProperty("aisolate.audit.examples", examples.absolutePath)
+}

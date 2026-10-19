@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xbrl xmlns="http://www.xbrl.org/2003/instance"
+  xmlns:xbrli="http://www.xbrl.org/2003/instance"
+  xmlns:aisolate="https://aisolate.ai/xbrl/audit/2026-10-26"
+  xmlns:link="http://www.xbrl.org/2003/linkbase"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:xbrldi="http://xbrl.org/2006/xbrldi"
+  xmlns:lei="http://standards.iso.org/iso/17442">
+  <link:schemaRef xlink:type="simple" xlink:href="https://aisolate.ai/xbrl/audit/2026-10-26/aisolate-audit-2026-10-26.xsd"/>
+  <unit id="u-1">
+    <measure>xbrli:pure</measure>
+  </unit>
+  <context id="c-1">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900HALVARDFINCH06</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>e29904d3c0e4ff8815311c0a26851bb5</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:Space contextRef="c-1">halvard-finch</aisolate:Space>
+  <aisolate:Airlock contextRef="c-1">northbeck</aisolate:Airlock>
+  <aisolate:ExchangeTime contextRef="c-1">2026-10-19T11:05:22.121Z</aisolate:ExchangeTime>
+  <aisolate:User contextRef="c-1">hannah@halvardfinch.example</aisolate:User>
+  <aisolate:Question contextRef="c-1">Which payments to related parties are above 10,000 EUR?</aisolate:Question>
+  <aisolate:Answer contextRef="c-1">These payments to related parties are above 10,000 EUR:
+| counterparty | entry_date | amount_eur |
+| --- | --- | --- |
+| Harbour Lane Properties GmbH | 2025-10-03 | 48,500 EUR |
+| Brightmoor Holdings GmbH | 2025-12-15 | 120,000 EUR |
+</aisolate:Answer>
+  <aisolate:Outcome contextRef="c-1">answered</aisolate:Outcome>
+  <aisolate:Model contextRef="c-1">ollama/granite4.1:8b</aisolate:Model>
+  <aisolate:InputTokens contextRef="c-1" unitRef="u-1" decimals="INF">7736</aisolate:InputTokens>
+  <aisolate:OutputTokens contextRef="c-1" unitRef="u-1" decimals="INF">318</aisolate:OutputTokens>
+  <aisolate:Duration contextRef="c-1">PT11.004S</aisolate:Duration>
+  <context id="c-2">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900HALVARDFINCH06</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>cff97f43d89ab2e8b14961980006c3f7</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:Space contextRef="c-2">halvard-finch</aisolate:Space>
+  <aisolate:Airlock contextRef="c-2">pellworth</aisolate:Airlock>
+  <aisolate:ExchangeTime contextRef="c-2">2026-10-19T11:05:33.202Z</aisolate:ExchangeTime>
+  <aisolate:User contextRef="c-2">hannah@halvardfinch.example</aisolate:User>
+  <aisolate:Question contextRef="c-2">Which payments to related parties are above 10,000 EUR?</aisolate:Question>
+  <aisolate:Answer contextRef="c-2">The payment of €64,000 to Pellworth Agrar KG on 2025‑11‑10 exceeds the €10,000 threshold for related‑party payments. It requires supervisory‑board approval (with the interested member absent) and must be disclosed in the notes, per the Pellworth Foods related‑party policy.</aisolate:Answer>
+  <aisolate:Outcome contextRef="c-2">answered</aisolate:Outcome>
+  <aisolate:Model contextRef="c-2">ollama/granite4.1:8b</aisolate:Model>
+  <aisolate:InputTokens contextRef="c-2" unitRef="u-1" decimals="INF">11139</aisolate:InputTokens>
+  <aisolate:OutputTokens contextRef="c-2" unitRef="u-1" decimals="INF">1081</aisolate:OutputTokens>
+  <aisolate:Duration contextRef="c-2">PT36.103S</aisolate:Duration>
+  <context id="c-3">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900HALVARDFINCH06</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>cb1f62d93dbaf72b7477878bbcc4df87</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:Space contextRef="c-3">halvard-finch</aisolate:Space>
+  <aisolate:Airlock contextRef="c-3">northbeck</aisolate:Airlock>
+  <aisolate:ExchangeTime contextRef="c-3">2026-10-19T11:06:09.385Z</aisolate:ExchangeTime>
+  <aisolate:User contextRef="c-3">noah@aldermoor.example</aisolate:User>
+  <aisolate:Question contextRef="c-3">Which payments to related parties are above 10,000 EUR?</aisolate:Question>
+  <aisolate:Outcome contextRef="c-3">refused</aisolate:Outcome>
+  <aisolate:Duration contextRef="c-3">PT0S</aisolate:Duration>
+  <context id="c-4">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900HALVARDFINCH06</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>e29904d3c0e4ff8815311c0a26851bb5</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>1</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-4">related_party_payments</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-4">ledger</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-4" unitRef="u-1" decimals="INF">2</aisolate:RowsReturned>
+  <context id="c-5">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900HALVARDFINCH06</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>cff97f43d89ab2e8b14961980006c3f7</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>1</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-5">related_party_payments</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-5">ledger</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-5" unitRef="u-1" decimals="INF">1</aisolate:RowsReturned>
+  <context id="c-6">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900HALVARDFINCH06</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>cff97f43d89ab2e8b14961980006c3f7</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>2</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-6">read_records</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-6">ledger</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-6" unitRef="u-1" decimals="INF">1</aisolate:RowsReturned>
+  <context id="c-7">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900HALVARDFINCH06</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>cb1f62d93dbaf72b7477878bbcc4df87</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>1</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-7">related_party_payments</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-7">ledger</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-7" unitRef="u-1" decimals="INF">2</aisolate:RowsReturned>
+</xbrl>

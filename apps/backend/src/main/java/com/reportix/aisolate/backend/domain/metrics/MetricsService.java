@@ -16,10 +16,10 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 /**
- * Monitoring's charts: the example dashboard's five panels, as fixed queries over the series the
- * pods serve, scoped to the caller's spaces by the {@code space} label the scraper copies from the
- * pod. Nothing a caller sends becomes PromQL but a space or an airlock id, each checked against the
- * id rule first. Without a metrics store every call is 404.
+ * Monitoring's charts (docs/observability.md): the example dashboard's five panels, as fixed
+ * queries over the series the pods serve, scoped to the caller's spaces by the {@code space} label
+ * the scraper copies from the pod. Nothing a caller sends becomes PromQL but a space or an airlock
+ * id, each checked against the id rule first. Without a metrics store every call is 404.
  */
 @Service
 public class MetricsService {

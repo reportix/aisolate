@@ -23,7 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The audit trail: lines in from the airlock pods, each chained to its airlock's last; read back by
- * the AIsolate UI, the CLI and auditors; and the chain walked again on demand.
+ * the AIsolate UI, the CLI and auditors; and the chain walked again on demand (docs/audit.md).
  */
 @Service
 @RequiredArgsConstructor

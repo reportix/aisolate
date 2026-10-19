@@ -73,7 +73,7 @@ CREATE TABLE airlock_code (
     PRIMARY KEY (airlock_id, seq)
 );
 
--- The audit trail: one row per audit line an airlock pod handed over. Append-only: the
+-- The audit trail: one row per audit line an airlock pod handed over (docs/audit.md). Append-only: the
 -- backend writes and reads it as aisolate_audit_writer, which may INSERT and SELECT and nothing else, and
 -- a trigger refuses UPDATE, DELETE and TRUNCATE whoever asks. Only whole months leave, dropped as
 -- partitions by the retention job (the owner). Per airlock, hash = sha256(prev_hash || body): a line

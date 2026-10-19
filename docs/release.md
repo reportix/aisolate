@@ -86,7 +86,7 @@ lists:
   - Its NetworkPolicy admits the ingress controller on 8080 and a scraper on 9464, and lets out DNS, the
     identity provider, the egress proxy and the trace collector only.
 - With `platform.observability.otlpEndpoint` set, both pods get it as `MANAGEMENT_OTLP_TRACING_ENDPOINT` and
-  send their traces there.
+  send their traces there ([Observability](observability.md#traces)).
 - Each pod's egress is the admin's peer for each host it reaches: every catalog LLM's host for the airlock pod, every
   data source host and the trace collector's for both, or the egress proxy; the JVM sends HTTPS through the proxy for every host but the directly mapped ones, the identity
   provider's unless it is proxied, and the cluster's own (`*.svc`, `*.cluster.local`).
@@ -133,5 +133,6 @@ name.
 Every airlock pod logs each exchange: `exchange_start`, `handlers_resolved`, `handler_ran`, `tool_called`
 (with the row count and the evidence id), `verifier_ran` (with the verdict), `exchange_done`; at start,
 `config_loaded` with the revision. A refusal's reason is logged at WARN. The pod also writes the audit trail, one JSON line
-per exchange and per refused request on its own logger `aisolate.audit` to stdout. Logs name handlers and count rows; they carry no
+per exchange and per refused request on its own logger `aisolate.audit` to stdout
+([Audit](audit.md)). Logs name handlers and count rows; they carry no
 rows, no passages and no token.

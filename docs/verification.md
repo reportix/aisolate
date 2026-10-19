@@ -237,8 +237,8 @@ call its `args`, the rule version, the SQL hash and `rows_hash`: the sha256 of t
 JSON with each row's keys sorted and every number as plain decimal text without trailing zeros. An auditor who
 re-runs the governed query at the same revision gets the same hash, or sees that the data changed since. The arguments are the model's, as it wrote them: it saw a masked column as
 `****`, so no masked value is among them, and a call the tool server refused records none. The counts stay in the audit trail (the **Audit** page, the API); the XBRL
-audit report carries each exchange's verifier verdicts instead. The exchange's
-span carries the same four counts.
+audit report carries each exchange's verifier verdicts instead ([Audit](audit.md#the-taxonomy)). The exchange's
+span carries the same four counts ([Observability](observability.md#traces)).
 
 ## Re-running a tool call
 

@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xbrl xmlns="http://www.xbrl.org/2003/instance"
+  xmlns:xbrli="http://www.xbrl.org/2003/instance"
+  xmlns:aisolate="https://aisolate.ai/xbrl/audit/2026-10-26"
+  xmlns:link="http://www.xbrl.org/2003/linkbase"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:xbrldi="http://xbrl.org/2006/xbrldi"
+  xmlns:lei="http://standards.iso.org/iso/17442">
+  <link:schemaRef xlink:type="simple" xlink:href="https://aisolate.ai/xbrl/audit/2026-10-26/aisolate-audit-2026-10-26.xsd"/>
+  <unit id="u-1">
+    <measure>xbrli:pure</measure>
+  </unit>
+  <context id="c-1">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>3da3e9fe19396ae5bbcde01965451057</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:Space contextRef="c-1">aldermoor</aisolate:Space>
+  <aisolate:Airlock contextRef="c-1">cardiology</aisolate:Airlock>
+  <aisolate:ExchangeTime contextRef="c-1">2026-10-19T11:06:09.441Z</aisolate:ExchangeTime>
+  <aisolate:User contextRef="c-1">noah@aldermoor.example</aisolate:User>
+  <aisolate:Question contextRef="c-1">What was Julian's last troponin, and which blood thinners is he on?</aisolate:Question>
+  <aisolate:Answer contextRef="c-1">Julian Marek's last troponin was 38 ng/L, and he is on the blood thinners 
+| drug | dose | frequency |
+| --- | --- | --- |
+| Apixaban | 5 mg | twice daily |
+| Aspirin | 100 mg | once daily |
+.</aisolate:Answer>
+  <aisolate:Outcome contextRef="c-1">answered</aisolate:Outcome>
+  <aisolate:Model contextRef="c-1">ollama/granite4.1:8b</aisolate:Model>
+  <aisolate:InputTokens contextRef="c-1" unitRef="u-1" decimals="INF">22119</aisolate:InputTokens>
+  <aisolate:OutputTokens contextRef="c-1" unitRef="u-1" decimals="INF">485</aisolate:OutputTokens>
+  <aisolate:Duration contextRef="c-1">PT23.154S</aisolate:Duration>
+  <context id="c-2">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>c40f503081e3d29bf607319082d85dbc</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:Space contextRef="c-2">aldermoor</aisolate:Space>
+  <aisolate:Airlock contextRef="c-2">cardiology</aisolate:Airlock>
+  <aisolate:ExchangeTime contextRef="c-2">2026-10-19T11:06:32.683Z</aisolate:ExchangeTime>
+  <aisolate:User contextRef="c-2">noah@aldermoor.example</aisolate:User>
+  <aisolate:Question contextRef="c-2">Why is Julian taking sertraline?</aisolate:Question>
+  <aisolate:Answer contextRef="c-2">I don't know</aisolate:Answer>
+  <aisolate:Outcome contextRef="c-2">dont_know</aisolate:Outcome>
+  <aisolate:Model contextRef="c-2">ollama/granite4.1:8b</aisolate:Model>
+  <aisolate:InputTokens contextRef="c-2" unitRef="u-1" decimals="INF">9070</aisolate:InputTokens>
+  <aisolate:OutputTokens contextRef="c-2" unitRef="u-1" decimals="INF">125</aisolate:OutputTokens>
+  <aisolate:Duration contextRef="c-2">PT6.807S</aisolate:Duration>
+  <context id="c-3">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>e82341d02cd81b0b1990e3133672072a</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:Space contextRef="c-3">aldermoor</aisolate:Space>
+  <aisolate:Airlock contextRef="c-3">psychiatry</aisolate:Airlock>
+  <aisolate:ExchangeTime contextRef="c-3">2026-10-19T11:06:39.560Z</aisolate:ExchangeTime>
+  <aisolate:User contextRef="c-3">clara@aldermoor.example</aisolate:User>
+  <aisolate:Question contextRef="c-3">How has Julian's mood changed over his last three sessions?</aisolate:Question>
+  <aisolate:Answer contextRef="c-3">Over his last three sessions his depression score went from 17 to 13 to 9, and his mood from low, withdrawn to low but more engaged to brighter, hopeful.</aisolate:Answer>
+  <aisolate:Outcome contextRef="c-3">answered</aisolate:Outcome>
+  <aisolate:Model contextRef="c-3">ollama/granite4.1:8b</aisolate:Model>
+  <aisolate:InputTokens contextRef="c-3" unitRef="u-1" decimals="INF">6533</aisolate:InputTokens>
+  <aisolate:OutputTokens contextRef="c-3" unitRef="u-1" decimals="INF">289</aisolate:OutputTokens>
+  <aisolate:Duration contextRef="c-3">PT9.652S</aisolate:Duration>
+  <context id="c-4">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>091f8bb6d194664430a8b6ad84304bf7</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:Space contextRef="c-4">aldermoor</aisolate:Space>
+  <aisolate:Airlock contextRef="c-4">cardiology</aisolate:Airlock>
+  <aisolate:ExchangeTime contextRef="c-4">2026-10-19T11:06:49.284Z</aisolate:ExchangeTime>
+  <aisolate:User contextRef="c-4">clara@aldermoor.example</aisolate:User>
+  <aisolate:Question contextRef="c-4">What was Julian's last troponin?</aisolate:Question>
+  <aisolate:Outcome contextRef="c-4">refused</aisolate:Outcome>
+  <aisolate:Duration contextRef="c-4">PT0S</aisolate:Duration>
+  <context id="c-5">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>fe3c67df33a2d45ef1fbfa34485914f8</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:Space contextRef="c-5">aldermoor</aisolate:Space>
+  <aisolate:Airlock contextRef="c-5">cardiology</aisolate:Airlock>
+  <aisolate:ExchangeTime contextRef="c-5">2026-10-19T11:06:49.341Z</aisolate:ExchangeTime>
+  <aisolate:User contextRef="c-5">grace@aldermoor.example</aisolate:User>
+  <aisolate:Question contextRef="c-5">Average blood pressure by age group</aisolate:Question>
+  <aisolate:Answer contextRef="c-5">Average systolic blood pressure by age group:
+| age_group | value |
+| --- | --- |
+| 18-39 | 119.25 mmHg |
+| 40-59 | 137.33 mmHg |
+| 60-79 | 139.11 mmHg |
+
+Groups under the minimum size are not shown.</aisolate:Answer>
+  <aisolate:Outcome contextRef="c-5">answered</aisolate:Outcome>
+  <aisolate:Model contextRef="c-5">ollama/granite4.1:8b</aisolate:Model>
+  <aisolate:InputTokens contextRef="c-5" unitRef="u-1" decimals="INF">6150</aisolate:InputTokens>
+  <aisolate:OutputTokens contextRef="c-5" unitRef="u-1" decimals="INF">121</aisolate:OutputTokens>
+  <aisolate:Duration contextRef="c-5">PT6.872S</aisolate:Duration>
+  <context id="c-6">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>3da3e9fe19396ae5bbcde01965451057</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>1</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-6">read_cardiology_records</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-6">ehr</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-6" unitRef="u-1" decimals="INF">5</aisolate:RowsReturned>
+  <context id="c-7">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>3da3e9fe19396ae5bbcde01965451057</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>2</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-7">read_medications</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-7">ehr</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-7" unitRef="u-1" decimals="INF">4</aisolate:RowsReturned>
+  <context id="c-8">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>3da3e9fe19396ae5bbcde01965451057</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>3</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-8">aggregate_cardiology_records</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-8">ehr</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-8" unitRef="u-1" decimals="INF">0</aisolate:RowsReturned>
+  <context id="c-9">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>c40f503081e3d29bf607319082d85dbc</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>1</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-9">read_medications</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-9">ehr</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-9" unitRef="u-1" decimals="INF">4</aisolate:RowsReturned>
+  <context id="c-10">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>e82341d02cd81b0b1990e3133672072a</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>1</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-10">read_psychiatry_records</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-10">ehr</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-10" unitRef="u-1" decimals="INF">3</aisolate:RowsReturned>
+  <context id="c-11">
+    <entity>
+      <identifier scheme="http://standards.iso.org/iso/17442">529900ALDERMOORHSP32</identifier>
+    </entity>
+    <period>
+      <startDate>2026-10-19</startDate>
+      <endDate>2026-10-19</endDate>
+    </period>
+    <scenario>
+      <xbrldi:typedMember dimension="aisolate:ExchangeAxis">
+        <aisolate:ExchangeId>fe3c67df33a2d45ef1fbfa34485914f8</aisolate:ExchangeId>
+      </xbrldi:typedMember>
+      <xbrldi:typedMember dimension="aisolate:ToolCallAxis">
+        <aisolate:ToolCallPosition>1</aisolate:ToolCallPosition>
+      </xbrldi:typedMember>
+    </scenario>
+  </context>
+  <aisolate:ToolName contextRef="c-11">aggregate_cardiology_records</aisolate:ToolName>
+  <aisolate:DataSource contextRef="c-11">ehr</aisolate:DataSource>
+  <aisolate:RowsReturned contextRef="c-11" unitRef="u-1" decimals="INF">3</aisolate:RowsReturned>
+</xbrl>

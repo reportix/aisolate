@@ -1,4 +1,4 @@
-"""The spans of one exchange (``ExchangeTracing``): their names and attributes.
+"""The spans of one exchange (``ExchangeTracing``): names and attributes as docs/observability.md.
 
 A failed span gets status ERROR and ``error.type``, never an exception's message or event: a message may
 quote a row, a prompt or a token.

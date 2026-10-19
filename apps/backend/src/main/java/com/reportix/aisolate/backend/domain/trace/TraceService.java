@@ -17,9 +17,9 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.MissingNode;
 
 /**
- * Monitoring's traces: the list is the audit trail's exchanges, scoped as the audit is; a trace is
- * its audit line and the spans the trace store holds for it. Without a trace store every call is
- * 404, as if the endpoints did not exist.
+ * Monitoring's traces (docs/observability.md): the list is the audit trail's exchanges, scoped as
+ * the audit is; a trace is its audit line and the spans the trace store holds for it. Without a
+ * trace store every call is 404, as if the endpoints did not exist.
  */
 @Service
 @Slf4j

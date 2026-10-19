@@ -12,7 +12,7 @@ import tools.jackson.databind.annotation.JsonNaming;
 
 /**
  * A trace's spans as the AIsolate UI's trace page shows them: a tree of steps, each with its kind,
- * its time from the trace's start, whether it failed and its attributes.
+ * its time from the trace's start, whether it failed and its attributes (docs/observability.md).
  */
 public final class TraceTree {
 
