@@ -19,8 +19,22 @@ airlock its people ask about their employment contract: an employee reads only t
 one. In the Sales airlock the founders ask about client accounts, invoices and what was agreed with a client; an
 employee does not see that airlock at all. A refusal reads "I don't know".
 
+## How it fits together
+
+An **airlock** is a governed endpoint inside a **space**. The space lists the users who may ask every airlock of
+it and holds the LLM and data sources its airlocks share; the airlock lists its own users, who may ask it alone
+([Users](docs/concepts.md#vocabulary)), and its callers. Each airlock runs as its own pod pair in Kubernetes: the airlock pod (the endpoint, the agent
+loop, the airlock's handlers) and its MCP server (the airlock's tools over the organisation's database, the
+rules compiled into SQL). A **controller** turns the
+`Space` and `Airlock` documents into those pods. A developer's project is one airlock: its
+code, written against the AIsolate SDK, and its `Airlock` in `aisolate.yaml`; the `aisolate` CLI
+creates it and deploys it into an airlock of the AIsolate UI. Whether an install has the AIsolate UI is the
+admin's choice, `headless`: with it, the backend applies every save; headless, an admin applies the
+documents through the organisation's own pipeline. See [docs/concepts.md](docs/concepts.md).
+
 ## Documentation
 
+- [Concepts](docs/concepts.md): what an airlock is, who decides what, the vocabulary, where LLM and data sources are defined, the stages, the components.
 - [Develop](docs/develop.md): the CLI, the project of one airlock, tools, handlers, rules, the AIsolate UI, trying an airlock.
 - [Command-line interface](docs/cli.md): install the `aisolate` CLI on macOS or Windows, its commands, where it keeps the session, building it.
 - [Release](docs/release.md): a headless install: documents, Secrets, hosts, validate, apply, status, roll back.

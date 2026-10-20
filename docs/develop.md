@@ -97,7 +97,7 @@ project depends on. The project's own `README.md` says what each file does.
 Every class of the project belongs to the airlock its `aisolate.yaml` names, in any package; nothing is
 registered. The pods and the backend scan the classes, package-private or not; each plugin and handler needs a
 no-argument constructor. The templates' `pre_llm/`, `tools/` and `post_llm/` folders sort the classes by the
-stage they run in, and nothing parses them.
+stage they run in ([Stages](concepts.md#stages)), and nothing parses them.
 
 ## Write tools
 
@@ -261,7 +261,7 @@ to `POST /v1/spaces/{space}/deploy`, the space being `AISOLATE_SPACE`. The backe
 
 Nothing is deleted. Every class of the project
 belongs to this airlock. The CLI prints the deploy's warnings, then the airlock with its change count
-(`revision 1`, one more on every save or deploy; not the revision of its documents):
+(`revision 1`, one more on every save or deploy; not the [revision](concepts.md#vocabulary) of its documents):
 
 ```
 ⏺  Signed in as jasmine
