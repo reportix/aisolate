@@ -1,5 +1,5 @@
 """The build: discover a project's tools and handlers by importing its package locally, write
-``aisolate-manifest.json`` and zip the artifact. The runtimes call
+``aisolate-manifest.json`` and zip the artifact (docs/python-artifact.md). The runtimes call
 :func:`discover` and :func:`check` on the same package at start, so the build and the pods agree on
 what a project contains.
 

@@ -44,9 +44,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * What a Python airlock's artifact carries, read from its {@code aisolate-manifest.json} and {@code
- * rules/*.json} alone: the zip is never extracted, nothing in it is imported or run. The manifest
- * is checked against docs/python-artifact.schema.json, then as a jar's scan is ({@link
- * CatalogCheck}), so a deploy never accepts code the pods refuse.
+ * rules/*.json} alone: the zip is never extracted, nothing in it is imported or run
+ * (docs/python-artifact.md). The manifest is checked against docs/python-artifact.schema.json, then
+ * as a jar's scan is ({@link CatalogCheck}), so a deploy never accepts code the pods refuse.
  */
 public final class ManifestReader {
 

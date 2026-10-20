@@ -4,8 +4,9 @@ import java.util.List;
 
 /**
  * The text the user gets, the verdicts collected so far, the question as typed, and the grounded
- * answer as JSON text ({@code {answer, segments, figures, tables, quotes, provenance}}), empty only
- * for an Answer built without it (the airlock always fills it, a plain answer included).
+ * answer as JSON text ({@code {answer, segments, figures, tables, quotes, provenance}},
+ * runtime-contract §6.6), empty only for an Answer built without it (the airlock always fills it, a
+ * plain answer included).
  */
 public record Answer(String text, List<Verdict> verdicts, String question, String groundingJson) {
   public Answer {

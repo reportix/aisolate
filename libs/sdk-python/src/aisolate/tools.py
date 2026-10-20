@@ -178,7 +178,7 @@ class Filter:
 class Labels:
     """A result's columns as the entity declares them, each only when the result has that column.
 
-    Java: ``Result.Labels``.
+    Java: ``Result.Labels``; the wire JSON is runtime-contract.md §3 (the tool result).
     """
 
     row_key: str | None = None

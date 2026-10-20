@@ -35,7 +35,7 @@ The project is Python by default; `--language=java` (`-l`) writes the same templ
 exists in both languages, with the same `aisolate.yaml`, the same `rules/*.json`, the same tools, entities and
 handlers by name: the airlock behaves the same, only the pods' images differ. A Python project is
 `pyproject.toml`, `src/<package>/` (`tools/`, `pre_llm/`, `post_llm/`), `rules/`, `tests/` (pytest) and the SDK
-in `libs/aisolate-sdk/`.
+in `libs/aisolate-sdk/`; [The Python artifact](python-artifact.md) has its layout and what its build writes.
 
 `create` writes the project into a directory named after the template, `./company-hr`, with
 `AISOLATE_SPACE=hr-space` in `.env` and the project's name, `company-hr`, in `pyproject.toml` (in
@@ -236,8 +236,9 @@ backend reads the manifest and never runs the project's code; the Python airlock
 The project's own dependencies (`[project] dependencies` beyond the SDK) travel in the zip's `vendor/`: uv installs
 them as Linux binary wheels for Python 3.13 on the cluster's CPU, by default this machine's (`aarch64` on Apple
 Silicon; `AISOLATE_ARCH=x86_64 aisolate deploy` for an x86_64 cluster). The runtime's own packages
-come from the pods, never the zip: the build refuses a dependency that needs one of them
-at another version, naming the package and both versions, and a package without a Linux wheel, naming it. Without uv, a project with dependencies of its own does not
+(runtime-contract.md §12) come from the pods, never the zip: the build refuses a dependency that needs one of them
+at another version, naming the package and both versions, and a package without a Linux wheel, naming it
+([python-artifact.md](python-artifact.md#the-zip)). Without uv, a project with dependencies of its own does not
 build: install uv. The templates depend on nothing else.
 
 The zip has no size limit unless the install sets one: each pod fetches it from the backend at start, so a binary

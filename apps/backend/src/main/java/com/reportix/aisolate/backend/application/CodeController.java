@@ -22,8 +22,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Where an airlock's pods get its code at start: the artifact by its digest, for the airlock's code
- * token alone. No user calls it, so it has no AIsolate UI role; served on the ingest port alone
- * ({@link AuditIngestPort}). The pod checks the digest of what it got.
+ * token alone (docs/runtime-contract.md). No user calls it, so it has no AIsolate UI role; served
+ * on the ingest port alone ({@link AuditIngestPort}). The pod checks the digest of what it got.
  */
 @Hidden
 @RestController

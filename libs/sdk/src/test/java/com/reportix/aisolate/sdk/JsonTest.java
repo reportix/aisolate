@@ -42,7 +42,7 @@ class JsonTest {
 
   @Test
   void givenGroundingJson_whenParsed_thenFigureSourceReadable() {
-    // Arrange: the airlock's shape
+    // Arrange: the airlock's shape (runtime-contract §6.6)
     String text =
         """
         {"answer":"Your gross salary is 78,000 EUR.","segments":[{"text":"Your gross salary is "},{"figure":"f1"},{"text":"."}],"figures":[{"id":"f1","display":"78,000 EUR","value":"78000","status":"sourced","source":{"evidence":"ev-2","entity":"hr.compensation","column":"gross_salary","row_key":"3","subject":"Eric Lindholm","unit":"EUR"}}],"tables":[],"quotes":[],"provenance":{"status":"all_sourced","sourced":1,"computed":0,"unsourced":0,"mismatch":0}}

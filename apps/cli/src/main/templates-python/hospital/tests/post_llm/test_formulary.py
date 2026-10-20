@@ -120,7 +120,7 @@ def quote(quote_id, status, text):
 
 
 def grounded(text, figures=(), tables=(), quotes=()):
-    """The grounded answer as the airlock serialises it: the text in segments, a figure or
+    """The grounded answer as the airlock serialises it (runtime-contract §6.6): the text in segments, a figure or
     a table where the text places it; a quote is in the text between double quotes."""
     segments = [
         {"text": part} if index % 2 == 0 else {"table" if part.startswith("t") else "figure": part}

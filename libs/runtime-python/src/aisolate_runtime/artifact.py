@@ -1,4 +1,4 @@
-"""The project artifact a Python pod loads."""
+"""The project artifact a Python pod loads (docs/python-artifact.md "Delivery and loading")."""
 
 from __future__ import annotations
 

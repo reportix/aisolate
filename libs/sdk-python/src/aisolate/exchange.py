@@ -45,7 +45,7 @@ class Evidence:
     """One evidence of the exchange: passages a handler added or the JSON a tool returned, verbatim.
 
     ``id`` is ``ev-n``; ``source`` is the handler that added the passages, or the tool's name;
-    ``content_json`` is the evidence's JSON text. Java: ``Evidence``.
+    ``content_json`` is the evidence's JSON text (runtime-contract.md §6). Java: ``Evidence``.
     """
 
     id: str
@@ -98,7 +98,7 @@ FAIL = Status.FAIL
 @dataclass(frozen=True, slots=True)
 class Answer:
     """The text the user gets, the verdicts collected so far, the question as typed, and the grounded answer
-    as JSON text (``{answer, segments, figures, tables, quotes, provenance}``),
+    as JSON text (``{answer, segments, figures, tables, quotes, provenance}``, runtime-contract.md §6.6),
     empty only for an Answer built without it (the airlock always fills it, a plain answer included).
     Java: ``Answer``."""
 

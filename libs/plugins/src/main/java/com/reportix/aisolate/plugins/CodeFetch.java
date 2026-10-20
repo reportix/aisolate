@@ -15,10 +15,10 @@ import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * How a pod gets its airlock's code: fetched at start from the backend's cluster-internal {@code
- * AISOLATE_CODE_URL} with the airlock's code token, written to the pod's scratch directory and its
- * sha256 checked against {@code AISOLATE_CODE_DIGEST}. Any refusal fails the start; the pod is not
- * ready before its code is loaded.
+ * How a pod gets its airlock's code (docs/runtime-contract.md, "The code"): fetched at start from
+ * the backend's cluster-internal {@code AISOLATE_CODE_URL} with the airlock's code token, written
+ * to the pod's scratch directory and its sha256 checked against {@code AISOLATE_CODE_DIGEST}. Any
+ * refusal fails the start; the pod is not ready before its code is loaded.
  */
 @Slf4j
 public final class CodeFetch {
