@@ -6,7 +6,8 @@ audit report, an XBRL report built from those lines, of one exchange or of every
 ## The audit trail is part of the platform
 
 **The audit record** is one JSON line per exchange and per refused request, written by the airlock pod. It says
-who asked what of which airlock, what came of it and what it cost; it holds provenance, never rows.
+who asked what of which airlock, what came of it and what it cost; it holds provenance, never rows. An
+example line and every field: [Security, Audit trail](security.md#audit-trail).
 
 AIsolate keeps these lines in its own database, the backend's, and reads them back in the AIsolate UI (**Audit**)
 and through the API. Nothing depends on a log pipeline: tracing and monitoring are optional views
@@ -55,7 +56,8 @@ client, outcome, reason, question, answer, figure counts, tokens, duration), and
   `hash = sha256(prev_hash || body)`, the first line's `prev_hash` 64 zeros. Lines of all airlocks and replicas
   of an airlock are chained one at a time. `GET /v1/audit/verify?space=&airlock=` walks the chain again and names
   the first line that fails: `altered` (its line or a column no longer gives its hash) or `removed` (it no
-  longer follows the line before it).
+  longer follows the line before it). What that proves and what it does not: [Security, Audit
+  trail](security.md#audit-trail).
 - A retry whose answer was lost sends the same line again; the backend finds it by its digest and answers with
   the stored id, so a line is stored once.
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aisolate.ai/schemas/audit-event.json",
   "title": "AIsolate audit event",
-  "description": "One line of the audit trail (AuditEvent, AuditLog): one per exchange and one per refused request. Every field is always present, null or [] when it has nothing; keys in exactly this order on the wire: ts, event, trace_id, space, airlock, revision, user, client, question, answer, outcome, reason, tools, evidence, verifiers, figures, grounding, model, duration_ms. Written compact, one JSON object per line, nothing before it, on the logger aisolate.audit (stdout) and POSTed as the request body to the ingest.",
+  "description": "One line of the audit trail (AuditEvent, AuditLog): one per exchange and one per refused request. Every field is always present, null or [] when it has nothing; keys in exactly this order on the wire: ts, event, trace_id, space, airlock, revision, user, client, question, answer, outcome, reason, tools, evidence, verifiers, figures, grounding, model, duration_ms. Written compact, one JSON object per line, nothing before it, on the logger aisolate.audit (stdout) and POSTed as the request body to the ingest. Field meanings: docs/security.md, Audit trail.",
   "type": "object",
   "additionalProperties": false,
   "required": ["ts", "event", "trace_id", "space", "airlock", "revision", "user", "client", "question", "answer", "outcome", "reason", "tools", "evidence", "verifiers", "figures", "grounding", "model", "duration_ms"],

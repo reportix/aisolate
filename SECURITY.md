@@ -1,7 +1,7 @@
 # Security policy
 
 AIsolate's job is to keep a model from seeing or returning what the asking user may not see. Any way
-around that is a vulnerability, whatever the component.
+around that is a vulnerability, whatever the component. Where each guarantee is enforced: `docs/security.md`.
 
 ## What counts
 
@@ -14,7 +14,7 @@ around that is a vulnerability, whatever the component.
 - A refusal that is not silent: "access denied" where the design says "I don't know".
 - A secret or business data written to a log, a trace or AIsolate's own database, other than the
   airlock's audit line: it records each exchange's question and answer by design, for the
-  organisation's own audit. Any other log line that
+  organisation's own audit ([Audit trail](docs/security.md#audit-trail)). Any other log line that
   carries a question, an answer, a row or a passage still counts.
 
 ## Reporting

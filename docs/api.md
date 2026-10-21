@@ -293,7 +293,7 @@ The audit lines, newest first (in the order the backend received them), a page a
 }
 ```
 
-Each entry is the line's summary: the fields of the audit line of the same names,
+Each entry is the line's summary: the fields of the [audit line](security.md#audit-trail) of the same names,
 `input_tokens` and `output_tokens` its `model`'s (`null` when the provider reported none, and for a refusal),
 `figures` `null` when nothing was answered. `next_cursor` is `null` on the last page; a cursor is opaque. A
 parameter that is not one of the above values is 400.
@@ -328,7 +328,8 @@ One line with all it recorded, and its link in the chain:
 }
 ```
 
-`event` is the audit line as the airlock pod sent it. Its `grounding` holds the answer's `segments`, `figures`, `tables` and
+`event` is the audit line as the airlock pod sent it, every field described in [Security, Audit
+trail](security.md#audit-trail). Its `grounding` holds the answer's `segments`, `figures`, `tables` and
 `quotes` in the shapes of [the chat endpoint](#the-chat-endpoint), less what the cells held: no `value`,
 `subject`, `period` or `unit` anywhere in it (the rows stay with the data; `display` is what the user was
 told). So the answer can be shown with where each figure came from; `null` for a refusal, an error, or a
@@ -407,7 +408,8 @@ Content-Type: application/json
 stored line's `id`. No token is 401. A token that is not the ingest token of the airlock the line names (its
 `space` and `airlock`) is 403: one airlock's pod cannot write another's lines. A body that is no
 audit line (no `ts`, `event`, `space`, `airlock` or `outcome`, or an unknown `event` or `outcome`)
-is 400. The token is no user's: this and the code fetch are the endpoints that take no user token.
+is 400. The token is no user's: this and the code fetch are the endpoints that take no user token
+([Security, Audit trail](security.md#audit-trail)).
 
 ## The trace endpoints
 
@@ -519,7 +521,7 @@ Errors are RFC 9457 problem documents.
 |---|---|
 | 400 | An invalid form, with field errors; a blank or too long message; a deploy the backend refuses, with the reasons |
 | 401 | No token, a forged or expired one, or one for another audience, with `WWW-Authenticate: Bearer resource_metadata=…` |
-| 403 | `forbidden`. At an airlock pod: a user neither its space nor its airlock lists, or a calling client it does not admit; the reason goes to the pod's log (`<space>/<airlock> does not admit user <email> from client <azp>`). At the backend: a token without the UI roles |
+| 403 | `forbidden`. At an airlock pod: a user neither its space nor its airlock lists, or a calling client it does not admit; the reason goes to the pod's log (`<space>/<airlock> does not admit user <email> from client <azp>`) ([The gates](security.md#the-gates)). At the backend: a token without the UI roles |
 | 404 | `unknown airlock`, `unknown space`; at a pod, any path but its own |
 | 409 | A create whose id is taken, then one whose cluster name, `<space>` or `<space>-<airlock>`, another one has (a deploy's too): `An airlock with the id hr already exists in this space.`, `The id cd-ef can't be used here: it would collide with the airlock ef in space ab-cd. Choose another id.` The same message is in `errors`, on its field (`id`). An id derived from the name skips both |
 | 500, 503 | The JSON form of a chat exchange that could not finish, as the [chat endpoint](#the-chat-endpoint) says: 503 when the model server cannot be reached or the airlock's model has no endpoint, 500 otherwise; the stream puts the same sentence in an `error` frame |

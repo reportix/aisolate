@@ -201,10 +201,11 @@ and aggregates every row.
 | `rules[].effect` | `allow` or `deny`, required. A deny drops every row of the entity for its role and actions, so it takes no `row_filter`, `columns` or `aggregation`. |
 | `rules[].row_filter` | `true`; `<column> == principal.<attribute>` with `email`, `sub` or the attribute the identity join provides; or `<column> == '<literal>'` (lowercase letters, digits, `_`, `-`). |
 | `rules[].columns` | Per column: `mask` returns `****`, `hide` drops the column. |
-| `rules[].aggregation.min_group_size` | The smallest group an aggregate may return, at least 1, counted in people: the distinct values of the entity's subject (`Entity.withSubject`, the row key by default), so five readings of one patient are a group of one; with it, `min` and `max` are refused. It holds per query. |
+| `rules[].aggregation.min_group_size` | The smallest group an aggregate may return, at least 1, counted in people: the distinct values of the entity's subject (`Entity.withSubject`, the row key by default), so five readings of one patient are a group of one; with it, `min` and `max` are refused. It holds per query: see [Residual risks](security.md#residual-risks). |
 
 A set has `entity`, `classification` and `rules`, nothing else. Anything else, an unknown or duplicate key
-included, is rejected when the set is parsed, so free text never reaches SQL.
+included, is rejected when the set is parsed, so free text never reaches SQL. How the rules are evaluated and
+compiled: [Rules become SQL](security.md#rules-become-sql).
 
 ## Names, ids and revision
 

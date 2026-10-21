@@ -173,12 +173,13 @@ evidence and flags every number the model typed itself, and every value of a fac
 (`groundingJson()` and `contentJson()` in Java, `grounding_json` and `content_json` in Python); Java project code reads
 it with `com.reportix.aisolate.sdk.Json.parse`, Python with `json`. The platform ships no retriever, no document
 parser and no injection filter: the handler's predicates are the
-developer's invariant.
+developer's invariant ([Context preparators](security.md#context-preparators)).
 
 ## Write rules
 
 A rule set is `rules/<entity>.json`, one file per entity; the build ships it at `aisolate/rules/<entity>.json`
-in the airlock's code. The format is in [Rule set](documents.md#rule-set). Rules ship in the code; the AIsolate UI has no rule
+in the airlock's code. The format is in [Rule set](documents.md#rule-set), the evaluation in
+[Rules become SQL](security.md#rules-become-sql). Rules ship in the code; the AIsolate UI has no rule
 builder. The deploy refuses code whose rule sets do not parse or sit anywhere but
 `aisolate/rules/<entity>.json`.
 

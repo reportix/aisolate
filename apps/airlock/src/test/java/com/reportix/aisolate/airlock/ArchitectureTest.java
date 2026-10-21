@@ -13,7 +13,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.AbstractOAuth2Token;
 
-/** Rules of the airlock pod that must hold in code. */
+/** Rules of the airlock pod (docs/security.md) that must hold in code. */
 @AnalyzeClasses(
     packages = "com.reportix.aisolate",
     importOptions = ImportOption.DoNotIncludeTests.class)

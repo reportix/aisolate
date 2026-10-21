@@ -235,7 +235,8 @@ The audit line counts the answer's figures, `"figures": {"sourced": 1, "computed
 "mismatch": 0}` (never a value), lists as `evidence` what its figures, tables and quotes cite, and records per tool
 call its `args`, the rule version, the SQL hash and `rows_hash`: the sha256 of the rows it returned, as compact
 JSON with each row's keys sorted and every number as plain decimal text without trailing zeros. An auditor who
-re-runs the governed query at the same revision gets the same hash, or sees that the data changed since. The arguments are the model's, as it wrote them: it saw a masked column as
+re-runs the governed query at the same revision gets the same hash, or sees that the data changed since ([Security,
+Audit trail](security.md#audit-trail)). The arguments are the model's, as it wrote them: it saw a masked column as
 `****`, so no masked value is among them, and a call the tool server refused records none. The counts stay in the audit trail (the **Audit** page, the API); the XBRL
 audit report carries each exchange's verifier verdicts instead ([Audit](audit.md#the-taxonomy)). The exchange's
 span carries the same four counts ([Observability](observability.md#traces)).

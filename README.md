@@ -19,6 +19,26 @@ airlock its people ask about their employment contract: an employee reads only t
 one. In the Sales airlock the founders ask about client accounts, invoices and what was agreed with a client; an
 employee does not see that airlock at all. A refusal reads "I don't know".
 
+## What AIsolate guarantees
+
+- **Identity end to end.** One token, validated by the airlock pod and again by its MCP server.
+- **The model is never an enforcement point.** It receives text, tool schemas and the rows the user may see,
+  never a token, a name or a role, and it executes nothing.
+- **Rules are compiled into SQL at the data boundary.** One parameterised SELECT from an allow-list catalog;
+  the model's filters can only narrow it.
+- **Deny is silent.** An excluded row looks like a missing row; when every result is empty the answer is
+  exactly "I don't know".
+- **Figures are written in, never typed.** The model answers with references to the cells it read; AIsolate
+  writes each value in and checks whom, which period and which unit the model says it is about. A number or a fact
+  value the model typed itself is shown as unsourced ([docs/verification.md](docs/verification.md)).
+- **Every exchange is on the record.** The airlock pod hands each exchange's audit line to AIsolate's backend,
+  which keeps it append-only and hash-chained per airlock; a pod that cannot keep a line refuses new questions
+  ([docs/audit.md](docs/audit.md)).
+- **Context is developer code.** The `ContextPreparator` handlers in the airlock's code run before the model
+  is asked. AIsolate stores no business data and runs no retriever of its own.
+
+Where each is enforced: [docs/security.md](docs/security.md).
+
 ## How it fits together
 
 An **airlock** is a governed endpoint inside a **space**. The space lists the users who may ask every airlock of
@@ -68,6 +88,8 @@ The walk-through, the project layout and how to try it: [docs/develop.md](docs/d
 - [API](docs/api.md): connecting a client, every endpoint, the chat endpoint, SSE events, errors.
 - [Observability](docs/observability.md): OTLP traces and Prometheus metrics for any backend (we recommend the OpenTelemetry Collector, Jaeger and Prometheus); one trace per exchange, what its spans hold and never hold; the metrics, the scraper's label, the example dashboard.
 - [Integrate](docs/integrate.md): call an airlock from a workflow tool (n8n, KNIME): the JSON answer, the sign-in, the templates and the KNIME nodes in the `integrations` repository.
+- [Security](docs/security.md): one request end to end, the gates, identity, rules to SQL, pod isolation.
+- [Compliance](docs/compliance.md): the controls against OWASP's Top 10 for LLM applications, the EU AI Act, DORA and the NIST AI RMF, with what each leaves open.
 - [Verification](docs/verification.md): grounded answers, every figure written in from the evidence and checked; what that proves and what it does not.
 - [Documents](docs/documents.md): the three document kinds, the project file, rule sets, names and revision, validation.
 - [LLMs and data sources](docs/llms-and-data-sources.md): the model entry, the three levels, how the documents, the API, the controller, the runtimes and the UI carry them, API keys.

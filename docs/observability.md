@@ -5,7 +5,8 @@ open formats only: OTLP for traces, the Prometheus text format for metrics. Any 
 AIsolate keeps no trace store, ships no collector and needs no dashboard tool. We recommend, all Apache-2.0: the
 [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) in front of [Jaeger](https://www.jaegertracing.io)
 for the traces, and [Prometheus](https://prometheus.io) for the metrics; the demo runs exactly that. The chart
-carries an example dashboard for those who view their metrics in Grafana.
+carries an example dashboard for those who view their metrics in Grafana. The audit trail is in
+[Security](security.md#audit-trail).
 
 ## Traces
 

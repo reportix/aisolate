@@ -37,7 +37,7 @@ import tools.jackson.databind.annotation.JsonNaming;
  * with its plugin and the data source that plugin reads, the handler classes, and the rule sets at
  * {@code aisolate/rules/<entity>.json}, whatever the packages ({@link JarScan}). Loading a plugin
  * runs the jar's static initialisers and constructors inside the backend, with its privileges: a
- * residual risk, until a build-time manifest replaces the scan.
+ * residual risk docs/security.md states, until a build-time manifest replaces the scan.
  */
 public final class JarInspector {
 

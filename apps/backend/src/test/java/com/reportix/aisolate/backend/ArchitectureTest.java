@@ -20,7 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-/** Rules of the backend that must hold in code, not only in prose. */
+/** Rules of the backend (docs/security.md) that must hold in code, not only in prose. */
 @AnalyzeClasses(
     packages = "com.reportix.aisolate",
     importOptions = ImportOption.DoNotIncludeTests.class)

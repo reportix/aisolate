@@ -819,7 +819,7 @@ Port `Grounding.java` method by method; the golden set (`conformance/cases/groun
 
 ## 7. Audit trail
 
-### 7.1 The line (`domain/chat/audit/AuditEvent.java`, `ExchangeAudit.java`)
+### 7.1 The line (`domain/chat/audit/AuditEvent.java`, `ExchangeAudit.java`; field doc: `docs/security.md#audit-trail`)
 
 One JSON object, snake_case, keys in this order, **all keys always present** (null as `null`):
 

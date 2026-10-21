@@ -12,7 +12,8 @@ import tools.jackson.databind.annotation.JsonNaming;
 
 /**
  * One line of the audit trail: who asked what of which airlock, what came of it and what it cost.
- * Written once per exchange and once per refused request. It holds provenance, never rows.
+ * Written once per exchange and once per refused request. It holds provenance, never rows. Every
+ * field is described once, in docs/security.md, Audit trail.
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AuditEvent(

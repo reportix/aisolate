@@ -10,7 +10,7 @@ state. The same controller renders the same pods as in an install with the AIsol
 `<space>.yaml` in the organisation's deployment repository: the `Space` and `Airlock`
 documents, with URLs and Secret names, never a credential ([Example documents](documents.md#example-documents)).
 An airlock's code is not in them: the pods fetch it from
-the backend at start, so a
+the backend at start ([Where an airlock's code comes from](security.md#where-an-airlocks-code-comes-from)), so a
 headless install, which has no backend, runs airlocks without code only; one with code does not start.
 
 ## Create the Secrets
@@ -89,7 +89,8 @@ lists:
 - With `platform.observability.otlpEndpoint` set, both pods get it as `MANAGEMENT_OTLP_TRACING_ENDPOINT` and
   send their traces there ([Observability](observability.md#traces)).
 - Each pod's egress is the admin's peer for each host it reaches: every catalog LLM's host for the airlock pod, every
-  data source host and the trace collector's for both, or the egress proxy; the JVM sends HTTPS through the proxy for every host but the directly mapped ones, the identity
+  data source host and the trace collector's for both, or the egress proxy
+  ([Network policies](security.md#network-policies)); the JVM sends HTTPS through the proxy for every host but the directly mapped ones, the identity
   provider's unless it is proxied, and the cluster's own (`*.svc`, `*.cluster.local`).
 - Every container gets the requests and limits of `platform.airlock.resources` or
   `platform.toolServer.resources`, and its `/tmp` is capped at 256 MiB.
@@ -135,5 +136,5 @@ Every airlock pod logs each exchange: `exchange_start`, `handlers_resolved`, `ha
 (with the row count and the evidence id), `verifier_ran` (with the verdict), `exchange_done`; at start,
 `config_loaded` with the revision. A refusal's reason is logged at WARN. The pod also writes the audit trail, one JSON line
 per exchange and per refused request on its own logger `aisolate.audit` to stdout
-([Audit](audit.md)). Logs name handlers and count rows; they carry no
+([Audit trail](security.md#audit-trail), [Audit](audit.md)). Logs name handlers and count rows; they carry no
 rows, no passages and no token.

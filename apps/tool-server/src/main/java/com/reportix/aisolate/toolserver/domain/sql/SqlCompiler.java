@@ -98,8 +98,8 @@ public class SqlCompiler {
     if (obligations.minGroupSize() != null) {
       // People, not rows: five readings of one patient are a group of one. Also valid without
       // GROUP BY: an ungrouped aggregate over too few people yields no row.
-      // Limit: per query only; two allowed aggregates can still differ by one person.
-      // Closing that needs query auditing or noise.
+      // Limit: per query only; two allowed aggregates can still differ by one person
+      // (security.md, Residual risks). Closing that needs query auditing or noise.
       sql.append(" HAVING count(DISTINCT ")
           .append(entity.column(entity.subject()).expression())
           .append(") >= ?");
