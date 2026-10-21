@@ -39,7 +39,7 @@
     "figures": {"type": ["object", "null"], "additionalProperties": false,
       "required": ["sourced", "computed", "unsourced", "mismatch"],
       "properties": {"sourced": {"type": "integer"}, "computed": {"type": "integer"}, "unsourced": {"type": "integer"}, "mismatch": {"type": "integer"}}},
-    "grounding": {"type": ["object", "null"], "description": "The chat answer's segments, figures, tables and quotes, with every key named value, subject, period or unit removed at any depth (cases/audit/grounding-strip.json).",
+    "grounding": {"type": ["object", "null"], "description": "The chat answer's segments, figures, tables and quotes (docs/api.md), with every key named value, subject, period or unit removed at any depth (cases/audit/grounding-strip.json).",
       "additionalProperties": false, "required": ["segments", "figures", "tables", "quotes"],
       "properties": {"segments": {"type": "array"}, "figures": {"type": "array"}, "tables": {"type": "array"}, "quotes": {"type": "array"}}},
     "model": {"type": ["object", "null"], "additionalProperties": false,

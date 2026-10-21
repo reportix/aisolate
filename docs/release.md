@@ -74,7 +74,8 @@ lists:
   failed fetch; without a backend (headless) it does not start. An airlock without code fetches nothing.
 - An airlock gets an MCP server only when it has code and lists a tool in `tools`.
 - Both pods get the data sources, global ones included, as `AISOLATE_DATASOURCE_<i>_*`, sorted by id; the airlock
-  pod gets its main LLM's id as `AISOLATE_LLM` and every LLM it sees as `AISOLATE_LLM_<i>_*`, sorted by id. The pods never resolve levels themselves.
+  pod gets its main LLM's id as `AISOLATE_LLM` and every LLM it sees as `AISOLATE_LLM_<i>_*`, sorted by id
+  ([Configuration](configuration.md#airlock-pod)). The pods never resolve levels themselves.
 - Once per namespace, owned by every `Space` so they go with the last one: discovery, `aisolate-discovery`.
   - Its ConfigMap holds, per valid space, only what discovery lists: each airlock's id, space, name, description, callers and
     tools, and its users as the SHA-256 of the lower-cased e-mail. No

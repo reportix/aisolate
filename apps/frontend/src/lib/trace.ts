@@ -2,7 +2,7 @@ import { type AuditLine, type Outcome, outcomeLabel } from "./audit";
 import { PERIODS, type Period, periodOf } from "./period";
 import { number } from "./text";
 
-// The shapes of the backend's trace endpoints.
+// The shapes of the backend's trace endpoints (docs/api.md, The trace endpoints).
 
 /** One exchange of Monitoring's list: its audit line's summary, with its calls counted. */
 export type TraceSummary = {

@@ -62,7 +62,8 @@ public class ChatController {
       description =
           "One chat exchange under the caller's token, streamed as server-sent events, or with"
               + " `Accept: application/json` collected into one document. The token decides what"
-              + " the answer may contain; a denied question yields \"I don't know\".",
+              + " the answer may contain; a denied question yields \"I don't know\". The events"
+              + " and the document: docs/api.md, SSE events and The chat endpoint.",
       security = @SecurityRequirement(name = SwaggerApiConfig.BEARER_SCHEME))
   @ApiResponses(
       value = {

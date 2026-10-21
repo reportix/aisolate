@@ -274,7 +274,7 @@ belongs to this airlock. The CLI prints the deploy's warnings, then the airlock 
    cluster: applied, the status of the Airlock shows its pods
 ```
 
-A refusal prints its reasons and exits 1. Without a terminal (CI,
+A refusal prints its reasons and exits 1 ([The deploy call](api.md#the-deploy-call)). Without a terminal (CI,
 a pipe) a missing session stops the deploy before the build. The code has no size limit unless the install sets one
 (`platform.backend.maxArtifactSize`, refused before anything is stored); the pods fetch it from the backend at
 start, so a bigger artifact starts more slowly. Within a minute

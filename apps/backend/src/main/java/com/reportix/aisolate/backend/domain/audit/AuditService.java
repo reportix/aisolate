@@ -217,7 +217,7 @@ public class AuditService {
 
   public record Broken(long id, String reason) {}
 
-  // snake_case like the rest of the audit JSON: the UI reads first_id and last_id.
+  // snake_case like the rest of the audit JSON (docs/api.md): the UI reads first_id and last_id.
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   public record Verification(
       String space,

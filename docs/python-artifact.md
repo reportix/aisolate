@@ -20,7 +20,7 @@ src/<package>/              exactly one top-level package
   tools/                    ToolPlugin subclasses
   pre_llm/                  @context_preparator, @memory classes
   post_llm/                 @verifier classes
-rules/<entity>.json         same JSON as Java
+rules/<entity>.json         same JSON as Java (docs/configuration.md)
 tests/                      pytest: test_given_<state>_when_<action>_then_<outcome>, # Arrange / # Act / # Assert
 .env.example, .gitignore    AISOLATE_ENDPOINT, AISOLATE_SPACE; the LLMs and data sources are the admin's, named by id
 ```
@@ -140,7 +140,7 @@ both read entities with one loader.
   ingest's HMAC scheme over `code/<space>/<airlock>`, a Secret the controller mounts on
   `/var/run/aisolate/code/token`). The controller renders `AISOLATE_CODE_URL` (that URL),
   `AISOLATE_CODE_DIGEST=sha256:<hex>` and `AISOLATE_CODE_TOKEN_FILE`; nothing is mounted, and the product sets no
-  size limit. Without `AISOLATE_CODE_DIGEST` a local run or a test names a
+  size limit (an operator may, `docs/install.md`). Without `AISOLATE_CODE_DIGEST` a local run or a test names a
   directory holding the zip instead, `AISOLATE_PLUGINS_DIR` pinned by `AISOLATE_PLUGIN_DIGESTS`; the controller
   never renders those.
 - At start, before serving (readiness stays DOWN until it succeeds; any failure exits non-zero with one log line):

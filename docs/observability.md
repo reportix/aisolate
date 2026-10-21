@@ -101,7 +101,7 @@ API, Jaeger's (`http://jaeger.monitoring.svc:16686`) or any store that answers J
 alike, and `platform.tracing.egress` the NetworkPolicy peer the backend reaches it at, that host and port only.
 Unset, the AIsolate UI has no Monitoring and the trace endpoints are 404. A trace the store no longer holds
 (Jaeger's in-memory store keeps a bounded number) still shows its audit line, and the page says the steps are
-gone.
+gone. The endpoints: [The trace endpoints](api.md#the-trace-endpoints).
 
 **Monitoring > Metrics** draws the example dashboard's five panels without Grafana: exchanges and tokens per
 minute by airlock, the p95 exchange duration, refusals by reason and tool calls by tool, over the last hour, day,
@@ -109,7 +109,7 @@ week or month, by space and airlock. The backend asks Prometheus in the cluster 
 `platform.metrics.egress` its NetworkPolicy peer, that host and port only) the dashboard's queries and no other:
 nothing the browser sends becomes PromQL but an id. A developer's are scoped to their spaces by the series'
 `space` label, so it needs the scrape relabeling below; series without it reach the admin alone. Unset, there is
-no Metrics tab.
+no Metrics tab. The endpoint: [The metrics endpoint](api.md#the-metrics-endpoint).
 
 ## Metrics
 

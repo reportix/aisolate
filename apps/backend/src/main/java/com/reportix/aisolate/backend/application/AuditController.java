@@ -31,8 +31,8 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 /**
- * The audit trail as the AIsolate UI, the CLI and an auditor read it: the admin and the auditor all
- * of it, a developer the events of the spaces they develop.
+ * The audit trail as the AIsolate UI, the CLI and an auditor read it (docs/api.md): the admin and
+ * the auditor all of it, a developer the events of the spaces they develop.
  */
 @Tag(name = "Audit", description = "The audit trail: exchanges and refusals, and its chain.")
 @RestController

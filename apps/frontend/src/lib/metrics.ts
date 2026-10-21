@@ -1,6 +1,6 @@
 import type { Period } from "./period";
 
-// The shape of the backend's metrics endpoint, GET /v1/metrics.
+// The shape of the backend's metrics endpoint (docs/api.md, GET /v1/metrics).
 
 /** One line of a time chart; points are [epoch seconds, value]. */
 export type Line = { space: string; airlock: string; points: [number, number][] };

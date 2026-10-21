@@ -219,7 +219,7 @@ class HandlerChatIntegrationTest {
     assertThat(response.headers().firstValue("Content-Type"))
         .hasValueSatisfying(type -> assertThat(type).startsWith("application/json"));
     JsonNode answer = JSON.readTree(response.body());
-    // The whole document
+    // The whole document, as docs/api.md lists it
     assertThat(new ArrayList<>(answer.propertyNames()))
         .containsExactly(
             "answer",

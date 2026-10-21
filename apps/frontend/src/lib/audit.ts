@@ -2,7 +2,7 @@ import type { Grounding } from "@aisolate/ui";
 import { PERIODS, type Period, periodOf } from "./period";
 import { number } from "./text";
 
-// The shapes of the backend's audit endpoints.
+// The shapes of the backend's audit endpoints (docs/api.md, The audit endpoints).
 
 export type Outcome = "answered" | "dont_know" | "refused" | "error";
 

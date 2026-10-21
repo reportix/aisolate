@@ -19,8 +19,8 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 /**
- * Monitoring's traces: the admin reads every space's, a developer their spaces'; the auditor and a
- * space's users none. 404 throughout without a trace store.
+ * Monitoring's traces (docs/api.md): the admin reads every space's, a developer their spaces'; the
+ * auditor and a space's users none. 404 throughout without a trace store.
  */
 @Tag(name = "Traces", description = "Each exchange's trace: its audit line and its steps.")
 @RestController

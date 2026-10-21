@@ -62,7 +62,7 @@ public class AirlockController {
       summary = "Read an airlock",
       description =
           "Its form, the LLM that answers and, read-only, the code the last deploy brought; jar is"
-              + " null before.",
+              + " null before. See docs/api.md.",
       security = @SecurityRequirement(name = SwaggerApiConfig.BEARER_SCHEME))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "The airlock"),
@@ -95,7 +95,8 @@ public class AirlockController {
   @Operation(
       summary = "Create an airlock",
       description =
-          "Its id is its endpoint path and is fixed from then on; it runs nothing until a deploy.",
+          "Its id is its endpoint path and is fixed from then on; it runs nothing until a deploy."
+              + " See docs/api.md.",
       security = @SecurityRequirement(name = SwaggerApiConfig.BEARER_SCHEME))
   @ApiResponses({
     @ApiResponse(responseCode = "201", description = "Created, on its own endpoint"),
@@ -128,7 +129,8 @@ public class AirlockController {
 
   @Operation(
       summary = "Save an airlock in place",
-      description = "Its id, what runs and its code stay; each save counts one revision.",
+      description =
+          "Its id, what runs and its code stay; each save counts one revision. See docs/api.md.",
       security = @SecurityRequirement(name = SwaggerApiConfig.BEARER_SCHEME))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Saved; its revision counts the save"),

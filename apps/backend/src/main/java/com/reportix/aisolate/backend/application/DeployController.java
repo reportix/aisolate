@@ -37,7 +37,8 @@ public class DeployController {
       summary = "Deploy one airlock",
       description =
           "Multipart `jar` (a jar, or a Python project's zip with `language` python),"
-              + " `documents` (aisolate.yaml) and `variables`.",
+              + " `documents` (aisolate.yaml) and `variables`; the parts, the checks and the"
+              + " answer: docs/api.md, The deploy call.",
       security = @SecurityRequirement(name = SwaggerApiConfig.BEARER_SCHEME))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Deployed"),

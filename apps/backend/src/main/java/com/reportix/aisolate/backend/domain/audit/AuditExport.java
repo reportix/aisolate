@@ -31,8 +31,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The audit export's PDF and XBRL: the lines {@link AuditService#all} found, as a plain report to
- * read and as the AIsolate Audit XBRL report.
+ * The audit export's PDF and XBRL (docs/api.md): the lines {@link AuditService#all} found, as a
+ * plain report to read and as the AIsolate Audit XBRL report.
  */
 @Service
 public class AuditExport {

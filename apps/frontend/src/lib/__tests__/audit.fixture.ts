@@ -1,6 +1,6 @@
 import type { AuditDetail, AuditSummary, ChainStatus } from "../audit";
 
-/** Elena asks the Acme HR airlock for her salary; shaped as the audit endpoints answer. */
+/** Elena asks the Acme HR airlock for her salary; shaped as docs/api.md's audit endpoints answer. */
 export const summary: AuditSummary = {
   id: 1042,
   received_at: "2026-10-18T09:12:03.120Z",

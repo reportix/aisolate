@@ -55,7 +55,7 @@ The header must be exactly `Accept: application/json` (or `application/*`): an `
 The request body is `{"message": …}`, at most 4,000 characters. An exchange that cannot finish is a problem
 document, not a partial answer: 503 when the model server is not available, 500 otherwise. An exchange runs at
 most `AISOLATE_EXCHANGE_MAX_DURATION` (eight minutes by default), so give the HTTP step a longer timeout than
-that.
+that. The other statuses are the stream's: [Errors](api.md#errors).
 
 ## Sign in
 

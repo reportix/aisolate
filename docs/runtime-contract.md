@@ -529,7 +529,7 @@ Accept: text/event-stream | application/json
   body fields are ignored. A body that is not JSON / wrong content type: 400 (Spring's default; detail free).
 - **Content negotiation**: the JSON document only when the `Accept` header is **exactly** `application/json`
   (after trimming; no list, no `*/*` in it). Anything else — absent, `*/*`, `text/event-stream`, a list — is the
-  SSE stream (`ChatController` comment).
+  SSE stream (`ChatController` comment, `docs/api.md` "The chat endpoint").
 - Order of checks: token (401) → body validation (400) → audit accepting (503) → airlock lookup (404) →
   admission (403) → exchange. Validation happens before admission (Spring binds `@Valid` before the method runs),
   so a 400 writes no audit line.

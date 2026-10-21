@@ -1,4 +1,4 @@
-// An answer's grounding as the audit keeps it (GET /v1/audit/events/{id}): the chat's
+// An answer's grounding as the audit keeps it (docs/api.md, GET /v1/audit/events/{id}): the chat's
 // shapes less what the cells held, so no value, subject, period or unit. The marks read as the chat's.
 
 /** Where a figure came from: copied from a cell, computed from cells, typed by the model, or contradicted. */

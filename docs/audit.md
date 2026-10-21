@@ -83,7 +83,7 @@ at all.
 The **Audit** page lists the lines newest first (time, space, airlock, user, client, outcome, figures by
 provenance, tokens), with filters; one opens the exchange: the question, the answer with each figure's
 provenance, the tools with their arguments and row counts, the verdicts, the tokens, its trace (Monitoring's trace page when
-the install has a trace store, else a configured trace viewer), and whether its airlock's chain is intact. **Export as**, next to **View trace**, downloads that exchange alone: a PDF to read, its line as JSON, or its XBRL report ([Export](#export)).
+the install has a trace store, else a configured trace viewer), and whether its airlock's chain is intact. **Export as**, next to **View trace**, downloads that exchange alone: a PDF to read, its line as JSON, or its XBRL report ([Export](#export)). The API: [The audit endpoints](api.md#the-audit-endpoints).
 
 ## The taxonomy
 
@@ -118,12 +118,13 @@ report that breaks it is not a valid AIsolate Audit report; an XBRL processor ch
 `GET /v1/audit/events/{id}/export?format=pdf|json|xbrl`: `aisolate-audit-event-<id>.pdf`, `.json` or `.xbrl`.
 The report of every line a search finds over a period comes from the API alone, `GET /v1/audit/export` with the
 list's `q`, `from`, `to` and `space`: `aisolate-audit-<UTC date>.xbrl`. Both have the access of the audit
-endpoints.
+endpoints ([The audit endpoints](api.md#the-audit-endpoints)).
 
 The `.xbrl` file is plain XML text, not an archive: open it in a text editor or a browser, or load it in an XBRL
 processor with the taxonomy package ([The taxonomy](#the-taxonomy)).
 
-The report's entity is `AISOLATE_AUDIT_ENTITY`, an LEI or `<scheme>:<id>`, the install itself when it is empty. Its period is whole UTC days: from `from`'s day (the oldest line's without
+The report's entity is `AISOLATE_AUDIT_ENTITY`, an LEI or `<scheme>:<id>`, the install itself when it is empty
+([Configuration](configuration.md)). Its period is whole UTC days: from `from`'s day (the oldest line's without
 one) to `to`'s (today without one).
 
 An audit line the report cannot use (no space, airlock or time; an unknown outcome or verdict; a negative
