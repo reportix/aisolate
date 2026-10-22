@@ -2,7 +2,7 @@
 
 ## Before you start
 
-Read `README.md`, then [docs/concepts.md](docs/concepts.md) and
+Read `README.md`, then [docs/concepts.md](docs/concepts.md), [docs/architecture.md](docs/architecture.md) and
 [docs/security.md](docs/security.md). A
 change to behaviour updates the page in `docs/` that describes it, in the same merge request.
 

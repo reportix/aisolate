@@ -92,6 +92,9 @@ The walk-through, the project layout and how to try it: [docs/develop.md](docs/d
 ## Documentation
 
 - [Concepts](docs/concepts.md): what an airlock is, who decides what, the vocabulary, where LLM and data sources are defined, the stages, the components.
+- [Architecture](docs/architecture.md): the repositories, the modules and what depends on what, the two runtimes under one contract, what runs in the cluster, how an airlock's code travels, one exchange in the code.
+- [Data model](docs/data-model.md): the three documents, the backend's tables, what the controller renders from them, the audit trail's shape.
+- [Design decisions](docs/design-decisions.md): why it is built this way, one decision at a time.
 - [Install](docs/install.md): what the cluster, identity provider, databases and model server must provide.
 - [Develop](docs/develop.md): the CLI, the project of one airlock, tools, handlers, rules, the AIsolate UI, trying an airlock.
 - [Command-line interface](docs/cli.md): install the `aisolate` CLI on macOS or Windows, its commands, where it keeps the session, building it.
@@ -106,6 +109,7 @@ The walk-through, the project layout and how to try it: [docs/develop.md](docs/d
 - [LLMs and data sources](docs/llms-and-data-sources.md): the model entry, the three levels, how the documents, the API, the controller, the runtimes and the UI carry them, API keys.
 - [Configuration](docs/configuration.md): environment variables per image, controller settings.
 - [Audit](docs/audit.md): the audit trail AIsolate keeps (append-only, hash-chained, read in the AIsolate UI and the API), the AIsolate Audit XBRL taxonomy, one exchange's export as PDF, JSON or XBRL, validating it with an XBRL processor.
+- [Chart](chart/README.md): install steps and every parameter.
 - [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md).
 - [AUTHORS.md](AUTHORS.md): the team behind AIsolate.
 
