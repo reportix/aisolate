@@ -52,6 +52,17 @@ creates it and deploys it into an airlock of the AIsolate UI. Whether an install
 admin's choice, `headless`: with it, the backend applies every save; headless, an admin applies the
 documents through the organisation's own pipeline. See [docs/concepts.md](docs/concepts.md).
 
+## Repositories
+
+| Repository | Holds |
+|---|---|
+| `aisolate` (this one; the others are published beside it) | The airlock core, the MCP server, the controller, the backend, the AIsolate UI, the CLI with its `company-hr`, `company-sales`, `auditor` and `hospital` templates, the SDK and the shared libraries, the Helm chart (`chart/`) and its tests |
+| `chat` | A sample chat client of the airlock endpoint |
+| `aisolate-reset` | A CLI that gives an install with the AIsolate UI a clean slate |
+| `website` | The public site |
+
+This repository's layout, directory by directory: [CONTRIBUTING.md](CONTRIBUTING.md#repository-layout).
+
 ## Quickstart
 
 Install the chart, with `headless: false` in `values.yaml` for the AIsolate UI ([docs/install.md](docs/install.md)):
@@ -95,12 +106,13 @@ The walk-through, the project layout and how to try it: [docs/develop.md](docs/d
 - [LLMs and data sources](docs/llms-and-data-sources.md): the model entry, the three levels, how the documents, the API, the controller, the runtimes and the UI carry them, API keys.
 - [Configuration](docs/configuration.md): environment variables per image, controller settings.
 - [Audit](docs/audit.md): the audit trail AIsolate keeps (append-only, hash-chained, read in the AIsolate UI and the API), the AIsolate Audit XBRL taxonomy, one exchange's export as PDF, JSON or XBRL, validating it with an XBRL processor.
+- [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md).
 - [AUTHORS.md](AUTHORS.md): the team behind AIsolate.
 
 ## License
 
 AIsolate is free software under the GNU Affero General Public License, version 3 only (`LICENSE`, SPDX
 `AGPL-3.0-only`). You may run, study, change and redistribute it; if you offer a modified AIsolate to others
-over a network, you must offer them its source as well.
+over a network, you must offer them its source as well. Contributions are accepted under the DCO and the licence grant in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Copyright (C) 2026 Reportix GmbH.
