@@ -185,15 +185,35 @@ answer ever reads "access denied".
 
 ## Credentials
 
-Every data source has a URL, a user and a password. The URL is stored and shown; the user and password are
-neither. The backend writes them into one Secret per data source, owned by the `Global`, `Space` or
-`Airlock` resource that defines the data source, and keeps only its name. The backend's Role may create
-and delete Secrets, never read, list or patch them. A blank password on edit keeps the Secret; new credentials
-make a new Secret, so the revision changes and the pods roll, and the replaced Secret is deleted. The controller
-hands both pods of an airlock the `username` and `password` keys of every data source the airlock resolves.
-No password sits in a document or the backend's database. No pod reads Secrets from the Kubernetes
-API. Secrets are stored as the cluster stores them: AIsolate adds no encryption of its own and uses no
-external secret store.
+Every data source has a URL, a user and a password; a model served by an OpenAI-compatible server may have an
+API key. The URL is stored and shown; the user, the password and the key are typed once. The backend seals
+them with AES-256-GCM under `AISOLATE_CREDENTIALS_KEY` into one row of `credentials` per Secret, keyed by the
+Secret's name (`secret_ref`), with a fresh nonce per row and the name as associated data, so a ciphertext moved
+to another row does not open. It writes the same values into one Secret per credential, owned by the `Global`,
+`Space` or `Airlock` resource that defines it, and the rows keep only its name. The backend's Role may create
+and delete Secrets, never read, list or patch them: the Secret is for the pods, the row is the backend's own
+copy. A blank password on edit keeps both; new credentials make a new Secret and a new row, so the revision
+changes and the pods roll, and the replaced Secret and row are deleted. The controller hands both pods of an
+airlock the `username` and `password` keys of every data source the airlock resolves. No password sits in a
+document, and no pod reads Secrets from the Kubernetes API. The Secrets themselves are stored as the cluster
+stores them; AIsolate uses no external secret store.
+
+An admin reads a credential back. `POST /v1/credentials/{secretRef}/reveal` answers it to a caller with the
+realm role `aisolate-admin` whose login is fresher than five minutes, by the token's `auth_time`
+(`AISOLATE_CREDENTIALS_REVEAL_MAX_AGE`); an older login is 403 `sign in again to reveal`, and the UI sends the
+browser to the identity provider and back. The reveal takes tokens of the AIsolate UI's client alone, by the
+token's `azp` (`AISOLATE_CREDENTIALS_REVEAL_CLIENTS`, default `aisolate-ui`): the CLI's and a chat client's
+tokens are refused (403 `not from the AIsolate UI`), as is a token without `azp`. A token without `auth_time`
+cannot reveal either. Keycloak puts it only into tokens from a browser login, so a reveal from a script or the
+CLI is refused and the AIsolate UI is the way. The UI shows a value for 30 seconds and forgets it; everyone
+but an admin sees a lock, "Only an admin can reveal it". Through the API a developer can replace a credential,
+never read it. A Java deploy is the exception (see the residual risks): its code runs in the backend, which
+holds the key.
+
+Every store, delete, reveal and refused reveal is one row of `credential_events`: who, when, which Secret and
+level, and for a refusal why (`unknown`, `wrong_client`, `no_auth_time`, `stale_login`, `no_ciphertext`, `key_changed`,
+`unreadable`). It is append-only as `audit_events` is, written as the role `aisolate_audit_writer` with triggers
+that refuse UPDATE, DELETE and TRUNCATE, and no value is ever in a row, a log line or a list response.
 
 ## Pod isolation
 
@@ -366,6 +386,17 @@ airlock writes it after the fact and reads it back nowhere.
 
 ## Residual risks
 
+- Whoever reads the backend pod's environment, or the `credentials-key` Secret, and the database reads every
+  credential. The key opens the rows; the Secrets hold the same values in clear for the pods. Keep the Secret
+  and the pod's `exec` to the operators who already hold the install.
+- The five-minute window is only as good as the identity provider's `auth_time`: a provider that reports a
+  stale or forged time defeats it, and one that sends none turns reveal off, which fails closed
+  ([Identity provider requirements](install.md#identity-provider-requirements)).
+- A developer of a space can replace a credential of the space or its airlocks without seeing it through the
+  API. Replacing is a `stored` and a `deleted` row, not a reveal. A Java deploy runs the developer's code inside
+  the backend process (next bullet), which holds `AISOLATE_CREDENTIALS_KEY` and the database password: a
+  developer who deploys Java code can decrypt every credential of the install, until deploys stop running
+  code in the backend.
 - A deploy runs a Java airlock's code in the backend. To list a jar's tools and handlers, the backend loads its
   plugin and handler classes, which runs their static initialisers and no-arg constructors, and calls each
   plugin's `name`, `entities`, `tools` and `dataSource`, inside the backend's process and before any check. That

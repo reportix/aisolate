@@ -1,13 +1,22 @@
 package com.reportix.aisolate.backend.domain.airlock;
 
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository.Event;
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository.Row;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterProperties;
 import com.reportix.aisolate.backend.infrastructure.cluster.Credentials;
+import com.reportix.aisolate.backend.infrastructure.crypto.CredentialCipher;
+import com.reportix.aisolate.backend.infrastructure.crypto.CredentialCipher.Sealed;
+import com.reportix.aisolate.backend.infrastructure.security.Access;
 import com.reportix.aisolate.config.GlobalDocument;
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -17,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The Secrets behind the data sources and the models' API keys of a space, an airlock or the
@@ -73,6 +83,9 @@ public class DataSourceSecrets {
   private final Credentials credentials;
   private final ClusterProperties cluster;
   private final ApplicationEventPublisher events;
+  private final CredentialRepository sealedStore;
+  private final CredentialCipher cipher;
+  private final JsonMapper json;
 
   /** Each row without a Secret name keeps the stored row's of its id; a dropped id loses its. */
   public static <R extends SecretRow<R>> List<R> keepRefs(List<R> stored, List<R> rows) {
@@ -140,7 +153,9 @@ public class DataSourceSecrets {
    * The saved owner as it is when no row brings a credential; else a Secret for each row that does,
    * owned by the owner's resource, and the owner again with the rows naming them. A refusal deletes
    * the Secrets already made and refuses the save: the caller's transaction rolls back, so no row
-   * names a Secret the cluster does not hold.
+   * names a Secret the cluster does not hold. Each credential is also sealed into a {@code
+   * credentials} row of that transaction; the {@code stored} events follow the Secrets, so one
+   * written before a late rollback outlives its row.
    *
    * @param saved the owner's row as the save just wrote it
    * @param resource found or created inside the refusal's reach: a cluster that is gone refuses the
@@ -163,6 +178,7 @@ public class DataSourceSecrets {
   private <R extends SecretRow<R>> List<R> store(
       Owner owner, Supplier<HasMetadata> resource, List<R> rows) {
     List<String> created = new ArrayList<>();
+    List<Row> sealedRows = new ArrayList<>();
     try {
       HasMetadata parent = resource.get();
       List<R> stored = new ArrayList<>();
@@ -170,21 +186,29 @@ public class DataSourceSecrets {
         if (row.bringsCredentials()) {
           String name = credentials.create(parent, owner.secretName(row), row.secretData());
           created.add(name);
+          // ponytail: a credential write holds two pooled connections (the save's and the event's);
+          // per-row events if admin traffic ever saturates the pool
+          sealedRows.add(seal(owner, row, name));
           stored.add(row.withSecretRef(name));
         } else {
           stored.add(row);
         }
       }
+      String actor = Access.caller();
+      sealedRows.forEach(row -> sealedStore.record(Event.of(row, actor, "stored", null)));
       return stored;
-    } catch (RuntimeException refused) {
+    } catch (RuntimeException failed) {
+      // Not left to the rollback alone: a rollback that fails runs no listener.
+      created.forEach(this::deleteQuietly);
+      if (!(failed instanceof KubernetesClientException refused)) {
+        throw failed;
+      }
       // The cluster's message names the request, never the Secret's data.
       log.warn(
           "{} {}: the cluster did not take the credentials: {}",
           owner.word(),
           owner.label(),
           refused.getMessage());
-      // Not left to the rollback alone: a rollback that fails runs no listener.
-      created.forEach(this::deleteQuietly);
       throw new InvalidFormException(
           IntStream.range(0, rows.size())
               .filter(i -> rows.get(i).bringsCredentials())
@@ -198,6 +222,30 @@ public class DataSourceSecrets {
                           + ": the cluster did not take the credentials; nothing was saved")
               .toList());
     }
+  }
+
+  /** The only place a credential is plaintext in the backend; the row holds it sealed. */
+  private <R extends SecretRow<R>> Row seal(Owner owner, R row, String name) {
+    byte[] plain = json.writeValueAsBytes(new TreeMap<>(row.secretData()));
+    Sealed sealed;
+    try {
+      sealed = cipher.seal(name, plain);
+    } finally {
+      Arrays.fill(plain, (byte) 0);
+    }
+    Row sealedRow =
+        new Row(
+            name,
+            owner.word(),
+            "install".equals(owner.word()) ? "" : owner.label(),
+            row.secretKind(),
+            row.id(),
+            sealed.keyId(),
+            sealed.nonce(),
+            sealed.ciphertext(),
+            Access.caller());
+    sealedStore.insert(sealedRow);
+    return sealedRow;
   }
 
   /** The Secrets {@code before} named and {@code after} does not go once the save committed. */

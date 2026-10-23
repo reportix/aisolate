@@ -1,14 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { login, logout, onSignInUnreachable, returnTo } from "../auth";
+import { login, logout, onSignInUnreachable, reauthenticate, returnTo } from "../auth";
+
+const signin = vi.hoisted(() => vi.fn());
 
 // An identity provider that cannot be reached: its metadata never loads, so no redirect starts.
 vi.mock("oidc-client-ts", async (original) => ({
   ...(await original<typeof import("oidc-client-ts")>()),
   UserManager: class {
-    signinRedirect = () => Promise.reject(new Error("metadata unreachable"));
+    signinRedirect = signin;
     signoutRedirect = () => Promise.reject(new Error("metadata unreachable"));
   },
 }));
+
+signin.mockImplementation(() => Promise.reject(new Error("metadata unreachable")));
 
 describe("returnTo", () => {
   it.each([
@@ -52,5 +56,32 @@ describe("onSignInUnreachable", () => {
     // Assert
     expect(told).toHaveBeenCalledOnce();
     stop();
+  });
+});
+
+describe("reauthenticate", () => {
+  beforeEach(() => {
+    vi.stubGlobal("window", {
+      location: { origin: "http://ui.test", pathname: "/llms/gpt", search: "?x=1" },
+    });
+    vi.stubEnv("NEXT_PUBLIC_OIDC_AUTHORITY", "http://idp.test/realms/aisolate");
+    vi.stubEnv("NEXT_PUBLIC_OIDC_CLIENT_ID", "aisolate-ui");
+    signin.mockClear();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("givenAStaleLogin_whenReauthenticate_thenSigninRedirectCarriesPromptLoginAndMaxAge300", async () => {
+    // Arrange / Act
+    await reauthenticate();
+
+    // Assert
+    expect(signin).toHaveBeenCalledWith({
+      prompt: "login",
+      max_age: 300,
+      state: { returnTo: "/llms/gpt?x=1" },
+    });
   });
 });

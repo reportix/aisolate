@@ -388,3 +388,34 @@ describe("onApiError", () => {
     expect(banner).not.toHaveBeenCalled();
   });
 });
+
+describe("credentials.reveal", () => {
+  it("givenAStoredSecret_whenRevealed_thenItPostsToTheRevealPathWithTheToken", async () => {
+    // Arrange
+    const sent = stubFetch(() => Response.json({ values: { apiKey: "k" } }));
+
+    // Act
+    const answer = await api.credentials.reveal("token", "hr-ds-acme-hr-abc123");
+
+    // Assert
+    const [url, init] = sent();
+    expect(url).toBe("http://backend.test/v1/credentials/hr-ds-acme-hr-abc123/reveal");
+    expect(init.method).toBe("POST");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer token");
+    expect(init.body).toBeUndefined();
+    expect(answer.values).toEqual({ apiKey: "k" });
+  });
+
+  it("givenARevealAnswerWithoutTheClusterHeader_thenTheClusterFlagIsUntouched", async () => {
+    // Arrange
+    stubFetch(() => Response.json({}, { headers: { "AIsolate-Cluster": "not applied" } }));
+    await api.llms.remove("token", "gpt");
+    stubFetch(() => Response.json({ values: {} }));
+
+    // Act
+    await api.credentials.reveal("token", "ref");
+
+    // Assert
+    expect(clusterTookLastWrite()).toBe(false);
+  });
+});

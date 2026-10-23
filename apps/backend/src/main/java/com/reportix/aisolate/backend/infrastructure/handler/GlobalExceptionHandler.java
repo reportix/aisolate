@@ -4,6 +4,7 @@ import com.reportix.aisolate.backend.domain.airlock.AirlockNotFoundException;
 import com.reportix.aisolate.backend.domain.airlock.ConflictException;
 import com.reportix.aisolate.backend.domain.airlock.InvalidFormException;
 import com.reportix.aisolate.backend.domain.audit.AuditException;
+import com.reportix.aisolate.backend.domain.credential.CredentialException;
 import com.reportix.aisolate.backend.domain.directory.Directory;
 import com.reportix.aisolate.backend.domain.directory.DirectoryService;
 import com.reportix.aisolate.backend.domain.space.NotDeveloperException;
@@ -63,6 +64,14 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(AuditException.class)
   ProblemDetail audit(AuditException e) {
     return ProblemDetail.forStatusAndDetail(e.getStatus(), e.getMessage());
+  }
+
+  /** A refused reveal: the sentence and a {@code reason} the UI branches on, never a value. */
+  @ExceptionHandler(CredentialException.class)
+  ProblemDetail credential(CredentialException e) {
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(e.getStatus(), e.getMessage());
+    problem.setProperty("reason", e.getReason());
+    return problem;
   }
 
   /** The AIsolate UI asks for typed e-mails instead. */

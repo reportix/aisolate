@@ -2,6 +2,8 @@ package com.reportix.aisolate.backend.infrastructure.cluster;
 
 import com.reportix.aisolate.backend.domain.airlock.AirlockRepository;
 import com.reportix.aisolate.backend.domain.airlock.SecretsReplaced;
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
+import com.reportix.aisolate.backend.infrastructure.security.Access;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
@@ -37,6 +39,7 @@ public class Credentials {
   private final ObjectProvider<KubernetesClient> client;
   private final AirlockRepository airlocks;
   private final ApplicationEventPublisher events;
+  private final CredentialRepository rows;
 
   /**
    * A new Secret {@code <name>-<6 random>} holding {@code data}: a data source's {@code username}
@@ -88,6 +91,8 @@ public class Credentials {
         // Its owner's reset takes it along.
         log.warn("secret {} could not be deleted: {}", name, failed.getMessage());
       }
+      // Its own transaction: after the commit a plain statement would never commit.
+      rows.deleteOrphan(name, Access.caller());
     }
   }
 

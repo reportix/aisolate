@@ -15,6 +15,8 @@ public final class Containers {
               .withDatabaseName("aisolate")
               .withUsername("aisolate")
               .withPassword("aisolate");
+      // every Spring context under test holds its own pool
+      aisolate.withCommand("postgres", "-c", "max_connections=300");
       aisolate.start();
     }
     return aisolate;

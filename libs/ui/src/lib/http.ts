@@ -2,11 +2,14 @@ export class ApiError extends Error {
   readonly status: number;
   /** Field errors of an invalid form ("field: message"), otherwise empty. */
   readonly errors: string[];
-  constructor(status: number, message: string, errors: string[] = []) {
+  /** Machine-readable cause a problem carries beside its text, e.g. "stale_login". */
+  readonly reason?: string;
+  constructor(status: number, message: string, errors: string[] = [], reason?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.errors = errors;
+    this.reason = reason;
   }
 }
 
@@ -47,11 +50,22 @@ export async function expectOk(res: Response): Promise<Response> {
 /** RFC 9457 problem+json: prefer detail, then title, then the status line. */
 export async function problem(res: Response): Promise<ApiError> {
   try {
-    const body = (await res.json()) as { detail?: string; title?: string; errors?: unknown };
+    const body = (await res.json()) as {
+      detail?: string;
+      title?: string;
+      errors?: unknown;
+      reason?: unknown;
+    };
     const errors = Array.isArray(body.errors)
       ? body.errors.filter((e): e is string => typeof e === "string")
       : [];
-    return new ApiError(res.status, body.detail ?? body.title ?? `HTTP ${res.status}`, errors);
+    const reason = typeof body.reason === "string" ? body.reason : undefined;
+    return new ApiError(
+      res.status,
+      body.detail ?? body.title ?? `HTTP ${res.status}`,
+      errors,
+      reason,
+    );
   } catch {
     return new ApiError(res.status, `HTTP ${res.status}`);
   }

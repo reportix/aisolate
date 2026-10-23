@@ -109,6 +109,30 @@ erDiagram
         text url
         text secret_ref
     }
+    credentials {
+        text secret_ref PK "the Kubernetes Secret's name"
+        text owner_kind "install, space or airlock"
+        text owner "empty, space, or space/airlock"
+        text kind "llm or ds"
+        text item_id
+        text key_id "which key sealed it"
+        bytea nonce
+        bytea ciphertext "AES-256-GCM"
+        text created_by
+        timestamptz created_at
+    }
+    credential_events {
+        bigint id PK "identity"
+        timestamptz at
+        text actor
+        text action "stored, deleted, revealed, reveal_refused"
+        text secret_ref "no foreign key"
+        text owner_kind
+        text owner
+        text kind
+        text item_id
+        text reason "reveal_refused only"
+    }
     audit_events {
         bigint id PK "identity"
         timestamptz received_at PK "partition key, by month"
@@ -136,7 +160,16 @@ erDiagram
   the tools with their plugin and data source, the handlers with their stage and order, the rule sets.
 - **`llms`, `data_sources`.** The global level, the admin's. A space's and an airlock's own live in their
   `definition`. An LLM has no type: the same entry chats or embeds as its model can. A credential is never a
-  column: `secret_ref` names the Secret.
+  column of these tables: `secret_ref` names the Secret, and the value sits in `credentials`.
+- **`credentials`.** One row per typed credential, keyed by the Kubernetes Secret's name: the owner level, the
+  kind (`llm` or `ds`), the item's id, and the values sealed as JSON with AES-256-GCM under
+  `AISOLATE_CREDENTIALS_KEY` (`nonce`, `ciphertext`, `key_id` the first eight hex characters of the key's
+  digest). The `secret_ref` is the associated data, so a ciphertext moved to another row does not open. A row goes
+  when its Secret does. A row of a Secret made before this table has none: its reveal is 409.
+- **`credential_events`.** Who stored, deleted, revealed or was refused a reveal (`reason`), never a value.
+  Append-only as `audit_events`: the backend writes it as `aisolate_audit_writer`, which may INSERT and SELECT,
+  and triggers refuse UPDATE, DELETE and TRUNCATE. No foreign key: events outlive their rows
+  ([Security, Credentials](security.md#credentials)).
 - **`audit_events`.** The trail, below.
 
 ## From a row to a pod

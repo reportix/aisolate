@@ -302,14 +302,23 @@ admin and to a developer of any space, editable by the admin alone (`/llms`, `/l
 replacing `llm`) and **Data sources** page list, GitLab Source style as today, "Inherited from AIsolate" (global),
 "Inherited from <space>" (on an airlock) and its own, an own entry with an inherited id marked as replacing it.
 The model form is id, provider (Ollama, OpenAI-compatible), URL, model, and for an OpenAI-compatible one an
-optional API key typed once ("Kept as a Secret, never shown again."); no chat or embedding model anywhere. The models table shows the provider and the key as "Kept as a Secret" or none. An airlock's graph and details show its main LLM alone (`main_llm`).
+optional API key typed once; no chat or embedding model anywhere. The models table shows the provider and the key as
+"Kept as a Secret" or none, and ends in an Actions menu (⋮): View on every row, Edit and Delete on the rows of the
+level's own. View opens above the list: the row's fields read-only, then its Secret's keys
+(the API key; a data source's username and password) masked as "••••••••", each with an eye and a copy. For an
+admin the first eye or copy fetches the values once (one recorded reveal, after a sign-in fresher than five
+minutes); they stay for 30 seconds or until Close. Everyone else sees a lock: "Only an admin can reveal it". An
+airlock's graph and details show its main LLM alone (`main_llm`).
 
 ## API keys
 
 As a data source's password is: an `openai` entry's key is typed once in the model form (the
 write-only `api_key`), becomes the Secret `<owner>-llm-<id>-<6 chars>` (`aisolate-llm-gpt-…` for a global one,
 `<space>-llm-…`, `<space>-<airlock>-llm-…`) with key `apiKey`, owned by the Global, Space or Airlock resource, and
-the row stores only its name (`secret_ref`, the documents' `secretRef`); the API never returns the key. A row keeps
+the row stores only its name (`secret_ref`, the documents' `secretRef`); the API never returns the key in a
+list or a form. The backend also seals it, AES-256-GCM, into its table `credentials` under that name; an admin
+reads it back with `POST /v1/credentials/{secretRef}/reveal` ([API](api.md#post-v1credentialssecretrefreveal)),
+the same call for a data source's login. A row keeps
 its Secret while its `url` stays and no new key is typed; a new `url` needs the key again; an `ollama` row names
 none, so switching a model to Ollama, or deleting it, deletes its Secret once the save commits. The key is
 optional: a server such as Ollama's `/v1` needs none. A project's models take none: `aisolate.yaml` holds no

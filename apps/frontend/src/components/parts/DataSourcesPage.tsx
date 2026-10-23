@@ -2,11 +2,13 @@
 
 import { Section, buttonClass } from "@aisolate/ui";
 import Link from "next/link";
+import { useState } from "react";
 import { DataSourceForm } from "@/components/DataSourceForm";
-import { DataSourceTable } from "@/components/DataSourceTable";
+import { DataSourceTable, dataSourceView } from "@/components/DataSourceTable";
 import { Source } from "@/components/InheritedFrom";
 import { PageHeader } from "@/components/PageHeader";
 import { SaveBanner } from "@/components/SaveBanner";
+import { SecretView } from "@/components/SecretView";
 import { api } from "@/lib/api";
 import { useCatalog } from "@/lib/scope";
 import { EditPanel } from "./EditPanel";
@@ -14,6 +16,9 @@ import { EditPanel } from "./EditPanel";
 /** The databases the code of a space's airlocks or of an airlock reads, by id: its own, then those it inherits. */
 export default function DataSourcesPage() {
   const c = useCatalog("data_sources", api.dataSources.list);
+  // The row whose View is open above the list; Edit opens there too, one of the two at a time.
+  const [viewing, setViewing] = useState<string | null>(null);
+  const viewed = !c.form && c.rows?.find((r) => r.id === viewing);
 
   return (
     <div className="grid gap-6">
@@ -22,11 +27,14 @@ export default function DataSourcesPage() {
         description={
           c.airlockId
             ? `The databases the code of ${c.name} reads, by id: its own, the space's and the platform's. Its own replaces one with the same id.`
-            : "The databases its airlocks' code reads, by id: its own and the platform's; its own replaces the platform's with the same id. Passwords are kept as Secrets and never shown."
+            : "The databases its airlocks' code reads, by id: its own and the platform's; its own replaces the platform's with the same id. Passwords are kept encrypted; an admin sees them from View."
         }
       />
       {c.problem && <SaveBanner message={c.problem} />}
       {c.form && <EditPanel noun="data source" state={c.form} Form={DataSourceForm} />}
+      {viewed && (
+        <SecretView key={viewed.id} {...dataSourceView(viewed)} onClose={() => setViewing(null)} />
+      )}
       {(c.rows || !c.problem) && (
         <Section
           action={
@@ -44,9 +52,22 @@ export default function DataSourcesPage() {
               rows={c.rows}
               source={(r) => <Source row={r} own={c.own} owners={c.owners} />}
               editable={(r) => r.from === c.own}
-              actions={
-                c.mayChange ? { onEdit: c.edit, busy: c.busy, onRemove: c.remove } : undefined
-              }
+              actions={{
+                onView: (id) => {
+                  c.edit(null);
+                  setViewing(id);
+                },
+                edit: c.mayChange
+                  ? {
+                      onEdit: (id) => {
+                        setViewing(null);
+                        c.edit(id);
+                      },
+                      busy: c.busy,
+                      onRemove: c.remove,
+                    }
+                  : undefined,
+              }}
             />
           )}
         </Section>

@@ -40,9 +40,10 @@ from your workflow](integrate.md).
 | `GET /.well-known/oauth-protected-resource` (no prefix) | the discovery pods and every airlock pod; the backend too | anyone | RFC 9728 metadata naming the identity provider and the `aisolate` scope |
 | `GET /spaces` | backend | any valid token | The spaces the caller may open: every space for the admin, those they develop for a developer, none for anyone else (200, `[]`) |
 | `GET /llms`, `GET /llms/{id}` | backend | admin, developer of any space | The global LLMs, every space's unless a nearer level defines the same id: `[{id, provider, url, model, secret_ref, updated_at}]`, sorted by id, `secret_ref` naming the Secret of an OpenAI-compatible one's API key, null without; one, or 404 `no model named granite` |
-| `POST /llms`, `PUT /llms/{id}`, `DELETE /llms/{id}` | backend | admin | Create `{id, provider, url, model, api_key}` (409 `id: a model granite already exists`), `provider` `ollama` or `openai` and `api_key` optional and write-only, an `openai` one's, which becomes the Secret `aisolate-llm-<id>-<6 chars>`; edit its `provider`, `url`, `model` and `api_key`, the id fixed, the stored key kept while the `url` stays; delete it (204, its Secret with it), 400 when an airlock would lose its main LLM ([LLMs and data sources](llms-and-data-sources.md#api)) |
+| `POST /llms`, `PUT /llms/{id}`, `DELETE /llms/{id}` | backend | admin | Create `{id, provider, url, model, api_key}` (409 `id: a model granite already exists`), `provider` `ollama` or `openai` and `api_key` optional and write-only (an admin may reveal it), an `openai` one's, which becomes the Secret `aisolate-llm-<id>-<6 chars>`; edit its `provider`, `url`, `model` and `api_key`, the id fixed, the stored key kept while the `url` stays; delete it (204, its Secret with it), 400 when an airlock would lose its main LLM ([LLMs and data sources](llms-and-data-sources.md#api)) |
 | `GET /data-sources`, `GET /data-sources/{id}` | backend | admin, developer of any space | The global data sources: `[{id, url, secret_ref, updated_at}]`, sorted by id; one, or 404 |
 | `POST /data-sources`, `PUT /data-sources/{id}`, `DELETE /data-sources/{id}` | backend | admin | Rows `{id, url, username, password}` as a space's data sources, the Secret `aisolate-ds-<id>-<6 chars>`; 409 `id: a data source hr already exists`; a delete is 400 when an airlock's code reads it and nothing nearer defines it |
+| `POST /credentials/{secretRef}/reveal` | backend | admin, signed in within five minutes | A stored API key or data source login in clear, `{values: {apiKey}}` or `{values: {username, password}}`, `Cache-Control: no-store`; every call is recorded ([below](#post-v1credentialssecretrefreveal)) |
 | `GET /spaces/{space}` | backend | admin, developer of the space | The space with its `members: [{email, role}]` (`role` `developer` or `user`), its own `llms` and `data_sources`, and `caller_role`, what the caller may do there: `admin` or `developer` |
 | `POST /spaces`, `PUT /spaces/{space}` | backend | admin | Create a space, with no user yet if need be; edit its name, description, users and their roles, LLMs and data sources |
 | `DELETE /spaces` | backend | admin | Every space with its airlocks and their code, the rows in one transaction; then, with a cluster, their resources and Secrets, waiting up to 45 s for the pods to go. No confirmation and no undo. Used by `aisolate-reset`; create a space and an airlock again before the next deploy |
@@ -83,7 +84,8 @@ answers by id (`llm`), resolved, once set, at every create, save and deploy: `ll
 An LLM (a model, in the UI) is `{id, provider, url, model}` and has no type: the same entry chats or embeds as far
 as its model can. `provider` is `ollama` or `openai` (an OpenAI-compatible server, its `url` the API's base with
 its version, `https://api.openai.com/v1`). An `openai` row of a space, an airlock or the install may carry an API key:
-`api_key` is write-only, as a data source row's `password`, and becomes a Secret the row names in `secret_ref`;
+`api_key` is write-only, as a data source row's `password`: no response carries it, and it becomes a Secret the row
+names in `secret_ref`, sealed beside it in the backend's database for an admin to reveal;
 a row keeps it while its `url` stays (`llms[0].api_key: required again with a new url` otherwise), an `ollama`
 row names none (`llms[0].api_key: an Ollama model takes no API key`), and a project's rows take none.
 The admin's global ones, a space's and an airlock's own (`llms`) are one catalog by id, the nearest
@@ -114,10 +116,39 @@ would run as …, 64 characters; Kubernetes allows 63 (shorten the space or the 
 derived from the name is cut to fit.
 
 The AIsolate UI's forms read and write the data sources as rows `{id, url, secret_ref, username,
-password}`: `username` and `password` are write-only and become a Secret, `secret_ref` names it. With a
+password}`: `username` and `password` are write-only, no response carries them, and they become a Secret, `secret_ref` names it,
+sealed beside it for an admin to reveal. With a
 cluster, a row keeps only the `secret_ref` its id already had, and only while its `url` stays; a new URL needs
 the password again (`data_sources[i].password: required again with a new url`). The code of an airlock reaches
 it only through the deploy call.
+
+### `POST /v1/credentials/{secretRef}/reveal`
+
+An admin reads back a stored API key or data source login, named by the `secret_ref` a row carries. No body.
+
+```
+POST /v1/credentials/aisolate-ds-hr-k3x9qa/reveal
+Authorization: Bearer <an admin's token>
+```
+
+200 `{"values": {"username": "…", "password": "…"}}` (`{"values": {"apiKey": "…"}}` for a model), with
+`Cache-Control: no-store`. The token needs the realm role `aisolate-admin` and an `auth_time` no older than five
+minutes (`AISOLATE_CREDENTIALS_REVEAL_MAX_AGE`, `PT5M`), and a token from a script's or the CLI's direct grant has
+none: the AIsolate UI is the way. Refusals, checked in this order, each recorded in `credential_events` with a
+`reason` that the problem document carries too:
+
+| Status | `detail` | `reason` |
+|---|---|---|
+| 404 | `unknown credential`: no row of any level names the Secret | `unknown` |
+| 403 | `not from the AIsolate UI`: the token's `azp` is not one of `AISOLATE_CREDENTIALS_REVEAL_CLIENTS` (default `aisolate-ui`), or absent | `wrong_client` |
+| 403 | `the identity provider sends no auth_time claim` | `no_auth_time` |
+| 403 | `sign in again to reveal`: the login is older than the window, or its `auth_time` is more than a minute ahead of the backend's clock | `stale_login` |
+| 409 | `entered before encryption — enter it again`: the Secret has no sealed row | `no_ciphertext` |
+| 409 | `stored under another key`: the row was sealed under a key this backend no longer holds | `key_changed` |
+| 409 | `cannot be read`: the ciphertext does not open | `unreadable` |
+
+A token without the admin role is 403 `forbidden` and is not recorded. A reveal that succeeds is recorded as
+`revealed`. No value is in a log line or an event.
 
 ## The chat endpoint
 
@@ -521,9 +552,9 @@ Errors are RFC 9457 problem documents.
 |---|---|
 | 400 | An invalid form, with field errors; a blank or too long message; a deploy the backend refuses, with the reasons |
 | 401 | No token, a forged or expired one, or one for another audience, with `WWW-Authenticate: Bearer resource_metadata=…` |
-| 403 | `forbidden`. At an airlock pod: a user neither its space nor its airlock lists, or a calling client it does not admit; the reason goes to the pod's log (`<space>/<airlock> does not admit user <email> from client <azp>`) ([The gates](security.md#the-gates)). At the backend: a token without the UI roles |
-| 404 | `unknown airlock`, `unknown space`; at a pod, any path but its own |
-| 409 | A create whose id is taken, then one whose cluster name, `<space>` or `<space>-<airlock>`, another one has (a deploy's too): `An airlock with the id hr already exists in this space.`, `The id cd-ef can't be used here: it would collide with the airlock ef in space ab-cd. Choose another id.` The same message is in `errors`, on its field (`id`). An id derived from the name skips both |
+| 403 | `forbidden`. At an airlock pod: a user neither its space nor its airlock lists, or a calling client it does not admit; the reason goes to the pod's log (`<space>/<airlock> does not admit user <email> from client <azp>`) ([The gates](security.md#the-gates)). At the backend: a token without the UI roles; a reveal's refusals add a `reason` property (`wrong_client`, `no_auth_time`, `stale_login`) ([reveal](#post-v1credentialssecretrefreveal)) |
+| 404 | `unknown airlock`, `unknown space`, `unknown credential`; at a pod, any path but its own |
+| 409 | A reveal's three refusals (`no_ciphertext`, `key_changed`, `unreadable`) ([reveal](#post-v1credentialssecretrefreveal)). A create whose id is taken, then one whose cluster name, `<space>` or `<space>-<airlock>`, another one has (a deploy's too): `An airlock with the id hr already exists in this space.`, `The id cd-ef can't be used here: it would collide with the airlock ef in space ab-cd. Choose another id.` The same message is in `errors`, on its field (`id`). An id derived from the name skips both |
 | 500, 503 | The JSON form of a chat exchange that could not finish, as the [chat endpoint](#the-chat-endpoint) says: 503 when the model server cannot be reached or the airlock's model has no endpoint, 500 otherwise; the stream puts the same sentence in an `error` frame |
 
 ## The deploy call

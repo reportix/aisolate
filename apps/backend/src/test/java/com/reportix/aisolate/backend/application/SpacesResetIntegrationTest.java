@@ -3,6 +3,7 @@ package com.reportix.aisolate.backend.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.reportix.aisolate.backend.BackendApplication;
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
 import com.reportix.aisolate.backend.domain.space.SpacesDeletedDTO;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
@@ -112,6 +113,7 @@ class SpacesResetIntegrationTest {
   private final String rita =
       Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
   @Autowired ClusterSyncService clusterSync;
+  @Autowired CredentialRepository rows;
 
   @ParameterizedTest
   @Order(1)
@@ -172,6 +174,37 @@ class SpacesResetIntegrationTest {
 
   @Test
   @Order(4)
+  void givenSpaceAndInstallCredentials_whenReset_thenTheSpaceRowsGoAndTheInstallsStay() {
+    // Arrange: a login on the install and one on a space, each sealed in a row
+    HttpRequest.Builder global =
+        HttpRequest.newBuilder(URI.create(base() + "/data-sources"))
+            .header("Content-Type", "application/json")
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    "{\"id\":\"reset-ledger\",\"url\":\""
+                        + DB
+                        + "\","
+                        + "\"username\":\"auditor\",\"password\":\"l3dger\"}"));
+    HttpResponse<String> installed = Http.send(Http.bearer(global, rita).build());
+    assertThat(installed.statusCode()).as(installed.body()).isEqualTo(201);
+    String installRef = JSON.readTree(installed.body()).path("secret_ref").asString();
+    create("/spaces", SPACE_FORM);
+    String spaceRef = secretRefOf(resource(SPACES, "reset-lab"));
+    assertThat(rows.find(spaceRef)).isPresent();
+    assertThat(rows.find(installRef)).isPresent();
+
+    // Act
+    HttpResponse<String> response = deleteAllSpaces(rita);
+
+    // Assert
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(rows.find(spaceRef)).isEmpty();
+    assertThat(rows.events(spaceRef).getLast().action()).isEqualTo("deleted");
+    assertThat(rows.find(installRef)).isPresent();
+  }
+
+  @Test
+  @Order(5)
   void givenAirlockPodOutlivingTheWait_whenCleared_thenPodsNotGoneWithoutProblem() {
     // Arrange: the mock has no garbage collector, so this pod stays
     pod("reset-lab-reset-assistant-airlock-0", "airlock");
@@ -185,7 +218,7 @@ class SpacesResetIntegrationTest {
   }
 
   @Test
-  @Order(5)
+  @Order(6)
   void givenApiServerGone_whenAllSpacesDeleted_thenRowsGoneAndProblemReported() {
     // Arrange: the database is the source of truth; the cluster is reported, never required
     create(

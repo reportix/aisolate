@@ -7,9 +7,12 @@ import com.reportix.aisolate.backend.domain.airlock.ConflictException;
 import com.reportix.aisolate.backend.domain.airlock.DataSourceSecrets;
 import com.reportix.aisolate.backend.domain.airlock.Documents;
 import com.reportix.aisolate.backend.domain.airlock.InvalidFormException;
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository.Event;
 import com.reportix.aisolate.backend.domain.directory.DirectoryService;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterProperties;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
+import com.reportix.aisolate.backend.infrastructure.security.Access;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ public class SpaceService {
   private final AirlockService airlockService;
   private final DataSourceSecrets secrets;
   private final DirectoryService directory;
+  private final CredentialRepository rows;
   private final ClusterSyncService clusterSync;
   private final ClusterProperties cluster;
   private final TransactionOperations transactions;
@@ -124,13 +128,18 @@ public class SpaceService {
    * everything applied there, once the delete committed.
    */
   public SpacesDeletedDTO deleteAll() {
-    SpacesDeletedDTO deleted = transactions.execute(status -> deleteRows());
+    List<CredentialRepository.Row> gone = new ArrayList<>();
+    SpacesDeletedDTO deleted = transactions.execute(status -> deleteRows(gone));
+    // After the commit: each event commits on its own, so none outlives a reset that rolled back.
+    String actor = Access.caller();
+    gone.forEach(r -> rows.record(Event.of(r, actor, "deleted", null)));
     return cluster.enabled()
         ? deleted.withCluster(clusterSync.clear(ClusterSyncService.PODS_PATIENCE))
         : deleted;
   }
 
-  private SpacesDeletedDTO deleteRows() {
+  private SpacesDeletedDTO deleteRows(List<CredentialRepository.Row> gone) {
+    gone.addAll(rows.deleteSpacesAndAirlocks());
     int airlockCount = airlocks.deleteAll();
     return new SpacesDeletedDTO(spaces.deleteAll(), airlockCount, null);
   }

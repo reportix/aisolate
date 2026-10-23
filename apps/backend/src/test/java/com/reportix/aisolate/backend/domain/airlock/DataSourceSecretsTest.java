@@ -1,18 +1,35 @@
 package com.reportix.aisolate.backend.domain.airlock;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterProperties;
+import com.reportix.aisolate.backend.infrastructure.cluster.Credentials;
+import com.reportix.aisolate.backend.infrastructure.crypto.CredentialCipher;
+import com.reportix.aisolate.backend.infrastructure.crypto.CredentialProperties;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import tools.jackson.databind.json.JsonMapper;
 
 class DataSourceSecretsTest {
 
   private static final String URL = "jdbc:postgresql://acme-db:5432/hr";
 
   private final DataSourceSecrets withCluster =
-      new DataSourceSecrets(null, new ClusterProperties("aisolate"), event -> {});
+      new DataSourceSecrets(null, new ClusterProperties("aisolate"), event -> {}, null, null, null);
 
   private static DataSourceFormDTO row(String id, String url, String ref) {
     return new DataSourceFormDTO(id, url, ref, null, null);
@@ -73,7 +90,7 @@ class DataSourceSecretsTest {
   void givenNoClusterAndAModelsSecretOfThisOwner_whenSaved_thenKeptByItsName() {
     // Arrange: a backend without a cluster checks the name alone
     DataSourceSecrets headless =
-        new DataSourceSecrets(null, new ClusterProperties(null), event -> {});
+        new DataSourceSecrets(null, new ClusterProperties(null), event -> {}, null, null, null);
     LlmFormDTO row =
         new LlmFormDTO("gpt", "openai", "https://api.openai.com/v1", "m", "p-llm-gpt-abc123", null);
     LlmFormDTO dataSourcesName =
@@ -89,6 +106,48 @@ class DataSourceSecretsTest {
     // Assert
     assertThat(kept).isEmpty();
     assertThat(refused).containsExactly("llms[0].secret_ref: not a Secret of this space");
+  }
+
+  @Test
+  void givenARowThatCannotBeInserted_whenStored_thenTheSecretGoesAndTheFailureIsNotAFormError() {
+    // Arrange
+    Credentials credentials = mock(Credentials.class);
+    CredentialRepository sealedStore = mock(CredentialRepository.class);
+    CredentialProperties props =
+        new CredentialProperties(
+            "test-credentials-key-of-at-least-32-chars", Duration.ofMinutes(5), List.of());
+    DataSourceSecrets secrets =
+        new DataSourceSecrets(
+            credentials,
+            new ClusterProperties("aisolate"),
+            event -> {},
+            sealedStore,
+            new CredentialCipher(props, new ClusterProperties("aisolate")),
+            JsonMapper.builder().build());
+    when(credentials.create(any(), anyString(), anyMap())).thenReturn("p-ds-hr-abc123");
+    DataAccessException down = new DataAccessResourceFailureException("db down");
+    doThrow(down).when(sealedStore).insert(any());
+    DataSourceFormDTO typed = new DataSourceFormDTO("hr", URL, "", "reader", "hunter2");
+
+    // Act
+    Throwable failed =
+        catchThrowable(
+            () ->
+                secrets.storeIfAny(
+                    DataSourceSecrets.Owner.ofSpace("p"),
+                    List.of(typed),
+                    "saved",
+                    () ->
+                        new ConfigMapBuilder()
+                            .withNewMetadata()
+                            .withName("p")
+                            .endMetadata()
+                            .build(),
+                    refs -> "written"));
+
+    // Assert
+    assertThat(failed).isSameAs(down);
+    verify(credentials).delete("p-ds-hr-abc123");
   }
 
   @Test

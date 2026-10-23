@@ -93,7 +93,9 @@ export function DataSourceForm({
         {...problems.field(`${at}.password`)}
         label="Password"
         optional={keeps}
-        help={keeps ? "Leave blank to keep it." : "Kept as a Secret, never shown again."}
+        help={
+          keeps ? "Leave blank to keep it." : "Stored encrypted; an admin can see it from View."
+        }
       >
         <input
           {...problems.control(`${at}.password`)}

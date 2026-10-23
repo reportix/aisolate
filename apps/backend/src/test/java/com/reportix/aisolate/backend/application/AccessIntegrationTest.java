@@ -95,7 +95,12 @@ class AccessIntegrationTest {
     "auditor,    GET,    /v1/audit/events,                    true",
     "jasmine,    GET,    /v1/audit/events?space=roles-lab,    true",
     "jasmine,    GET,    /v1/audit/events?space=roles-other,  false",
-    "eric,       GET,    /v1/audit/events,                    false"
+    "eric,       GET,    /v1/audit/events,                    false",
+    // Credentials: the admin reveals, after a fresh sign-in
+    "andrew,     POST,   /v1/credentials/x/reveal,            true",
+    "jasmine,    POST,   /v1/credentials/x/reveal,            false",
+    "eric,       POST,   /v1/credentials/x/reveal,            false",
+    "auditor,    POST,   /v1/credentials/x/reveal,            false"
   })
   void givenCallerRole_whenEndpointCalled_thenAllowedOrForbidden(
       String caller, String method, String path, boolean allowed) {

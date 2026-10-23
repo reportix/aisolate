@@ -2,10 +2,12 @@
 
 import { Section, buttonClass } from "@aisolate/ui";
 import Link from "next/link";
+import { useState } from "react";
 import { LlmForm } from "@/components/LlmForm";
-import { LlmTable } from "@/components/LlmTable";
+import { LlmTable, llmView } from "@/components/LlmTable";
 import { PageHeader } from "@/components/PageHeader";
 import { SaveBanner } from "@/components/SaveBanner";
+import { SecretView } from "@/components/SecretView";
 import { useSession } from "@/components/Session";
 import { EditPanel } from "@/components/parts/EditPanel";
 import { api } from "@/lib/api";
@@ -15,6 +17,9 @@ import { useGlobalList } from "@/lib/globals";
 export default function GlobalLlmsPage() {
   const { admin } = useSession();
   const { rows, busy, problem, remove, edit, form } = useGlobalList(api.llms, "llms", "llms");
+  // The row whose View is open above the list; Edit opens there too, one of the two at a time.
+  const [viewing, setViewing] = useState<string | null>(null);
+  const viewed = !form && rows?.find((r) => r.id === viewing);
 
   return (
     <div className="grid gap-6">
@@ -24,6 +29,9 @@ export default function GlobalLlmsPage() {
       />
       {problem && <SaveBanner message={problem} />}
       {form && <EditPanel noun="model" state={form} Form={LlmForm} />}
+      {viewed && (
+        <SecretView key={viewed.id} {...llmView(viewed)} onClose={() => setViewing(null)} />
+      )}
       {(rows || !problem) && (
         <Section
           action={
@@ -38,7 +46,22 @@ export default function GlobalLlmsPage() {
           {rows && (
             <LlmTable
               rows={rows}
-              actions={admin ? { onEdit: edit, busy, onRemove: remove } : undefined}
+              actions={{
+                onView: (id) => {
+                  edit(null);
+                  setViewing(id);
+                },
+                edit: admin
+                  ? {
+                      onEdit: (id) => {
+                        setViewing(null);
+                        edit(id);
+                      },
+                      busy,
+                      onRemove: remove,
+                    }
+                  : undefined,
+              }}
             />
           )}
         </Section>

@@ -1,11 +1,17 @@
 package com.reportix.aisolate.backend.infrastructure.cluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.reportix.aisolate.backend.domain.airlock.AirlockRepository;
 import com.reportix.aisolate.backend.domain.airlock.SecretsReplaced;
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -26,6 +32,7 @@ class CredentialsTest {
   static KubernetesClient client; // injected by the mock server extension
 
   private final AirlockRepository airlocks = mock(AirlockRepository.class);
+  private final CredentialRepository rows = mock(CredentialRepository.class);
   private final List<Object> published = new ArrayList<>();
 
   private final Credentials credentials =
@@ -34,7 +41,8 @@ class CredentialsTest {
           new StaticListableBeanFactory(Map.of("client", client))
               .getBeanProvider(KubernetesClient.class),
           airlocks,
-          published::add);
+          published::add,
+          rows);
 
   /** The resource as the API server returns it: with its uid. */
   private static GenericKubernetesResource owner(ResourceDefinitionContext kind, String name) {
@@ -94,6 +102,30 @@ class CredentialsTest {
     // Assert
     assertThat(client.secrets().inNamespace("aisolate").withName(shared).get()).isNotNull();
     assertThat(client.secrets().inNamespace("aisolate").withName(gone).get()).isNull();
+  }
+
+  @Test
+  void givenAnOrphanSecret_whenSecretsReplaced_thenItsRowGoesToo() {
+    // Arrange
+    when(airlocks.isSecretReferenced("s")).thenReturn(false);
+
+    // Act
+    credentials.handleSecretsReplaced(new SecretsReplaced(List.of("s")));
+
+    // Assert
+    verify(rows).deleteOrphan(eq("s"), anyString());
+  }
+
+  @Test
+  void givenAStillReferencedSecret_whenSecretsReplaced_thenItsRowStays() {
+    // Arrange
+    when(airlocks.isSecretReferenced("s")).thenReturn(true);
+
+    // Act
+    credentials.handleSecretsReplaced(new SecretsReplaced(List.of("s")));
+
+    // Assert
+    verify(rows, never()).deleteOrphan(any(), any());
   }
 
   @Test

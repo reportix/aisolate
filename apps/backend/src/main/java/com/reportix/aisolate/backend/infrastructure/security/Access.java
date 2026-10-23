@@ -142,6 +142,20 @@ public class Access {
         : null;
   }
 
+  /** Who is acting, for a trail line: the token's email, else its login name, else its subject. */
+  public static String caller() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
+      for (String claim : List.of("email", "preferred_username", "sub")) {
+        String value = jwt.getClaimAsString(claim);
+        if (value != null && !value.isBlank()) {
+          return value;
+        }
+      }
+    }
+    return "system";
+  }
+
   private static boolean has(String authority) {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     return auth != null

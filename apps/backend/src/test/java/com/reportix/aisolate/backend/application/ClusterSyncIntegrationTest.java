@@ -3,6 +3,7 @@ package com.reportix.aisolate.backend.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.reportix.aisolate.backend.BackendApplication;
+import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.identity.testing.Http;
@@ -115,6 +116,7 @@ class ClusterSyncIntegrationTest {
   @LocalServerPort int port;
   @Autowired ClusterSyncService clusterSync;
   @Autowired ScheduledTaskHolder scheduled;
+  @Autowired CredentialRepository rows;
   private final String jasmine =
       Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
   private final String rita =
@@ -292,8 +294,125 @@ class ClusterSyncIntegrationTest {
             });
   }
 
+  /** The space with its data source's typed password: the Secret name the save gave it. */
+  private String saveSpacePassword(String password) {
+    HttpResponse<String> saved =
+        put(
+            SPACE_PATH,
+            SPACE_FORM.formatted(
+                ",\"data_sources\":[{\"id\":\"hr-documents\","
+                    + "\"url\":\"jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr\","
+                    + "\"username\":\"preparator\",\"password\":\""
+                    + password
+                    + "\"}]"));
+    assertThat(saved.statusCode()).as(saved.body()).isEqualTo(200);
+    return JSON.readTree(saved.body()).path("data_sources").path(0).path("secret_ref").asString();
+  }
+
   @Test
   @Order(6)
+  void givenATypedPassword_whenSaved_thenARowHoldsCiphertextNotThePassword() {
+    // Arrange
+    String password = "s3al-me-pls";
+
+    // Act
+    String ref = saveSpacePassword(password);
+
+    // Assert
+    CredentialRepository.Row row = rows.find(ref).orElseThrow();
+    assertThat(new String(row.ciphertext(), StandardCharsets.ISO_8859_1)).doesNotContain(password);
+    assertThat(row.keyId()).matches("[0-9a-f]{8}");
+    assertThat(row.nonce()).hasSize(12);
+    assertThat(row.ownerKind()).isEqualTo("space");
+    assertThat(row.owner()).isEqualTo("cluster-lab");
+    assertThat(row.itemId()).isEqualTo("hr-documents");
+    assertThat(rows.events(ref))
+        .singleElement()
+        .satisfies(
+            event -> {
+              assertThat(event.action()).isEqualTo("stored");
+              assertThat(event.actor()).isEqualTo("andrew@example.com");
+            });
+  }
+
+  @Test
+  @Order(7)
+  void givenAReplacedPassword_whenSaved_thenTheOldRowGoesWithADeletedEvent() {
+    // Arrange
+    String old = saveSpacePassword("0ld-pass");
+
+    // Act
+    String replacement = saveSpacePassword("n3w-pass");
+
+    // Assert
+    assertThat(replacement).isNotEqualTo(old);
+    assertThat(rows.find(old)).isEmpty();
+    assertThat(rows.events(old).getLast().action()).isEqualTo("deleted");
+    assertThat(rows.find(replacement)).isPresent();
+  }
+
+  @Test
+  @Order(8)
+  void givenAGlobalLlmWithAKey_whenDeleted_thenItsRowGoes() {
+    // Arrange
+    HttpResponse<String> created =
+        admin(
+            "POST",
+            "/v1/llms",
+            "{\"id\":\"sealed-gpt\",\"provider\":\"openai\","
+                + "\"url\":\"https://api.openai.example/v1\",\"model\":\"gpt-4o-mini\","
+                + "\"api_key\":\"sk-s3aled\"}",
+            null);
+    String ref = JSON.readTree(created.body()).path("secret_ref").asString();
+    assertThat(rows.find(ref)).isPresent();
+
+    // Act
+    HttpResponse<String> deleted = admin("DELETE", "/v1/llms/sealed-gpt", "", null);
+
+    // Assert
+    assertThat(deleted.statusCode()).isEqualTo(204);
+    assertThat(rows.find(ref)).isEmpty();
+    assertThat(rows.events(ref).getLast().action()).isEqualTo("deleted");
+  }
+
+  // Neither test creates a Secret beyond the space save: they run before the late ones that make
+  // the mock refuse it.
+  @Test
+  @Order(9)
+  void givenAPasswordGrantToken_whenRevealed_then403NoAuthTimeAndTheRefusalIsRecorded() {
+    // Arrange: Keycloak's password grant starts no browser login, so its token has no auth_time;
+    // the 200 path (fresh login, no-store, value) is CredentialRevealIntegrationTest's
+    String payload =
+        new String(Base64.getUrlDecoder().decode(rita.split("\\.")[1]), StandardCharsets.UTF_8);
+    assertThat(JSON.readTree(payload).has("auth_time")).as("auth_time in the token").isFalse();
+    String ref = saveSpacePassword("r3veal-me");
+
+    // Act
+    HttpResponse<String> response = admin("POST", "/v1/credentials/" + ref + "/reveal", "", null);
+
+    // Assert
+    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(JSON.readTree(response.body()).path("reason").asString()).isEqualTo("no_auth_time");
+    assertThat(response.body()).doesNotContain("r3veal-me");
+    assertThat(rows.events(ref).getLast().action()).isEqualTo("reveal_refused");
+  }
+
+  @Test
+  @Order(10)
+  void givenADeveloper_whenRevealed_then403() {
+    // Arrange
+    String ref = saveSpacePassword("n0-peeking");
+
+    // Act
+    HttpResponse<String> response = send("/v1/credentials/" + ref + "/reveal", "POST", "");
+
+    // Assert
+    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(rows.events(ref)).noneMatch(event -> event.action().equals("revealed"));
+  }
+
+  @Test
+  @Order(11)
   void givenJarAboveTheFormerConfigMapCeiling_whenDeployed_thenStoredAndApplied() {
     // Arrange: the same jar with a 1.2 MB random resource (zeros would deflate away), past 1 MiB
     byte[] padding = new byte[1_200_000];
@@ -312,7 +431,7 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(7)
+  @Order(12)
   void givenResourcesGoneFromTheCluster_whenTheScheduledResyncRuns_thenTheyAreBack() {
     // Arrange: an apply that failed, or an API server that lost them
     client
@@ -342,7 +461,7 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(8)
+  @Order(13)
   void givenGlobalDataSourceWithALogin_whenSavedEditedAndDeleted_thenTheGlobalOwnsItsSecret() {
     // Arrange: ledger is the install's; acme_hr too, read by an airlock that defines none
     String ledger =
@@ -412,7 +531,7 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(9)
+  @Order(14)
   void givenFileWithALogin_whenDeployedTwice_thenItsSecretIsTheAirlocksAndItsResourceFollows() {
     // Arrange: a new airlock, its data source's login from the variables, deployed then again
     String documents =
@@ -445,7 +564,7 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(10)
+  @Order(15)
   void givenGlobalOpenAiModelWithAKey_whenSavedEditedAndMadeOllama_thenItsSecretHoldsItThenGoes() {
     // Arrange: an OpenAI-compatible model with its API key, typed once
     String gpt =
@@ -507,7 +626,7 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(11)
+  @Order(16)
   void givenSpaceOpenAiModelWithAKey_whenSaved_thenSecretOwnedByTheSpaceResource() {
     // Arrange: the space as the AIsolate UI read it, a model with a key added
     JsonNode space = JSON.readTree(admin("GET", SPACE_PATH, "", null).body());
@@ -539,7 +658,7 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(12)
+  @Order(17)
   void givenTwoSpaces_whenResyncAllRuns_thenTheGlobalIsWrittenOnce() throws InterruptedException {
     // Arrange: a second space beside cluster-lab, and the mock's request log emptied
     String secondSpace =
@@ -567,7 +686,7 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(13)
+  @Order(18)
   void givenClusterRefusesTheSecret_whenAirlockCreatedWithALogin_thenNoRowNoResourceNoSecret()
       throws InterruptedException {
     // Arrange: the Airlock resource is created, its Secret refused as a full quota refuses it; a
@@ -607,7 +726,7 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(14)
+  @Order(19)
   void givenClusterRefusesTheKeysSecret_whenCreatedWithALoginAndAKey_thenTheLoginsSecretGoesToo()
       throws InterruptedException {
     // Arrange: the login's Secret taken, the key's refused. The mock matches by method and path
@@ -651,7 +770,7 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(15)
+  @Order(20)
   void givenApiServerGone_whenDeployed_thenCredentialsRefusedElseStoredAndReportedNotApplied() {
     // Arrange: the database is the source of truth; the cluster is reported, never required, but
     // credentials have nowhere to go without it

@@ -1,7 +1,7 @@
 // Client-only module: oidc-client-ts touches window and crypto.subtle. Never import from a
 // server component; construct the manager lazily inside effects or handlers.
 import { Unauthorized, rolesFromClaims, userManagerSettings } from "@aisolate/ui";
-import { UserManager, type User } from "oidc-client-ts";
+import { UserManager, type SigninRedirectArgs, type User } from "oidc-client-ts";
 import { env } from "./env";
 
 let manager: UserManager | undefined;
@@ -38,12 +38,16 @@ const reported = (redirect: Promise<void>) =>
   redirect.catch(() => void unreachable.dispatchEvent(new Event("unreachable")));
 
 /** Sends the browser to the identity provider and remembers the page to come back to. */
-export const login = () =>
+export const login = (extra: Pick<SigninRedirectArgs, "prompt" | "max_age"> = {}) =>
   reported(
     userManager().signinRedirect({
+      ...extra,
       state: { returnTo: window.location.pathname + window.location.search },
     }),
   );
+
+/** A fresh login at the identity provider, for what the backend only lets a login of the last five minutes do. */
+export const reauthenticate = () => login({ prompt: "login", max_age: 300 });
 
 /** Where a finished sign-in should land: the remembered page, or the overview. */
 export function returnTo(state: unknown): string {

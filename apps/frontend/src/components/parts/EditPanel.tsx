@@ -15,7 +15,7 @@ type Props<R> = {
   Form: ComponentType<RowFormProps<R>>;
 };
 
-/** A row's form above the list, framed: Save puts the row back, Cancel closes it. */
+/** A row's form above the list, in the frame View opens in: Save puts the row back, Cancel closes it. */
 export function EditPanel<R extends { id: string }>({ noun, state, Form }: Props<R>) {
   const { rows, index, banner, errors, busy, submit, cancel } = state;
   return (

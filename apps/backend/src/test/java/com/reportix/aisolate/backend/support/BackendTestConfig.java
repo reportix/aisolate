@@ -12,6 +12,9 @@ public final class BackendTestConfig
   /** The install's audit ingest key, as the chart would share it with the controller. */
   public static final String INGEST_KEY = "test-ingest-key";
 
+  /** The key stored credentials are sealed with in the tests. */
+  public static final String CREDENTIALS_KEY = "test-credentials-key-of-at-least-32-chars";
+
   @Override
   public void initialize(ConfigurableApplicationContext context) {
     TestPropertyValues.of(
@@ -22,6 +25,7 @@ public final class BackendTestConfig
             // Every cached context runs its own ingest port: a fixed one would collide.
             "aisolate.audit.ingest-port=0",
             "aisolate.audit.ingest-key=" + INGEST_KEY,
+            "aisolate.credentials.key=" + CREDENTIALS_KEY,
             // Test-only seed: the demo space and airlock the tests drive.
             "spring.flyway.locations=classpath:db/migration,classpath:db/migration-test")
         .applyTo(context);

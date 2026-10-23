@@ -163,3 +163,44 @@ BEGIN
 END $$;
 GRANT SELECT, INSERT ON audit_events TO aisolate_audit_writer;
 GRANT aisolate_audit_writer TO CURRENT_USER;
+
+-- The typed credentials, sealed by the backend (credentials) and the append-only trail of who stored, deleted
+-- and revealed them (credential_events); both are written by the backend alone.
+CREATE TABLE credentials (
+    secret_ref  text PRIMARY KEY,          -- the Secret's name, as the rows already carry it
+    owner_kind  text NOT NULL CHECK (owner_kind IN ('install','space','airlock')),
+    owner       text NOT NULL,             -- '' for the install, <space>, <space>/<airlock>
+    kind        text NOT NULL CHECK (kind IN ('llm','ds')),
+    item_id     text NOT NULL,
+    key_id      text NOT NULL,
+    nonce       bytea NOT NULL,
+    ciphertext  bytea NOT NULL,
+    created_by  text NOT NULL,
+    created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE credential_events (            -- append-only, as audit_events
+    id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    at          timestamptz NOT NULL DEFAULT now(),
+    actor       text NOT NULL,
+    action      text NOT NULL CHECK (action IN ('stored','deleted','revealed','reveal_refused')),
+    secret_ref  text NOT NULL,
+    owner_kind  text NOT NULL,
+    owner       text NOT NULL,
+    kind        text NOT NULL,
+    item_id     text NOT NULL,
+    reason      text                        -- reveal_refused: unknown | no_auth_time | stale_login | no_ciphertext | key_changed | unreadable
+);
+
+CREATE INDEX credential_events_ref ON credential_events (secret_ref, id);
+
+CREATE FUNCTION credential_events_refuse() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'credential_events is append-only: % refused', TG_OP USING ERRCODE = 'insufficient_privilege';
+END $$;
+CREATE TRIGGER credential_events_append_only BEFORE UPDATE OR DELETE ON credential_events
+    FOR EACH ROW EXECUTE FUNCTION credential_events_refuse();
+CREATE TRIGGER credential_events_no_truncate BEFORE TRUNCATE ON credential_events
+    FOR EACH STATEMENT EXECUTE FUNCTION credential_events_refuse();
+
+GRANT SELECT, INSERT ON credential_events TO aisolate_audit_writer;

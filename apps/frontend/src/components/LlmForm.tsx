@@ -142,7 +142,7 @@ export function LlmForm({
           help={
             keeps
               ? "Leave blank to keep it."
-              : "Kept as a Secret, never shown again. Leave blank for a server that needs none."
+              : "Stored encrypted; an admin can see it from View. Leave blank for a server that needs none."
           }
         >
           <input

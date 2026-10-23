@@ -20,6 +20,28 @@ describe("problem", () => {
     expect(err.errors).toEqual(["name: required", "model: required"]);
   });
 
+  it("givenAProblemWithAReason_whenParsed_thenApiErrorCarriesIt", async () => {
+    // Arrange
+    const res = new Response(
+      JSON.stringify({ detail: "sign in again to reveal", reason: "stale_login" }),
+      { status: 403, headers: { "Content-Type": "application/problem+json" } },
+    );
+    // Act
+    const err = await problem(res);
+    // Assert
+    expect(err.reason).toBe("stale_login");
+    expect(err.message).toBe("sign in again to reveal");
+  });
+
+  it("givenAProblemWithoutAReason_whenParsed_thenReasonIsUndefined", async () => {
+    // Arrange
+    const res = new Response(JSON.stringify({ detail: "invalid form" }), { status: 400 });
+    // Act
+    const err = await problem(res);
+    // Assert
+    expect(err.reason).toBeUndefined();
+  });
+
   it("givenABodyThatIsNotJson_whenRead_thenTheStatus", async () => {
     // Arrange / Act
     const err = await problem(new Response("nope", { status: 502 }));

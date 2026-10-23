@@ -3,8 +3,16 @@
 import { Button, CopyIcon } from "@aisolate/ui";
 import { useEffect, useRef, useState } from "react";
 
-/** Copies `text`, its title on hover; the label says "Copied" or "Copy failed" for 1.5 s. */
-export function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+/** Copies `text`, its text on hover unless `title` overrides it (a secret must not leak there); the label says "Copied" or "Copy failed" for 1.5 s. */
+export function CopyButton({
+  text,
+  label = "Copy",
+  title,
+}: {
+  text: string;
+  label?: string;
+  title?: string;
+}) {
   const [said, setSaid] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -23,7 +31,7 @@ export function CopyButton({ text, label = "Copy" }: { text: string; label?: str
   };
 
   return (
-    <Button variant="secondary" title={text} onClick={() => void copy()}>
+    <Button variant="secondary" title={title ?? text} onClick={() => void copy()}>
       <CopyIcon size={14} />
       {said ?? label}
     </Button>

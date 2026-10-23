@@ -3,9 +3,23 @@ import type { ReactNode } from "react";
 import type { DataSource } from "@/lib/types";
 import { RowActions, type Actions } from "./RowActions";
 
+/** What View shows of a data source: its fields, and its Secret's two keys. */
+export const dataSourceView = (row: DataSource) => ({
+  title: "View data source",
+  fields: [
+    { label: "Id", value: row.id },
+    { label: "URL", value: row.url },
+  ],
+  secretRef: row.secret_ref || null,
+  keys: [
+    { name: "username", label: "Username" },
+    { name: "password", label: "Password" },
+  ],
+});
+
 type Props<R> = {
   rows: R[];
-  /** Given where the page edits its rows: on each row `editable` allows, all without it. */
+  /** Given on every list page: View on each row; its `edit` on the rows `editable` allows. */
   actions?: Actions;
   editable?: (row: R) => boolean;
   /** Given where rows of several levels meet: the Source column, "Direct" or "Inherited from …". */
@@ -32,11 +46,7 @@ export function DataSourceTable<R extends DataSource>({
           {/* The API never returns a user; it names the Secret that holds it. */}
           <Th>Credentials</Th>
           {source && <Th>Source</Th>}
-          {actions && (
-            <Th>
-              <span className="sr-only">Actions</span>
-            </Th>
-          )}
+          {actions && <Th className="text-right">Actions</Th>}
         </tr>
       </thead>
       <tbody>
@@ -50,10 +60,12 @@ export function DataSourceTable<R extends DataSource>({
             </Td>
             {source && <Td className="font-normal">{source(d)}</Td>}
             {actions && (
-              <Td>
-                {editable(d) && (
-                  <RowActions actions={actions} what={{ noun: "data source", id: d.id }} />
-                )}
+              <Td className="text-right">
+                {/* An inherited row is viewed here and edited where it is defined. */}
+                <RowActions
+                  actions={editable(d) ? actions : { onView: actions.onView }}
+                  what={{ noun: "data source", id: d.id }}
+                />
               </Td>
             )}
           </Tr>

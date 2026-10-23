@@ -148,12 +148,16 @@ re-applying the previous documents. A team that wants a second airlock creates o
 holding them?
 
 **Decision.** The admin defines LLMs and data sources for the install, a space for its airlocks, an airlock for
-itself; each is an id, a URL and a Secret reference, and the nearest definition of an id wins. A project names
+itself; each is an id, a URL and a Secret reference, and the nearest definition of an id wins. A typed
+credential is sealed in the backend's database and mirrored into the Secret the pods read; an admin may reveal
+it after a fresh sign-in, every time recorded. A project names
 them by id in `aisolate.yaml` and in its code and holds no credential. An LLM has no type: one entry chats or
 embeds as its model can.
 
 **Consequence.** The same project deploys to another install unchanged; a password rotates in one Secret; a
-developer never sees it. The controller renders the resolved catalog into each pod's environment, so the pods
+developer never reads it through the API (a Java deploy runs code in the backend, which holds the key, so
+until deploys stop doing that a developer who deploys Java can decrypt every credential), and an admin who forgot one recovers it instead of resetting the data source.
+The cost is a master key in the backend: whoever holds it and the database holds every credential. The controller renders the resolved catalog into each pod's environment, so the pods
 resolve nothing themselves.
 
 ## Documents are the interface; the UI is optional

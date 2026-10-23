@@ -61,7 +61,9 @@ async function send(
       body: body === undefined ? undefined : JSON.stringify(body),
     }).catch(unreachable),
   );
-  if (method !== "GET") applied = res.headers.get("AIsolate-Cluster") !== "not applied";
+  // A reveal is a POST that changes nothing the cluster must take; its answer must not reset the flag.
+  if (method !== "GET" && !path.startsWith("/credentials/"))
+    applied = res.headers.get("AIsolate-Cluster") !== "not applied";
   return res;
 }
 
@@ -225,6 +227,15 @@ export const api = {
     /** People whose name, username or e-mail holds `q`, at most 20; 404 with no directory. */
     search: (t: string, q: string) =>
       call<Person[]>(t, "GET", `/directory/people?q=${encodeURIComponent(q)}`),
+  },
+  credentials: {
+    // The values stay in the component that asked, never in a cache.
+    reveal: (t: string, ref: string) =>
+      call<{ values: Record<string, string> }>(
+        t,
+        "POST",
+        `/credentials/${encodeURIComponent(ref)}/reveal`,
+      ),
   },
 };
 
