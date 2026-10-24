@@ -11,8 +11,8 @@ import java.util.List;
 
 /**
  * The rows of one space as {@code aisolate.dev/v1} documents, the shapes the AIsolate UI defines:
- * the Space with its users, LLMs and data sources; and every Airlock naming its space, with who may
- * ask it besides the space's users, its own LLMs and data sources, what runs, from its definition,
+ * the Space with its roles, LLMs and data sources; and every Airlock naming its space, with who may
+ * ask it besides the space's roles, its own LLMs and data sources, what runs, from its definition,
  * and its code's digest and tools once a deploy brought them.
  */
 public final class Documents {
@@ -33,7 +33,7 @@ public final class Documents {
         new SpaceDocument.Spec(
             space.name(),
             space.description(),
-            new SpaceDocument.Access(space.users()),
+            new SpaceDocument.Access(space.roles()),
             LlmFormDTO.toLlms(space.llms()),
             toDataSources(space.dataSources())));
   }
@@ -47,7 +47,7 @@ public final class Documents {
             airlock.spaceId(),
             airlock.name(),
             airlock.description(),
-            new AirlockDocument.Access(airlock.users(), airlock.callers(), airlock.clients()),
+            new AirlockDocument.Access(airlock.roles(), airlock.callers(), airlock.clients()),
             new AirlockDocument.PreLlm(
                 new AirlockDocument.ContextPreparator(form.contextPreparators()),
                 new AirlockDocument.ConversationMemory(form.memoryHandlers())),

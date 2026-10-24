@@ -64,7 +64,7 @@ class CodeIntegrationTest {
   static final String SPACE_FORM =
       """
       {"id":"%s","name":"Code lab","llms":[{"id":"granite","provider":"ollama","url":"http://ollama:11434","model":"granite4.1:8b"}],
-       "members":[{"email":"jasmine@example.com","role":"developer"}],
+       "developers":["jasmine@example.com"],
        "data_sources":[{"id":"acme_hr","url":"jdbc:postgresql://acme-db:5432/hr",
                         "secret_ref":"%s-ds-acme-hr-abc123"}]}
       """;

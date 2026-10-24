@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 
 import com.reportix.aisolate.backend.domain.space.NotDeveloperException;
 import com.reportix.aisolate.backend.domain.space.Space;
-import com.reportix.aisolate.backend.domain.space.SpaceFormDTO;
 import com.reportix.aisolate.backend.domain.space.SpaceRepository;
 import java.util.Arrays;
 import java.util.List;
@@ -47,7 +46,8 @@ class AccessTest {
         id,
         id,
         "",
-        List.of(new SpaceFormDTO.Member(developer, SpaceFormDTO.DEVELOPER)),
+        List.of(developer),
+        List.of(),
         List.of(),
         List.of(),
         "jasmine",

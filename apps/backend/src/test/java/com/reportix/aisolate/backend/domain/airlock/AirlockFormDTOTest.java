@@ -33,7 +33,7 @@ class AirlockFormDTOTest {
   private static final String VALID =
       """
       {"id":"hr-assistant","name":"HR assistant","description":"The HR assistant.",
-       "users":["eric@example.com"],"callers":["*"],"clients":["acme-batch"],
+       "roles":["employee"],"callers":["*"],"clients":["acme-batch"],
        "context_preparators":["HrDocumentsContextPreparator"],
        "memory_handlers":["SessionMemory"],
        "llm":"granite","prompt":"You are the HR assistant.","tools":["read_records"],
@@ -62,16 +62,16 @@ class AirlockFormDTOTest {
   }
 
   private static AirlockFormDTO form(String id, String name, String description) {
-    return form(id, name, description, List.of("eric@example.com"), List.of("*"));
+    return form(id, name, description, List.of("employee"), List.of("*"));
   }
 
   private static AirlockFormDTO form(
-      String id, String name, String description, List<String> users, List<String> callers) {
+      String id, String name, String description, List<String> roles, List<String> callers) {
     return new AirlockFormDTO(
         id,
         name,
         description,
-        users,
+        roles,
         callers,
         null,
         null,
@@ -133,7 +133,7 @@ class AirlockFormDTOTest {
             "HR App!",
             "",
             null,
-            List.of("eric@example.com"),
+            List.of("employee"),
             List.of("*"),
             null,
             null,
@@ -186,47 +186,36 @@ class AirlockFormDTOTest {
     assertThat(errors).containsExactly(expected);
   }
 
-  static Stream<Arguments> givenMalformedUsersOrCallers_whenValidate_thenExactlyItsError() {
+  static Stream<Arguments> givenMalformedRolesOrCallers_whenValidate_thenExactlyItsError() {
     return Stream.of(
-        arguments(
-            List.of("eric@example.com", " "),
-            List.of("*"),
-            "users: must not contain a blank e-mail"),
-        arguments(
-            List.of("eric@example.com", "Eric@Example.com"),
-            List.of("*"),
-            "users: lists eric@example.com twice"),
-        // Among the users a * admits no one; read as everyone it would widen access.
+        arguments(List.of("employee", " "), List.of("*"), "roles: must not contain a blank role"),
+        arguments(List.of("employee", "employee"), List.of("*"), "roles: lists employee twice"),
+        // Among the roles a * admits no one; read as everyone it would widen access.
         arguments(
             List.of("*"),
             List.of("*"),
-            "users: * is no e-mail: list each user; only callers take * for any"),
-        arguments(List.of("eric"), List.of("*"), "users: eric is no e-mail"),
+            "roles: * is no role: list each role; only callers take * for any"),
         arguments(
-            List.of("eric@example.com"),
+            List.of("employee"),
             List.of("acme-chat", ""),
             "callers: must not contain a blank client"),
         arguments(
-            List.of("eric@example.com"),
+            List.of("employee"),
             List.of("acme-chat", "acme-chat"),
             "callers: lists acme-chat twice"),
-        // Never the token's e-mail or azp, so it would admit no one
+        // A role is matched exactly, so padding is refused, never stripped into another role
+        arguments(List.of(" employee"), List.of("*"), "roles: \" employee\" has a space in it"),
+        arguments(List.of("hr staff"), List.of("*"), "roles: \"hr staff\" has a space in it"),
         arguments(
-            List.of("eric @example.com"),
-            List.of("*"),
-            "users: \"eric @example.com\" has a space in it"),
-        arguments(
-            List.of("eric@example.com"),
-            List.of("acme chat"),
-            "callers: \"acme chat\" has a space in it"));
+            List.of("employee"), List.of("acme chat"), "callers: \"acme chat\" has a space in it"));
   }
 
   @ParameterizedTest
   @MethodSource
-  void givenMalformedUsersOrCallers_whenValidate_thenExactlyItsError(
-      List<String> users, List<String> callers, String expected) {
+  void givenMalformedRolesOrCallers_whenValidate_thenExactlyItsError(
+      List<String> roles, List<String> callers, String expected) {
     // Arrange: the loader refuses each of them in the documents
-    AirlockFormDTO form = form("hr-app-1", "HR app 1", null, users, callers);
+    AirlockFormDTO form = form("hr-app-1", "HR app 1", null, roles, callers);
 
     // Act
     List<String> errors = form.validate();
@@ -280,17 +269,16 @@ class AirlockFormDTOTest {
   }
 
   @Test
-  void givenPaddedUsersAndCallers_whenFormRead_thenStrippedAndValid() {
+  void givenPaddedCallers_whenFormRead_thenStrippedAndValid() {
     // Arrange: pasted with the spaces around them
     AirlockFormDTO form =
-        form("hr-app-1", "HR app 1", null, List.of(" eric@example.com "), List.of("\tacme-chat"));
+        form("hr-app-1", "HR app 1", null, List.of("employee"), List.of("\tacme-chat"));
 
     // Act
     List<String> errors = form.validate();
 
     // Assert: admission compares them with the token's, which carry none
     assertThat(errors).isEmpty();
-    assertThat(form.users()).containsExactly("eric@example.com");
     assertThat(form.callers()).containsExactly("acme-chat");
   }
 
@@ -380,10 +368,9 @@ class AirlockFormDTOTest {
   }
 
   @Test
-  void givenUsersAndCallers_whenWithDefaultCallers_thenKept() {
+  void givenRolesAndCallers_whenWithDefaultCallers_thenKept() {
     // Arrange
-    AirlockFormDTO form =
-        form("hr-app-1", "HR app 1", null, List.of("nora@example.com"), List.of("hr-chat"));
+    AirlockFormDTO form = form("hr-app-1", "HR app 1", null, List.of("ceo"), List.of("hr-chat"));
 
     // Act
     AirlockFormDTO defaulted = form.withDefaultCallers();
@@ -394,9 +381,8 @@ class AirlockFormDTOTest {
 
   @Test
   void givenNoCallers_whenWithDefaultCallers_thenAnyCallerAndNothingElseChanged() {
-    // Arrange: the form lists users but says nothing of which clients may ask
-    AirlockFormDTO form =
-        form("open-app", "Open app", null, List.of("nora@example.com"), List.of());
+    // Arrange: the form lists roles but says nothing of which clients may ask
+    AirlockFormDTO form = form("open-app", "Open app", null, List.of("ceo"), List.of());
 
     // Act
     AirlockFormDTO defaulted = form.withDefaultCallers();
@@ -480,7 +466,7 @@ class AirlockFormDTOTest {
     List<String> errors;
     if (kind.equals("space")) {
       // The same rule on create and on update: both read the form.
-      SpaceFormDTO space = new SpaceFormDTO("acme", label, null, null, null, null);
+      SpaceFormDTO space = new SpaceFormDTO("acme", label, null, null, null, null, null);
       name = space.name();
       errors = space.validate();
     } else {
@@ -502,7 +488,8 @@ class AirlockFormDTOTest {
         "hr-acme",
         "HR Acme",
         "",
-        List.of(new SpaceFormDTO.Member("eric@example.com", SpaceFormDTO.USER)),
+        List.of("jasmine@example.com"),
+        List.of("employee"),
         llms,
         List.of(),
         "jasmine",

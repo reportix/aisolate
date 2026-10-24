@@ -15,23 +15,23 @@ class SpaceFormDTOTest {
   @CsvSource(
       delimiter = '|',
       value = {
-        "' '               | user      | members: must not contain a blank e-mail",
-        "eric@example.com  | owner     | members: eric@example.com needs the role developer or"
-            + " user",
-        "eric@example.com  | ''        | members: eric@example.com needs the role developer or"
-            + " user",
-        "nora              | developer | members: nora is no e-mail"
+        "' '                | ceo  | developers: must not contain a blank e-mail",
+        "nora               | ceo  | developers: nora is no e-mail",
+        "JASMINE@example.com | ceo  | developers: lists jasmine@example.com twice",
+        "nora@example.com   | ' ceo' | roles: \" ceo\" has a space in it",
+        "nora@example.com   | *    | roles: * is no role: list each role; only callers take * for"
+            + " any"
       })
-  void givenBadMember_whenValidate_thenExactlyItsError(String email, String role, String error) {
-    // Arrange: the e-mail check is the airlock's users'; the role is a space's own
+  void givenBadDeveloperOrRole_whenValidate_thenExactlyItsError(
+      String developer, String role, String error) {
+    // Arrange: a developer is an e-mail compared without case; a role is matched exactly
     SpaceFormDTO form =
         new SpaceFormDTO(
             "hr-space",
             "HR",
             null,
-            List.of(
-                new SpaceFormDTO.Member("jasmine@example.com", SpaceFormDTO.DEVELOPER),
-                new SpaceFormDTO.Member(email, role)),
+            List.of("jasmine@example.com", developer),
+            List.of(role),
             null,
             null);
 
@@ -50,7 +50,8 @@ class SpaceFormDTOTest {
             "hr-space",
             "HR",
             null,
-            List.of(new SpaceFormDTO.Member("jasmine@example.com", SpaceFormDTO.DEVELOPER)),
+            List.of("jasmine@example.com"),
+            List.of("ceo"),
             List.of(
                 new LlmFormDTO(
                     "granite", "mistral", "http://ollama:11434", "granite4.1:8b", null, null)),

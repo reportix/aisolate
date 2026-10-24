@@ -47,8 +47,8 @@ public class ConflictException extends RuntimeException {
 
   /**
    * A save sent with {@code If-Match}, the {@code updated_at} or {@code revision} it was read at,
-   * is refused when another save came between: a tab opened before a user was removed would
-   * otherwise put the user back. Without the header the last save wins.
+   * is refused when another save came between: a tab opened before a role was removed would
+   * otherwise put the role back. Without the header the last save wins.
    *
    * @param ifMatch the header, quoted or not; null when not sent
    * @param stored the row's {@code updated_at} or {@code revision} now

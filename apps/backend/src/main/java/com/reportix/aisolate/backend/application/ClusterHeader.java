@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 
 /**
  * An AIsolate UI write's answer: the saved row, and with a cluster {@value #NAME}: {@code applied}
- * or {@code not applied}, so the UI can say "saved, not applied" rather than let a revoked user
+ * or {@code not applied}, so the UI can say "saved, not applied" rather than let a revoked role
  * keep asking unnoticed.
  */
 final class ClusterHeader {

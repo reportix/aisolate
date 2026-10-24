@@ -11,7 +11,6 @@ import com.reportix.aisolate.backend.domain.airlock.DataSourceFormDTO;
 import com.reportix.aisolate.backend.domain.airlock.InvalidFormException;
 import com.reportix.aisolate.backend.domain.airlock.LlmFormDTO;
 import com.reportix.aisolate.backend.domain.space.Space;
-import com.reportix.aisolate.backend.domain.space.SpaceFormDTO;
 import com.reportix.aisolate.config.GlobalDocument;
 import com.reportix.aisolate.config.Llm;
 import com.reportix.aisolate.config.Metadata;
@@ -34,13 +33,14 @@ class DocumentFormsTest {
               List.of(new Llm("granite", "ollama", "http://ollama:11434", "granite4.1:8b")),
               List.of()));
 
-  /** The stored space: its users. */
+  /** The stored space: its developer and roles. */
   private static final Space SPACE =
       new Space(
           "hr-acme",
           "HR Acme",
           "",
-          List.of(new SpaceFormDTO.Member("eric@example.com", SpaceFormDTO.USER)),
+          List.of("jasmine@example.com"),
+          List.of("ceo"),
           List.of(),
           List.of(),
           "seed",
@@ -55,7 +55,7 @@ class DocumentFormsTest {
           "hr-assistant",
           "HR assistant",
           "From the UI.",
-          List.of("eric@example.com"),
+          List.of("employee"),
           List.of("*"),
           List.of("acme-batch"),
           null,
@@ -135,7 +135,7 @@ class DocumentFormsTest {
       kind: Space
       metadata: {name: hr-acme}
       spec:
-        access: {users: [eric@example.com]}
+        access: {roles: [ceo]}
       ---
       """;
 
@@ -162,7 +162,7 @@ class DocumentFormsTest {
     assertThat(form.id()).isEqualTo("hr-assistant");
     assertThat(form.name()).isEqualTo("HR assistant");
     assertThat(form.description()).isEqualTo("The HR assistant.");
-    assertThat(form.users()).containsExactly("eric@example.com");
+    assertThat(form.roles()).containsExactly("employee");
     assertThat(form.callers()).containsExactly("*");
     assertThat(form.clients()).containsExactly("acme-batch");
     assertThat(form.contextPreparators()).containsExactly("HrDocumentsContextPreparator");
@@ -279,7 +279,7 @@ class DocumentFormsTest {
     // Assert
     assertThat(form.name()).isEqualTo("HR");
     assertThat(form.description()).isEqualTo("The HR assistant.");
-    assertThat(form.users()).containsExactly("eric@example.com");
+    assertThat(form.roles()).containsExactly("employee");
     assertThat(form.callers()).containsExactly("*");
     assertThat(form.clients()).containsExactly("acme-batch");
     assertThat(form.llms())
@@ -297,9 +297,9 @@ class DocumentFormsTest {
     // Act
     AirlockFormDTO form = parse(yaml);
 
-    // Assert: the users and callers the file leaves out stay
+    // Assert: the roles and callers the file leaves out stay
     assertThat(form.clients()).isEqualTo(expected.isEmpty() ? List.of() : List.of(expected));
-    assertThat(form.users()).containsExactly("eric@example.com");
+    assertThat(form.roles()).containsExactly("employee");
     assertThat(form.callers()).containsExactly("*");
   }
 
@@ -311,7 +311,7 @@ class DocumentFormsTest {
             "hr-assistant",
             "HR assistant",
             "",
-            List.of("eric@example.com"),
+            List.of("employee"),
             List.of("*"),
             null,
             List.of("HrDocumentsContextPreparator"),
@@ -357,9 +357,9 @@ class DocumentFormsTest {
   }
 
   @Test
-  void givenFileWithUsersAndCredentials_whenToFormOfANewAirlock_thenItsIdNamesItAndTheLoginLands() {
-    // Arrange: an empty users list is written, so it replaces; the login comes from the variables
-    String yaml = PROJECT.replace("spec:\n", "spec:\n  access: {users: [nora@example.com]}\n");
+  void givenFileWithRolesAndCredentials_whenToFormOfANewAirlock_thenItsIdNamesItAndTheLoginLands() {
+    // Arrange: the roles list is written, so it replaces; the login comes from the variables
+    String yaml = PROJECT.replace("spec:\n", "spec:\n  access: {roles: [founder]}\n");
     DocumentForms.Project project = DocumentForms.scan(yaml, VARIABLES);
 
     // Act
@@ -368,7 +368,7 @@ class DocumentFormsTest {
     // Assert: the callers stay empty for the create to default to *
     assertThat(form.name()).isEqualTo("hr-assistant");
     assertThat(form.description()).isEqualTo("The HR assistant.");
-    assertThat(form.users()).containsExactly("nora@example.com");
+    assertThat(form.roles()).containsExactly("founder");
     assertThat(form.callers()).isEmpty();
     assertThat(form.dataSources().getFirst())
         .isEqualTo(

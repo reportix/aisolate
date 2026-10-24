@@ -1,7 +1,6 @@
 package com.reportix.aisolate.backend.application;
 
 import com.reportix.aisolate.backend.domain.Creator;
-import com.reportix.aisolate.backend.domain.directory.DirectoryService;
 import com.reportix.aisolate.backend.domain.space.Space;
 import com.reportix.aisolate.backend.domain.space.SpaceFormDTO;
 import com.reportix.aisolate.backend.domain.space.SpaceService;
@@ -34,23 +33,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Spaces as the AIsolate UI edits them: the admin creates a space and names its members, each a
- * developer or a user (who may only ask its airlocks), and its LLM and data sources, which end
- * users never see. A developer sees the spaces they develop, each read-only here. Every write is
- * applied to the cluster before it answers ({@link ClusterHeader}).
+ * Spaces as the AIsolate UI edits them: the admin creates a space and names its developers (by
+ * e-mail), the roles that may ask its airlocks, and its LLM and data sources, which those who ask
+ * never see. A developer sees the spaces they develop, each read-only here. Every write is applied
+ * to the cluster before it answers ({@link ClusterHeader}).
  */
 @Tag(
     name = "Spaces",
     description =
-        "Spaces for the AIsolate UI: the members, LLM, data sources and airlocks of one team or"
-            + " product.")
+        "Spaces for the AIsolate UI: the developers, roles, LLM, data sources and airlocks of one"
+            + " team or product.")
 @RestController
 @RequestMapping("/v1")
 @RequiredArgsConstructor
 public class SpaceController {
 
   private final SpaceService spaceService;
-  private final DirectoryService directory;
   private final ClusterSyncService clusterSync;
   private final Access access;
 
@@ -65,16 +63,6 @@ public class SpaceController {
   @PreAuthorize(Access.DEVELOPER)
   public Space get(@PathVariable String spaceId) {
     return access.withCallerRole(spaceService.findSpace(spaceId));
-  }
-
-  /** Its members with their role and who they are in the directory, when one is configured. */
-  @GetMapping("/spaces/{spaceId}/users")
-  @PreAuthorize(Access.DEVELOPER)
-  public DirectoryService.UsersDTO users(@PathVariable String spaceId) {
-    Space space = spaceService.findSpace(spaceId);
-    return directory
-        .users(space.users(), List.of())
-        .withRoles(email -> space.roleOf(email).orElse(null));
   }
 
   @PostMapping("/spaces")

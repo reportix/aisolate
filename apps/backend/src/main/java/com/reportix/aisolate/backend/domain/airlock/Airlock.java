@@ -11,13 +11,13 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 /**
- * One airlock as the AIsolate UI shows it: who may ask it besides its space's users (its own users,
+ * One airlock as the AIsolate UI shows it: who may ask it besides its space's roles (its own roles,
  * the clients they may call from, and the machine clients it admits without an e-mail), the LLMs
  * and data sources it sees beside the space's and the global ones, the endpoint it serves on, the
  * form the UI edits, the LLM that answers and, read-only, the code {@code aisolate deploy} brought,
  * null before the first deploy. {@code revision} counts its saves.
  *
- * <p>The {@code form} holds the name, description, users, callers, clients, LLMs and data sources
+ * <p>The {@code form} holds the name, description, roles, callers, clients, LLMs and data sources
  * once; the record answers them from there ({@link #name()} and the like; the id stays a record
  * component beside {@code form.id()}) and the JSON repeats them at the top level beside {@code
  * form}, as the AIsolate UI reads them, in the order the UI has always had.
@@ -30,7 +30,7 @@ import tools.jackson.databind.annotation.JsonNaming;
   "space_id",
   "name",
   "description",
-  "users",
+  "roles",
   "callers",
   "clients",
   "llms",
@@ -95,8 +95,8 @@ public record Airlock(
   }
 
   @JsonProperty
-  public List<String> users() {
-    return form.users();
+  public List<String> roles() {
+    return form.roles();
   }
 
   @JsonProperty

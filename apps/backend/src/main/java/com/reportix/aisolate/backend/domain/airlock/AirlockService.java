@@ -2,7 +2,6 @@ package com.reportix.aisolate.backend.domain.airlock;
 
 import com.reportix.aisolate.backend.domain.Creator;
 import com.reportix.aisolate.backend.domain.deploy.JarInspector;
-import com.reportix.aisolate.backend.domain.directory.DirectoryService;
 import com.reportix.aisolate.backend.domain.global.GlobalRepository;
 import com.reportix.aisolate.backend.domain.space.Space;
 import com.reportix.aisolate.backend.domain.space.SpaceRepository;
@@ -42,7 +41,6 @@ public class AirlockService {
   private final GlobalRepository globals;
   private final ClusterSyncService clusterSync;
   private final DataSourceSecrets secrets;
-  private final DirectoryService directory;
   private final TransactionOperations transactions;
 
   public List<Airlock> listAirlocks(String spaceId) {
@@ -63,8 +61,8 @@ public class AirlockService {
   }
 
   /**
-   * A new airlock at revision 1, on its own endpoint. Its space's users may ask it; it adds the
-   * users the form names, none by default, and admits the callers the form names, else any caller.
+   * A new airlock at revision 1, on its own endpoint. Its space's roles may ask it; it adds the
+   * roles the form names, none by default, and admits the callers the form names, else any caller.
    * Airlock ids are global, unique across the install. An id derived from the name steps past a
    * cluster name as past a taken id, since the form has no id field to fix it in.
    *
@@ -74,8 +72,6 @@ public class AirlockService {
   public Airlock createAirlock(
       String spaceId, AirlockFormDTO submitted, AirlockRepository.Code code, Creator actor) {
     spaces.require(spaceId);
-    // Asked before the names lock is taken: the directory is a network call.
-    List<String> notInDirectory = directory.notInDirectory(List.of(), submitted.users());
     return transactions.execute(
         status -> {
           spaces.lockNames();
@@ -94,7 +90,6 @@ public class AirlockService {
           List<String> errors =
               new ArrayList<>(
                   validateAirlock(global, space, form, code == null ? null : code.contents()));
-          errors.addAll(notInDirectory);
           if (form.id() != null && form.id().length() > Names.maxAirlockId(spaceId)) {
             errors.add(
                 "id: at most "
@@ -157,7 +152,7 @@ public class AirlockService {
 
   /**
    * Saves the airlock in place; its id is its endpoint path and stays; its revision counts the
-   * save. Its own users may be none; unlike a create, a save names its callers: a list left empty
+   * save. Its own roles may be none; unlike a create, a save names its callers: a list left empty
    * is refused, never widened. The stored row is read locked, so a concurrent save cannot keep a
    * Secret this one replaces. A save from the UI that would leave the airlock without what it
    * resolves today (its LLM, a data source its code reads) is refused ({@link
@@ -173,9 +168,6 @@ public class AirlockService {
       AirlockRepository.Code code,
       String ifMatch) {
     DataSourceSecrets.Owner owner = DataSourceSecrets.Owner.ofAirlock(spaceId, id);
-    // Outside the row lock, as for a space.
-    List<String> notInDirectory =
-        directory.notInDirectory(airlocks.require(spaceId, id).users(), submitted.users());
     return transactions.execute(
         status -> {
           Airlock stored = airlocks.lock(spaceId, id);
@@ -197,7 +189,6 @@ public class AirlockService {
                   code == null
                       ? form.validate()
                       : validateAirlock(global, space, form, code.contents()));
-          errors.addAll(notInDirectory);
           errors.addAll(secrets.problems(owner, form.llms(), stored.llms()));
           secrets.requireValid(owner, errors, form.dataSources(), stored.dataSources());
           Airlock updated = airlocks.update(id, form, code);

@@ -171,8 +171,8 @@ public final class DocumentForms {
   /**
    * The project's Airlock with the code the deploy brings, parsed strictly together with the stored
    * Global and Space it sees, as the AIsolate UI's form saves it: each field the document writes
-   * replaces the stored airlock's, a field it leaves out keeps it, so users added in the UI survive
-   * a document without users, and the prompt a deploy without one. A new airlock starts with its id
+   * replaces the stored airlock's, a field it leaves out keeps it, so roles added in the UI survive
+   * a document without roles, and the prompt a deploy without one. A new airlock starts with its id
    * as its name and the default callers. Each data source lands with the credentials the split took
    * out; the Secret names are the server's.
    *
@@ -242,7 +242,7 @@ public final class DocumentForms {
         project.airlock(),
         written.has("displayName") ? parsed.displayName() : base.name(),
         written.has("description") ? parsed.spec().description() : base.description(),
-        writtenAccess.has("users") ? parsed.spec().access().users() : base.users(),
+        writtenAccess.has("roles") ? parsed.spec().access().roles() : base.roles(),
         writtenAccess.has("callers") ? parsed.spec().access().callers() : base.callers(),
         writtenAccess.has("clients") ? parsed.spec().access().clients() : base.clients(),
         writes(written, "/preLLM/contextPreparator/handlers")

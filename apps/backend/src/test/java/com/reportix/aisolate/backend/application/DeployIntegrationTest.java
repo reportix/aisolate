@@ -95,7 +95,7 @@ class DeployIntegrationTest {
   @LocalServerPort int port;
 
   /**
-   * The AIsolate UI's part, the admin's: the spaces with their members, jasmine the developer of
+   * The AIsolate UI's part, the admin's: the spaces with their roles, jasmine the developer of
    * those she deploys into, and the airlocks made before any deploy.
    */
   @BeforeAll
@@ -104,16 +104,14 @@ class DeployIntegrationTest {
         "/v1/spaces",
         """
         {"id":"deploy-lab","name":"Deploy lab","llms":[{"id":"granite","provider":"ollama","url":"http://ollama:11434","model":"granite4.1:8b"}],
-         "members":[{"email":"eric@example.com","role":"user"},
-                    {"email":"jasmine@example.com","role":"developer"}],
+         "developers":["jasmine@example.com"],"roles":["employee"],
          "data_sources":[{"id":"acme_hr","url":"jdbc:postgresql://acme-db:5432/hr",
                           "secret_ref":"deploy-lab-ds-acme-hr-abc123"}]}
         """);
     create(
         "/v1/spaces",
         """
-        {"id":"deploy-other","name":"Deploy other",
-         "members":[{"email":"eric@example.com","role":"user"}]}
+        {"id":"deploy-other","name":"Deploy other","roles":["employee"]}
         """);
     create(SPACE + "/airlocks", "{\"id\":\"hr-assistant\",\"name\":\"HR assistant\"}");
     create(
@@ -123,7 +121,7 @@ class DeployIntegrationTest {
         "/v1/spaces",
         """
         {"id":"deploy-block","name":"Deploy block","llms":[{"id":"granite","provider":"ollama","url":"http://ollama:11434","model":"granite4.1:8b"}],
-         "members":[{"email":"jasmine@example.com","role":"developer"}],
+         "developers":["jasmine@example.com"],
          "data_sources":[{"id":"acme_hr","url":"jdbc:postgresql://acme-db:5432/hr",
                           "secret_ref":"deploy-block-ds-acme-hr-abc123"}]}
         """);
@@ -131,7 +129,7 @@ class DeployIntegrationTest {
         BLOCK + "/airlocks",
         """
         {"id":"kept-assistant","name":"Kept assistant","description":"From the UI.",
-         "users":["eric@example.com"]}
+         "roles":["ceo"]}
         """);
   }
 
@@ -176,7 +174,7 @@ class DeployIntegrationTest {
             .replace(
                 "  description: The HR assistant.\n",
                 "  displayName: New assistant\n  description: Made by the deploy.\n"
-                    + "  access: {users: [eric@example.com]}\n");
+                    + "  access: {roles: [founder]}\n");
 
     // Act
     HttpResponse<String> response = deploy(jasmine, BLOCK + "/deploy", PROJECT_JAR, documents);
@@ -189,7 +187,7 @@ class DeployIntegrationTest {
     JsonNode airlock = JSON.readTree(get(jasmine, BLOCK + "/airlocks/new-assistant").body());
     assertThat(airlock.path("name").asString()).isEqualTo("New assistant");
     assertThat(airlock.path("description").asString()).isEqualTo("Made by the deploy.");
-    assertThat(strings(airlock.path("users"))).containsExactly("eric@example.com");
+    assertThat(strings(airlock.path("roles"))).containsExactly("founder");
     assertThat(strings(airlock.path("callers"))).containsExactly("*");
     assertThat(airlock.path("created_by").asString()).isNotBlank();
     assertThat(airlock.path("form").path("llm").asString()).isEqualTo("qwen");
@@ -198,8 +196,8 @@ class DeployIntegrationTest {
 
   @Test
   @Order(21)
-  void givenAirlockFromTheUiAndAFileWritingItsDescription_whenDeploy_thenSavedAndItsUsersKept() {
-    // Arrange: the file leaves the users and the name out
+  void givenAirlockFromTheUiAndAFileWritingItsDescription_whenDeploy_thenSavedAndItsRolesKept() {
+    // Arrange: the file leaves the roles and the name out
     String documents = projectOf("kept-assistant").replace("The HR assistant.", "From the file.");
 
     // Act
@@ -213,7 +211,7 @@ class DeployIntegrationTest {
     JsonNode airlock = JSON.readTree(get(jasmine, BLOCK + "/airlocks/kept-assistant").body());
     assertThat(airlock.path("name").asString()).isEqualTo("Kept assistant");
     assertThat(airlock.path("description").asString()).isEqualTo("From the file.");
-    assertThat(strings(airlock.path("users"))).containsExactly("eric@example.com");
+    assertThat(strings(airlock.path("roles"))).containsExactly("ceo");
   }
 
   @Test
@@ -436,8 +434,7 @@ class DeployIntegrationTest {
     String withoutDataSource =
         """
         {"id":"deploy-lab","name":"Deploy lab","llms":[{"id":"granite","provider":"ollama","url":"http://ollama:11434","model":"granite4.1:8b"}],
-         "members":[{"email":"eric@example.com","role":"user"},
-                    {"email":"jasmine@example.com","role":"developer"}]}
+         "developers":["jasmine@example.com"],"roles":["employee"]}
         """;
 
     // Act

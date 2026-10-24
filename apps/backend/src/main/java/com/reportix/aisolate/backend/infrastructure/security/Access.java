@@ -2,7 +2,6 @@ package com.reportix.aisolate.backend.infrastructure.security;
 
 import com.reportix.aisolate.backend.domain.space.NotDeveloperException;
 import com.reportix.aisolate.backend.domain.space.Space;
-import com.reportix.aisolate.backend.domain.space.SpaceFormDTO;
 import com.reportix.aisolate.backend.domain.space.SpaceRepository;
 import java.util.List;
 import java.util.Optional;
@@ -17,9 +16,9 @@ import org.springframework.web.context.request.RequestContextHolder;
 
 /**
  * Who may do what, as GitLab's groups decide it: the platform admin (realm role {@code
- * aisolate-admin}) everything everywhere; a space's developers, named among its members, its
- * airlocks and deploys; the auditor the audit. A space role is the space's list, not the token's:
- * anyone in the directory can be made Developer of a space. Every endpoint names one of these
+ * aisolate-admin}) everything everywhere; a space's developers, named by e-mail on the space, its
+ * airlocks and deploys; the auditor the audit. Developer is the space's list, not the token's: the
+ * admin makes anyone with a sign-in a developer of a space. Every endpoint names one of these
  * expressions (ArchitectureTest).
  *
  * <p>The checks that read every space ({@link #developerAnywhere}, {@link #developedSpaces}, so the
@@ -30,13 +29,16 @@ import org.springframework.web.context.request.RequestContextHolder;
 @RequiredArgsConstructor
 public class Access {
 
-  /** Creating and editing a space, its members, LLM and data sources; resetting the install. */
+  /**
+   * Creating and editing a space, its developers, roles, LLM and data sources; resetting the
+   * install.
+   */
   public static final String ADMIN = "hasRole('AISOLATE_ADMIN')";
 
   /** Everything in the space {@code spaceId} but the space's own parts. */
   public static final String DEVELOPER = "@access.developer(#spaceId)";
 
-  /** Searching the directory: the admin, and developers picking an airlock's users. */
+  /** The admin and a developer of any space: the global LLMs and data sources, Monitoring. */
   public static final String DEVELOPER_ANYWHERE = "@access.developerAnywhere()";
 
   /** The admin and the auditor read all of it, a developer the events of their spaces. */
@@ -83,8 +85,7 @@ public class Access {
 
   /** {@code admin}, {@code developer}, or null for whoever may not open it in the AIsolate UI. */
   public Space withCallerRole(Space space) {
-    return space.withCallerRole(
-        admin() ? Space.ADMIN : develops(space) ? SpaceFormDTO.DEVELOPER : null);
+    return space.withCallerRole(admin() ? Space.ADMIN : develops(space) ? Space.DEVELOPER : null);
   }
 
   /** The spaces whose audit the caller reads; null for every space (the admin, the auditor). */
@@ -132,7 +133,7 @@ public class Access {
   private record Listed(List<Space> spaces) {}
 
   private boolean develops(Space space) {
-    return space.roleOf(email()).filter(SpaceFormDTO.DEVELOPER::equals).isPresent();
+    return space.develops(email());
   }
 
   private static String email() {

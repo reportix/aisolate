@@ -25,7 +25,7 @@ class AirlockJsonTest {
           "hr-assistant",
           "HR assistant",
           "From the UI.",
-          List.of("eric@example.com"),
+          List.of("employee"),
           List.of("*"),
           List.of("acme-batch"),
           List.of("HrDocumentsContextPreparator"),
@@ -73,7 +73,7 @@ class AirlockJsonTest {
             "space_id",
             "name",
             "description",
-            "users",
+            "roles",
             "callers",
             "clients",
             "llms",
@@ -90,11 +90,11 @@ class AirlockJsonTest {
     JsonNode form = json.get("form");
     for (String key :
         List.of(
-            "id", "name", "description", "users", "callers", "clients", "llms", "data_sources")) {
+            "id", "name", "description", "roles", "callers", "clients", "llms", "data_sources")) {
       assertThat(json.get(key)).as(key).isEqualTo(form.get(key));
     }
     assertThat(json.get("name").asString()).isEqualTo("HR assistant");
-    assertThat(json.get("users")).hasSize(1);
+    assertThat(json.get("roles")).hasSize(1);
     assertThat(json.get("llms").get(0).get("id").asString()).isEqualTo("granite");
     assertThat(json.get("data_sources").get(0).get("id").asString()).isEqualTo("acme_hr");
     assertThat(json.get("main_llm").get("from").asString()).isEqualTo("airlock");
@@ -113,7 +113,7 @@ class AirlockJsonTest {
             "id",
             "name",
             "description",
-            "users",
+            "roles",
             "callers",
             "clients",
             "context_preparators",

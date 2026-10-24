@@ -14,16 +14,16 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * An airlock as the developer fills it in: the id is its endpoint path; the name (its label, the id
  * when blank) and description are what the AIsolate UI shows; who may ask it besides its space's
- * users, by its own users (the token's e-mail), none at all allowed, the OAuth clients they may
- * call from (the token's azp, {@code *} for any), and the machine clients admitted without an
- * e-mail (the token's azp, exact); then what runs, in the order an exchange runs: before the model,
- * the context preparators and the memory handlers; the LLM that answers, by id, with the prompt and
- * the tools the model may call; after the model, the verifiers; and its own LLMs and data sources,
- * beside the space's and the global ones, an id of theirs replacing it. The UI's form carries the
- * first part; {@code aisolate deploy} brings what runs, with the code. Tools and handlers are its
- * code's, listed by tool name and class simple name, and checked against the code by {@link
- * AirlockService}. Stored flat as the airlock's definition JSON, the id, name and description in
- * their own columns.
+ * roles, by its own roles (the token's roles claim, exact), none at all allowed, the OAuth clients
+ * they may call from (the token's azp, {@code *} for any), and the machine clients admitted without
+ * an e-mail (the token's azp, exact); then what runs, in the order an exchange runs: before the
+ * model, the context preparators and the memory handlers; the LLM that answers, by id, with the
+ * prompt and the tools the model may call; after the model, the verifiers; and its own LLMs and
+ * data sources, beside the space's and the global ones, an id of theirs replacing it. The UI's form
+ * carries the first part; {@code aisolate deploy} brings what runs, with the code. Tools and
+ * handlers are its code's, listed by tool name and class simple name, and checked against the code
+ * by {@link AirlockService}. Stored flat as the airlock's definition JSON, the id, name and
+ * description in their own columns.
  */
 @With
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -32,7 +32,7 @@ public record AirlockFormDTO(
     String id,
     String name,
     String description,
-    List<String> users,
+    List<String> roles,
     List<String> callers,
     List<String> clients,
     List<String> contextPreparators,
@@ -59,7 +59,7 @@ public record AirlockFormDTO(
     name = name == null || name.isBlank() ? id : name;
     // Unset strings read "" on the wire: the AIsolate UI relies on it.
     description = strip(description);
-    users = stripEach(users);
+    roles = asTyped(roles);
     callers = stripEach(callers);
     clients = stripEach(clients);
     contextPreparators = copy(contextPreparators);
@@ -143,7 +143,7 @@ public record AirlockFormDTO(
     if (id == null || !Names.SLUG.matcher(id).matches()) {
       errors.add("id: " + Names.SLUG_RULE);
     }
-    checkUsers(users, errors);
+    checkRoles(roles, errors);
     if (callers.isEmpty()) {
       errors.add("callers: " + Names.NO_CALLER);
     }
@@ -158,9 +158,9 @@ public record AirlockFormDTO(
     return errors;
   }
 
-  /** The e-mails of a space's or an airlock's users ({@link Names#userProblems}); none is fine. */
-  public static void checkUsers(List<String> users, List<String> errors) {
-    Names.userProblems(users).forEach(problem -> errors.add("users: " + problem));
+  /** A space's or an airlock's roles ({@link Names#roleProblems}); none is fine. */
+  public static void checkRoles(List<String> roles, List<String> errors) {
+    Names.roleProblems(roles).forEach(problem -> errors.add("roles: " + problem));
   }
 
   /** The form as the API returns it, so no credential reaches a log line through this record. */
@@ -180,6 +180,11 @@ public record AirlockFormDTO(
   /** A pasted e-mail or client id keeps no padding: it would never match the token's. */
   public static List<String> stripEach(List<String> entries) {
     return entries == null ? List.of() : entries.stream().map(AirlockFormDTO::strip).toList();
+  }
+
+  /** Roles as typed, padding and blanks kept for {@link #checkRoles} to refuse, not to fix. */
+  public static List<String> asTyped(List<String> entries) {
+    return entries == null ? List.of() : entries.stream().toList();
   }
 
   private static List<String> copy(List<String> names) {

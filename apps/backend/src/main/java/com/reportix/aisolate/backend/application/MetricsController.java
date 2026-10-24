@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Monitoring's charts (docs/api.md): the admin's over every space, a developer's over their spaces;
- * the auditor and a space's users none. 404 without a metrics store.
+ * the auditor and those who only ask none. 404 without a metrics store.
  */
 @Tag(name = "Metrics", description = "The example dashboard's panels, from fixed queries.")
 @RestController

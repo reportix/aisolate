@@ -9,7 +9,6 @@ import com.reportix.aisolate.backend.domain.airlock.Documents;
 import com.reportix.aisolate.backend.domain.deploy.DeployResultDTO.Cluster;
 import com.reportix.aisolate.backend.domain.global.GlobalRepository;
 import com.reportix.aisolate.backend.domain.space.Space;
-import com.reportix.aisolate.backend.domain.space.SpaceFormDTO;
 import com.reportix.aisolate.backend.domain.space.SpaceRepository;
 import com.reportix.aisolate.config.GlobalDocument;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
@@ -25,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 
@@ -50,12 +48,13 @@ class ClusterSyncOrderTest {
           globals,
           published::add);
 
-  private static Space space(String... users) {
+  private static Space space(String... roles) {
     return new Space(
         "hr-acme",
         "HR Acme",
         "",
-        Stream.of(users).map(u -> new SpaceFormDTO.Member(u, SpaceFormDTO.USER)).toList(),
+        List.of("jasmine@example.com"),
+        List.of(roles),
         List.of(),
         List.of(),
         "jasmine",
@@ -68,10 +67,10 @@ class ClusterSyncOrderTest {
   @Test
   void givenASaveCommitsWhileAnOlderSyncRuns_whenBothSyncsEnd_thenTheClusterHoldsTheLatest()
       throws InterruptedException {
-    // Arrange: the first sync has read eric when a save removing him commits and its sync starts.
+    // Arrange: the first sync has read employee when a save removing it commits and its sync
+    // starts.
     // Unserialized, that second sync applies first and the first one's stale read lands last.
-    AtomicReference<Space> committed =
-        new AtomicReference<>(space("nora@example.com", "eric@example.com"));
+    AtomicReference<Space> committed = new AtomicReference<>(space("ceo", "employee"));
     when(spaces.require("hr-acme")).thenAnswer(call -> committed.get());
     when(globals.document()).thenReturn(GlobalDocument.empty());
     AtomicInteger reads = new AtomicInteger();
@@ -81,7 +80,7 @@ class ClusterSyncOrderTest {
         .thenAnswer(
             call -> {
               if (reads.getAndIncrement() == 0) {
-                committed.set(space("nora@example.com"));
+                committed.set(space("ceo"));
                 second.set(Thread.startVirtualThread(() -> sync.sync("hr-acme")));
                 // Serialized, the second sync cannot read until this one is done: go on alone.
                 if (secondRead.await(200, TimeUnit.MILLISECONDS)) {
@@ -105,8 +104,8 @@ class ClusterSyncOrderTest {
                 .inNamespace("aisolate")
                 .withName("hr-acme")
                 .get()
-                .<Object>get("spec", "access", "users"))
-        .isEqualTo(List.of("nora@example.com"));
+                .<Object>get("spec", "access", "roles"))
+        .isEqualTo(List.of("ceo"));
   }
 
   /** The resource as the cluster holds it, created or updated: with its uid. */

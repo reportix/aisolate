@@ -7,17 +7,16 @@ import com.reportix.aisolate.backend.domain.airlock.LlmFormDTO;
 import com.reportix.aisolate.config.Names;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 /**
- * What the admin fills in for a space: its identity, its members (by the token's e-mail) with their
- * role, and the LLMs and data sources its airlocks share beside the global ones, each optional.
- * Every member may ask its airlocks, as may an airlock's own users; a developer also edits its
- * airlocks and deploys into it. Validated here; stored as the columns and the definition JSON of a
- * space.
+ * What the admin fills in for a space: its identity, its developers (by the token's e-mail), who
+ * edit its airlocks and deploy into it, the roles (the token's roles claim, exact) that may ask
+ * every airlock of it, as may an airlock's own roles, and the LLMs and data sources its airlocks
+ * share beside the global ones, each optional. Validated here; stored as the columns and the
+ * definition JSON of a space.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -25,29 +24,17 @@ public record SpaceFormDTO(
     String id,
     String name,
     String description,
-    List<Member> members,
+    List<String> developers,
+    List<String> roles,
     List<LlmFormDTO> llms,
     List<DataSourceFormDTO> dataSources) {
-
-  public static final String DEVELOPER = "developer";
-  public static final String USER = "user";
-
-  /**
-   * @param role {@link #DEVELOPER} or {@link #USER}; a developer may ask as well
-   */
-  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-  public record Member(String email, String role) {
-    public Member {
-      email = strip(email);
-      role = strip(role);
-    }
-  }
 
   public SpaceFormDTO {
     // The label is optional: without one the id is the name every reader shows.
     name = name == null || name.isBlank() ? id : name;
     description = strip(description);
-    members = members == null ? List.of() : members.stream().filter(Objects::nonNull).toList();
+    developers = AirlockFormDTO.stripEach(developers);
+    roles = AirlockFormDTO.asTyped(roles);
     llms = LlmFormDTO.clean(llms);
     dataSources = dataSources == null ? List.of() : List.copyOf(dataSources);
   }
@@ -60,17 +47,18 @@ public record SpaceFormDTO(
             AirlockFormDTO.deriveId(name, "space", AirlockFormDTO.MAX_ID, taken),
             name,
             description,
-            members,
+            developers,
+            roles,
             llms,
             dataSources);
   }
 
   public SpaceFormDTO withDataSources(List<DataSourceFormDTO> rows) {
-    return new SpaceFormDTO(id, name, description, members, llms, rows);
+    return new SpaceFormDTO(id, name, description, developers, roles, llms, rows);
   }
 
   public SpaceFormDTO withLlms(List<LlmFormDTO> rows) {
-    return new SpaceFormDTO(id, name, description, members, rows, dataSources);
+    return new SpaceFormDTO(id, name, description, developers, roles, rows, dataSources);
   }
 
   /** One message per problem, each naming the field it is about. Empty means valid. */
@@ -79,18 +67,11 @@ public record SpaceFormDTO(
     if (id == null || !Names.SLUG.matcher(id).matches()) {
       errors.add("id: " + Names.SLUG_RULE);
     }
-    Names.userProblems(emails()).forEach(problem -> errors.add("members: " + problem));
-    members.stream()
-        .filter(m -> !DEVELOPER.equals(m.role()) && !USER.equals(m.role()))
-        .forEach(m -> errors.add("members: " + m.email() + " needs the role developer or user"));
+    Names.emailProblems(developers).forEach(problem -> errors.add("developers: " + problem));
+    AirlockFormDTO.checkRoles(roles, errors);
     errors.addAll(LlmFormDTO.validate(llms));
     errors.addAll(DataSourceFormDTO.validate(dataSources));
     return errors;
-  }
-
-  /** Who may ask its airlocks: every member, developers too. */
-  public List<String> emails() {
-    return members.stream().map(Member::email).toList();
   }
 
   private static String strip(String s) {

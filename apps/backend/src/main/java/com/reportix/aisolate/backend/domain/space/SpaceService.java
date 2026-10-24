@@ -9,7 +9,6 @@ import com.reportix.aisolate.backend.domain.airlock.Documents;
 import com.reportix.aisolate.backend.domain.airlock.InvalidFormException;
 import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
 import com.reportix.aisolate.backend.domain.credential.CredentialRepository.Event;
-import com.reportix.aisolate.backend.domain.directory.DirectoryService;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterProperties;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
@@ -32,7 +31,6 @@ public class SpaceService {
   private final AirlockRepository airlocks;
   private final AirlockService airlockService;
   private final DataSourceSecrets secrets;
-  private final DirectoryService directory;
   private final CredentialRepository rows;
   private final ClusterSyncService clusterSync;
   private final ClusterProperties cluster;
@@ -53,9 +51,6 @@ public class SpaceService {
    * @throws ConflictException the id is taken, or would collide
    */
   public Space create(SpaceFormDTO submitted, Creator actor) {
-    // Asked before the names lock is taken: the directory is a network call.
-    List<String> notInDirectory =
-        directory.notInDirectory("members", List.of(), submitted.emails());
     return transactions.execute(
         status -> {
           spaces.lockNames();
@@ -66,7 +61,6 @@ public class SpaceService {
                           || airlockService.clusterNameOwner(id).isPresent());
           DataSourceSecrets.Owner owner = DataSourceSecrets.Owner.ofSpace(form.id());
           List<String> errors = new ArrayList<>(form.validate());
-          errors.addAll(notInDirectory);
           errors.addAll(secrets.problems(owner, form.llms(), List.of()));
           secrets.requireValid(owner, errors, form.dataSources(), List.of());
           if (spaces.find(form.id()).isPresent()) {
@@ -96,10 +90,6 @@ public class SpaceService {
       throw new InvalidFormException(List.of("id: cannot be changed"));
     }
     DataSourceSecrets.Owner owner = DataSourceSecrets.Owner.ofSpace(id);
-    // Outside the row lock: the directory is a network call. A save that came between is
-    // If-Match's.
-    List<String> notInDirectory =
-        directory.notInDirectory("members", spaces.require(id).users(), submitted.emails());
     return transactions.execute(
         status -> {
           Space stored = spaces.lock(id);
@@ -110,7 +100,6 @@ public class SpaceService {
                       DataSourceSecrets.keepRefs(stored.dataSources(), submitted.dataSources()))
                   .withLlms(DataSourceSecrets.keepRefs(stored.llms(), submitted.llms()));
           List<String> errors = new ArrayList<>(form.validate());
-          errors.addAll(notInDirectory);
           errors.addAll(secrets.problems(owner, form.llms(), stored.llms()));
           secrets.requireValid(owner, errors, form.dataSources(), stored.dataSources());
           Space updated = spaces.update(id, form);

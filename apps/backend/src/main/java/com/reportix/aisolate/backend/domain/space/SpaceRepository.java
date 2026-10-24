@@ -15,7 +15,8 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The {@code spaces} table: identity in columns, members, LLMs and data sources as definition JSON.
+ * The {@code spaces} table: identity in columns; developers, roles, LLMs and data sources as
+ * definition JSON.
  */
 @Repository
 @RequiredArgsConstructor
@@ -132,7 +133,8 @@ public class SpaceRepository {
         rs.getString("id"),
         rs.getString("name"),
         rs.getString("description"),
-        definition.members(),
+        definition.developers(),
+        definition.roles(),
         definition.llms(),
         definition.dataSources(),
         rs.getString("created_by"),

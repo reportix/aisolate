@@ -46,13 +46,11 @@ class AccessIntegrationTest {
     for (String space :
         new String[] {
           """
-          {"id":"roles-lab","name":"Roles lab","members":[
-           {"email":"jasmine@example.com","role":"developer"},
-           {"email":"eric@example.com","role":"user"}]}
+          {"id":"roles-lab","name":"Roles lab",
+           "developers":["jasmine@example.com"],"roles":["employee"]}
           """,
           """
-          {"id":"roles-other","name":"Roles other","members":[
-           {"email":"jasmine@example.com","role":"user"}]}
+          {"id":"roles-other","name":"Roles other","roles":["employee"]}
           """
         }) {
       assertThat(send("andrew", "POST", "/v1/spaces", space).statusCode()).isIn(201, 409);
@@ -69,8 +67,6 @@ class AccessIntegrationTest {
     "eric,       GET,    /v1/spaces/roles-lab,                false",
     "auditor,    GET,    /v1/spaces/roles-lab,                false",
     "jasmine,    GET,    /v1/spaces/roles-other,              false",
-    "jasmine,    GET,    /v1/spaces/roles-lab/users,          true",
-    "eric,       GET,    /v1/spaces/roles-lab/users,          false",
     "andrew, POST,   /v1/spaces,                          true",
     "jasmine,    POST,   /v1/spaces,                          false",
     "andrew, PUT,    /v1/spaces/roles-lab,                true",
@@ -86,11 +82,6 @@ class AccessIntegrationTest {
     "jasmine,    DEPLOY, /v1/spaces/roles-lab/deploy,         true",
     "eric,       DEPLOY, /v1/spaces/roles-lab/deploy,         false",
     "jasmine,    DEPLOY, /v1/spaces/roles-other/deploy,       false",
-    // The directory: whoever picks people, the admin and the developers
-    "andrew, GET,    /v1/directory/people?q=nor,          true",
-    "jasmine,    GET,    /v1/directory/people?q=nor,          true",
-    "eric,       GET,    /v1/directory/people?q=nor,          false",
-    "auditor,    GET,    /v1/directory/people?q=nor,          false",
     // The audit: the admin and the auditor all, a developer their own spaces
     "auditor,    GET,    /v1/audit/events,                    true",
     "jasmine,    GET,    /v1/audit/events?space=roles-lab,    true",
@@ -129,7 +120,7 @@ class AccessIntegrationTest {
     "jasmine,   POST,   '',     false",
     "jasmine,   PUT,    /x,     false",
     "jasmine,   DELETE, /x,     false",
-    // eric asks roles-lab's airlocks and develops no space
+    // eric holds roles-lab's role, so asks its airlocks, and develops no space
     "eric,      GET,    '',     false",
     "eric,      GET,    /x,     false",
     "eric,      POST,   '',     false",

@@ -78,8 +78,7 @@ class SpacesResetIntegrationTest {
   static final String SPACE_FORM =
       """
       {"id":"reset-lab","name":"Reset lab",
-       "members":[{"email":"eric@example.com","role":"user"},
-                  {"email":"jasmine@example.com","role":"developer"}],
+       "developers":["jasmine@example.com"],"roles":["employee"],
        "llms":[{"id":"granite","provider":"ollama","url":"http://ollama:11434","model":"granite4.1:8b"}],
        "data_sources":[{"id":"hr-documents","url":"%s","username":"preparator",
                         "password":"hunter2"}]}
@@ -222,9 +221,7 @@ class SpacesResetIntegrationTest {
   void givenApiServerGone_whenAllSpacesDeleted_thenRowsGoneAndProblemReported() {
     // Arrange: the database is the source of truth; the cluster is reported, never required
     create(
-        "/spaces",
-        "{\"id\":\"reset-lab\",\"name\":\"Reset lab\","
-            + "\"members\":[{\"email\":\"eric@example.com\",\"role\":\"user\"}]}");
+        "/spaces", "{\"id\":\"reset-lab\",\"name\":\"Reset lab\"," + "\"roles\":[\"employee\"]}");
     server.shutdown();
 
     // Act

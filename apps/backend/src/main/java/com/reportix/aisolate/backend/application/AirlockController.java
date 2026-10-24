@@ -4,8 +4,6 @@ import com.reportix.aisolate.backend.domain.Creator;
 import com.reportix.aisolate.backend.domain.airlock.Airlock;
 import com.reportix.aisolate.backend.domain.airlock.AirlockFormDTO;
 import com.reportix.aisolate.backend.domain.airlock.AirlockService;
-import com.reportix.aisolate.backend.domain.directory.DirectoryService;
-import com.reportix.aisolate.backend.domain.space.SpaceService;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
 import com.reportix.aisolate.backend.infrastructure.config.SwaggerApiConfig;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
@@ -46,8 +44,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AirlockController {
 
   private final AirlockService airlockService;
-  private final SpaceService spaceService;
-  private final DirectoryService directory;
   private final ClusterSyncService clusterSync;
 
   // AIsolate UI: every method is the space's developers' (and the admin's), scoped to one space.
@@ -79,17 +75,6 @@ public class AirlockController {
   @PreAuthorize(Access.DEVELOPER)
   public Airlock get(@PathVariable String spaceId, @PathVariable String id) {
     return airlockService.findAirlock(spaceId, id);
-  }
-
-  /**
-   * Its own users and those it inherits from the space, with who they are in the directory, when
-   * one is configured.
-   */
-  @GetMapping("/spaces/{spaceId}/airlocks/{id}/users")
-  @PreAuthorize(Access.DEVELOPER)
-  public DirectoryService.UsersDTO users(@PathVariable String spaceId, @PathVariable String id) {
-    return directory.users(
-        airlockService.findAirlock(spaceId, id).users(), spaceService.findSpace(spaceId).users());
   }
 
   @Operation(

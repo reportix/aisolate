@@ -35,6 +35,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalManagementPort;
@@ -45,10 +46,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The AIsolate UI's API, driven the way the UI drives it: the admin sets up a space with its
- * members, who may ask every airlock of it, a developer among them creates an airlock in it, which
- * may add users of its own and serves at once on its own endpoint. An edit saves the airlock in
- * place and bumps its revision; its id stays. An airlock saved here has no code and runs nothing:
- * what runs (its LLM, prompt, tools and handlers) comes with a deploy, never from the UI's form.
+ * developers and the roles that may ask every airlock of it, a developer creates an airlock in it,
+ * which may add roles of its own and serves at once on its own endpoint. An edit saves the airlock
+ * in place and bumps its revision; its id stays. An airlock saved here has no code and runs
+ * nothing: what runs (its LLM, prompt, tools and handlers) comes with a deploy, never from the UI's
+ * form.
  */
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -67,7 +69,7 @@ class AirlockIntegrationTest {
 
   private static final String AIRLOCK = SPACE + "/airlocks/hr-app-1";
 
-  /** Created by its tests: two users, an airlock that lists one of them, then that one removed. */
+  /** Created by its tests: two roles, an airlock that lists one of them, then that one removed. */
   private static final String LEDGER = "/v1/spaces/ledger";
 
   @LocalServerPort int port;
@@ -80,12 +82,11 @@ class AirlockIntegrationTest {
       Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
   private final String eric = Tokens.forUser("eric", "password");
 
-  /** No LLM: its airlocks set their own. jasmine develops it, eric asks. */
+  /** No LLM: its airlocks set their own. jasmine develops it, employees ask. */
   private static final String SPACE_FORM =
       """
       {"id":"sandbox","name":"Sandbox","description":"Try things out.",
-       "members":[{"email":"eric@example.com","role":"user"},
-                  {"email":"jasmine@example.com","role":"developer"}]}
+       "developers":["jasmine@example.com"],"roles":["employee"]}
       """;
 
   private static final String AIRLOCK_FORM =
@@ -98,13 +99,13 @@ class AirlockIntegrationTest {
   @CsvSource({"eric, ''", "jasmine, developer", "rita, admin"})
   void givenCaller_whenListingSpaces_thenTheSeededSpaceOnlyWhereTheyMayOpenItWithTheirRole(
       String caller, String role) {
-    // Arrange: eric only asks hr-acme, jasmine develops it, rita is the admin
+    // Arrange: eric holds an hr-acme role and develops none, jasmine develops it, rita is the admin
     String token = Map.of("eric", eric, "jasmine", jasmine, "rita", rita).get(caller);
 
     // Act
     HttpResponse<String> response = get(token, "/v1/spaces");
 
-    // Assert: a user sees no space at all, not a 403
+    // Assert: one who only asks sees no space at all, not a 403
     assertThat(response.statusCode()).isEqualTo(200);
     List<JsonNode> seeded =
         JSON.readTree(response.body())
@@ -115,22 +116,15 @@ class AirlockIntegrationTest {
         .containsExactlyElementsOf(role.isEmpty() ? List.of() : List.of(role));
   }
 
-  @Test
+  @ParameterizedTest
   @Order(1)
-  void givenNoDirectoryConfigured_whenSearchedOrUsersRead_then404AndTheUsersUnnamed() {
-    // Arrange / Act: users are typed e-mails, as before the directory
-    HttpResponse<String> search = get(jasmine, "/v1/directory/people?q=nor");
-    JsonNode users = JSON.readTree(get(jasmine, SPACE + "/users").body());
+  @ValueSource(strings = {"/v1/directory/people?q=nor", SPACE + "/users", SEEDED + "/users"})
+  void givenRemovedEndpoint_whenCalledByTheAdmin_then404(String path) {
+    // Arrange / Act: the directory and the user lists are gone; developers are typed e-mails
+    HttpResponse<String> response = get(rita, path);
 
     // Assert
-    assertThat(search.statusCode()).isEqualTo(404);
-    assertThat(JSON.readTree(search.body()).path("detail").asString())
-        .isEqualTo("no directory is connected");
-    assertThat(users.path("directory").asBoolean()).isFalse();
-    JsonNode first = users.path("users").path(0);
-    assertThat(first.path("email").asString()).isEqualTo("eric@example.com");
-    assertThat(first.path("name").isNull() && first.path("in_directory").isNull()).isTrue();
-    assertThat(first.path("role").asString()).isEqualTo("user");
+    assertThat(response.statusCode()).isEqualTo(404);
   }
 
   @ParameterizedTest
@@ -163,12 +157,12 @@ class AirlockIntegrationTest {
     JsonNode space = JSON.readTree(get(jasmine, SPACE).body());
     JsonNode airlock = JSON.readTree(get(jasmine, SEEDED).body());
 
-    // Assert: the space names its members, LLM and data sources; the airlock replaces none of them.
-    // Its users came through the migration as role user.
+    // Assert: the space names its developers, roles, LLM and data sources; the airlock replaces
+    // none of them
     assertThat(space.path("name").asString()).isEqualTo("HR Acme");
-    assertThat(members(space))
-        .containsExactly(
-            "eric@example.com:user", "nora@example.com:user", "jasmine@example.com:developer");
+    assertThat(strings(space.path("developers"))).containsExactly("jasmine@example.com");
+    assertThat(strings(space.path("roles"))).containsExactly("ceo");
+    assertThat(space.has("members")).isFalse();
     assertThat(space.path("caller_role").asString()).isEqualTo("developer");
     assertThat(space.has("callers")).isFalse();
     assertThat(space.path("llms").path(0).path("id").asString()).isEqualTo("granite");
@@ -182,8 +176,8 @@ class AirlockIntegrationTest {
     assertThat(airlock.path("name").asString()).isEqualTo("Acme HR assistant");
     assertThat(airlock.path("description").asString())
         .isEqualTo("Answers people, pay and HR document questions.");
-    assertThat(strings(airlock.path("users")))
-        .containsExactly("eric@example.com", "nora@example.com");
+    assertThat(strings(airlock.path("roles"))).containsExactly("employee");
+    assertThat(airlock.has("users")).isFalse();
     assertThat(strings(airlock.path("callers"))).containsExactly("*");
     assertThat(airlock.path("llms").isEmpty()).isTrue();
     assertThat(airlock.path("data_sources").isEmpty()).isTrue();
@@ -224,12 +218,12 @@ class AirlockIntegrationTest {
     assertThat(errors(response))
         .anySatisfy(e -> assertThat(e).startsWith("id:"))
         .noneMatch(e -> e.startsWith("name:"))
-        .noneMatch(e -> e.startsWith("members:"));
+        .noneMatch(e -> e.startsWith("developers:") || e.startsWith("roles:"));
   }
 
   @Test
   @Order(4)
-  void givenAdmin_whenCreateSpace_thenCreatedWithItsMembers() {
+  void givenAdmin_whenCreateSpace_thenCreatedWithItsDevelopersAndRoles() {
     // Arrange / Act
     HttpResponse<String> created = post(rita, "/v1/spaces", SPACE_FORM);
     JsonNode spaces = JSON.readTree(get(rita, "/v1/spaces").body());
@@ -239,8 +233,8 @@ class AirlockIntegrationTest {
     JsonNode space = JSON.readTree(created.body());
     assertThat(space.path("created_by").asString()).isEqualTo("andrew");
     assertThat(space.path("description").asString()).isEqualTo("Try things out.");
-    assertThat(members(space))
-        .containsExactly("eric@example.com:user", "jasmine@example.com:developer");
+    assertThat(strings(space.path("developers"))).containsExactly("jasmine@example.com");
+    assertThat(strings(space.path("roles"))).containsExactly("employee");
     assertThat(space.path("llms").isEmpty()).isTrue();
     assertThat(space.has("callers") || space.has("tools") || space.has("airlocks")).isFalse();
     assertThat(spaces.valueStream().map(s -> s.path("id").asString()))
@@ -296,8 +290,8 @@ class AirlockIntegrationTest {
     assertThat(created.path("description").asString()).isEqualTo("Pay questions.");
     assertThat(created.path("revision").asInt()).isEqualTo(1);
     assertThat(created.path("created_by").asString()).isEqualTo("jasmine");
-    // A populated space lists no user of its own on a new airlock
-    assertThat(strings(created.path("users"))).isEmpty();
+    // A populated space lists no role of its own on a new airlock
+    assertThat(strings(created.path("roles"))).isEmpty();
     assertThat(created.path("endpoint").asString())
         .endsWith("/v1/spaces/hr-acme/airlocks/hr-app-1/chat");
     assertThat(created.path("jar").isNull()).isTrue();
@@ -365,7 +359,7 @@ class AirlockIntegrationTest {
     String renamed =
         """
         {"id":"hr-app-1","name":"HR app one","description":"Pay and leave questions.",
-         "users":["eric@example.com","nora@example.com"],"callers":["*"],
+         "roles":["employee","ceo"],"callers":["*"],
          "llms":[{"id":"nomic","provider":"ollama","url":"http://ollama:11434",
                   "model":"nomic-embed-text"}]}
         """;
@@ -520,11 +514,11 @@ class AirlockIntegrationTest {
 
   @Test
   @Order(22)
-  void givenUserNotOfTheSpace_whenCreateAirlock_thenCreatedWithThemAsItsOwn() {
-    // Arrange: ivy is no user of hr-acme; she may ask this airlock alone
+  void givenRoleNotOfTheSpace_whenCreateAirlock_thenCreatedWithItAsItsOwn() {
+    // Arrange: intern is no role of hr-acme; its holders may ask this airlock alone
     String own =
         """
-        {"id":"intern-app","name":"Intern app","users":["ivy@example.com"]}
+        {"id":"intern-app","name":"Intern app","roles":["intern"]}
         """;
 
     // Act
@@ -532,15 +526,14 @@ class AirlockIntegrationTest {
 
     // Assert
     assertThat(response.statusCode()).isEqualTo(201);
-    assertThat(strings(JSON.readTree(response.body()).path("users")))
-        .containsExactly("ivy@example.com");
+    assertThat(strings(JSON.readTree(response.body()).path("roles"))).containsExactly("intern");
   }
 
   @Test
   @Order(24)
   void givenNoCaller_whenUpdateAirlock_then400NeverWidenedToAny() {
     // Arrange: a save in place has no default, it names its callers
-    String form = "{\"id\":\"hr-app-1\",\"name\":\"HR app one\",\"users\":[],\"callers\":[]}";
+    String form = "{\"id\":\"hr-app-1\",\"name\":\"HR app one\",\"roles\":[],\"callers\":[]}";
 
     // Act
     HttpResponse<String> response = put(jasmine, AIRLOCK, form);
@@ -552,43 +545,40 @@ class AirlockIntegrationTest {
 
   @Test
   @Order(25)
-  void givenUserListedOnAnAirlock_whenRemovedFromTheSpace_thenSavedAndTheAirlockKeepsThem() {
-    // Arrange: a space of two members, whose airlock also lists nora as its own
+  void givenRoleListedOnAnAirlock_whenRemovedFromTheSpace_thenSavedAndTheAirlockKeepsIt() {
+    // Arrange: a space of two roles, whose airlock also lists founder as its own
     String ledger =
         """
-        {"id":"ledger","name":"Ledger","members":[{"email":"eric@example.com","role":"user"},
-         {"email":"nora@example.com","role":"user"}]}
+        {"id":"ledger","name":"Ledger","roles":["employee","founder"]}
         """;
     assertThat(post(rita, "/v1/spaces", ledger).statusCode()).isEqualTo(201);
     assertThat(
             post(
                     rita,
                     LEDGER + "/airlocks",
-                    "{\"id\":\"ledger-app\",\"name\":\"Ledger app\","
-                        + "\"users\":[\"nora@example.com\"]}")
+                    "{\"id\":\"ledger-app\",\"name\":\"Ledger app\"," + "\"roles\":[\"founder\"]}")
                 .statusCode())
         .isEqualTo(201);
-    String withoutNora =
-        ledger.replace(",\n {\"email\":\"nora@example.com\",\"role\":\"user\"}", "");
+    String withoutFounder = ledger.replace(",\"founder\"", "");
 
     // Act
-    HttpResponse<String> response = put(rita, LEDGER, withoutNora);
+    HttpResponse<String> response = put(rita, LEDGER, withoutFounder);
 
-    // Assert: no "remove them there first": nora may still ask ledger-app, and it alone
+    // Assert: no "remove it there first": founders may still ask ledger-app, and it alone
     assertThat(response.statusCode()).isEqualTo(200);
-    assertThat(members(JSON.readTree(response.body()))).containsExactly("eric@example.com:user");
+    assertThat(strings(JSON.readTree(response.body()).path("roles"))).containsExactly("employee");
     assertThat(
-            strings(JSON.readTree(get(rita, LEDGER + "/airlocks/ledger-app").body()).path("users")))
-        .containsExactly("nora@example.com");
+            strings(JSON.readTree(get(rita, LEDGER + "/airlocks/ledger-app").body()).path("roles")))
+        .containsExactly("founder");
   }
 
   @Test
   @Order(26)
-  void givenAirlockSavedWithNoOwnUser_whenSaved_thenStoredWithNone() {
-    // Arrange: ledger-app drops nora and narrows its callers
+  void givenAirlockSavedWithNoOwnRole_whenSaved_thenStoredWithNone() {
+    // Arrange: ledger-app drops founder and narrows its callers
     String narrowed =
         """
-        {"id":"ledger-app","name":"Ledger app","users":[],"callers":["ledger-chat"]}
+        {"id":"ledger-app","name":"Ledger app","roles":[],"callers":["ledger-chat"]}
         """;
 
     // Act
@@ -597,13 +587,13 @@ class AirlockIntegrationTest {
     // Assert
     assertThat(airlock.statusCode()).isEqualTo(200);
     JsonNode saved = JSON.readTree(airlock.body());
-    assertThat(strings(saved.path("users"))).isEmpty();
+    assertThat(strings(saved.path("roles"))).isEmpty();
     assertThat(strings(saved.path("callers"))).containsExactly("ledger-chat");
   }
 
   @Test
   @Order(28)
-  void givenSpaceWithoutUsers_whenCreateAirlock_thenCreatedThatNoOneMayAskYet() {
+  void givenSpaceWithoutRoles_whenCreateAirlock_thenCreatedThatNoOneMayAskYet() {
     // Arrange: a space by name only
     String empty = "/v1/spaces/empty-space";
     HttpResponse<String> space =
@@ -613,11 +603,12 @@ class AirlockIntegrationTest {
     HttpResponse<String> response =
         post(rita, empty + "/airlocks", "{\"id\":\"empty-app\",\"name\":\"Empty app\"}");
 
-    // Assert: allowed, just useless until users are listed on the space or the airlock
+    // Assert: allowed, just useless until roles are listed on the space or the airlock
     assertThat(space.statusCode()).isEqualTo(201);
-    assertThat(members(JSON.readTree(space.body()))).isEmpty();
+    assertThat(strings(JSON.readTree(space.body()).path("developers"))).isEmpty();
+    assertThat(strings(JSON.readTree(space.body()).path("roles"))).isEmpty();
     assertThat(response.statusCode()).isEqualTo(201);
-    assertThat(strings(JSON.readTree(response.body()).path("users"))).isEmpty();
+    assertThat(strings(JSON.readTree(response.body()).path("roles"))).isEmpty();
     // The name the UI shows comes from the token's name claim, stored beside the username.
     assertThat(JSON.readTree(response.body()).path("created_by").asString()).isEqualTo("andrew");
     assertThat(JSON.readTree(response.body()).path("created_by_name").asString())
@@ -743,7 +734,7 @@ class AirlockIntegrationTest {
     // none
     String space =
         """
-        {"id":"llm-home","name":"LLM home","members":[{"email":"eric@example.com","role":"user"}]%s}
+        {"id":"llm-home","name":"LLM home","roles":["employee"]%s}
         """;
     String llm =
         ",\"llms\":[{\"id\":\"granite\",\"provider\":\"ollama\",\"url\":\"http://ollama:11434\","
@@ -955,15 +946,6 @@ class AirlockIntegrationTest {
 
   private static List<String> errors(HttpResponse<String> response) {
     return strings(JSON.readTree(response.body()).path("errors"));
-  }
-
-  /** A space's members as {@code email:role}. */
-  private static List<String> members(JsonNode space) {
-    return space
-        .path("members")
-        .valueStream()
-        .map(m -> m.path("email").asString() + ":" + m.path("role").asString())
-        .toList();
   }
 
   private static List<String> strings(JsonNode array) {

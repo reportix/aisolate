@@ -5,8 +5,6 @@ import com.reportix.aisolate.backend.domain.airlock.ConflictException;
 import com.reportix.aisolate.backend.domain.airlock.InvalidFormException;
 import com.reportix.aisolate.backend.domain.audit.AuditException;
 import com.reportix.aisolate.backend.domain.credential.CredentialException;
-import com.reportix.aisolate.backend.domain.directory.Directory;
-import com.reportix.aisolate.backend.domain.directory.DirectoryService;
 import com.reportix.aisolate.backend.domain.space.NotDeveloperException;
 import com.reportix.aisolate.backend.domain.space.SpaceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -72,18 +70,6 @@ public class GlobalExceptionHandler {
     ProblemDetail problem = ProblemDetail.forStatusAndDetail(e.getStatus(), e.getMessage());
     problem.setProperty("reason", e.getReason());
     return problem;
-  }
-
-  /** The AIsolate UI asks for typed e-mails instead. */
-  @ExceptionHandler(DirectoryService.NotConfiguredException.class)
-  ProblemDetail noDirectory(DirectoryService.NotConfiguredException e) {
-    return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
-  }
-
-  /** The identity provider failed us: one plain sentence, the reason in KeycloakDirectory's log. */
-  @ExceptionHandler(Directory.UnavailableException.class)
-  ProblemDetail directoryUnavailable(Directory.UnavailableException e) {
-    return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
   }
 
   /** The one body that says more: the developer needs the field errors to fix the form. */

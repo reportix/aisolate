@@ -84,12 +84,11 @@ class ClusterSyncIntegrationTest {
   static final String AIRLOCK_PATH = SPACE_PATH + "/airlocks/cluster-assistant";
   static final String GLOBAL_PATH = "/apis/aisolate.dev/v1/namespaces/aisolate/globals/aisolate";
 
-  /** The space as the admin saves it: eric asks, jasmine develops, and its LLM granite. */
+  /** The space as the admin saves it: employees ask, jasmine develops, and its LLM granite. */
   static final String SPACE_FORM =
       """
       {"id":"cluster-lab","name":"Cluster lab",
-       "members":[{"email":"eric@example.com","role":"user"},
-                  {"email":"jasmine@example.com","role":"developer"}],
+       "developers":["jasmine@example.com"],"roles":["employee"],
        "llms":[{"id":"granite","provider":"ollama","url":"http://host.minikube.internal:11434",
                 "model":"granite4.1:8b"}]%s}
       """;
@@ -148,9 +147,9 @@ class ClusterSyncIntegrationTest {
     assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
     assertThat(JSON.readTree(response.body()).path("cluster").path("applied").asBoolean()).isTrue();
     GenericKubernetesResource space = resource(SPACES, "cluster-lab");
-    // Every member asks, the developer too; roles stay in the backend
-    assertThat((List<String>) space.get("spec", "access", "users"))
-        .containsExactly("eric@example.com", "jasmine@example.com");
+    // The roles ask; the developers stay in the backend
+    assertThat(space.<Map<String, Object>>get("spec", "access"))
+        .isEqualTo(Map.of("roles", List.of("employee")));
     assertThat((List<Map<String, String>>) space.get("spec", "llms"))
         .singleElement()
         .satisfies(
@@ -159,8 +158,8 @@ class ClusterSyncIntegrationTest {
     assertThat(resource(GLOBALS, "aisolate")).isNotNull();
     GenericKubernetesResource airlock = resource(AIRLOCKS, "cluster-assistant");
     assertThat((String) airlock.get("spec", "space")).isEqualTo("cluster-lab");
-    // The space's users ask it; it lists none of its own
-    assertThat((List<String>) airlock.get("spec", "access", "users")).isEmpty();
+    // The space's roles ask it; it lists none of its own
+    assertThat((List<String>) airlock.get("spec", "access", "roles")).isEmpty();
     assertThat((List<String>) airlock.get("spec", "access", "callers")).containsExactly("*");
     assertThat((String) airlock.get("spec", "llm")).isEqualTo("granite");
     assertThat((String) airlock.get("spec", "prompt")).isEqualTo("Answer from the tools.");
@@ -449,8 +448,8 @@ class ClusterSyncIntegrationTest {
     clusterSync.resyncAll();
 
     // Assert: healed, and the healing is scheduled, not only callable
-    assertThat((List<String>) resource(SPACES, "cluster-lab").get("spec", "access", "users"))
-        .containsExactly("eric@example.com", "jasmine@example.com");
+    assertThat((List<String>) resource(SPACES, "cluster-lab").get("spec", "access", "roles"))
+        .containsExactly("employee");
     assertThat((String) resource(AIRLOCKS, "cluster-assistant").get("spec", "jar", "digest"))
         .startsWith("sha256:");
     assertThat(scheduled.getScheduledTasks())

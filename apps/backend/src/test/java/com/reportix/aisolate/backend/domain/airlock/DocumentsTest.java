@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.reportix.aisolate.backend.domain.deploy.JarInspector;
 import com.reportix.aisolate.backend.domain.space.Space;
-import com.reportix.aisolate.backend.domain.space.SpaceFormDTO;
 import com.reportix.aisolate.config.AirlockDocument;
 import com.reportix.aisolate.config.Configuration;
 import com.reportix.aisolate.config.ConfigurationLoader;
@@ -38,9 +37,8 @@ class DocumentsTest {
           "hr-space",
           "HR",
           "People data.",
-          List.of(
-              new SpaceFormDTO.Member("eric@example.com", SpaceFormDTO.USER),
-              new SpaceFormDTO.Member("nora@example.com", SpaceFormDTO.DEVELOPER)),
+          List.of("nora@example.com"),
+          List.of("ceo", "hr"),
           List.of(LlmFormDTO.of(NOMIC)),
           List.of(new DataSourceFormDTO("acme_hr", DB, "hr-space-ds-acme-hr-a1b2c3", null, null)),
           "jasmine",
@@ -84,7 +82,7 @@ class DocumentsTest {
             "hr-app",
             "HR app",
             "",
-            List.of("eric@example.com"),
+            List.of("employee"),
             List.of("acme-chat"),
             List.of("acme-batch"),
             null,
@@ -106,7 +104,7 @@ class DocumentsTest {
             "hr-idle",
             "HR idle",
             "",
-            List.of("eric@example.com", "nora@example.com"),
+            List.of(),
             List.of("*"),
             null,
             null,
@@ -130,9 +128,8 @@ class DocumentsTest {
     assertThat(configuration.global()).isEqualTo(GLOBAL);
     SpaceDocument.Spec space = configuration.spaces().get("hr-space").spec();
     assertThat(space.displayName()).isEqualTo("HR");
-    // Every member asks, the developer nora too; no role reaches the cluster.
-    assertThat(space.access())
-        .isEqualTo(new SpaceDocument.Access(List.of("eric@example.com", "nora@example.com")));
+    // The roles ask; developers are the UI's and never reach the cluster.
+    assertThat(space.access()).isEqualTo(new SpaceDocument.Access(List.of("ceo", "hr")));
     assertThat(space.llms()).containsExactly(NOMIC);
     assertThat(space.dataSources())
         .containsExactly(new DataSource("acme_hr", DB, "hr-space-ds-acme-hr-a1b2c3"));
@@ -141,7 +138,7 @@ class DocumentsTest {
     assertThat(app.spec().access())
         .isEqualTo(
             new AirlockDocument.Access(
-                List.of("eric@example.com"), List.of("acme-chat"), List.of("acme-batch")));
+                List.of("employee"), List.of("acme-chat"), List.of("acme-batch")));
     assertThat(app.spec().llm()).isEqualTo("granite");
     assertThat(app.spec().prompt()).isEqualTo("p");
     assertThat(app.tools()).containsExactly("read_records");
@@ -162,9 +159,7 @@ class DocumentsTest {
             new DataSource("hr-documents", DB, "hr-space-hr-app-ds-hr-documents-d4e5f6"));
     AirlockDocument idleDocument = configuration.airlocks().get("hr-idle");
     assertThat(idleDocument.spec().access())
-        .isEqualTo(
-            new AirlockDocument.Access(
-                List.of("eric@example.com", "nora@example.com"), List.of("*")));
+        .isEqualTo(new AirlockDocument.Access(List.of(), List.of("*")));
     assertThat(idleDocument.spec().llms()).isEmpty();
     assertThat(idleDocument.spec().llm()).isNull();
     assertThat(idleDocument.spec().prompt()).isNull();
