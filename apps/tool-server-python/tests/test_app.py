@@ -45,7 +45,7 @@ class HrTools(ToolPlugin):
 @pytest.fixture
 def served() -> Any:
     database = RecordingDatabase(rows=[{"id": 1, "name": "Nora"}])
-    policy = Policy("hr", REVISION, Access(("nora@example.com",), ("*",)), ("read_records", "broken"))
+    policy = Policy("hr", REVISION, Access(("staff",), ("*",)), ("read_records", "broken"))
     queries = GovernedQueries(PolicySource(REVISION, [policy]), Catalog("p", (HrTools(),), ()), {"hr.e": RULES}, database)
     with Running(create_app(queries, verifier())) as url:
         yield url, database
@@ -132,7 +132,7 @@ class FailingDatabase(RecordingDatabase):
 async def test_given_data_source_failure_when_tool_called_then_its_error_and_data_source_in_meta(
         failure: BaseException, text: str, error: str) -> None:
     # Arrange
-    policy = Policy("hr", REVISION, Access(("nora@example.com",), ("*",)), ("read_records",))
+    policy = Policy("hr", REVISION, Access(("staff",), ("*",)), ("read_records",))
     queries = GovernedQueries(PolicySource(REVISION, [policy]), Catalog("p", (HrTools(),), ()), {"hr.e": RULES},
                               FailingDatabase(failure))
 

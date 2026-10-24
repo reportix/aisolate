@@ -90,9 +90,9 @@ async def test_given_no_valid_token_when_asked_then_401_with_challenge_and_model
     assert (model.calls, out.getvalue()) == ([], "")
 
 
-@pytest.mark.parametrize(("claims", "reason"), [({"email": "ivy@other.example"}, "user"),
-                                                ({"azp": "other-app"}, "client")], ids=["user", "client"])
-async def test_given_unlisted_user_or_client_when_asked_then_403_and_one_refusal_line(claims, reason):
+@pytest.mark.parametrize(("claims", "reason"), [({"realm_access": {"roles": ["intern"]}}, "role"),
+                                                ({"azp": "other-app"}, "client")], ids=["role", "client"])
+async def test_given_unlisted_role_or_client_when_asked_then_403_and_one_refusal_line(claims, reason):
     # Arrange
     model = Model()
     client, out = harness(model, verifier=Verifier(**claims))

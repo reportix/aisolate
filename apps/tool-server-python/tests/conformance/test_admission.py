@@ -26,7 +26,7 @@ class _Plugin(ToolPlugin):
 def test_given_airlock_case_when_tool_server_admits_then_same_gate_as_the_airlock(case: dict[str, Any]) -> None:
     # Arrange
     own = CASES["airlocks"][case["airlock"]]
-    access = Access(tuple(dict.fromkeys(CASES["space"]["users"] + own["users"])), tuple(own["callers"]),
+    access = Access(tuple(dict.fromkeys(CASES["space"]["roles"] + own["roles"])), tuple(own["callers"]),
                     tuple(own.get("clients", ())))
     policy = Policy(case["airlock"], REVISION, access, ("read_records",))
     service = GovernedQueries(PolicySource(REVISION, [policy]), Catalog("c", (_Plugin(),), ()), {}, RecordingDatabase())

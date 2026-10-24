@@ -52,7 +52,7 @@ def airlock_of(configuration: config.Configuration, airlock_id: str) -> Airlock:
     if v is None:
         raise ValueError(f"AISOLATE_AIRLOCK {airlock_id} is no served airlock")
     return Airlock(space=v.space, id=v.name, revision=configuration.revision,
-                   model=v.main_llm.provider, users=tuple(v.access.users), callers=tuple(v.access.callers),
+                   model=v.main_llm.provider, roles=tuple(v.access.roles), callers=tuple(v.access.callers),
                    tools=tuple(v.tools), data_sources=tuple(d.id for d in v.data_sources), system_prompt=v.prompt,
                    context_preparators=tuple(v.handlers[Stage.CONTEXT_PREPARATOR]),
                    memories=tuple(v.handlers[Stage.CONVERSATION_MEMORY]),

@@ -27,10 +27,10 @@ _HANDLERS = {"handlers": [str]}
 _SCHEMAS: dict[str, dict[str, Any]] = {
     "Global": {"metadata": {"name": str}, "spec": {"llms": _LLMS, "dataSources": _DATA_SOURCES}},
     "Space": {"metadata": {"name": str}, "spec": {
-        "displayName": str, "description": str, "access": {"users": [str]}, "llms": _LLMS,
+        "displayName": str, "description": str, "access": {"roles": [str]}, "llms": _LLMS,
         "dataSources": _DATA_SOURCES}},
     "Airlock": {"metadata": {"name": str}, "spec": {
-        "space": str, "displayName": str, "description": str, "access": {"users": [str], "callers": [str], "clients": [str]},
+        "space": str, "displayName": str, "description": str, "access": {"roles": [str], "callers": [str], "clients": [str]},
         "preLLM": {"contextPreparator": _HANDLERS, "conversationMemory": _HANDLERS},
         "llm": str, "prompt": str, "tools": [str],
         "postLLM": {"answerVerifier": _HANDLERS},
@@ -68,10 +68,10 @@ class DataSource:
 
 @dataclass(frozen=True, slots=True)
 class Access:
-    """Who may ask: the space's users then the airlock's own (distinct, in order), the airlock's callers,
+    """Who may ask: the space's roles then the airlock's own (distinct, in order), the airlock's callers,
     and the airlock's machine clients (none when absent)."""
 
-    users: tuple[str, ...]
+    roles: tuple[str, ...]
     callers: tuple[str, ...]
     clients: tuple[str, ...] = ()
 
@@ -273,11 +273,23 @@ def _client_problems(clients: list[str | None] | None) -> list[str]:
     return problems + (["* is no wildcard: list each client id"] if "*" in named else [])
 
 
+def _role_problems(roles: list[str | None] | None) -> list[str]:
+    """Java's ``Names.roleProblems``: matched exactly, so none blank, with a space, twice or ``*``."""
+    named = [r for r in roles or () if not _blank(r)]
+    problems = ["must not contain a blank role"] if len(named) < len(roles or ()) else []
+    problems += [f'"{r}" has a space in it' for r in dict.fromkeys(named) if re.search(r"\s", r)]
+    problems += [f"lists {r} twice" for r in dict.fromkeys(named) if named.count(r) > 1]
+    return problems + (["* is no role: list each role; only callers take * for any"] if "*" in named else [])
+
+
 def _resolve(documents: dict[str, dict[str, Any]], file_of: dict[str, str], problems: list[str]) -> dict[str, Airlock]:
     """The references the pods must not serve without, and every airlock that runs resolved. One without an
     llm or a prompt is valid but runs nothing (``aisolate deploy`` brings them): left out, never refused."""
     spaces = documents["Space"]
     global_spec = _get(documents["Global"].get(GLOBAL), "spec") or {}  # none reads as empty
+    for name, space in spaces.items():
+        problems += [f"{file_of[f'Space/{name}']}: Space {name}: spec.access.roles {p}"
+                     for p in _role_problems(_get(space, "spec", "access", "roles"))]
     airlocks = {}
     for name, airlock in documents["Airlock"].items():
         where = f"{file_of[f'Airlock/{name}']}: Airlock {name}"
@@ -289,6 +301,7 @@ def _resolve(documents: dict[str, dict[str, Any]], file_of: dict[str, str], prob
             problems.append(f"{where}: spec.space {space_id} is no Space")
         if not _get(spec, "access", "callers"):
             problems.append(f"{where}: spec.access.callers needs at least one caller")
+        problems += [f"{where}: spec.access.roles {p}" for p in _role_problems(_get(spec, "access", "roles"))]
         problems += [f"{where}: spec.access.clients {p}" for p in _client_problems(_get(spec, "access", "clients"))]
         llm, prompt = spec.get("llm"), spec.get("prompt")
         if _blank(llm) or _blank(prompt):
@@ -319,8 +332,8 @@ def _resolve(documents: dict[str, dict[str, Any]], file_of: dict[str, str], prob
             problems.append(f"{where}: llm {llm} is no model of it, of Space {space_id} or of AIsolate")
         data_sources = {ds.get("id") or "": DataSource(ds.get("id"), ds.get("url"), ds.get("secretRef"))
                         for level in levels for ds in level.get("dataSources") or () if ds}
-        users = list(_get(space, "spec", "access", "users") or ()) + list(_get(spec, "access", "users") or ())
-        access = Access(tuple(dict.fromkeys(users)), tuple(_get(spec, "access", "callers") or ()),
+        roles = list(_get(space, "spec", "access", "roles") or ()) + list(_get(spec, "access", "roles") or ())
+        access = Access(tuple(dict.fromkeys(roles)), tuple(_get(spec, "access", "callers") or ()),
                         tuple(_get(spec, "access", "clients") or ()))
         airlocks[name] = Airlock(
             name, space_id, spec.get("description"), prompt, tools, handlers, llm,

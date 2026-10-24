@@ -32,7 +32,7 @@ def _served() -> config.Airlock:
         llm="granite", llms=(config.Llm("granite", "ollama", "http://ollama:11434", "granite4.1:8b"),
                              config.Llm("nomic", "ollama", "http://ollama:11434", "nomic-embed-text")),
         data_sources=(config.DataSource("hr", "jdbc:postgresql://db/hr", "s"),),
-        access=config.Access(("elena@acme.example",), ("acme-chat",), ("knime",)),
+        access=config.Access(("employee",), ("acme-chat",), ("knime",)),
         code=config.Code("sha256:" + "0" * 64, ("read_my_records",), "python"))
 
 
@@ -46,8 +46,8 @@ def test_given_served_airlock_when_mapped_then_the_airlock_definition_of_java():
     # Assert
     assert (airlock.space, airlock.id, airlock.revision, airlock.model) == ("acme", "hr", "7b2280eab4b5", "ollama")
     assert (airlock.context_preparators, airlock.memories, airlock.verifiers) == (("Docs",), (), ("Check",))
-    assert (airlock.data_sources, airlock.users, airlock.callers, airlock.clients) == (
-        ("hr",), ("elena@acme.example",), ("acme-chat",), ("knime",))
+    assert (airlock.data_sources, airlock.roles, airlock.callers, airlock.clients) == (
+        ("hr",), ("employee",), ("acme-chat",), ("knime",))
 
 
 def test_given_unserved_airlock_when_mapped_then_refused_naming_it():

@@ -119,7 +119,7 @@ def create_app(airlock: Airlock, agent: AgentLoop, verifier, audit_log: audit.Au
                     tracing.tag(target, key, value)
             tracing.tag(exchange_span, "aisolate.client", user.azp)
             tracing.tag(span, "aisolate.admitted", True)
-            reason = user.admission_failure(airlock.users, airlock.callers, airlock.clients)
+            reason = user.admission_failure(airlock.roles, airlock.callers, airlock.clients)
             if reason is not None:
                 tracing.tag(span, "aisolate.admitted", False)
                 tracing.tag(span, "aisolate.reason", reason)
@@ -129,7 +129,7 @@ def create_app(airlock: Airlock, agent: AgentLoop, verifier, audit_log: audit.Au
                                                int((time.monotonic() - started) * 1000)))
                 # a machine token has no e-mail: name the client alone
                 who = (f"client {_java(user.azp)}" if user.email is None
-                       else f"user {user.email} from client {_java(user.azp)}")
+                       else f"roles [{', '.join(sorted(user.roles))}] from client {_java(user.azp)}")
                 log.warning("403 POST %s: %s/%s does not admit %s", path, airlock.space, airlock.id, who)
                 raise ForbiddenException(problem(403, "forbidden", path))
 

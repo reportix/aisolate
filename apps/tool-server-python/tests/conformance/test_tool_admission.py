@@ -29,10 +29,10 @@ def _plugin(tool_name: str, data_source: str) -> ToolPlugin:
 
 
 def _service(database: RecordingDatabase) -> GovernedQueries:
-    space = tuple(CASES["space"]["users"])
+    space = tuple(CASES["space"]["roles"])
     policies = [
         Policy(p["airlock"], CASES["served_revision"],
-               Access(tuple(dict.fromkeys(space + tuple(p["users"]))), tuple(p["callers"]), tuple(p.get("clients", ()))),
+               Access(tuple(dict.fromkeys(space + tuple(p["roles"]))), tuple(p["callers"]), tuple(p.get("clients", ()))),
                tuple(p["tools"]))
         for p in CASES["policies"]
     ]

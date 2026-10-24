@@ -11,18 +11,18 @@ AIRLOCK = case_file("admission/airlock.json")
 
 def _access(airlock: str) -> tuple[list[str], list[str], list[str]]:
     own = AIRLOCK["airlocks"][airlock]
-    users = list(dict.fromkeys(AIRLOCK["space"]["users"] + own["users"]))
-    return users, own["callers"], own.get("clients", [])
+    roles = list(dict.fromkeys(AIRLOCK["space"]["roles"] + own["roles"]))
+    return roles, own["callers"], own.get("clients", [])
 
 
 @pytest.mark.parametrize("case", AIRLOCK["cases"], ids=[c["id"] for c in AIRLOCK["cases"]])
 def test_given_conformance_claims_when_admission_decided_then_as_java(case: dict[str, Any]) -> None:
     # Arrange
-    users, callers, clients = _access(case["airlock"])
+    roles, callers, clients = _access(case["airlock"])
     principal = Principal.of(case["claims"], "realm_access.roles")
 
     # Act
-    failure = principal.admission_failure(users, callers, clients)
+    failure = principal.admission_failure(roles, callers, clients)
 
     # Assert
     assert failure is None if case["expect"]["admitted"] else failure == case["expect"]["reason"]
@@ -70,6 +70,6 @@ def test_given_authorization_header_when_bearer_read_then_token_or_none(header: 
     assert bearer(header) == expected
 
 
-def test_given_star_among_users_when_admission_decided_then_no_wildcard() -> None:
+def test_given_star_among_allowed_roles_when_admission_decided_then_no_wildcard() -> None:
     # Arrange / Act / Assert
-    assert admission.failure("x@example.com", "app", ["*"], ["*"]) == "user"
+    assert admission.failure("x@example.com", "app", ["staff"], ["*"], ["*"]) == "role"

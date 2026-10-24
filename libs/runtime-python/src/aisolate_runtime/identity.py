@@ -66,9 +66,9 @@ class Principal:
         return Principal(self.sub, self.email, self.azp, self.roles, {**self.attributes, name: value})
 
     def admission_failure(
-        self, users: Collection[str], callers: Collection[str], clients: Collection[str] = ()
+        self, allowed_roles: Collection[str], callers: Collection[str], clients: Collection[str] = ()
     ) -> admission.Failure | None:
-        return admission.failure(self.email, self.azp, users, callers, clients)
+        return admission.failure(self.email, self.azp, self.roles, allowed_roles, callers, clients)
 
 
 def roles(claims: Mapping[str, Any], roles_claim: str) -> list[str]:

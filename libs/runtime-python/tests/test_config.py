@@ -51,7 +51,7 @@ def test_given_rendered_files_when_loaded_then_airlock_resolved_with_its_space(t
     assert airlock.handlers[Stage.ANSWER_VERIFIER] == ("SalaryVerifier",)
     assert airlock.code.language == "java" and airlock.code.digest.startswith("sha256:")
     assert (airlock.llm, [llm.id for llm in airlock.llms]) == ("granite", ["granite", "nomic", "qwen"])
-    assert airlock.access.callers and airlock.access.users and airlock.access.clients == ()
+    assert airlock.access.callers and airlock.access.roles and airlock.access.clients == ()
     assert [ds.id for ds in airlock.data_sources] == ["acme_hr", "audit_log", "hr-documents"]
 
 

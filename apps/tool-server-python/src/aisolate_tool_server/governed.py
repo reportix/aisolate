@@ -146,7 +146,7 @@ class GovernedQueries:
         caller = Principal.of(claims, self.roles_claim)
         # Gate 2 again on this server's own reading of the token, then gate 3: no lookup, no query before.
         access = policy.access
-        if caller.admission_failure(access.users, access.callers, access.clients) is not None or tool not in policy.tools:
+        if caller.admission_failure(access.roles, access.callers, access.clients) is not None or tool not in policy.tools:
             return Result.empty("", policy.rule_version)
         plugin, published = self._tools[tool]
         _tag(span, "aisolate.data_source", plugin.data_source)

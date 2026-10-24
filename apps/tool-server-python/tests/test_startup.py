@@ -40,7 +40,7 @@ RULES = {"entity": "staff.people", "rules": [
 TABLE = {"name": "startup.staff", "columns": {"id": "integer", "name": "text", "email": "text"},
          "rows": [{"id": 1, "name": "Nora", "email": "nora@example.com"}, {"id": 2, "name": "Eric", "email": "eric@example.com"}]}
 DOCUMENTS = {
-    "Space-s.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Space\nmetadata:\n  name: s\nspec:\n  access:\n    users:\n    - Nora@Example.com\n  llms:\n  - id: granite\n    provider: ollama\n    url: http://ollama:11434\n    model: granite4.1:8b\n",
+    "Space-s.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Space\nmetadata:\n  name: s\nspec:\n  access:\n    roles:\n    - staff\n  llms:\n  - id: granite\n    provider: ollama\n    url: http://ollama:11434\n    model: granite4.1:8b\n",
     "Airlock-a.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Airlock\nmetadata:\n  name: a\nspec:\n  space: s\n  access:\n    callers:\n    - '*'\n  llm: granite\n  prompt: Answer.\n  tools:\n  - read_people\n  jar:\n    digest: DIGEST\n    language: python\n    tools:\n    - read_people\n",
 }
 

@@ -14,7 +14,7 @@ from aisolate_airlock.llm import ModelUnavailable, Reply
 from aisolate_airlock.mcp_client import ToolCallFailedException, ToolSpec
 
 AIRLOCK = Airlock(space="acme", id="hr", revision="7b2280eab4b5", model="ollama",
-                  users=("elena@acme.example",), callers=("acme-chat",), tools=("read_my_records",),
+                  roles=("employee",), callers=("acme-chat",), tools=("read_my_records",),
                   data_sources=("hr",), system_prompt="You answer HR questions.")
 PATH = "/v1/spaces/acme/airlocks/hr/chat"
 GOOD = {"Authorization": "Bearer good"}

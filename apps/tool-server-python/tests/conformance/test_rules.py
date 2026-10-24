@@ -27,7 +27,7 @@ def _service(document: dict[str, Any], case: dict[str, Any], database: Any) -> G
     fixture = document["fixture"]
     entity = entity_of(fixture["entity"])
     plugin = standard_plugin(entity, "conformance", fixture["identity_attribute"], "SELECT 'the identity join'")
-    policy = Policy("conformance", REVISION, Access((case["principal"].get("email") or "",), ("*",)),
+    policy = Policy("conformance", REVISION, Access(tuple(case["principal"]["roles"]), ("*",)),
                     ("read_records", "aggregate_records"))
     rule_set = RuleSet.parse(json.dumps(document["rule_sets"][case["rule_set"]]))
     return GovernedQueries(PolicySource(REVISION, [policy]), Catalog("conformance", (plugin,), ()),

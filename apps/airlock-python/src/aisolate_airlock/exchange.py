@@ -44,7 +44,7 @@ class Airlock:
     id: str
     revision: str
     model: str
-    users: tuple[str, ...]
+    roles: tuple[str, ...]
     callers: tuple[str, ...]
     tools: tuple[str, ...]
     data_sources: tuple[str, ...]
