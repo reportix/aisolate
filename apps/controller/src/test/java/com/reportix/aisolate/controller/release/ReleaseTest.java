@@ -328,7 +328,7 @@ class ReleaseTest {
 
   @Test
   void givenBrokenOtherSpaceAndAnAirlockOfNoSpace_whenLoaded_thenThisReleaseIsUntouched() {
-    // Arrange: a space listing a blank user with an airlock of its own, and an airlock of a
+    // Arrange: a space listing a blank role with an airlock of its own, and an airlock of a
     // missing space
     List<Space> spaces = new ArrayList<>(spaces());
     spaces.add(
@@ -368,8 +368,7 @@ class ReleaseTest {
     assertThat(mine.configuration().airlocks()).containsOnlyKeys(HR, FF);
     assertThat(broken.problemsOf("Space", "broken"))
         .singleElement()
-        .satisfies(
-            p -> assertThat(p).contains("spec.access.users must not contain a blank e-mail"));
+        .satisfies(p -> assertThat(p).contains("spec.access.roles must not contain a blank role"));
   }
 
   private static GlobalDocument withGlobalLlms(List<Llm> llms) {

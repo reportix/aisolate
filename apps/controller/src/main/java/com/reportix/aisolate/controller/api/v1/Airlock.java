@@ -15,7 +15,7 @@ import io.fabric8.kubernetes.model.annotation.Version;
  * below are the loader's field checks; references stay the reconciler's.
  *
  * <p>The {@code Airlock} document as a custom resource: the Space it belongs to, who may ask it
- * besides the space's users (none of its own is fine; a calling client is required), the model that
+ * besides the space's roles (none of its own is fine; a calling client is required), the model that
  * answers with its prompt and tools, its code, and the LLMs and data sources it sees beside the
  * space's. One pod pair per airlock; no {@code llm} or {@code prompt} is admitted (the AIsolate UI
  * creates it so, {@code aisolate deploy} brings them) and runs nothing.

@@ -14,7 +14,7 @@ import io.fabric8.kubernetes.model.annotation.Version;
  * The API server refuses at admission what the loader would refuse a moment later: the CEL rules
  * below are the loader's field checks; references stay the reconciler's.
  *
- * <p>The {@code Space} document as a custom resource: the users every one of its airlocks admits,
+ * <p>The {@code Space} document as a custom resource: the roles every one of its airlocks admits,
  * the LLMs and data sources its airlocks share; one release with the Airlocks naming it.
  */
 @ValidationRule(

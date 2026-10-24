@@ -448,9 +448,7 @@ class RendererTest {
             (UnaryOperator<String>) y -> y.replace("founders only", "founders, only"),
             false),
         Arguments.of(
-            "the airlock's users",
-            (UnaryOperator<String>) y -> y.replace(", nora@example.com", ""),
-            true),
+            "the airlock's roles", (UnaryOperator<String>) y -> y.replace(", hr]", "]"), true),
         Arguments.of(
             "the airlock's jar digest",
             (UnaryOperator<String>) y -> y.replace("sha256:784c", "sha256:884c"),
@@ -490,7 +488,7 @@ class RendererTest {
         .extracting(DiscoveredAirlock::id)
         .containsExactly(HR, FF);
     assertThat(listed)
-        .contains(DiscoveredAirlock.userKey("Nora@Example.com"))
+        .contains("\"roles\":[\"ceo\",\"hr\",\"employee\"")
         .doesNotContain("@example.com")
         .doesNotContain("You are the Acme HR assistant")
         .doesNotContain("jdbc:")

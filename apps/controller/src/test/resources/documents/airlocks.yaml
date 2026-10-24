@@ -6,7 +6,7 @@ spec:
   displayName: Acme HR assistant
   description: Answers people, pay and HR document questions.
   access:
-    users: [eric@example.com, nora@example.com]
+    roles: [employee, hr]
     callers: ["*"]
   preLLM:
     contextPreparator:
@@ -35,7 +35,7 @@ spec:
   space: hr-acme
   displayName: Founders finance
   access:
-    users: [nora@example.com]
+    roles: [founder]
     callers: ["*"]
   llm: qwen
   prompt: |

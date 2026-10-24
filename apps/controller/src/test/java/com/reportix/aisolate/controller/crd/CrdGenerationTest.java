@@ -35,10 +35,10 @@ class CrdGenerationTest {
         Arguments.of(
             "spaces.yaml",
             List.of("kind: \"Space\"", "self.metadata.name.matches('^[a-z][a-z0-9-]{1,40}$')"),
-            // a space may list no user
-            List.of("size(self.spec.access.users) > 0", "size(self.spec.access.callers) > 0"),
+            // a space may list no role
+            List.of("access.users", "size(self.spec.access.callers) > 0"),
             concat(
-                List.of("displayName", "description", "access", "access.users"),
+                List.of("displayName", "description", "access", "access.roles"),
                 llms,
                 dataSources)),
         Arguments.of(
@@ -51,10 +51,10 @@ class CrdGenerationTest {
                 "has(self.spec.access) && size(self.spec.access.callers) > 0",
                 "jsonPath: \".spec.space\"",
                 "jsonPath: \".status.readyReplicas\""),
-            // its users may be none: the space's users may ask it; a model and a prompt come with
+            // its roles may be none: the space's roles may ask it; a model and a prompt come with
             // the first deploy; a credential never sits in a resource
             List.of(
-                "size(self.spec.access.users) > 0",
+                "access.users",
                 "size(self.spec.llm) > 0",
                 "size(self.spec.prompt) > 0",
                 "password"),
@@ -64,7 +64,7 @@ class CrdGenerationTest {
                     "displayName",
                     "description",
                     "access",
-                    "access.users",
+                    "access.roles",
                     "access.callers",
                     "access.clients",
                     "preLLM",

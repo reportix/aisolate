@@ -186,7 +186,7 @@ class AirlockReconcilerTest {
 
   @Test
   void givenReleaseBecomesInvalid_whenReconciled_thenInvalidWithItsProblemsAndNothingOfItRuns() {
-    // Arrange: the space comes to list a blank user
+    // Arrange: the space comes to list a blank role
     TestResources.applyFixtures(client);
     reconciler.reconcile(get(HR), context());
     SpaceDocument.Spec s = FIXTURES.spaces().get("hr-acme").spec();
@@ -209,7 +209,7 @@ class AirlockReconcilerTest {
     assertThat(status.problems()).hasSize(2).last().isEqualTo(Releases.HELD_BACK);
     assertThat(status.problems().getFirst())
         .contains("release invalid: Space/hr-acme")
-        .contains("spec.access.users");
+        .contains("spec.access.roles");
     assertNothingRuns(HR_POD, HR_MCP, HR_CONFIG);
   }
 

@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
  * Space does not exist is in no release, so never a problem.
  *
  * <p>A problem blocks its own scope only: an invalid Airlock is left out and its siblings still
- * serve, and only a problem of the Space or of the install blocks the whole space. So a user
- * removed from a list stops being admitted while someone else's airlock is broken.
+ * serve, and only a problem of the Space or of the install blocks the whole space. So a role
+ * removed from a list stops admitting its holders while someone else's airlock is broken.
  *
  * @param configuration what serves: the release without the resources left out; null when the Space
  *     itself or the install's settings are invalid

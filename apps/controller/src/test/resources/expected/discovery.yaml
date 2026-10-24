@@ -14,12 +14,10 @@ metadata:
 data:
   hr-acme.json: "[{\"id\":\"hr-assistant\",\"space\":\"hr-acme\",\"name\":\"Acme HR\
     \ assistant\",\"description\":\"Answers people, pay and HR document questions.\"\
-    ,\"userKeys\":[\"f5b1eba20c5f95e6b9fb960108a0c2e930000b00be0e7172b15287e381564615\"\
-    ,\"8d282bd5e91b0c8bbf92bef1bd51252be08359085ff80c81422d5c4879f906ac\"],\"callers\"\
-    :[\"*\"],\"tools\":[\"read_records\",\"aggregate_records\"]},{\"id\":\"founders-finance\"\
-    ,\"space\":\"hr-acme\",\"name\":\"Founders finance\",\"description\":\"\",\"userKeys\"\
-    :[\"f5b1eba20c5f95e6b9fb960108a0c2e930000b00be0e7172b15287e381564615\",\"8d282bd5e91b0c8bbf92bef1bd51252be08359085ff80c81422d5c4879f906ac\"\
-    ],\"callers\":[\"*\"],\"tools\":[]}]"
+    ,\"roles\":[\"ceo\",\"hr\",\"employee\"],\"callers\":[\"*\"],\"tools\":[\"read_records\"\
+    ,\"aggregate_records\"]},{\"id\":\"founders-finance\",\"space\":\"hr-acme\",\"\
+    name\":\"Founders finance\",\"description\":\"\",\"roles\":[\"ceo\",\"hr\",\"\
+    founder\"],\"callers\":[\"*\"],\"tools\":[]}]"
 ---
 apiVersion: "networking.k8s.io/v1"
 kind: "NetworkPolicy"

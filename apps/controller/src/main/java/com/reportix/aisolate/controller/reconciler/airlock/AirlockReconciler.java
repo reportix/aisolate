@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
  * fresh. Whatever it owns and the render no longer produces goes, and an airlock whose Space does
  * not exist, or that no deploy has brought a model and a prompt yet, runs nothing. An airlock its
  * release leaves out (invalid itself, or its Space) fails closed: everything it owns goes and it
- * says why. Its pods would otherwise keep the last good Space, so a user removed since would still
+ * says why. Its pods would otherwise keep the last good Space, so a role removed since would still
  * be admitted. A sibling's problem never holds it back.
  */
 @RequiredArgsConstructor

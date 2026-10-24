@@ -103,7 +103,7 @@ class SpaceReconcilerTest {
 
   @Test
   void givenBrokenSecondSpace_whenEachReconciled_thenItIsInvalidAndLeavesDiscoveryAlone() {
-    // Arrange: a second space that lists a blank user
+    // Arrange: a second space that lists a blank role
     TestResources.applyFixtures(client);
     client
         .resource(
@@ -120,8 +120,7 @@ class SpaceReconcilerTest {
     // Assert
     assertThat(broken.getResource().orElseThrow().getStatus().problems())
         .singleElement()
-        .satisfies(
-            p -> assertThat(p).contains("spec.access.users must not contain a blank e-mail"));
+        .satisfies(p -> assertThat(p).contains("spec.access.roles must not contain a blank role"));
     assertThat(fine.getResource().orElseThrow().getStatus().phase())
         .isEqualTo(ResourceStatus.READY);
     assertThat(client.configMaps().inNamespace(NS).withName(Renderer.DISCOVERY).get().getData())

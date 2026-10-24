@@ -5,7 +5,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "b0000bb01ada"
+    aisolate.dev/revision: "192feb393eee"
   name: "hr-acme-hr-assistant-config"
   namespace: "aisolate"
   ownerReferences:
@@ -45,9 +45,9 @@ data:
       displayName: HR Acme
       description: Acme people and compensation data for the HR assistant.
       access:
-        users:
-        - eric@example.com
-        - nora@example.com
+        roles:
+        - ceo
+        - hr
       llms:
       - id: qwen
         provider: ollama
@@ -68,9 +68,9 @@ data:
       displayName: Acme HR assistant
       description: "Answers people, pay and HR document questions."
       access:
-        users:
-        - eric@example.com
-        - nora@example.com
+        roles:
+        - employee
+        - hr
         callers:
         - '*'
       preLLM:
@@ -149,7 +149,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "b0000bb01ada"
+    aisolate.dev/revision: "192feb393eee"
     aisolate.dev/role: "airlock"
   name: "hr-acme-hr-assistant-airlock"
   namespace: "aisolate"
@@ -258,7 +258,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "b0000bb01ada"
+    aisolate.dev/revision: "192feb393eee"
     aisolate.dev/role: "tool-server"
   name: "hr-acme-hr-assistant-mcp-server"
   namespace: "aisolate"
@@ -354,7 +354,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "b0000bb01ada"
+    aisolate.dev/revision: "192feb393eee"
     aisolate.dev/role: "airlock"
     aisolate.dev/space: "hr-acme"
   name: "hr-acme-hr-assistant-airlock"
@@ -376,7 +376,7 @@ spec:
   template:
     metadata:
       annotations:
-        aisolate.dev/revision: "b0000bb01ada"
+        aisolate.dev/revision: "192feb393eee"
       labels:
         aisolate.dev/airlock: "hr-assistant"
         aisolate.dev/managed-by: "controller"
@@ -391,7 +391,7 @@ spec:
         - name: "AISOLATE_CONFIG_DIR"
           value: "/etc/aisolate"
         - name: "AISOLATE_CONFIG_REVISION"
-          value: "b0000bb01ada"
+          value: "192feb393eee"
         - name: "AISOLATE_CODE_URL"
           value: "http://backend.aisolate.svc:8085/v1/code/hr-acme/hr-assistant/sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f"
         - name: "AISOLATE_CODE_DIGEST"
@@ -579,7 +579,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "b0000bb01ada"
+    aisolate.dev/revision: "192feb393eee"
     aisolate.dev/role: "airlock"
   name: "hr-acme-hr-assistant-airlock"
   namespace: "aisolate"
@@ -608,7 +608,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "b0000bb01ada"
+    aisolate.dev/revision: "192feb393eee"
     aisolate.dev/role: "airlock"
   name: "hr-acme-hr-assistant-airlock"
   namespace: "aisolate"
@@ -638,7 +638,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "b0000bb01ada"
+    aisolate.dev/revision: "192feb393eee"
     aisolate.dev/role: "tool-server"
     aisolate.dev/space: "hr-acme"
   name: "hr-acme-hr-assistant-mcp-server"
@@ -660,7 +660,7 @@ spec:
   template:
     metadata:
       annotations:
-        aisolate.dev/revision: "b0000bb01ada"
+        aisolate.dev/revision: "192feb393eee"
       labels:
         aisolate.dev/airlock: "hr-assistant"
         aisolate.dev/managed-by: "controller"
@@ -673,7 +673,7 @@ spec:
         - name: "AISOLATE_CONFIG_DIR"
           value: "/etc/aisolate"
         - name: "AISOLATE_CONFIG_REVISION"
-          value: "b0000bb01ada"
+          value: "192feb393eee"
         - name: "AISOLATE_CODE_URL"
           value: "http://backend.aisolate.svc:8085/v1/code/hr-acme/hr-assistant/sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f"
         - name: "AISOLATE_CODE_DIGEST"
@@ -805,7 +805,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "b0000bb01ada"
+    aisolate.dev/revision: "192feb393eee"
     aisolate.dev/role: "tool-server"
   name: "hr-acme-hr-assistant-mcp-server"
   namespace: "aisolate"
@@ -831,7 +831,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "155bdf605ab8"
+    aisolate.dev/revision: "bdf88dafa691"
   name: "hr-acme-founders-finance-config"
   namespace: "aisolate"
   ownerReferences:
@@ -871,9 +871,9 @@ data:
       displayName: HR Acme
       description: Acme people and compensation data for the HR assistant.
       access:
-        users:
-        - eric@example.com
-        - nora@example.com
+        roles:
+        - ceo
+        - hr
       llms:
       - id: qwen
         provider: ollama
@@ -893,8 +893,8 @@ data:
       space: hr-acme
       displayName: Founders finance
       access:
-        users:
-        - nora@example.com
+        roles:
+        - founder
         callers:
         - '*'
       llm: qwen
@@ -955,7 +955,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "155bdf605ab8"
+    aisolate.dev/revision: "bdf88dafa691"
     aisolate.dev/role: "airlock"
   name: "hr-acme-founders-finance-airlock"
   namespace: "aisolate"
@@ -1056,7 +1056,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "155bdf605ab8"
+    aisolate.dev/revision: "bdf88dafa691"
     aisolate.dev/role: "airlock"
     aisolate.dev/space: "hr-acme"
   name: "hr-acme-founders-finance-airlock"
@@ -1078,7 +1078,7 @@ spec:
   template:
     metadata:
       annotations:
-        aisolate.dev/revision: "155bdf605ab8"
+        aisolate.dev/revision: "bdf88dafa691"
       labels:
         aisolate.dev/airlock: "founders-finance"
         aisolate.dev/managed-by: "controller"
@@ -1093,7 +1093,7 @@ spec:
         - name: "AISOLATE_CONFIG_DIR"
           value: "/etc/aisolate"
         - name: "AISOLATE_CONFIG_REVISION"
-          value: "155bdf605ab8"
+          value: "bdf88dafa691"
         - name: "AISOLATE_CODE_URL"
           value: "http://backend.aisolate.svc:8085/v1/code/hr-acme/founders-finance/sha256:72b809e39ab62fe6d73761c68268c80699a7b45bac07f07be1ea02646e09e412"
         - name: "AISOLATE_CODE_DIGEST"
@@ -1263,7 +1263,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "155bdf605ab8"
+    aisolate.dev/revision: "bdf88dafa691"
     aisolate.dev/role: "airlock"
   name: "hr-acme-founders-finance-airlock"
   namespace: "aisolate"
@@ -1292,7 +1292,7 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "155bdf605ab8"
+    aisolate.dev/revision: "bdf88dafa691"
     aisolate.dev/role: "airlock"
   name: "hr-acme-founders-finance-airlock"
   namespace: "aisolate"

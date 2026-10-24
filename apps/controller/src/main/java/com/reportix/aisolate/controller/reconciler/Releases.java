@@ -156,7 +156,10 @@ public class Releases {
         .toList();
   }
 
-  /** Why a held-back airlock runs nothing: its pods hold access lists the documents may narrow. */
+  /**
+   * Why a held-back airlock runs nothing: its pods hold the roles that may ask, which the documents
+   * may narrow.
+   */
   public static final String HELD_BACK = "it serves no one until it is valid again";
 
   public List<HasMetadata> render(Release release, String airlock, Owners owners) {

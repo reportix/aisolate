@@ -185,7 +185,7 @@ public final class Renderer {
   /**
    * Discovery of every valid space: what it lists, {@code <space>.json} each, holding no document,
    * only {@link DiscoveredAirlock}; and the pods behind the shared {@code aisolate} Service that
-   * serve it. Every user's token reaches those pods, so they run the airlock image with no
+   * serve it. Every asker's token reaches those pods, so they run the airlock image with no
    * documents, no jar, no data source and no model, and a chat path that reaches them is 404. They
    * re-read the mount, so their template never changes with what it lists. Owned by every Space, so
    * the cluster deletes them with the last one.
