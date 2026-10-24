@@ -31,7 +31,7 @@ spec:
   displayName: hr-space
   description: "The employment contracts of Acme's people."
   access:
-    users: [ceo@acme.example]                 # who may ask every airlock of the space; may be empty
+    roles: [ceo]                              # who may ask every airlock of the space; may be empty; the identity provider's role names, exact
   llms:                                          # its airlocks', beside the global ones
     - {id: qwen, provider: ollama, url: http://ollama.example.com:11434, model: "qwen3.6:27b-q4_K_M"}
   dataSources: []                                # shared by every airlock of the space
@@ -43,8 +43,8 @@ spec:
   space: hr-space
   displayName: HR contracts
   description: "Employment contracts: position, pay, working time, notice and confidentiality."
-  access:                                        # who may ask the airlock besides the space's users
-    users: [employee@acme.example]            # its own users, who may ask it alone; need not be the space's; may be empty; case ignored
+  access:                                        # who may ask the airlock besides the space's roles
+    roles: [employee]                         # its own roles, which may ask it alone; need not be the space's; may be empty; case matters
     callers: ["*"]                               # at least one; "*": any client the identity provider issued an aisolate token to
     # clients: [etl]                             # machine clients: a token without an e-mail whose azp is one of these, exact, no "*"; absent when none
   preLLM:
@@ -70,14 +70,14 @@ spec:
 ```
 
 The `company-sales` template deploys into a second space, `acme-financial-group`, which lists the two
-founders: its `Airlock` `sales` has no users of its own (`users: []`), so the space's users may ask it, and the
-employee may not, since they are a user of `hr-contracts` alone. The template's context preparator filters nothing, so the
-space lists only people who may read every client document. It reads the data source
+founders: its `Airlock` `sales` has no roles of its own (`roles: []`), so the space's roles may ask it, and the
+employee may not, since `employee` is a role of `hr-contracts` alone. The template's context preparator filters nothing, so the
+space lists only roles whose holders may read every client document. It reads the data source
 `clients`, a global one beside `hr`, offers the model the tools its code publishes (`tools`, `jar.tools`) and runs
 an answer verifier (`postLLM`). An airlock created in the AIsolate UI has no `llm` and no `prompt` until its first
-deploy, and runs nothing. No document carries rules: the rules that hold are the ones in the airlocks' code. No
-role admits anyone: the space's users, the airlock's own and the airlock's callers admit, or, for a token
-without an e-mail, the airlock's machine clients (`access.clients`), and the token's roles only select the rules.
+deploy, and runs nothing. No document carries rules: the rules that hold are the ones in the airlocks' code. Roles
+and callers admit: the space's roles, the airlock's own and the airlock's callers, or, for a token
+without an e-mail, the airlock's machine clients (`access.clients`); the token's roles also select the rules.
 
 ## The project file
 
@@ -131,13 +131,13 @@ spec:
 | In the project file | Rule |
 |---|---|
 | One `Airlock` | A project is one `Airlock`. A `Space` in the file is refused (the space is `AISOLATE_SPACE`'s, defined in the AIsolate UI), and so is a second `Airlock`. |
-| The `Airlock` | Every deploy applies it, in one transaction with the code. An airlock the space does not have is created from it (its name the `displayName`, else its id; callers `*` unless it sets them). An existing one gets each field the document writes: `displayName`, `description`, `access.users`, `access.callers`, `access.clients`, the three stages, `llm`, `prompt`, `tools`, `llms`, `dataSources`; a field it leaves out keeps what the AIsolate UI or an earlier deploy set, so users added there survive a document without `access.users`, and machine clients one without `access.clients`. Nothing different, nothing saved. Users pass the same directory check as in the AIsolate UI; data source credentials work as below. `spec.space` is refused: the space is `AISOLATE_SPACE`. A refused document saves nothing. |
+| The `Airlock` | Every deploy applies it, in one transaction with the code. An airlock the space does not have is created from it (its name the `displayName`, else its id; callers `*` unless it sets them). An existing one gets each field the document writes: `displayName`, `description`, `access.roles`, `access.callers`, `access.clients`, the three stages, `llm`, `prompt`, `tools`, `llms`, `dataSources`; a field it leaves out keeps what the AIsolate UI or an earlier deploy set, so roles added there survive a document without `access.roles`, and machine clients one without `access.clients`. Nothing different, nothing saved. Data source credentials work as below. `spec.space` is refused: the space is `AISOLATE_SPACE`. A refused document saves nothing. |
 | `metadata.name` | Required: the airlock's id ([Airlock id](#names-ids-and-revision)), in the space `AISOLATE_SPACE` names. An id the space does not have creates the airlock; an existing one updates it in place. An id another space holds is refused (409). |
 | `spec.description` | Optional; shown with the airlock in the AIsolate UI and in discovery. |
 | `spec.llm` | The id of the LLM that answers, defined by the file's `llms`, the space or AIsolate (global), nearest first; an airlock without one runs nothing. One that resolves to nothing is refused, 400 `llm: no model named granite in this airlock's space or globally`. Ids that code names (`aisolate.llm("nomic")`) are not checked at deploy. |
 | `spec.llms` | Optional: `{id, provider, url, model}`, no type; the same id as an inherited LLM replaces it ([LLMs and data sources](llms-and-data-sources.md)). |
-| `spec.access` | Who may ask, beside the space's `access.users`: the airlock's own `access.users` and its `access.callers`, set here or in the AIsolate UI, and its machine clients, `access.clients`, set here or through the API. |
-| An airlock created in the AIsolate UI | It has a name, a description, its users, callers, LLMs and data sources, and no `llm`, `prompt` or code, so it runs nothing. The deploy fills its code, stages, prompt, `llm`, `llms` and data sources from the project. |
+| `spec.access` | Who may ask, beside the space's `access.roles`: the airlock's own `access.roles` and its `access.callers`, set here or in the AIsolate UI, and its machine clients, `access.clients`, set here or through the API. |
+| An airlock created in the AIsolate UI | It has a name, a description, its roles, callers, LLMs and data sources, and no `llm`, `prompt` or code, so it runs nothing. The deploy fills its code, stages, prompt, `llm`, `llms` and data sources from the project. |
 | Credentials | Each data source gives `username` and `password`, usually as variables, where the stored document has `secretRef`. The backend turns them into a Secret and sets its name. A `secretRef` in a project file is refused. |
 | `spec.jar` | Set by the deploy from the built project; one in a project file is refused. `spec.jar.language` is `python` for a Python project's zip, which runs on the Python airlock and tool server images; absent (or `java`) for a jar. |
 | Variables | `${NAME}`, or `${NAME:-fallback}` when NAME may stay unset, anywhere in the file. The CLI resolves them from the shell, then from `.env`, and refuses an unset one by name. There is no escape: a prompt cannot hold a literal `${amount}`, which reads as the variable `amount`. |
@@ -179,8 +179,8 @@ A rule set lives in the airlock's code at `aisolate/rules/<entity>.json`, copied
 ```
 
 A user the airlock admits whose roles match no rule gets zero rows from the tools, never a 403: the space's
-and the airlock's users and the airlock's callers admit (a machine client, its `access.clients`), and the roles
-only select the rules. The rules filter
+and the airlock's roles and the airlock's callers admit (a machine client, its `access.clients`), and the roles
+also select the rules. The rules filter
 only what the tools return; what a context preparator passes on is its own code's choice. Who may ask an airlock
 is the gate for everything it serves, so list on the space only the people who may see all of what every
 airlock's context preparators read, and on an airlock only those who may see all of its.
@@ -230,9 +230,9 @@ it loaded, so an exchange that spans a rollout may end in "I don't know".
 The loader refuses a set of documents and names the file, the document and the field for:
 
 - an unknown field;
-- a `Space` that lists a blank or repeated user (case ignored); a space may list none;
+- a `Space` that lists a blank, spaced or repeated role, or `*`; a space may list none;
 - an `Airlock` without `spec.space`, or whose `spec.space` is no `Space`; without `access.callers`, at least
-  one; that lists a blank or repeated user (case ignored); its own users may be none, and need not be the
+  one; that lists a blank, spaced or repeated role, or `*`; its own roles may be none, and need not be the
   space's; whose `access.clients` lists a blank, repeated or spaced client id, or `*`; it may list none; whose
   `llm` resolves to nothing (`hr: llm granite is no model of it, of Space acme or of AIsolate`); one without
   `llm` or `prompt` is valid and runs nothing;
@@ -244,7 +244,7 @@ The loader refuses a set of documents and names the file, the document and the f
   document lists twice;
 - an airlock that lists tools or handlers but has no `spec.jar`; with one: no `jar.digest`, or a tool in
   `tools` that is not one of `jar.tools`;
-- a blank or repeated name in a list of users, callers, machine clients, tools or handlers;
+- a blank or repeated name in a list of roles, callers, machine clients, tools or handlers;
 - a URL that carries a credential (a user or password in `user[:password]@`, or a `user`, `username`,
   `password`, `token`, `key` or similar parameter), or that names no host.
 

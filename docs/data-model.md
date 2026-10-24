@@ -31,14 +31,14 @@ classDiagram
     class Space {
         name: the space's id
         displayName, description
-        access.users[] e-mails
+        access.roles[]
         llms[], dataSources[]
     }
     class Airlock {
         name: the airlock's id
         space
         displayName, description
-        access.users[], access.callers[], access.clients[]
+        access.roles[], access.callers[], access.clients[]
         llm: the main LLM's id
         prompt, tools[]
         preLLM, postLLM: the handlers by stage
@@ -73,7 +73,7 @@ erDiagram
         text id PK "slug, also the Kubernetes name"
         text name
         text description
-        jsonb definition "access.users with roles, llms, dataSources"
+        jsonb definition "developers, roles, llms, dataSources"
         text created_by
         timestamptz created_at
         timestamptz updated_at
@@ -83,7 +83,7 @@ erDiagram
         text space_id FK
         text name
         text description
-        jsonb definition "users, callers, clients, llms, dataSources, llm, prompt, tools, stages"
+        jsonb definition "roles, callers, clients, llms, dataSources, llm, prompt, tools, stages"
         int revision "counts the saves"
         text jar_digest
         bigint jar_size
@@ -150,7 +150,7 @@ erDiagram
 ```
 
 - **`spaces`, `airlocks`.** The form the UI edits, as the row's columns and one `definition` JSON. A space's
-  definition lists its users with their role (Developer or User); an airlock's lists its own users, callers and
+  definition lists its developers (e-mails) and its roles; an airlock's lists its own roles, callers and
   machine clients, its LLMs and data sources, and what runs, which a deploy brings. The ids are URL slugs
   (`^[a-z]([a-z0-9-]{0,39}[a-z0-9])$`) and name Kubernetes objects too, so an airlock's id is unique across spaces
   and `<space>-<airlock>` may collide with no other pair ([Names, ids and revision](documents.md#names-ids-and-revision)).
@@ -213,7 +213,7 @@ controller does the rest:
 |---|---|---|
 | a valid `Airlock` with `llm` and `prompt` | the airlock pod's Deployment, Service, Ingress rule and NetworkPolicy; the ConfigMap with the `Global`, its `Space` and itself; the audit token Secret | an `Airlock` without `llm` or `prompt` renders no pod |
 | … that has code and lists a tool | the MCP server's Deployment, Service and NetworkPolicy; the code token Secret, mounted into both pods | an airlock with handlers and no tool has an airlock pod only, which still fetches the code |
-| every valid `Space` | one entry in the discovery ConfigMap: each airlock's id, name, description, callers, tools, and its users as the SHA-256 of the lower-cased e-mail | no prompt, model, data source or Secret name; the discovery pods mount this list alone |
+| every valid `Space` | one entry in the discovery ConfigMap: each airlock's id, name, description, callers, tools, and its roles, by name | no prompt, model, data source or Secret name; the discovery pods mount this list alone |
 | each resource | its status | `phase`, `conditions`, `problems`, `readyReplicas`, `revision` |
 
 A pod receives the resolved catalog as environment, `AISOLATE_LLM_<i>_*` and `AISOLATE_DATASOURCE_<i>_*` sorted
@@ -229,7 +229,7 @@ verify checks they still agree with it.
 | Field | Holds |
 |---|---|
 | `ts`, `space`, `airlock`, `revision`, `trace_id` | when, which airlock at which revision, the trace it belongs to |
-| `event`, `outcome`, `reason` | `exchange` or `refusal`; `answered`, `dont_know`, `refused` or `error`; a refusal's `user` or `client` |
+| `event`, `outcome`, `reason` | `exchange` or `refusal`; `answered`, `dont_know`, `refused` or `error`; a refusal's `role` or `client` |
 | `user_email`, `client` | who asked: the e-mail, or for a machine client its client id and no e-mail |
 | `question`, `answer` | the exchange's text, here and nowhere else in AIsolate |
 | `figures_sourced`, `figures_computed`, `figures_unsourced`, `figures_mismatch` | the answer's figures by provenance ([Verification](verification.md)) |

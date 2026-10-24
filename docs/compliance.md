@@ -62,8 +62,8 @@ rows say which records and controls it gives them.
 
 | Function | What holds | Left open |
 |---|---|---|
-| Govern | Two realm roles (`aisolate-admin`, `aisolate-auditor`) and per-space Developer and User roles; the three documents are the interface, so a space, an airlock and its rules live in a repository and change by review; a disclosure channel in `SECURITY.md` | The policies that decide who may ask what are the organisation's |
-| Map | Each airlock names its users, its callers, its tools, its data sources and its model by id; a rule set carries a `classification` | The classification is recorded, not enforced; a data-classification label on a data source does not exist |
+| Govern | Two realm roles (`aisolate-admin`, `aisolate-auditor`) and per-space developers, with the roles an airlock admits named in its document; the three documents are the interface, so a space, an airlock and its rules live in a repository and change by review; a disclosure channel in `SECURITY.md` | The policies that decide who may ask what are the organisation's |
+| Map | Each airlock names its roles, its callers, its tools, its data sources and its model by id; a rule set carries a `classification` | The classification is recorded, not enforced; a data-classification label on a data source does not exist |
 | Measure | The verification labels per figure and their counts on every audit line; the golden set; the conformance suite both runtimes pass; metrics per space | No measure of the narrative's accuracy; no benchmark of the model itself, which is the organisation's |
 | Manage | Deny is silent and fail-closed everywhere: an invalid airlock runs nothing, a pod that cannot keep its audit line answers no question, an unknown tool is a stub; the residual risks are listed with what is planned | The items marked planned in [Residual risks](security.md#residual-risks) |
 

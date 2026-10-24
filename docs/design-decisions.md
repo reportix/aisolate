@@ -70,10 +70,11 @@ the MCP server on every call, and the MCP server validates it again, independent
 for the UI and the CLI. Nowhere may `org.keycloak` be imported.
 
 **Consequence.** A compromised airlock pod cannot invent a user; it can only replay the tokens it holds for their
-remaining minutes. People live in the identity provider alone: the backend can assign one to a space but never
-create, invite or delete one.
+remaining minutes. People live in the identity provider alone: AIsolate never creates, invites or deletes one.
 
 ## Who may ask is a list of e-mails; roles only select rules
+
+**Superseded 2026-10-24** by [Who may ask is a set of roles](#who-may-ask-is-a-set-of-roles).
 
 **Question.** What admits a person to an airlock, and what decides what they see once in?
 
@@ -84,6 +85,19 @@ which rules apply.
 
 **Consequence.** A new role in the identity provider changes no one's reach; a developer sees exactly who may
 ask by reading two lists. A user the airlock admits whose roles match no rule gets zero rows and never an error.
+
+## Who may ask is a set of roles
+
+**Question.** Who keeps the list of askers: AIsolate or the organisation's identity provider?
+
+**Decision.** An airlock admits a token that holds one of the roles its space or it lists (exact, case-sensitive,
+`*` is no role) and whose `azp` the airlock lists; a machine client is admitted by `access.clients` alone. The
+roles come from the identity provider, in the token's roles claim. The e-mail still feeds row filters and the audit
+line. A space's developers are e-mails typed in the UI: they edit, and ask like anyone, by a role.
+
+**Consequence.** Who holds a role is the identity provider's to change, with no AIsolate list to keep in step and no
+directory to search. An airlock with no roles admits nobody, so an upgrade fails closed until an admin sets them.
+A role is a name both sides must agree on: a typo admits no one rather than the wrong one.
 
 ## Context is the developer's code, pinned by digest
 

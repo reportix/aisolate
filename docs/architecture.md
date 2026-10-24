@@ -75,7 +75,7 @@ keeps them apart:
 |---|---|---|
 | `application` | The HTTP controllers and the MCP endpoint: parse the request, call the domain, shape the response | `domain` |
 | `domain` | The logic: the exchange, the gates, the rules, the SQL, the audit line, the services and repositories | the SDK and `libs/config`; nothing of Spring Web or Spring Security |
-| `infrastructure` | The adapters: configuration, the model and MCP clients, the cluster client, the directory, the data sources, the error handler | anything |
+| `infrastructure` | The adapters: configuration, the model and MCP clients, the cluster client, the data sources, the error handler | anything |
 
 The rules the tests pin are the security ones: the airlock's `chat` package cannot import Spring Security or
 `libs/identity`, so the agent loop never holds a token, and only the MCP client reads a token's value; nowhere may
@@ -231,8 +231,7 @@ there.
 The backend's side: one controller per resource kind (`SpaceController`, `AirlockController`,
 `GlobalController`), the deploy (`DeployController` → `DeployService`, `JarInspector`, `ManifestReader`,
 `DocumentForms`), the code fetch (`CodeController`), the audit (`AuditIngestController` on the ingest port;
-`AuditController`, `AuditService`, `AuditExport`, `AuditRetention`), the directory (`DirectoryController`,
-`KeycloakDirectory`), Monitoring (`TraceController`, `MetricsController`, `JaegerClient`, `PrometheusClient`),
+`AuditController`, `AuditService`, `AuditExport`, `AuditRetention`), Monitoring (`TraceController`, `MetricsController`, `JaegerClient`, `PrometheusClient`),
 and `ClusterSyncService`, which turns the rows into documents (`Documents`) and applies them. The controller's:
 `AirlockReconciler`, `SpaceReconciler`, `GlobalReconciler`, the validation in `Release`, the rendering in
 `Renderer`, the CRD generation in `CrdGeneration`. The CLI's: `AIsolateCli` with one class per command,

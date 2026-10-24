@@ -33,7 +33,7 @@ verifier. The templates ship them now, and an airlock that lists them has a row 
 company-sales runs `CustomerVerifier`, the auditor's `PeriodVerifier`, the hospital's `LatestReadingVerifier`,
 `FormularyVerifier` and `PatientVerifier`; the contracts airlock of company-hr runs none.
 
-Elena was refused on Sales: she is not one of its users, so the airlock called no tool for her.
+Elena was refused on Sales: she holds none of its roles, so the airlock called no tool for her.
 
 ## The one check
 
@@ -138,6 +138,6 @@ Every fact comes from an audit event, and nothing else: no row, no prompt, no do
 question and answer as asked and given, so a hospital's holds what its doctors asked about patients and what they
 were told: it stays inside the organisation, read by its own auditors, as the audit trail does.
 
-The examples hold no real person: the users are the demos' invented cast, at the demos' own fictional domains
+The examples hold no real person: the people are the demos' invented cast, at the demos' own fictional domains
 (`acme.example`, `halvardfinch.example`, `aldermoor.example`), the companies, staff and patients are invented,
 and the LEIs are invented too, with valid check digits.

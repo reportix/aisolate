@@ -1,5 +1,5 @@
 {
-  "description" : "An exchange event's outcome and reason (ExchangeAudit.toEvent with Answers.isDontKnow): error when the exchange failed or the model never answered (answer null), with reason llm_unavailable | no_model_endpoint | deadline | internal; else dont_know when the answer, after leading whitespace and the marks * _ > \" ' ` “ ‘, is blank or begins with \"I don't know\" (ASCII case-insensitive, ' or ’) not followed by an ASCII letter or digit; else answered, reason null. A refusal is outcome refused with reason user | client (cases/admission).",
+  "description" : "An exchange event's outcome and reason (ExchangeAudit.toEvent with Answers.isDontKnow): error when the exchange failed or the model never answered (answer null), with reason llm_unavailable | no_model_endpoint | deadline | internal; else dont_know when the answer, after leading whitespace and the marks * _ > \" ' ` “ ‘, is blank or begins with \"I don't know\" (ASCII case-insensitive, ' or ’) not followed by an ASCII letter or digit; else answered, reason null. A refusal is outcome refused with reason role | client (cases/admission).",
   "cases" : [ {
     "id" : "plain",
     "answer" : "Your gross salary is 78,000 EUR.",

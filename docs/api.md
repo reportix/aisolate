@@ -24,7 +24,7 @@ A chat, agent or application connects with nothing configured but AIsolate's URL
 
 Nobody types a username or password into the client, and nobody configures the identity provider in it. An
 airlock that admits any registered client lists `*` in `access.callers`; identity still comes from the token,
-the token's e-mail must be one of the space's users or of the airlock's own, and the roles select the rules that
+the token must hold a role the space or the airlock lists, and the roles also select the rules that
 bound the data. A machine client that asks as itself has no e-mail: its token is admitted when its `azp` is one
 of the airlock's `access.clients`.
 
@@ -35,8 +35,8 @@ from your workflow](integrate.md).
 
 | Method and path | Served by | Caller | Purpose |
 |---|---|---|---|
-| `POST /spaces/{space}/airlocks/{airlock}/chat` | that airlock's pod | a user its space or the airlock itself lists, from a caller the airlock lists; or a machine client the airlock lists | The airlock's endpoint, below |
-| `GET /airlocks` | the discovery pods, through the release Service | any valid token | The airlocks of every space that admit this user (as a user of their space or their own) and this client, or this machine client, each with its space's id, its description, the endpoint it may post to and its tools (none without code), sorted by name, digit runs as numbers: `{id, space, name, description, endpoint, tools}` |
+| `POST /spaces/{space}/airlocks/{airlock}/chat` | that airlock's pod | a user holding a role its space or the airlock itself lists, from a caller the airlock lists; or a machine client the airlock lists | The airlock's endpoint, below |
+| `GET /airlocks` | the discovery pods, through the release Service | any valid token | The airlocks of every space that admit this user (by a role of their space or their own) and this client, or this machine client, each with its space's id, its description, the endpoint it may post to and its tools (none without code), sorted by name, digit runs as numbers: `{id, space, name, description, endpoint, tools}` |
 | `GET /.well-known/oauth-protected-resource` (no prefix) | the discovery pods and every airlock pod; the backend too | anyone | RFC 9728 metadata naming the identity provider and the `aisolate` scope |
 | `GET /spaces` | backend | any valid token | The spaces the caller may open: every space for the admin, those they develop for a developer, none for anyone else (200, `[]`) |
 | `GET /llms`, `GET /llms/{id}` | backend | admin, developer of any space | The global LLMs, every space's unless a nearer level defines the same id: `[{id, provider, url, model, secret_ref, updated_at}]`, sorted by id, `secret_ref` naming the Secret of an OpenAI-compatible one's API key, null without; one, or 404 `no model named granite` |
@@ -44,14 +44,12 @@ from your workflow](integrate.md).
 | `GET /data-sources`, `GET /data-sources/{id}` | backend | admin, developer of any space | The global data sources: `[{id, url, secret_ref, updated_at}]`, sorted by id; one, or 404 |
 | `POST /data-sources`, `PUT /data-sources/{id}`, `DELETE /data-sources/{id}` | backend | admin | Rows `{id, url, username, password}` as a space's data sources, the Secret `aisolate-ds-<id>-<6 chars>`; 409 `id: a data source hr already exists`; a delete is 400 when an airlock's code reads it and nothing nearer defines it |
 | `POST /credentials/{secretRef}/reveal` | backend | admin, signed in within five minutes | A stored API key or data source login in clear, `{values: {apiKey}}` or `{values: {username, password}}`, `Cache-Control: no-store`; every call is recorded ([below](#post-v1credentialssecretrefreveal)) |
-| `GET /spaces/{space}` | backend | admin, developer of the space | The space with its `members: [{email, role}]` (`role` `developer` or `user`), its own `llms` and `data_sources`, and `caller_role`, what the caller may do there: `admin` or `developer` |
-| `POST /spaces`, `PUT /spaces/{space}` | backend | admin | Create a space, with no user yet if need be; edit its name, description, users and their roles, LLMs and data sources |
+| `GET /spaces/{space}` | backend | admin, developer of the space | The space with its `developers` (e-mails) and `roles` (the roles that may ask every airlock of it), its own `llms` and `data_sources`, and `caller_role`, what the caller may do there: `admin` or `developer` |
+| `POST /spaces`, `PUT /spaces/{space}` | backend | admin | Create a space, with no developer yet if need be; edit its name, description, developers, roles, LLMs and data sources |
 | `DELETE /spaces` | backend | admin | Every space with its airlocks and their code, the rows in one transaction; then, with a cluster, their resources and Secrets, waiting up to 45 s for the pods to go. No confirmation and no undo. Used by `aisolate-reset`; create a space and an airlock again before the next deploy |
 | `POST /spaces/{space}/deploy` | backend | admin, developer of the space | The CLI's one call, below |
-| `GET /spaces/{space}/users`, `GET /spaces/{space}/airlocks/{airlock}/users` | backend | admin, developer of the space | The users with who they are: `{directory, users: [{email, name, username, in_directory, role}], inherited: […]}`; a space's rows carry the user's `role`, an airlock's `null`; an airlock's `inherited` are its space's users it does not list itself. `in_directory` is false once the e-mail no longer resolves, `null` with `directory: false` (none configured) |
-| `GET /directory/people?q=` | backend | admin, developer of any space | At most 20 people of the company's identity provider whose name, username or e-mail holds `q`: `[{name, username, email}]`, nothing more. Read-only: AIsolate never creates, invites or deletes a person. 404 `no directory is connected` without one; 502 `the directory did not answer` when it fails |
-| `GET /spaces/{space}/airlocks`, `GET /spaces/{space}/airlocks/{airlock}` | backend | admin, developer of the space | The airlocks, by name, digit runs as numbers; each with its users, callers, `clients` (its machine clients), endpoint, revision, form (`llm`, `prompt`, `context_preparators`, `memory_handlers`, `tools`, `verifiers`, `llms`, `data_sources`), its `main_llm: {id, provider, url, model, from}` (`from` `airlock`, `space` or `global`; `null` when `llm` resolves to nothing) and code: `jar: {digest, size, tools, handlers, rules}`, `null` without code |
-| `POST /spaces/{space}/airlocks`, `PUT /spaces/{space}/airlocks/{airlock}` | backend | admin, developer of the space | Create an airlock with its name, description, users, callers, clients, LLMs and data sources (the id is generated, or pinned with `id`); edit them in place, which bumps its revision, one more on every save or deploy: a counter, not the release [revision](concepts.md#vocabulary) in `x-aisolate-revision`, twelve hex digits of the SHA-256 of its documents. An airlock made here has no code, so it lists no tools and no handlers until a deploy brings them, with its `llm` and `prompt`; a save keeps what the last deploy brought |
+| `GET /spaces/{space}/airlocks`, `GET /spaces/{space}/airlocks/{airlock}` | backend | admin, developer of the space | The airlocks, by name, digit runs as numbers; each with its roles, callers, `clients` (its machine clients), endpoint, revision, form (`llm`, `prompt`, `context_preparators`, `memory_handlers`, `tools`, `verifiers`, `llms`, `data_sources`), its `main_llm: {id, provider, url, model, from}` (`from` `airlock`, `space` or `global`; `null` when `llm` resolves to nothing) and code: `jar: {digest, size, tools, handlers, rules}`, `null` without code |
+| `POST /spaces/{space}/airlocks`, `PUT /spaces/{space}/airlocks/{airlock}` | backend | admin, developer of the space | Create an airlock with its name, description, roles, callers, clients, LLMs and data sources (the id is generated, or pinned with `id`); edit them in place, which bumps its revision, one more on every save or deploy: a counter, not the release [revision](concepts.md#vocabulary) in `x-aisolate-revision`, twelve hex digits of the SHA-256 of its documents. An airlock made here has no code, so it lists no tools and no handlers until a deploy brings them, with its `llm` and `prompt`; a save keeps what the last deploy brought |
 | `GET /audit/events`, `GET /audit/events/{id}`, `GET /audit/events/{id}/export`, `GET /audit/export`, `GET /audit/verify`, `GET /audit/data-error` | backend | admin, auditor; a developer for the spaces they develop | The audit trail: the exchanges and refusals, newest first; one with all it recorded; all a search finds, or one event, as a PDF, JSON or XBRL file; whether an airlock's chain is intact; the data source an airlock could not read ([The audit endpoints](#the-audit-endpoints)) |
 | `GET /monitoring` | backend | admin, developer of any space | Which of Monitoring's views the install has: `{tracing, metrics}`, each `true` when its store is configured; the AIsolate UI shows the rail item and a tab per view |
 | `GET /metrics?space=&airlock=&period=` | backend, with a metrics store configured (404 otherwise) | admin; a developer for the spaces they develop | Monitoring's charts ([The metrics endpoint](#the-metrics-endpoint)) |
@@ -64,20 +62,21 @@ A space's and an airlock's `name` is its label, optional: a blank or missing one
 stored as the id, so every list, header and discovery answer shows the id instead.
 
 A caller who is neither the admin nor a developer of the space gets 403 with `detail` naming it: `You are not a
-developer of space acme: ask its admin to add you as Developer.`; the other refusals' 403 says `forbidden`. A
-space's users are the admin's: a space form's `members` is `[{"email": "…", "role": "developer"|"user"}]`, a role
-other than those two is 400 (`members: eric@example.com needs the role developer or user`).
+developer of space acme: ask its admin to add you as a developer.`; the other refusals' 403 says `forbidden`. A
+space's developers and roles are the admin's: a space form's `developers` is a list of e-mails (one without an `@`,
+blank or repeated, case ignored, is 400: `developers: eric is no e-mail`) and its `roles` a list of role names. The
+identity provider holds who has a role; there is no user list and no directory to search.
 
-Who may ask an airlock is its space's users, developers included, and its own users (see [Users](concepts.md#vocabulary)). A create form that
-sends no `users` starts the airlock with no users of its own, and one that sends no `callers` with `*`. An
-airlock's own users need not be the space's, and either list may be empty: an airlock nobody may ask is allowed.
-A `PUT` that leaves out `users` clears the airlock's own users; `users` may be empty, an empty `callers` is 400 (`callers: must name at least
+Who may ask an airlock is the holders of its space's roles and of its own (see [Roles](concepts.md#vocabulary)); a developer asks like anyone, by a role. A create form that
+sends no `roles` starts the airlock with no roles of its own, and one that sends no `callers` with `*`. An
+airlock's own roles need not be the space's, and either list may be empty: an airlock nobody may ask is allowed.
+A role is a non-blank name with no whitespace, listed once; `*` is 400 (`roles: * is no role: list each role; only callers take * for any`).
+A `PUT` that leaves out `roles` clears the airlock's own roles; `roles` may be empty, an empty `callers` is 400 (`callers: must name at least
 one calling client`). `clients`, the machine clients admitted on a token without an e-mail, may be empty and
 are client ids matched exactly: a blank, repeated or spaced one, or `*`, is 400 (`clients: * is no wildcard: list
 each client id`). A `PUT` that leaves out `clients` clears them too; the AIsolate UI has no field for them and
-sends them back unchanged on every save. With a directory configured, a save that adds an e-mail nobody signs in with is 400
-(`users: ghost@example.com is not in the directory`); users kept from before pass, even once they left it.
-Admission never asks the directory: the lists are what it reads. Removing a user from a space never touches its airlocks. An airlock is created with a name and a description alone;
+sends them back unchanged on every save.
+Removing a role from a space never touches its airlocks. An airlock is created with a name and a description alone;
 its `llm` and `prompt` come with `aisolate deploy`, and until both are there it runs nothing. An airlock names the LLM that
 answers by id (`llm`), resolved, once set, at every create, save and deploy: `llm: no model named granite in this airlock's space or globally`.
 
@@ -596,8 +595,8 @@ Then the file. It refuses (400):
   `aisolate.yaml: a project is one Airlock; the Space is defined in the AIsolate UI`;
 - an `Airlock` with a space, `aisolate.yaml: Airlock hr: spec.space is AISOLATE_SPACE's to set; leave
   it out`; then, in the loader's words, an unknown field or a value it refuses (`aisolate.yaml: Airlock hr:
-  …`), and, each prefixed `Airlock <name>: `, what the airlock form refuses, such as `users: x@example.com is
-  not in the directory`;
+  …`), and, each prefixed `Airlock <name>: `, what the airlock form refuses, such as `roles: * is no role: list each
+  role; only callers take * for any`;
 - a data source with a `secretRef` (`… spec.dataSources[i].secretRef is AIsolate's to set; give username and
   password`), and a `spec.jar` (`… spec.jar is the deploy's to set`);
 - a model with a `secretRef` (`… spec.llms[i].secretRef is AIsolate's to set; give the model's API key in the

@@ -209,7 +209,7 @@ metadata: {name: acme}
 spec:
   displayName: Acme
   description: …
-  access: {users: [elena@acme.example]}          # e-mails, case ignored
+  access: {roles: [ceo]}                         # the identity provider's role names, exact
   llms: [{id: granite, provider: ollama, url: http://…, model: "granite4.1:8b"}]   # optional
   dataSources: [{id: acme_hr, url: jdbc:postgresql://…, secretRef: acme-acme-hr}]
 ---
@@ -219,7 +219,7 @@ spec:
   space: acme
   displayName: HR
   description: …
-  access: {users: [...], callers: [aisolate-chat], clients: [etl]}   # callers = azp values, "*" any; clients = machine azp values, exact, absent when none
+  access: {roles: [...], callers: [aisolate-chat], clients: [etl]}   # callers = azp values, "*" any; clients = machine azp values, exact, absent when none
   preLLM:
     contextPreparator: {handlers: [PolicyContext]}
     conversationMemory: {handlers: []}
@@ -234,7 +234,7 @@ spec:
 ```
 
 Resolution (`Configuration`):
-- `accessOf(airlock)`: users = space users ++ airlock users, distinct, list order; callers and clients = the
+- `accessOf(airlock)`: roles = space roles ++ airlock roles, distinct, list order; callers and clients = the
   airlock's.
 - `llmsOf(airlock)`: the Global's, space's, then airlock's `llms` by id, a nearer same id replacing
   the farther; sorted by id. `mainLlmOf(airlock)`: its entry with the id `spec.llm`.
@@ -280,12 +280,11 @@ Bearer from `Authorization: Bearer <jwt>` only.
 - `attributes`: `sub`, `email` (when present), and the identity join's value under the plugin's
   `identityAttribute` (tool server only, when the join found a row).
 
-Admission (`Principal.admissionFailure(users, callers, clients)`), the same in both pods: admitted when the e-mail
+Admission (`Principal.admissionFailure(roles, callers, clients)`), the same in both pods: admitted when the e-mail
 is null, `azp` non-null and `clients` contains `azp` (exact, case-sensitive, `*` no wildcard; callers not
-consulted); else `USER` when the e-mail is null or
-equals no listed user ignoring case (Java `String.equalsIgnoreCase`; Python `a.lower() == b.lower()`,
-identical for the ASCII e-mails `Names.userProblems` admits); else `CLIENT` unless `azp` is non-null and callers contain `*` or
-`azp`; else admitted. Roles play no part in admission.
+consulted); else `ROLE` when no token role equals a listed role (exact, case-sensitive, `*` no wildcard; no e-mail is
+needed); else `CLIENT` unless `azp` is non-null and callers contain `*` or
+`azp`; else admitted.
 
 401 from the airlock (`SecurityConfig.apiSecurity`): status 401, `WWW-Authenticate: Bearer
 resource_metadata="<AISOLATE_PUBLIC_URL>/.well-known/oauth-protected-resource"`, `Content-Type:
@@ -322,7 +321,7 @@ origin patterns, methods GET POST PUT OPTIONS, headers Authorization Content-Typ
    `aisolate.revision`, `aisolate.tool` (each only when non-empty).
 2. Policy = `PolicySource.findPolicy(airlock, revision)`: empty when any pin is missing, the revision is
    not this pod's, or no such airlock (`domain/PolicySource`). No policy → `Result.empty("", "")`.
-3. Gate 2 again: `Principal.of(claims).admissionFailure(policy.access.users, policy.access.callers,
+3. Gate 2 again: `Principal.of(claims).admissionFailure(policy.access.roles, policy.access.callers,
    policy.access.clients)` must be empty
    **and** `tool ∈ policy.tools` (the airlock's `spec.tools`). Otherwise `Result.empty("", "<revision>")`.
    No DB work happens before this point.
@@ -622,15 +621,15 @@ Then, per request (`AirlockAdmissionService.admit`, `libs/identity/.../Principal
    **404** `unknown airlock` (no audit line).
 3. Principal from claims: `sub` (required, non-blank string; Java throws and answers 500, Python answers 401), `email` (string or
    null), `azp` (string or null), roles.
-4. `admissionFailure(users, callers, clients)`:
+4. `admissionFailure(roles, callers, clients)`:
    - admitted if `email` is null, `azp` is non-null and `clients` (the Airlock's `access.clients`) contains
      `azp` (exact, case-sensitive; `*` is no wildcard); `callers` are not consulted.
-   - else `USER` if `email` is null or no entry of `users` equals it **case-insensitively** (`equalsIgnoreCase`).
-     `users` = the Space's member e-mails ∪ the Airlock's own users, as the mounted documents list them
+   - else `ROLE` if no token role equals an entry of `roles` (exact, case-sensitive; `*` is no wildcard; no `email`
+     needed). `roles` = the Space's roles ∪ the Airlock's own, as the mounted documents list them
      (`Configuration.accessOf`).
    - else `CLIENT` if `azp` is null, or `callers` contains neither `"*"` nor `azp` (exact, case-sensitive).
-   - user is checked first.
-5. On failure: span tags (§8), one **refusal** audit line (§7, `reason` = `user` | `client`), then **403**
+   - role is checked first.
+5. On failure: span tags (§8), one **refusal** audit line (§7, `reason` = `role` | `client`), then **403**
    `forbidden`.
 
 The refusal line's `question` is the request's message; `duration_ms` is from step 2 to the refusal.
@@ -834,7 +833,7 @@ One JSON object, snake_case, keys in this order, **all keys always present** (nu
 | `question` | string | message as sent | same |
 | `answer` | string\|null | the `answer_chunk` content; null if none | null |
 | `outcome` | `answered`\|`dont_know`\|`refused`\|`error` | `error` if an error event or no answer; else `dont_know` by `Answers.isDontKnow`; else `answered` | `refused` |
-| `reason` | string\|null | for `error`: `llm_unavailable`\|`no_model_endpoint`\|`deadline`\|`internal` (first error wins, `deadline` overrides) | `user`\|`client` |
+| `reason` | string\|null | for `error`: `llm_unavailable`\|`no_model_endpoint`\|`deadline`\|`internal` (first error wins, `deadline` overrides) | `role`\|`client` |
 | `tools` | array | per `tool_call` in order: `{name, args, data_source, rows, rule_version, sql_hash, rows_hash, error}`; until its evidence arrives all but `name` are null (a failed call keeps `args: null`; its `tool_error` sets `error` and `data_source`) | `[]` |
 | `evidence` | string[] | evidence ids **cited**: ids of sourced/computed figures' `source`, `computed.of[]`, `computed.by`, sourced tables, quoted quotes, plus any `\bev-\d+\b` in the answer text; ordered as emitted | `[]` |
 | `verifiers` | array | `[{name, verdict}]` | `[]` |
@@ -893,7 +892,7 @@ Spans (name — attributes; every AIsolate span carries `aisolate.space`, `aisol
 |---|---|---|
 | HTTP server span (`http post /v1/spaces/{spaceId}/airlocks/{airlockId}/chat`) | root | route template only, never the concrete path's query |
 | `exchange <space>/<airlock>` | HTTP | `aisolate.space`, `aisolate.airlock` (from the path), then `aisolate.revision`, `aisolate.client` (azp), `aisolate.outcome` (`answered`\|`dont_know`\|`refused`\|`error`), `aisolate.figures.sourced`, `.computed`, `.unsourced`, `.mismatch` (ints, when answered) |
-| `admission` | exchange | `aisolate.admitted` `true`/`false`, `aisolate.reason` `user`/`client` on refusal; status ERROR on refusal (exchange too) |
+| `admission` | exchange | `aisolate.admitted` `true`/`false`, `aisolate.reason` `role`/`client` on refusal; status ERROR on refusal (exchange too) |
 | `<handler description or name>` | exchange | `aisolate.handler` (name), `aisolate.stage` `pre_llm`/`post_llm`, `aisolate.passages` (int, pre_llm), `aisolate.data_source` (if it opened one), `aisolate.verdict` (verifiers) |
 | model call spans (`chat <model>`, Spring AI's `spring_ai chat_client`/`tool_calling`) | exchange | GenAI semconv: `gen_ai.operation.name`, `gen_ai.system`, `gen_ai.request.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`; `aisolate.llm` (the LLM id). A handler's `llm(id).chat` makes one too. Python: one span `chat <model>` per model request (exact Spring AI nesting not required) |
 | `embedding` | handler | `gen_ai.usage.input_tokens`, `gen_ai.request.model`, `aisolate.llm` |
@@ -1064,9 +1063,9 @@ Found while writing the conformance cases (`conformance/README.md` pins each):
   for a denied user; a denied user's filter on a hidden column is the silent empty result.
 - One matched rule whose row filter needs an attribute the user lacks denies the whole query, even beside `true`.
 - Text values are Java's `String.valueOf` (`true`, not `True`); `limit` truncated then clamped 1..100, a string refused.
-- Callers case-sensitive, users case-insensitive and untrimmed; `*` only for callers; no `azp` → `client`.
+- Callers and roles case-sensitive and untrimmed; `*` only for callers; no `azp` → `client`.
   Machine clients case-sensitive and exact; only a token without `email` is matched against them, and a miss
-  falls through to the users (→ `user`).
+  falls through to the roles (→ `role`).
 - Audit `ts` prints no fraction when the millisecond is 0 (`Instant.toString`); all 20 keys, fixed order.
   `rows_hash` escapes control characters as upper-case `\u00XX` (Jackson), unlike `json.dumps`.
 - JWT `exp`/`nbf` with 60 s leeway (PyJWT's default is 0).

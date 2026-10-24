@@ -127,7 +127,7 @@ backend also answers `/readyz` on its API port, which the AIsolate UI probes.
 | Series | Labels | Counts |
 |---|---|---|
 | `aisolate_exchanges_total` | `airlock`, `outcome` | Requests to an airlock: `answered`, `dont_know`, `refused` or `error`, as the audit line says |
-| `aisolate_refusals_total` | `airlock`, `reason` | Refusals with a 403: `user` or `client` |
+| `aisolate_refusals_total` | `airlock`, `reason` | Refusals with a 403: `role` or `client` |
 | `aisolate_tool_calls_total` | `airlock`, `tool` | Tool calls the model made |
 | `aisolate_exchange_duration_seconds` | `airlock` | Exchanges from admission to the last event, a histogram (`_bucket`) |
 | `gen_ai_client_token_usage_total` | `airlock`, `gen_ai_token_type`, Spring AI's model labels | Tokens the model calls used: `input`, `output`, `total` |

@@ -15,22 +15,23 @@ refusal reads "I don't know".
 
 | Layer | Decides | Written by | Held by |
 |---|---|---|---|
-| Identity | who may ask an airlock at all | the identity provider's admin (the accounts and their roles); the space's users and the airlock's own `access.users` (e-mails); the airlock's `access.callers` (OAuth clients) and `access.clients` (machine clients) | the airlock pod, and its tool server again |
+| Identity | who may ask an airlock at all | the identity provider's admin (the accounts and their roles); the space's and the airlock's `access.roles`; the airlock's `access.callers` (OAuth clients) and `access.clients` (machine clients) | the airlock pod, and its tool server again |
 | Rules | which rows and columns of an entity a user reads, and which aggregates | the developer, as rule sets in the airlock's code | the MCP server, compiled into parameterised SQL |
 | Code | which tools, context preparators, memory handlers and verifiers exist | the developer, in the airlock's code and its `aisolate.yaml` | the airlock's two pods, which load only its code, pinned by digest |
 | Network | what a pod can reach | the admin (`platform.egress.hosts`); the controller, from the documents and that map | one default-deny NetworkPolicy per pod |
 
 Identity decides which airlocks a user sees, the rules decide which rows, the code decides which tools run. A
-user's roles never admit anyone: they only select the rules.
+user's roles admit them to an airlock and select the rules; the airlock lists the roles it admits.
 
 ## Vocabulary
 
 | Term | Meaning |
 |---|---|
-| Space | One team's or product's container: its users, each a Developer or a User, who may all ask every airlock of it, and the LLMs and data sources its airlocks share beside the global ones. The admin creates it and adds its users on its Users page; the list may be empty. One `Space` resource, which lists every user's e-mail and no role; it owns no pod. |
-| Airlock | A named assistant in a space; its id and its space's name its endpoint path. What runs: a description; Pre-LLM (context preparators, conversation memory); LLM (the main LLM by id, prompt, tools); Post-LLM (answer verifiers); LLMs and data sources of its own; and the code. It lists who may ask it besides the space's users: its own users (maybe none), its callers and its machine clients (maybe none); no roles. One `Airlock` resource naming its space (`spec.space`); each airlock has its own endpoint and its own pod pair. Messages write it `<space>/<airlock>`: `hr-space/hr-contracts`. |
+| Space | One team's or product's container: its developers (members who edit it, by e-mail), the roles that may ask every airlock of it, and the LLMs and data sources its airlocks share beside the global ones. The admin creates it and names its developers on its form; either list may be empty. One `Space` resource, which lists the roles and no developer; it owns no pod. |
+| Airlock | A named assistant in a space; its id and its space's name its endpoint path. What runs: a description; Pre-LLM (context preparators, conversation memory); LLM (the main LLM by id, prompt, tools); Post-LLM (answer verifiers); LLMs and data sources of its own; and the code. It lists who may ask it besides the space's roles: its own roles (maybe none), its callers and its machine clients (maybe none). One `Airlock` resource naming its space (`spec.space`); each airlock has its own endpoint and its own pod pair. Messages write it `<space>/<airlock>`: `hr-space/hr-contracts`. |
 | Code | One airlock's tools, handlers and rule sets, built from one project and brought only by `aisolate deploy`, pinned by its digest. Every class of the project belongs to that airlock. The AIsolate UI shows the code's tools and handlers read-only. |
-| Users | The e-mails a space lists in `access.users` and those an airlock lists in its own `access.users`, either list maybe empty. A space's users, developers included, may ask every airlock of the space; an airlock's own users may ask that airlock only, so a user on the space reaches every airlock of it. The token's `email` claim must be one of the two lists', case ignored; the identity provider authenticates them. A machine client's token has no `email`, and is admitted by its airlock's machine clients instead. |
+| Roles | The role names a space lists in `access.roles` and those an airlock lists in its own `access.roles`, either list maybe empty. A space's roles may ask every airlock of the space; an airlock's own roles may ask that airlock only. The token's roles claim must hold one of the two lists' roles, exactly; the identity provider decides who holds them. The roles an airlock admits are the organisation's own, named in the documents; AIsolate defines none for askers. A machine client's token has no `email`, and is admitted by its airlock's machine clients instead. |
+| Developers | The e-mails a space lists as its members: they edit the space and its airlocks in the AIsolate UI. A developer is no asker: to ask an airlock, they need one of its roles like anyone. |
 | Callers | The OAuth clients an airlock admits in `access.callers`, by the token's `azp`; `*` admits any client registered at the identity provider. A space lists no callers. |
 | Machine clients | The OAuth clients an airlock admits in `access.clients` without a user: a token with no `email` whose `azp` is exactly one of them is admitted, the callers not consulted; `*` is no wildcard. A workflow tool asks this way, as itself ([In production](integrate.md#in-production)). Its exchanges are audited with no user and its client id. A space lists none. |
 | Exchange | One request and its answer. |
@@ -59,8 +60,8 @@ and its own. The code, the prompt, the tools and the main LLM are the airlock's 
 | Level | Document | Defined by | Also carries |
 |---|---|---|---|
 | global | `Global` (one per install, `aisolate`) | the admin, on the LLMs and Data sources pages | nothing else |
-| space | `Space` | the admin | `access.users`, who may ask every airlock of the space |
-| airlock | `Airlock` | the admin, a developer of the space, the project's `aisolate.yaml` | `space`, `access.users` (who may ask it besides the space's users; need not be on the space), `access.callers`, `access.clients`, `description`, the three stages, `llm` (the main LLM's id), `prompt`, `tools`, `jar.digest`, `jar.tools` |
+| space | `Space` | the admin | `access.roles`, who may ask every airlock of the space |
+| airlock | `Airlock` | the admin, a developer of the space, the project's `aisolate.yaml` | `space`, `access.roles` (who may ask it besides the space's roles; need not be on the space), `access.callers`, `access.clients`, `description`, the three stages, `llm` (the main LLM's id), `prompt`, `tools`, `jar.digest`, `jar.tools` |
 
 - Each level lists `llms` (`{id, provider, url, model}`) and `dataSources` (`{id, url, secretRef}`), each id once.
 - The same id at a nearer level replaces the farther one whole: airlock, then space, then global.
@@ -88,17 +89,19 @@ The folders are a convention of the template; AIsolate reads a class's stage fro
 
 | Role | Granted by | Does |
 |---|---|---|
-| Admin | realm role `aisolate-admin` | Everything, in every space. Defines the global LLMs and data sources. Creates a space, edits its name and description, its users and their roles, its LLMs and its data sources. Installs AIsolate and chooses `headless`. Keeps the egress map. Releases documents to a headless install, with the Secrets they name. Resets the install (`aisolate-reset`). |
-| Developer | the space: a user of it with the role Developer | In that space only: writes the project (tools, handlers, rule sets, the airlock's document), deploys it (`aisolate deploy`), creates and edits its airlocks (their users, callers, LLMs and data sources), tries them in a chat. Sees the space's own users, LLMs and data sources and the global ones read-only, and the audit of their spaces. Anyone in the directory can be made one; in another space a developer is refused with a 403 that names the space and says to ask its admin. |
-| User | the space: a user of it with the role User, or an airlock's own user | Asks, through the organisation's chat, the airlocks whose space or which itself lists their e-mail, as far as the rules their roles select allow. Sees no space in the AIsolate UI. |
+| Admin | realm role `aisolate-admin` | Everything, in every space. Defines the global LLMs and data sources. Creates a space, edits its name and description, its developers and roles, its LLMs and its data sources. Installs AIsolate and chooses `headless`. Keeps the egress map. Releases documents to a headless install, with the Secrets they name. Resets the install (`aisolate-reset`). |
+| Developer | the space: a member of it, named by e-mail | In that space only: writes the project (tools, handlers, rule sets, the airlock's document), deploys it (`aisolate deploy`), creates and edits its airlocks (their roles, callers, LLMs and data sources), tries them in a chat. Sees the space's own LLMs and data sources and the global ones read-only, and the audit of their spaces. The admin types the e-mail; in another space a developer is refused with a 403 that names the space and says to ask its admin. |
+| Asker | a role the organisation's identity provider gives them, which a space or an airlock lists | Asks, through the organisation's chat, the airlocks whose space or which itself lists one of their roles, as far as the rules their roles select allow. Sees no space in the AIsolate UI. |
 | Auditor | realm role `aisolate-auditor` | Reads the audit trail in the AIsolate UI's **Audit** page and through the API, and exports its report; nothing else ([Audit](audit.md)). |
 
-Roles add up as GitLab's do: a developer of a space is also a user of it, and the rules still decide which rows
-anyone sees. An airlock has no roles: its own users only ask it. The realm holds two AIsolate roles, the admin's and
-the auditor's; the organisation's own roles (`employee`, `ceo`, `founder`) select the rules. A space lists its users by
-e-mail with their role and an airlock lists its own ([Users](#vocabulary)). The identity provider authenticates them. A user the airlock admits whose roles match no rule gets zero
-rows from the tools, never a 403, but the airlock's context preparators pass on what their own code chooses.
-Who may ask an airlock is the gate for everything the airlock serves: list on the space only the people who may
+Roles add up: an airlock admits the roles of its space and its own, and the rules still decide which rows anyone
+sees. The realm holds two AIsolate roles, the admin's and the auditor's; they open the UI and admit nobody to an
+airlock. The organisation's own roles (`employee`, `ceo`, `founder`) are what a space or an airlock lists and what the
+rules select on. The identity provider authenticates the people and holds their roles. A user the airlock admits whose
+roles match no rule gets zero rows from the tools, never a 403, but the airlock's context preparators pass on what
+their own code chooses.
+Who may ask an airlock is the gate for everything the airlock serves: list on the space only the roles whose holders may
+see all of what every airlock's context preparators read, and on an airlock only those who may see all of its.
 see all of what every airlock's context preparators read, and on an airlock only those who may see all of its.
 
 ## Components
@@ -150,7 +153,7 @@ flowchart LR
 | Component | Runs as | Does |
 |---|---|---|
 | Customer's chat | The organisation's app; the `chat` repository is the sample | Signs the user in with PKCE, discovers the airlocks, posts questions with the user's token, renders the answer and its evidence. |
-| Airlock pod | `aisolate/airlock`, one per airlock | The airlock's endpoint. Validates the token, admits the user the space or the airlock lists and the client the airlock lists, or a machine client the airlock lists, runs the airlock's handlers and the agent loop, streams the answer. Serves its airlock only. |
+| Airlock pod | `aisolate/airlock`, one per airlock | The airlock's endpoint. Validates the token, admits the user who holds a role the space or the airlock lists and the client the airlock lists, or a machine client the airlock lists, runs the airlock's handlers and the agent loop, streams the answer. Serves its airlock only. |
 | MCP server | `aisolate/tool-server`, one per airlock | Publishes the airlock's tools. Validates the token again, evaluates the rules, compiles them into one SELECT on the tool's data source, returns evidence. Reachable from its own airlock pod only. |
 | Controller | `aisolate/controller`, one per install | Watches `Space` and `Airlock` and renders the pod pair, Services, routes, policies, the documents' ConfigMap and the token Secrets of every valid airlock. Reports status. |
 | Backend | `aisolate/backend`, with the AIsolate UI only | The UI's API and the CLI's endpoint. Keeps spaces, airlocks and their code in its own PostgreSQL, applies them to the cluster after every write, keeps credentials in Secrets. |
@@ -179,7 +182,7 @@ and no backend run.
 | Rule sets | in the airlock's code | in the airlock's code |
 | Credentials | the user and password become a Secret the backend creates, owned by the `Space` or `Airlock` that defines the data source | the admin creates the Secret the `secretRef` names |
 | Egress | the admin's `platform.egress.hosts` | the same |
-| Who may ask | the space's users and the airlock's own, through the airlock's callers; the airlock's machine clients | the same |
+| Who may ask | the space's roles and the airlock's own, through the airlock's callers; the airlock's machine clients | the same |
 | Who holds which role | the organisation's identity provider | the same |
 | Documents and their audience tags | the organisation's database | the same |
 | What ran | pod logs | pod logs |

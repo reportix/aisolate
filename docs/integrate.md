@@ -75,7 +75,7 @@ Three things must hold for the call to be admitted:
 
 - the client has direct access grants enabled and carries the `aisolate` scope, which puts `aisolate` in the
   token's audience;
-- the token's `email` is one of the space's or the airlock's own `access.users`;
+- the token's roles hold one of the space's or the airlock's own `access.roles`;
 - the token's `azp`, here `etl`, is in the airlock's `access.callers`, or the callers are `*`.
 
 A workflow that signs in as itself, with the client-credentials grant, has no user and no e-mail. Its token is
@@ -129,7 +129,7 @@ The templates sign in as a person to keep a demonstration short. A workflow that
   or a secrets manager), never in the workflow file. Switch off every other grant, so no person signs in
   through it. The workflow then asks as itself: no service user, no e-mail.
 - **Listed in the airlock's `access.clients`.** Add the client id to the Airlock's `access.clients` in the
-  project file. Its token, which carries no e-mail, is admitted on that `azp` alone; the callers and users are
+  project file. Its token, which carries no e-mail, is admitted on that `azp` alone; the callers and roles are
   not consulted.
 - **Its roles on the client.** Give the client, in the identity provider, only the roles whose data the
   workflow's questions need (in Keycloak, the client's service-account roles). What it may read is then bounded

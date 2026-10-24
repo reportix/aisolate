@@ -13,6 +13,9 @@ An airlock's code is not in them: the pods fetch it from
 the backend at start ([Where an airlock's code comes from](security.md#where-an-airlocks-code-comes-from)), so a
 headless install, which has no backend, runs airlocks without code only; one with code does not start.
 
+An install upgraded from before roles replaced the e-mail lists (the V2 migration) has every airlock with no roles: it
+admits nobody until an admin sets its roles, or its space's.
+
 ## Create the Secrets
 
 One per `secretRef` the documents name, on the space or an airlock, with the keys `username` and
@@ -78,7 +81,7 @@ lists:
   ([Configuration](configuration.md#airlock-pod)). The pods never resolve levels themselves.
 - Once per namespace, owned by every `Space` so they go with the last one: discovery, `aisolate-discovery`.
   - Its ConfigMap holds, per valid space, only what discovery lists: each airlock's id, space, name, description, callers and
-    tools, and its users as the SHA-256 of the lower-cased e-mail. No
+    tools, and its roles, by name. No
     prompt, model, data source or Secret name.
   - Its Deployment (`aisolate.dev/role: discovery`) runs the airlock image with that ConfigMap alone: no
     documents, no code, no data source, no model. The release's `aisolate` Service selects these pods, so

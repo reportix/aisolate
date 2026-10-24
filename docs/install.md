@@ -18,16 +18,15 @@ server must provide comes first.
 ## Identity provider requirements
 
 AIsolate ships no identity provider. Its realm roles are two, `aisolate-admin` and `aisolate-auditor`: a
-space's developers are named in the space, not in the identity provider. A space lists its users by e-mail, each
-with the role Developer or User, and an airlock lists its own. A space's users may ask every airlock of the space; an airlock's own users may ask that airlock only
-([Users](concepts.md#vocabulary)). Any OpenID Connect provider authenticates them (Keycloak, Microsoft Entra ID, Okta).
+space's developers are named by e-mail in the space, not in the identity provider, and there is no directory to search. A space and an airlock list the roles they admit, and the provider must put the organisation's roles in the token's roles claim: a space's roles may ask every airlock of the space, an airlock's own roles that airlock only
+([Roles](concepts.md#vocabulary)). Any OpenID Connect provider authenticates the people (Keycloak, Microsoft Entra ID, Okta).
 
 | Requirement | Detail |
 |---|---|
 | OIDC discovery and JWKS | AIsolate validates tokens with the published keys and calls the provider for nothing else. |
 | The audience `aisolate` | Every token AIsolate accepts carries `aud: aisolate`. In Keycloak: an audience mapper that every client gets as a realm default, registered ones too. |
-| `email` | Every end user's token carries it, and the provider issues only verified addresses: an airlock admits the e-mails its space's `access.users` and its own list by matching the token's `email`, and AIsolate does not check `email_verified`. The identity join matches the same e-mail to the organisation's records. |
-| A roles claim | `realm_access.roles` by default; the chart's `platform.identity.rolesClaim` names another dot path (`roles` for Microsoft Entra ID app roles, `groups` for Okta), which the backend, the airlock pods and the MCP servers then read as `AISOLATE_ROLES_CLAIM`. The organisation's own roles (`employee`, `ceo`, `founder`) are what the rules name, and they never admit anyone; `aisolate-developer` and `aisolate-admin` admit AIsolate UI and CLI users, `aisolate-auditor` the readers of the audit trail alone. |
+| `email` | Every end user's token carries it, and the provider issues only verified addresses: it feeds the row filters and the audit line, and AIsolate does not check `email_verified`. The identity join matches the same e-mail to the organisation's records. |
+| A roles claim | `realm_access.roles` by default; the chart's `platform.identity.rolesClaim` names another dot path (`roles` for Microsoft Entra ID app roles, `groups` for Okta), which the backend, the airlock pods and the MCP servers then read as `AISOLATE_ROLES_CLAIM`. The organisation's own roles (`employee`, `ceo`, `founder`) are what a space or an airlock lists to admit people and what the rules name; `aisolate-admin` opens the AIsolate UI and CLI, `aisolate-auditor` reads the audit trail alone, and neither asks an airlock. |
 | `auth_time` | Every access token carries it (Keycloak: the client scope `basic`, a realm default), so a reveal of a stored credential can tell a login from five minutes ago from one from last week. Without it a reveal is refused, `the identity provider sends no auth_time claim`, and nothing else changes. A direct grant carries none even then: only a browser login does. The token also carries `azp`, the client it was issued to (Keycloak does); the reveal takes the AIsolate UI's client alone and refuses a token without it. |
 | Public PKCE clients | `aisolate-ui` for the AIsolate UI; `aisolate-cli` with the redirect `http://127.0.0.1/*` and offline sessions, so the CLI's session lasts 90 days. |
 | The chat's client | Dynamic client registration (RFC 7591) with the chat's host trusted, or a registered public PKCE client. An airlock admits it by its client id in `access.callers`, or with `*`. |

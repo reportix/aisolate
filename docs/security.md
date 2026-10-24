@@ -23,7 +23,7 @@ sequenceDiagram
     IdP-->>Chat: token
     Eric->>Chat: "What is my gross salary?"
     Chat->>AP: POST .../airlocks/hr/chat, Bearer token
-    Note over AP: gate 1 token, gate 2 the space's and the airlock's users, the airlock's callers or machine clients
+    Note over AP: gate 1 token, gate 2 the space's and the airlock's roles, the airlock's callers or machine clients
     AP->>DB: ContextPreparator: passages Eric may read
     AP->>MCP: tools/list, Bearer token (the pod's first exchange)
     AP->>LLM: preamble, prompt, question, passages, tool schemas, no identity
@@ -47,9 +47,9 @@ sequenceDiagram
   user in with PKCE. The token carries `sub`, `email`, the roles, `aud = aisolate` and the chat's client id
   as `azp`. See [Connect a client](api.md#connect-a-client).
 - **7 to 8.** The release's Ingress routes the airlock's path to its airlock pod. Gate 1 checks
-  issuer, signature, expiry and audience; gate 2 checks that the space or the airlock lists the user's e-mail
+  issuer, signature, expiry and audience; gate 2 checks that the token holds a role the space or the airlock lists
   and that the airlock admits the calling client, or, for a token without an e-mail, that its `azp` is one of the
-  airlock's machine clients (`access.clients`); the token's roles play no part in it. On success the SSE stream opens and the exchange runs on
+  airlock's machine clients (`access.clients`). On success the SSE stream opens and the exchange runs on
   the request's own virtual thread.
 - **9 to 13.** The `ContextPreparator` handlers the airlock lists run with the user's roles and e-mail, read
   their data source and add the passages the user may read, under an evidence id. `ConversationMemory` handlers add what
@@ -73,10 +73,10 @@ sequenceDiagram
 | Situation | Result |
 |---|---|
 | No token, forged signature, expired token, token for another audience | 401 before any model or data access |
-| Valid token, an e-mail neither the space nor the airlock lists, an `azp` the airlock does not admit, or no e-mail and an `azp` that is none of the airlock's `access.clients` | 403 "forbidden"; the reason goes to the pod's log and one `refusal` line to the [audit trail](#audit-trail) |
+| Valid token, no role the space or the airlock lists, an `azp` the airlock does not admit, or no e-mail and an `azp` that is none of the airlock's `access.clients` | 403 "forbidden"; the reason goes to the pod's log and one `refusal` line to the [audit trail](#audit-trail) |
 | Rules yield no row (another person's record, an aggregate no rule grants, a group below `min_group_size`) | 0 rows, answer "I don't know" when no other evidence holds anything; never a 403 |
 | A user the airlock admits whose roles match no rule | 0 rows from every tool, never a 403. The airlock's context preparators still run and pass on what their code chooses: who may ask the airlock is the gate for everything it serves ([Context preparators](#context-preparators)) |
-| A user of another airlock of the space only | 403 on this airlock, and 0 rows from its MCP server: an airlock's own users may ask that airlock alone |
+| A user whose role only another airlock of the space lists | 403 on this airlock, and 0 rows from its MCP server: an airlock's own roles may ask that airlock alone |
 | Model calls a tool the airlock does not list | Call dropped, model told the tool is unavailable |
 | Model names an unknown, hidden or masked column, or an unknown operator | Tool error "Invalid arguments", no SQL built |
 | Database or driver failure in the MCP server | Fixed tool error by kind (login refused, unreachable, failed) with its data source id, no SQL text or credential leaks |
@@ -89,10 +89,10 @@ sequenceDiagram
 | Gate | Where | Checks | On failure |
 |---|---|---|---|
 | 1 | airlock pod, `SecurityConfig` of `libs/identity` | Issuer, JWKS signature, expiry, `aud = aisolate` | 401 with `WWW-Authenticate: Bearer resource_metadata=…` |
-| 2 | airlock pod, `AirlockAdmissionService` | `email` in the space's `access.users` or the airlock's own, case ignored; `azp` in the airlock's `access.callers` (`*` admits any client registered at the identity provider). A token without an `email` whose `azp` is exactly one of the airlock's `access.clients` is admitted instead, the callers not consulted (`*` is no wildcard there). The token's roles do not admit | 403 "forbidden"; the pod's log carries `<space>/<airlock> does not admit user <email> from client <azp>`, or `does not admit client <azp>` for a token without an e-mail, and the audit trail one `refusal` line with `reason` `user` or `client` |
+| 2 | airlock pod, `AirlockAdmissionService` | a token role in the space's `access.roles` or the airlock's own, exact; `azp` in the airlock's `access.callers` (`*` admits any client registered at the identity provider). A token without an `email` whose `azp` is exactly one of the airlock's `access.clients` is admitted instead, the callers not consulted (`*` is no wildcard there). No `email` is needed for a person | 403 "forbidden"; the pod's log carries `<space>/<airlock> does not admit user <email> from client <azp>`, or `does not admit client <azp>` for a token without an e-mail, and the audit trail one `refusal` line with `reason` `role` or `client` |
 | 3 | airlock pod, `ChatExchange` and `AgentLoopService` | Only the tools the airlock lists become callbacks; any other name resolves to a stub that answers instead of running; arguments must be a JSON object; at most three tool calls per exchange | Call dropped and the model told, or `error` event |
 | 4 | MCP server, `SecurityConfig` | The same token checks as gate 1, independently | 401 |
-| 5 | MCP server, `GovernedQueryService` with `RulesEvaluator` and `SqlCompiler` | The airlock named in `_meta` at the revision the server loaded; the same admission as gate 2 (the space's and the airlock's users, the airlock's callers and machine clients; the roles only select the rules) and the tool list re-checked; the tool's plugin and its data source; rules evaluated for the action; arguments validated against the catalog; obligations compiled into the SQL | Silent: evidence with `row_count 0`, never an error the model could read |
+| 5 | MCP server, `GovernedQueryService` with `RulesEvaluator` and `SqlCompiler` | The airlock named in `_meta` at the revision the server loaded; the same admission as gate 2 (the space's and the airlock's roles, the airlock's callers and machine clients; the roles also select the rules) and the tool list re-checked; the tool's plugin and its data source; rules evaluated for the action; arguments validated against the catalog; obligations compiled into the SQL | Silent: evidence with `row_count 0`, never an error the model could read |
 | 6 | airlock pod, `ChatExchange.ground` | Every evidence empty, or tools failed without evidence | Answer replaced by "I don't know" |
 | 7 | airlock pod, the `AnswerVerifier` handlers the airlock lists | Each verifier judges the finished answer against the evidence | A `verification` event with the verdicts; the answer is never blocked |
 
@@ -102,27 +102,25 @@ may `org.keycloak` be imported: AIsolate speaks only OIDC discovery and JWKS. Th
 of its own, no Spring JDBC and no write endpoint; it hands the airlock's handlers a `javax.sql.DataSource` per
 data source the airlock resolves. The backend has no model client and no MCP client. Every backend endpoint
 names who may call it, one expression of the backend's `Access`: the admin (`aisolate-admin`), a developer of the
-space in its path (a space's user with the role Developer, read from the space, never from the token), a
-developer of any space (the directory), the audit's readers (`aisolate-auditor` too), or any token for the spaces
+space in its path (a member the space lists by e-mail, read from the space, never from the token), a
+developer of any space, the audit's readers (`aisolate-auditor` too), or any token for the spaces
 list, which holds only what the caller may open; with one exception the rules pin by name: the audit ingest,
 which no user calls ([Audit trail](#audit-trail)).
 
 ## Identity
 
 One token, issued by the organisation's identity provider at login and validated by every AIsolate process
-it reaches. AIsolate ships no identity provider. A space lists its users by e-mail and an airlock lists its own
-([Users](concepts.md#vocabulary)). The identity provider authenticates them and holds their roles.
-People live in the identity provider alone: with a directory configured the backend searches and looks them
-up through a service account that holds realm-management's `view-users` and `query-users` and nothing that
-writes, so AIsolate can assign a person to a space or an airlock but never create, invite or delete one. It
-returns a person's name, username and e-mail only, and its client secret is never logged or returned.
+it reaches. AIsolate ships no identity provider. A space and an airlock list the roles they admit
+([Roles](concepts.md#vocabulary)); the identity provider authenticates the people and holds who has them. A
+space lists its developers by e-mail: they edit in the UI and are no askers. People live in the identity provider
+alone. AIsolate holds no service account there and no directory: it never searches, creates, invites or deletes a person.
 
 | Claim | Example | Used for |
 |---|---|---|
 | `iss` | `http://localhost:8180/realms/acme` | The trusted issuer; the JWKS come from here |
 | `sub` | the identity provider's user id | Stable subject |
-| `email` | `eric@example.com` | The user: one of the space's `access.users` or of the airlock's own, case ignored; the business key the identity join matches to the organisation's records. A machine client's token has none |
-| `realm_access.roles` | `["employee"]` | Rule selection only, never admission; the claim path is `AISOLATE_ROLES_CLAIM` |
+| `email` | `eric@example.com` | The user, fed to row filters and the audit line, not to admission; the business key the identity join matches to the organisation's records. A machine client's token has none |
+| `realm_access.roles` | `["employee"]` | Admission (a role the space or the airlock lists, exact) and rule selection; the claim path is `AISOLATE_ROLES_CLAIM` |
 | `aud` | `aisolate` | Every AIsolate process refuses tokens meant for other services |
 | `azp` | the calling client's id, the demo chat's `acme-chat` (`aisolate-ui` and `aisolate-cli` are the backend's clients) | The calling client, checked against the airlock's `access.callers`; on a token without an `email`, the machine client, checked against the airlock's `access.clients` |
 | `exp` | five minutes after login | Refresh with rotation in the browser |
@@ -288,9 +286,9 @@ and adds the closest passages to the context under an evidence id. The predicate
 
 The rules filter only what the tools return. A context preparator's passages reach every user the airlock admits,
 as far as its own predicates let them, and they are evidence: gate 6 keeps the answer when they hold anything.
-Who may ask an airlock is the gate for everything it serves, so list on the space only the people who may see all
+Who may ask an airlock is the gate for everything it serves, so list on the space only the roles whose holders may see all
 of what every airlock's context preparators read, and on an airlock only those who may see all of its. The demo's
-`SalesDocumentsContextPreparator` filters nothing: every user the Sales airlock admits, the space's users
+`SalesDocumentsContextPreparator` filters nothing: every user the Sales airlock admits, the holders of the space's roles
 among them, reads every client document and the board memo.
 
 | Threat | Enters through | Held by | Left to the developer |
@@ -338,7 +336,7 @@ AIsolate UI (`headless`) there is no backend, and stdout is the only copy.
 | `question` | The message as it was sent |
 | `answer` | What the user was told, "I don't know" included when the airlock replaced the model's answer; `null` unless the model answered |
 | `outcome` | `answered`, `dont_know` (the answer is empty or begins with "I don't know"), `refused` (a 403) or `error` |
-| `reason` | A refusal: `user` (the e-mail is not on the list, or the token has none and its `azp` is none of the airlock's machine clients) or `client` (the `azp` is not admitted). An error: `llm_unavailable` (the model server could not be reached or refused), `no_model_endpoint` (the airlock names a model this install has no provider for), `deadline` (the exchange's time was spent) or `internal`. Otherwise `null` |
+| `reason` | A refusal: `role` (the token holds no role the space or the airlock lists, or has no e-mail and its `azp` is none of the airlock's machine clients) or `client` (the `azp` is not admitted). An error: `llm_unavailable` (the model server could not be reached or refused), `no_model_endpoint` (the airlock names a model this install has no provider for), `deadline` (the exchange's time was spent) or `internal`. Otherwise `null` |
 | `tools` | One entry per tool call the model made: `name`, `args`, `data_source`, `rows`, `rule_version`, `sql_hash`, `rows_hash` and `error`. `args` are the arguments the call ran with, as the model wrote them, so the governed query can be re-run ([Verification, Re-running a tool call](verification.md#re-running-a-tool-call)); the model only ever saw a masked column as `****`, so no masked value is among them, and a call the tool server refused (a filter on a hidden or masked column among them) records none: `null`. `rows` is `null` when the call failed. `data_source` is the data source the tool's plugin reads, as the tool server reports it with the evidence or the failure; `null` when the tool reads none or the tool server named none. `rule_version` and `sql_hash` are the rules applied and the shape of the statement; `rows_hash` is the sha256 of the rows returned (compact JSON, each row's keys sorted, numbers as plain decimal text without trailing zeros): an auditor re-running the governed query at the same revision gets the same hash, or sees that the data changed. All three `null` when the call failed. `error` is `null` when the call returned evidence, else why it did not: `login_refused` (its data source refused the login), `unreachable` (it could not be reached) or `failed` (anything else); never the tool server's words, a credential or a statement |
 | `evidence` | The evidence ids the answer cites: those its sourced and computed figures, its tables and its quotes rest on, and any `[ev-1]` its text still names; passages and tool results alike; empty when nothing was answered |
 | `verifiers` | One entry per verifier of the airlock: `name` and `verdict` (`PASS`, `WARN` or `FAIL`) |
