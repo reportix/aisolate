@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Mints a long-lived (1 year) access token against the local dev Keycloak, for Insomnia/curl debugging.
-# Dev only: it raises the acme realm's token and session lifespans to a year on the RUNNING container.
+# Dev only: it raises the realm's token and session lifespans to a year on the RUNNING container.
 # Tokens die whenever the container is recreated (start-dev keeps the realm keys in the container only),
 # so re-run this after `docker compose down`.
 #
 #   ./docker/dev-token.sh [username] [client_id]     defaults: jasmine aisolate-ui
+#   KC_REALM=acme ./docker/dev-token.sh eric acme-chat   an application user (default realm: aisolate, the operators')
 set -euo pipefail
 
 KC=${KC_URL:-http://localhost:8180}
-REALM=${KC_REALM:-acme}
+REALM=${KC_REALM:-aisolate}
 USER_NAME=${1:-jasmine}
 CLIENT=${2:-aisolate-ui}
 PASSWORD=${KC_USER_PASSWORD:-password}

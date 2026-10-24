@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.reportix.aisolate.backend.BackendApplication;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -38,7 +37,7 @@ class ArtifactLimitIntegrationTest {
     new Random(7).nextBytes(jar);
     Map<String, Object> parts = new LinkedHashMap<>();
     parts.put("jar", new Http.FilePart("project.jar", jar));
-    String jasmine = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
+    String jasmine = Tokens.forOperator("jasmine", "password");
     HttpRequest.Builder request =
         Http.multipart(
             HttpRequest.newBuilder(

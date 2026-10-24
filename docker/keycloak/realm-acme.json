@@ -37,18 +37,6 @@
       {
         "name": "auditor",
         "description": "Halvard Finch auditor: may ask every company\u0027s airlock"
-      },
-      {
-        "name": "aisolate-admin",
-        "description": "AIsolate UI: creates spaces and names the developers and the roles that may ask; may do everything"
-      },
-      {
-        "name": "aisolate-auditor",
-        "description": "AIsolate UI: reads the audit trail and nothing else"
-      },
-      {
-        "name": "offline_access",
-        "description": "Offline tokens: the CLI's login outlives the browser session"
       }
     ]
   },
@@ -85,46 +73,7 @@
           "temporary": false
         }
       ],
-      "realmRoles": [
-        "offline_access"
-      ]
-    },
-    {
-      "username": "andrew",
-      "email": "andrew@example.com",
-      "firstName": "Andrew",
-      "lastName": "Hale",
-      "enabled": true,
-      "emailVerified": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "password",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "aisolate-admin",
-        "offline_access"
-      ]
-    },
-    {
-      "username": "auditor",
-      "email": "auditor@example.com",
-      "firstName": "Audit",
-      "lastName": "Reader",
-      "enabled": true,
-      "emailVerified": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "password",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "aisolate-auditor"
-      ]
+      "realmRoles": []
     },
     {
       "username": "nora",
@@ -142,9 +91,7 @@
       ],
       "realmRoles": [
         "ceo",
-        "founder",
-        "aisolate-admin",
-        "offline_access"
+        "founder"
       ]
     },
     {
@@ -272,104 +219,6 @@
         "basic",
         "email",
         "aisolate"
-      ]
-    },
-    {
-      "clientId": "aisolate-ui",
-      "name": "AIsolate UI (developer, admin)",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": true,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "serviceAccountsEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "rootUrl": "http://localhost:3001",
-      "baseUrl": "http://localhost:3001",
-      "redirectUris": [
-        "http://localhost:3001/*"
-      ],
-      "webOrigins": [
-        "http://localhost:3001"
-      ],
-      "attributes": {
-        "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:3001",
-        "login_theme": "aisolate-ui"
-      },
-      "fullScopeAllowed": true,
-      "protocolMappers": [
-        {
-          "name": "realm-roles-in-id-token",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-realm-role-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.name": "realm_access.roles",
-            "jsonType.label": "String",
-            "multivalued": "true",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "userinfo.token.claim": "true"
-          }
-        }
-      ],
-      "defaultClientScopes": [
-        "web-origins",
-        "acr",
-        "profile",
-        "roles",
-        "basic",
-        "email",
-        "aisolate"
-      ]
-    },
-    {
-      "clientId": "aisolate-cli",
-      "name": "AIsolate CLI",
-      "description": "aisolate login: browser sign-in with PKCE and a loopback redirect (RFC 8252)",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": true,
-      "standardFlowEnabled": true,
-      "implicitFlowEnabled": false,
-      "serviceAccountsEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "redirectUris": [
-        "http://127.0.0.1/*"
-      ],
-      "attributes": {
-        "pkce.code.challenge.method": "S256",
-        "login_theme": "aisolate-ui"
-      },
-      "fullScopeAllowed": true,
-      "protocolMappers": [
-        {
-          "name": "realm-roles-in-id-token",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-realm-role-mapper",
-          "consentRequired": false,
-          "config": {
-            "claim.name": "realm_access.roles",
-            "jsonType.label": "String",
-            "multivalued": "true",
-            "id.token.claim": "true",
-            "access.token.claim": "true",
-            "userinfo.token.claim": "true"
-          }
-        }
-      ],
-      "defaultClientScopes": [
-        "web-origins",
-        "acr",
-        "profile",
-        "roles",
-        "basic",
-        "email",
-        "aisolate"
-      ],
-      "optionalClientScopes": [
-        "offline_access"
       ]
     },
     {

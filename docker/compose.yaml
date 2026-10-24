@@ -1,5 +1,6 @@
 # Local development environment for the AIsolate demo.
-# Keycloak stands in for the customer's identity provider; acme-db is the customer's database;
+# Keycloak stands in for both identity providers: AIsolate's own (realm aisolate: the dashboard, the CLI)
+# and the customer's (realm acme: the application users who ask airlocks); acme-db is the customer's database;
 # aisolate-db is AIsolate's own control plane. All passwords here are development-only.
 name: aisolate
 
@@ -14,6 +15,7 @@ services:
     ports:
       - "8180:8080"
     volumes:
+      - ./keycloak/realm-aisolate.json:/opt/keycloak/data/import/realm-aisolate.json:ro
       - ./keycloak/realm-acme.json:/opt/keycloak/data/import/realm-acme.json:ro
       # Login themes; Keycloak reads /opt/keycloak/themes at runtime.
       - ./keycloak/themes:/opt/keycloak/themes:ro

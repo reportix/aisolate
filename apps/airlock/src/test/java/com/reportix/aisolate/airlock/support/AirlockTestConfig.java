@@ -25,7 +25,7 @@ public final class AirlockTestConfig
   @Override
   public void initialize(ConfigurableApplicationContext context) {
     TestPropertyValues.of(
-            "spring.security.oauth2.resourceserver.jwt.issuer-uri=" + Keycloak.issuerUri())
+            "spring.security.oauth2.resourceserver.jwt.issuer-uri=" + Keycloak.usersIssuerUri())
         .and(LLMS)
         .applyTo(context);
   }

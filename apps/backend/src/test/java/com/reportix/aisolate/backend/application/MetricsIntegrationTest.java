@@ -6,7 +6,6 @@ import com.reportix.aisolate.backend.BackendApplication;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.backend.support.OwnDatabase;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -70,13 +69,12 @@ class MetricsIntegrationTest {
     "jasmine, , 200, 'space=~\"hr-acme\"'",
     "jasmine, hr-acme, 200, 'space=\"hr-acme\"'",
     "jasmine, other, 403, ",
-    "auditor, , 403, ",
-    "eric, , 403, "
+    "auditor, , 403, "
   })
   void givenAUser_whenReadingTheCharts_thenTheirSpacesAloneAreAsked(
       String username, String space, int status, String matcher) {
     // Arrange
-    String user = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", username, "password");
+    String user = Tokens.forOperator(username, "password");
 
     // Act
     HttpResponse<String> response =
@@ -132,7 +130,7 @@ class MetricsIntegrationTest {
   }
 
   private static String admin() {
-    return Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
+    return Tokens.forOperator("andrew", "password");
   }
 
   /** A range query answers one line, an instant query one count; both of hr-acme's hr. */

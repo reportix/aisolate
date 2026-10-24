@@ -10,7 +10,6 @@ import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.backend.support.OwnDatabase;
 import com.reportix.aisolate.config.AuditIngestToken;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -70,10 +69,8 @@ class CodeIntegrationTest {
       """;
 
   private final byte[] zip = PythonArtifacts.zip();
-  private final String jasmine =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
-  private final String rita =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
+  private final String jasmine = Tokens.forOperator("jasmine", "password");
+  private final String rita = Tokens.forOperator("andrew", "password");
 
   @LocalServerPort int port;
   @Autowired Connector auditIngestConnector;
@@ -133,7 +130,7 @@ class CodeIntegrationTest {
   }
 
   static Stream<Arguments> tokensNotTheAirlocksCodeToken() {
-    String developer = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
+    String developer = Tokens.forOperator("jasmine", "password");
     return Stream.of(
         arguments(
             named(

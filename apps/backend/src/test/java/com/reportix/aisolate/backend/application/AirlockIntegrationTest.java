@@ -8,7 +8,6 @@ import com.reportix.aisolate.backend.BackendApplication;
 import com.reportix.aisolate.backend.domain.space.SpaceRepository;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -76,11 +75,9 @@ class AirlockIntegrationTest {
   @LocalManagementPort int managementPort;
   @Autowired DataSource dataSource;
 
-  private final String jasmine =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
-  private final String rita =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
-  private final String eric = Tokens.forUser("eric", "password");
+  private final String jasmine = Tokens.forOperator("jasmine", "password");
+  private final String rita = Tokens.forOperator("andrew", "password");
+  private final String auditor = Tokens.forOperator("auditor", "password");
 
   /** No LLM: its airlocks set their own. jasmine develops it, employees ask. */
   private static final String SPACE_FORM =
@@ -96,16 +93,16 @@ class AirlockIntegrationTest {
 
   @ParameterizedTest
   @Order(1)
-  @CsvSource({"eric, ''", "jasmine, developer", "rita, admin"})
+  @CsvSource({"auditor, ''", "jasmine, developer", "rita, admin"})
   void givenCaller_whenListingSpaces_thenTheSeededSpaceOnlyWhereTheyMayOpenItWithTheirRole(
       String caller, String role) {
-    // Arrange: eric holds an hr-acme role and develops none, jasmine develops it, rita is the admin
-    String token = Map.of("eric", eric, "jasmine", jasmine, "rita", rita).get(caller);
+    // Arrange: the auditor develops none, jasmine develops hr-acme, rita is the admin
+    String token = Map.of("auditor", auditor, "jasmine", jasmine, "rita", rita).get(caller);
 
     // Act
     HttpResponse<String> response = get(token, "/v1/spaces");
 
-    // Assert: one who only asks sees no space at all, not a 403
+    // Assert: one who develops none sees no space at all, not a 403
     assertThat(response.statusCode()).isEqualTo(200);
     List<JsonNode> seeded =
         JSON.readTree(response.body())

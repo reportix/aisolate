@@ -7,7 +7,6 @@ import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.backend.support.OwnDatabase;
 import com.reportix.aisolate.config.AuditIngestToken;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -74,14 +73,13 @@ class TraceIntegrationTest {
     "jasmine, hr-acme, 200, 200, 1",
     // A developer of hr-acme only: another space's trace is as unknown as none
     "jasmine, other, 404, 200, 0",
-    "auditor, hr-acme, 403, 403, 0",
-    "eric, hr-acme, 403, 403, 0"
+    "auditor, hr-acme, 403, 403, 0"
   })
   void givenAUser_whenReadingTraces_thenAllowedByRoleAndSpace(
       String username, String space, int trace, int list, int listed) {
     // Arrange
     String traceId = ingest(space, "How much do I earn?");
-    String user = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", username, "password");
+    String user = Tokens.forOperator(username, "password");
 
     // Act
     HttpResponse<String> one = send("/v1/traces/" + traceId, user);
@@ -94,11 +92,11 @@ class TraceIntegrationTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"andrew, 200", "jasmine, 200", "auditor, 403", "eric, 403"})
+  @CsvSource({"andrew, 200", "jasmine, 200", "auditor, 403"})
   void givenAUser_whenAskingForMonitoringsViews_thenTracingForTheAdminAndDevelopersOnly(
       String username, int status) {
     // Arrange
-    String user = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", username, "password");
+    String user = Tokens.forOperator(username, "password");
 
     // Act
     HttpResponse<String> response = send("/v1/monitoring", user);
@@ -206,7 +204,7 @@ class TraceIntegrationTest {
     ingest("hr-acme", "Is elena's 50% bonus paid?");
     ingest("hr-acme", "How much do I earn?");
     ingest("other", "An other-secret question");
-    String user = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", username, "password");
+    String user = Tokens.forOperator(username, "password");
 
     // Act
     HttpResponse<String> response =
@@ -274,7 +272,7 @@ class TraceIntegrationTest {
   }
 
   private static String admin() {
-    return Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
+    return Tokens.forOperator("andrew", "password");
   }
 
   private static HttpServer jaeger() {

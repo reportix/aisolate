@@ -9,7 +9,6 @@ import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.backend.support.OwnDatabase;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import com.reportix.aisolate.plugins.testing.PluginJars;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
@@ -30,7 +29,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -107,19 +106,17 @@ class SpacesResetIntegrationTest {
       """;
 
   @LocalServerPort int port;
-  private final String jasmine =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
-  private final String rita =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
+  private final String jasmine = Tokens.forOperator("jasmine", "password");
+  private final String rita = Tokens.forOperator("andrew", "password");
   @Autowired ClusterSyncService clusterSync;
   @Autowired CredentialRepository rows;
 
   @ParameterizedTest
   @Order(1)
-  @CsvSource({"acme-chat, eric", "aisolate-ui, jasmine"})
-  void givenNoAdminRole_whenAllSpacesDeleted_then403(String client, String user) {
-    // Arrange: an end user, then a developer of one team: every team's spaces are the admin's
-    String token = Tokens.forUser(Keycloak.issuerUri(), client, user, "password");
+  @ValueSource(strings = {"auditor", "jasmine"})
+  void givenNoAdminRole_whenAllSpacesDeleted_then403(String user) {
+    // Arrange: the auditor, then a developer of one team: every team's spaces are the admin's
+    String token = Tokens.forOperator(user, "password");
 
     // Act
     HttpResponse<String> response = deleteAllSpaces(token);

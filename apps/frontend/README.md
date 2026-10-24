@@ -13,10 +13,11 @@ npm run dev -w apps/frontend  # http://localhost:3001
 
 Environment (`.env.local`): `NEXT_PUBLIC_AISOLATE_URL`, `NEXT_PUBLIC_OIDC_AUTHORITY`,
 `NEXT_PUBLIC_OIDC_CLIENT_ID=aisolate-ui` ([Configuration](../../docs/configuration.md#clients)); the footer's version and Source link (AGPL-3.0 section 13) come from `AISOLATE_VERSION` and `NEXT_PUBLIC_AISOLATE_SOURCE_URL`. Sign-in is
-the organisation's identity provider; the realm role `aisolate-admin` may do everything, and each space names its
+AIsolate's own identity provider (the operators': locally the realm `aisolate`, not the organisation's `acme`, whose
+users ask the airlocks); the realm role `aisolate-admin` may do everything, and each space names its
 developers (its airlocks) and roles (who only ask), which the space's `caller_role` tells the pages.
-Demo users: `jasmine` (a developer once an admin lists her e-mail as a developer of a space), `andrew` and `nora` (admins),
-password `password`.
+Demo operators: `jasmine` (a developer once an admin lists her e-mail as a developer of a space), `andrew` and `nora` (admins),
+`auditor` (reads the audit), `guest` (no role), password `password`.
 
 Shared look and helpers come from `../../libs/ui` (`@aisolate/ui`); the design system is `DESIGN.md`, and
 so are the words the UI keeps to: Roles and Developers (never Members or Users), Models (never LLMs), Data sources, Overview,

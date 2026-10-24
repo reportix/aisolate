@@ -18,7 +18,7 @@ public final class BackendTestConfig
   @Override
   public void initialize(ConfigurableApplicationContext context) {
     TestPropertyValues.of(
-            "spring.security.oauth2.resourceserver.jwt.issuer-uri=" + Keycloak.issuerUri(),
+            "spring.security.oauth2.resourceserver.jwt.issuer-uri=" + Keycloak.operatorsIssuerUri(),
             "spring.datasource.url=" + Containers.aisolate().getJdbcUrl(),
             "spring.datasource.username=aisolate",
             "spring.datasource.password=aisolate",

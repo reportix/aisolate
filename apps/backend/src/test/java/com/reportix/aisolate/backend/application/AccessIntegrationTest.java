@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.reportix.aisolate.backend.BackendApplication;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -24,10 +23,10 @@ import org.springframework.test.context.ContextConfiguration;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Who may call what, GitLab's group model: andrew is the admin; in roles-lab jasmine is a developer
- * and eric a user; in roles-other jasmine is only a user; the auditor reads the audit. Bodies are
- * empty, so an allowed call fails its own checks (400, 404) and changes nothing: only the guard's
- * 403 counts.
+ * Who may call what, GitLab's group model: andrew is the admin; in roles-lab jasmine is a
+ * developer; in roles-other jasmine is only a user; the auditor reads the audit and develops none;
+ * guest has no role and develops none. Bodies are empty, so an allowed call fails its own checks
+ * (400, 404) and changes nothing: only the guard's 403 counts.
  */
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -60,11 +59,9 @@ class AccessIntegrationTest {
   @ParameterizedTest(name = "{0} {1} {2}: allowed {3}")
   @CsvSource({
     // Spaces: the list holds what one may open; a space's own parts are the admin's
-    "eric,       GET,    /v1/spaces,                          true",
     "auditor,    GET,    /v1/spaces,                          true",
     "andrew, GET,    /v1/spaces/roles-lab,                true",
     "jasmine,    GET,    /v1/spaces/roles-lab,                true",
-    "eric,       GET,    /v1/spaces/roles-lab,                false",
     "auditor,    GET,    /v1/spaces/roles-lab,                false",
     "jasmine,    GET,    /v1/spaces/roles-other,              false",
     "andrew, POST,   /v1/spaces,                          true",
@@ -75,22 +72,21 @@ class AccessIntegrationTest {
     // Airlocks and deploys: the space's developers and the admin
     "andrew, POST,   /v1/spaces/roles-lab/airlocks,       true",
     "jasmine,    POST,   /v1/spaces/roles-lab/airlocks,       true",
-    "eric,       POST,   /v1/spaces/roles-lab/airlocks,       false",
+    "auditor,    POST,   /v1/spaces/roles-lab/airlocks,       false",
     "jasmine,    POST,   /v1/spaces/roles-other/airlocks,     false",
     "jasmine,    GET,    /v1/spaces/roles-other/airlocks,     false",
     "jasmine,    PUT,    /v1/spaces/roles-other/airlocks/x,   false",
     "jasmine,    DEPLOY, /v1/spaces/roles-lab/deploy,         true",
-    "eric,       DEPLOY, /v1/spaces/roles-lab/deploy,         false",
+    "auditor,    DEPLOY, /v1/spaces/roles-lab/deploy,         false",
     "jasmine,    DEPLOY, /v1/spaces/roles-other/deploy,       false",
     // The audit: the admin and the auditor all, a developer their own spaces
     "auditor,    GET,    /v1/audit/events,                    true",
     "jasmine,    GET,    /v1/audit/events?space=roles-lab,    true",
     "jasmine,    GET,    /v1/audit/events?space=roles-other,  false",
-    "eric,       GET,    /v1/audit/events,                    false",
+    "guest,      GET,    /v1/audit/events,                    false",
     // Credentials: the admin reveals, after a fresh sign-in
     "andrew,     POST,   /v1/credentials/x/reveal,            true",
     "jasmine,    POST,   /v1/credentials/x/reveal,            false",
-    "eric,       POST,   /v1/credentials/x/reveal,            false",
     "auditor,    POST,   /v1/credentials/x/reveal,            false"
   })
   void givenCallerRole_whenEndpointCalled_thenAllowedOrForbidden(
@@ -120,12 +116,12 @@ class AccessIntegrationTest {
     "jasmine,   POST,   '',     false",
     "jasmine,   PUT,    /x,     false",
     "jasmine,   DELETE, /x,     false",
-    // eric holds roles-lab's role, so asks its airlocks, and develops no space
-    "eric,      GET,    '',     false",
-    "eric,      GET,    /x,     false",
-    "eric,      POST,   '',     false",
-    "eric,      PUT,    /x,     false",
-    "eric,      DELETE, /x,     false",
+    // The auditor develops no space
+    "auditor,   GET,    '',     false",
+    "auditor,   GET,    /x,     false",
+    "auditor,   POST,   '',     false",
+    "auditor,   PUT,    /x,     false",
+    "auditor,   DELETE, /x,     false",
     "anonymous, GET,    '',     false",
     "anonymous, GET,    /x,     false",
     "anonymous, POST,   '',     false",
@@ -166,9 +162,7 @@ class AccessIntegrationTest {
     String token =
         caller.equals("anonymous")
             ? null
-            : TOKENS.computeIfAbsent(
-                caller,
-                user -> Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", user, "password"));
+            : TOKENS.computeIfAbsent(caller, user -> Tokens.forOperator(user, "password"));
     HttpRequest.Builder request =
         HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
     if (method.equals("DEPLOY")) {

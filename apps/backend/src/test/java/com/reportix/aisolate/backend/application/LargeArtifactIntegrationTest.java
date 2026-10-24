@@ -8,7 +8,6 @@ import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.backend.support.OwnDatabase;
 import com.reportix.aisolate.config.AuditIngestToken;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,8 +61,8 @@ class LargeArtifactIntegrationTest {
       throws Exception {
     // Arrange: random bytes do not deflate, so the zip itself is 50 MB
     Path zip = writeZip(dir.resolve("big.zip"), 50 * MIB);
-    String rita = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
-    String jasmine = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
+    String rita = Tokens.forOperator("andrew", "password");
+    String jasmine = Tokens.forOperator("jasmine", "password");
     post(rita, "/v1/spaces", CodeIntegrationTest.SPACE_FORM.formatted("large-lab", "large-lab"));
     post(rita, "/v1/spaces/large-lab/airlocks", "{\"id\":\"hr-assistant\",\"name\":\"HR\"}");
 

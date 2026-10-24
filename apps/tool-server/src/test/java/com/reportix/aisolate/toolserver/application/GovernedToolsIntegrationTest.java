@@ -373,7 +373,7 @@ class GovernedToolsIntegrationTest {
 
   Stream<String> tokenForAnotherAudience() {
     // A real token of the same user, issued to another Acme Financial Group client.
-    return Stream.of(Tokens.forUser(Keycloak.issuerUri(), "other-app", "nora", "password"));
+    return Stream.of(Tokens.forUser(Keycloak.usersIssuerUri(), "other-app", "nora", "password"));
   }
 
   @ParameterizedTest
@@ -418,7 +418,7 @@ class GovernedToolsIntegrationTest {
   Stream<Arguments> foundersFinanceCalls() {
     // The rules would give every caller here rows: only the gates decide
     Map<String, Object> count = Map.of("function", "count", "column", "gross_salary");
-    String partner = Tokens.forUser(Keycloak.issuerUri(), "partner-app", "nora", "password");
+    String partner = Tokens.forUser(Keycloak.usersIssuerUri(), "partner-app", "nora", "password");
     return Stream.of(
         // nora is the space's user: every airlock of it; as CEO she reads all five rows
         arguments(

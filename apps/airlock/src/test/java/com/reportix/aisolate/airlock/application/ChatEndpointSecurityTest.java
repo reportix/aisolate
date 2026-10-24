@@ -143,12 +143,13 @@ class ChatEndpointSecurityTest {
     return Stream.of(
         arguments(named("no token", null)),
         // Every claim is right, only the signature is not the identity provider's.
-        arguments(named("signed by an unknown key", UnknownKeyJwt.forged(Keycloak.issuerUri()))),
+        arguments(
+            named("signed by an unknown key", UnknownKeyJwt.forged(Keycloak.usersIssuerUri()))),
         // A real token of a real user, issued to another Acme Financial Group client.
         arguments(
             named(
                 "issued for another audience",
-                Tokens.forUser(Keycloak.issuerUri(), "other-app", "nora", "password"))));
+                Tokens.forUser(Keycloak.usersIssuerUri(), "other-app", "nora", "password"))));
   }
 
   @ParameterizedTest
@@ -280,7 +281,7 @@ class ChatEndpointSecurityTest {
     // Arrange: the model sends a name where a number goes, and the tool server quotes it back
     model.toolCall("read_records", "{\"salary\":\"Lindholm\"}").answer("I don't know.");
 
-    // Act: as nora, whose aisolate-admin role becomes an authority Spring Security would name
+    // Act: as nora, whose ceo and founder roles become authorities Spring Security would name
     chat(
         Tokens.forUser("nora", "password"),
         "acme-hr",
@@ -437,7 +438,7 @@ class ChatEndpointSecurityTest {
   @Test
   void givenCallingClientNotAllowed_whenChat_then403AndRefusalAuditLineNamesTheClient() {
     // Arrange: nora is on strict-app's list, the client she came through is not
-    String partner = Tokens.forUser(Keycloak.issuerUri(), "partner-app", "nora", "password");
+    String partner = Tokens.forUser(Keycloak.usersIssuerUri(), "partner-app", "nora", "password");
 
     // Act
     HttpResponse<String> response = chat(partner, "strict-app", "{\"message\":\"hi\"}");
@@ -460,7 +461,7 @@ class ChatEndpointSecurityTest {
       givenAllowedEmployeeThroughAnyClient_whenChat_thenOneExchangeAuditLineWithTheTokensUserAndClient(
           String accept) {
     // Arrange: a client acme-hr lists only through "*", to see the token's azp, not a constant
-    String partner = Tokens.forUser(Keycloak.issuerUri(), "partner-app", "nora", "password");
+    String partner = Tokens.forUser(Keycloak.usersIssuerUri(), "partner-app", "nora", "password");
     model.toolCall("read_records", "{}").answerCiting("{f1}", "ev-1", "r1", "gross_salary");
 
     // Act
@@ -634,7 +635,8 @@ class ChatEndpointSecurityTest {
     assertThat(response.statusCode()).isEqualTo(200);
     JsonNode doc = JSON.readTree(response.body());
     assertThat(doc.path("resource").asString()).isEqualTo("http://localhost:8080");
-    assertThat(doc.path("authorization_servers").get(0).asString()).isEqualTo(Keycloak.issuerUri());
+    assertThat(doc.path("authorization_servers").get(0).asString())
+        .isEqualTo(Keycloak.usersIssuerUri());
     assertThat(doc.path("scopes_supported").valueStream().map(n -> n.asString()))
         .contains("aisolate");
   }

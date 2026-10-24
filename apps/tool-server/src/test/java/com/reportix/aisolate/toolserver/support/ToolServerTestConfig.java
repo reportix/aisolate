@@ -25,7 +25,7 @@ public final class ToolServerTestConfig
   @Override
   public void initialize(ConfigurableApplicationContext context) {
     TestPropertyValues.of(
-            "spring.security.oauth2.resourceserver.jwt.issuer-uri=" + Keycloak.issuerUri(),
+            "spring.security.oauth2.resourceserver.jwt.issuer-uri=" + Keycloak.usersIssuerUri(),
             "aisolate.config.dir=" + DOCUMENTS,
             "aisolate.config.revision=" + REVISION,
             "aisolate.datasource[0].id=acme_hr",

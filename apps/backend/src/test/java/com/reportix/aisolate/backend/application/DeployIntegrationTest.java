@@ -7,7 +7,6 @@ import com.reportix.aisolate.backend.domain.airlock.AirlockFormDTO;
 import com.reportix.aisolate.backend.domain.deploy.PythonArtifacts;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import com.reportix.aisolate.plugins.testing.HandlerJars;
 import com.reportix.aisolate.plugins.testing.PluginJars;
@@ -87,10 +86,8 @@ class DeployIntegrationTest {
             handlers: []
       """;
 
-  private final String jasmine =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
-  private final String rita =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
+  private final String jasmine = Tokens.forOperator("jasmine", "password");
+  private final String rita = Tokens.forOperator("andrew", "password");
 
   @LocalServerPort int port;
 

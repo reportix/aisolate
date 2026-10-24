@@ -21,7 +21,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ContextConfiguration;
 
-/** The backend accepts a developer's token for AIsolate and nothing that only resembles one. */
+/**
+ * The backend accepts an operator's token from AIsolate's realm and nothing that only resembles
+ * one.
+ */
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = BackendApplication.class)
@@ -31,13 +34,13 @@ class TokenIntegrationTest {
   @LocalServerPort int port;
 
   static Stream<Arguments> tokensNotForAIsolate() {
-    String developer = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
+    String developer = Tokens.forOperator("jasmine", "password");
     return Stream.of(
-        // A developer's real token, issued to another client of the organisation's IdP.
+        // A developer's real token from AIsolate's realm, issued to a client without the audience.
         arguments(
             named(
                 "issued for another audience",
-                Tokens.forUser(Keycloak.issuerUri(), "other-app", "jasmine", "password"))),
+                Tokens.forUser(Keycloak.operatorsIssuerUri(), "other-app", "jasmine", "password"))),
         // Every claim is right, only the signature is not the IdP's.
         arguments(
             named(
@@ -59,6 +62,22 @@ class TokenIntegrationTest {
     HttpResponse<String> response = Http.send(request);
 
     // Assert
+    assertThat(response.statusCode()).isEqualTo(401);
+  }
+
+  @Test
+  void givenUsersRealmToken_whenBackend_then401() {
+    // Arrange: an application user's real token, audience aisolate, from the organisation's realm
+    HttpRequest request =
+        HttpRequest.newBuilder(uri("/v1/spaces"))
+            .header("Authorization", "Bearer " + Tokens.forUser("eric", "password"))
+            .GET()
+            .build();
+
+    // Act
+    HttpResponse<String> response = Http.send(request);
+
+    // Assert: the backend trusts AIsolate's realm alone
     assertThat(response.statusCode()).isEqualTo(401);
   }
 

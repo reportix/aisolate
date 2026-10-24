@@ -8,10 +8,12 @@ change to behaviour updates the page in `docs/` that describes it, in the same m
 
 ## Run it locally
 
-The compose stack brings Keycloak (realm `acme`, `docker/keycloak/realm-acme.json`, with the demo users
-and the login themes under `docker/keycloak/themes`), the customer database `acme` with its `hr` and
-`clients` schemas, seed and roles, and AIsolate's own PostgreSQL. The integration tests start the same images through
-Testcontainers.
+The compose stack brings the customer database `acme` with its `hr` and `clients` schemas, seed and roles,
+AIsolate's own PostgreSQL, and Keycloak (login themes under `docker/keycloak/themes`) with two realms:
+`aisolate` (`docker/keycloak/realm-aisolate.json`), AIsolate's own, where the operators sign in to the UI and the CLI
+(`andrew` and `nora` admins, `auditor`, `jasmine` a developer, `guest` with no role), and `acme` (`docker/keycloak/realm-acme.json`), the
+organisation's, whose application users ask the airlocks (`eric`, `leo`, `nora`, `ivy`, `jasmine`). The integration
+tests start the same images through Testcontainers.
 
 ```bash
 docker compose -f docker/compose.yaml up -d
@@ -20,7 +22,7 @@ npm ci && npm run dev -w apps/frontend     # :3001
 ```
 
 Spaces and airlocks can be defined there. Nothing answers without a cluster, and a data source that
-brings credentials is refused: only a cluster keeps them, as Secrets. Keycloak imports the realm only when the
+brings credentials is refused: only a cluster keeps them, as Secrets. Keycloak imports a realm only when the
 realm is absent; after a realm change run
 `docker compose -f docker/compose.yaml up -d --force-recreate keycloak`.
 `docker/postgres/acme/` runs only on a fresh volume: after a change there,

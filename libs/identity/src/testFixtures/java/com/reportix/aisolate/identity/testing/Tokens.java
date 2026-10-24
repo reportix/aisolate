@@ -16,8 +16,14 @@ public final class Tokens {
 
   private static final JsonMapper JSON = JsonMapper.builder().build();
 
+  /** An application user's token from the organisation's realm, as its chat obtains it. */
   public static String forUser(String username, String password) {
-    return forUser(Keycloak.issuerUri(), "acme-chat", username, password);
+    return forUser(Keycloak.usersIssuerUri(), "acme-chat", username, password);
+  }
+
+  /** An operator's token from AIsolate's realm, as the dashboard obtains it. */
+  public static String forOperator(String username, String password) {
+    return forUser(Keycloak.operatorsIssuerUri(), "aisolate-ui", username, password);
   }
 
   public static String forUser(String issuer, String clientId, String username, String password) {

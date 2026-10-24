@@ -7,7 +7,6 @@ import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import com.reportix.aisolate.plugins.testing.PluginJars;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
@@ -116,10 +115,8 @@ class ClusterSyncIntegrationTest {
   @Autowired ClusterSyncService clusterSync;
   @Autowired ScheduledTaskHolder scheduled;
   @Autowired CredentialRepository rows;
-  private final String jasmine =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
-  private final String rita =
-      Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
+  private final String jasmine = Tokens.forOperator("jasmine", "password");
+  private final String rita = Tokens.forOperator("andrew", "password");
 
   // Airlock ids are global in the backend: this class owns cluster-lab and its names alone.
   // Per test, because the Spring context (and its port) exists only once an instance does: 201 the

@@ -12,7 +12,6 @@ import com.reportix.aisolate.backend.support.Containers;
 import com.reportix.aisolate.backend.support.OwnDatabase;
 import com.reportix.aisolate.config.AuditIngestToken;
 import com.reportix.aisolate.identity.testing.Http;
-import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -86,7 +85,7 @@ class AuditIntegrationTest {
 
   /** Each gives the token sent for a line of the space under test. */
   static Stream<Arguments> tokensNotTheAirlocks() {
-    String developer = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "jasmine", "password");
+    String developer = Tokens.forOperator("jasmine", "password");
     return Stream.of(
         arguments(named("another airlock's of the space", tokenFor("sales"))),
         arguments(
@@ -379,14 +378,15 @@ class AuditIntegrationTest {
     // A developer of hr-acme only: the list and the export leave this space out; its event,
     // chain and an export of it are 403
     "jasmine, 200, 403, 403, 403, 0",
-    "eric, 403, 403, 403, 403, 0"
+    // No role, develops nothing
+    "guest, 403, 403, 403, 403, 0"
   })
   void givenAUser_whenReadingTheAudit_thenAllowedByRoleAndSpace(
       String username, int list, int event, int verify, int export, int seen) {
     // Arrange
     String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
     long id = JSON.readTree(ingest(token, line(space, airlock, "q")).body()).path("id").asLong();
-    String user = Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", username, "password");
+    String user = Tokens.forOperator(username, "password");
 
     // Act
     List<Integer> statuses =
@@ -709,11 +709,11 @@ class AuditIntegrationTest {
   }
 
   private static String auditor() {
-    return Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "auditor", "password");
+    return Tokens.forOperator("auditor", "password");
   }
 
   private static String admin() {
-    return Tokens.forUser(Keycloak.issuerUri(), "aisolate-ui", "andrew", "password");
+    return Tokens.forOperator("andrew", "password");
   }
 
   /** On the audit database, as the container's superuser, after {@code setup} on the connection. */

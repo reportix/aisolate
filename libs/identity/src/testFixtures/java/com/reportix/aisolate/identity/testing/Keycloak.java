@@ -7,8 +7,8 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.MountableFile;
 
 /**
- * The test Keycloak every app's integration tests share: the image and realm file of
- * docker/compose, started once per test JVM.
+ * The test Keycloak every app's integration tests share: the image and the two realm files of
+ * docker/compose (aisolate: operators; acme: application users), started once per test JVM.
  */
 public final class Keycloak {
 
@@ -23,6 +23,9 @@ public final class Keycloak {
           .withEnv("KC_BOOTSTRAP_ADMIN_PASSWORD", "admin")
           .withEnv("KC_HEALTH_ENABLED", "true")
           .withCopyFileToContainer(
+              MountableFile.forHostPath(DOCKER.resolve("keycloak/realm-aisolate.json")),
+              "/opt/keycloak/data/import/realm-aisolate.json")
+          .withCopyFileToContainer(
               MountableFile.forHostPath(DOCKER.resolve("keycloak/realm-acme.json")),
               "/opt/keycloak/data/import/realm-acme.json")
           .withExposedPorts(8080, 9000)
@@ -35,8 +38,18 @@ public final class Keycloak {
     KEYCLOAK.start();
   }
 
-  public static String issuerUri() {
-    return "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080) + "/realms/acme";
+  /** The organisation's realm: the application users who ask airlocks. */
+  public static String usersIssuerUri() {
+    return realm("acme");
+  }
+
+  /** AIsolate's own realm: the operators of the dashboard and the CLI. */
+  public static String operatorsIssuerUri() {
+    return realm("aisolate");
+  }
+
+  private static String realm(String name) {
+    return "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080) + "/realms/" + name;
   }
 
   private Keycloak() {}
