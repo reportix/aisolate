@@ -57,9 +57,9 @@ final class CreateCommand implements Callable<Integer> {
 
   /**
    * What the Airlock document of a parameterised template writes for one airlock: its name, its
-   * description and, when it has any, its own users (the space's are set in the AIsolate UI).
+   * description and, when it has any, its own roles (the space's are set in the AIsolate UI).
    */
-  record Airlock(String name, String description, String users) {}
+  record Airlock(String name, String description, String roles) {}
 
   /** The airlocks of the auditor and hospital templates, as the templates name them. */
   static final Map<String, Airlock> AIRLOCKS =
@@ -75,13 +75,13 @@ final class CreateCommand implements Callable<Integer> {
               "Cardiology",
               "Cardiology: vitals, ECGs, labs, the medication list and its notes, for the"
                   + " department's doctors.",
-              "noah@aldermoor.example"),
+              "doctor"),
           "psychiatry",
           new Airlock(
               "Psychiatry",
               "Psychiatry: therapy sessions, diagnoses, the medication list and its notes, for the"
                   + " department's doctors.",
-              "clara@aldermoor.example"));
+              "doctor"));
 
   private static Airlock audited(String company) {
     return new Airlock(company, Template.auditor.description.formatted(company), null);
@@ -91,7 +91,7 @@ final class CreateCommand implements Callable<Integer> {
    * What the template's text placeholders become: {@code ${SPACE}}, {@code ${AIRLOCK}} and the
    * airlock's {@code ${AIRLOCK_NAME}}, {@code ${AIRLOCK_DESCRIPTION}} and {@code
    * ${AIRLOCK_ACCESS}}; an airlock {@link #AIRLOCKS} does not know is named after its id, with no
-   * users of its own.
+   * roles of its own.
    */
   static Map<String, String> placeholders(String template, String space, String airlock) {
     String capitalised = airlock.substring(0, 1).toUpperCase(Locale.ROOT) + airlock.substring(1);
@@ -111,9 +111,9 @@ final class CreateCommand implements Callable<Integer> {
         "AIRLOCK_DESCRIPTION",
         known.description(),
         "AIRLOCK_ACCESS",
-        known.users() == null
-            ? "# access: {users: [...]}   # its own users; left out, the AIsolate UI's stay"
-            : "access: {users: [" + known.users() + "]}");
+        known.roles() == null
+            ? "# access: {roles: [...]}   # its own roles; left out, the space's decide"
+            : "access: {roles: [" + known.roles() + "]}");
   }
 
   /** The extraction step, replaceable so a test can fail it partway. */

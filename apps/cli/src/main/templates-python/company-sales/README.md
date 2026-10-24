@@ -4,10 +4,11 @@ An AIsolate project: the code, the rules and the settings of the `${AIRLOCK}` ai
 one the founders ask about client accounts, invoices and what was agreed with a
 client. `aisolate deploy` builds the project and deploys it, together with `aisolate.yaml`,
 into the space `AISOLATE_SPACE` names in `.env`. The space is created in the AIsolate UI first:
-it lists the users who may ask every airlock of it. The LLMs and the data sources are the
+it lists
+the roles that may ask every airlock of it. The LLMs and the data sources are the
 admin's, defined for all of AIsolate, on the space or on the airlock: the project names them by
 id and holds no credential. The airlock is created or updated from `aisolate.yaml` on every deploy: its name,
-its description and its own users; a field the file leaves out keeps what the AIsolate UI set.
+its description and its own roles; a field the file leaves out keeps what the AIsolate UI set.
 The full walk-through is `docs/develop.md` in the AIsolate repository.
 
 ## The tree
@@ -78,16 +79,16 @@ Four groups follow, in the order an exchange runs:
 | `postLLM` | `answerVerifier.handlers` |
 | `llms`, `dataSources` | optional, none here: LLMs and databases of the airlock's own, each replacing an inherited one of the same id |
 
-Who may ask: the space lists its users, by e-mail, and the
-airlock its own, `access.users`, and `access.callers`, the clients that may call (`*` for any,
+Who may ask: the space lists the roles, `access.roles`, and the
+airlock its own, `access.roles`, and `access.callers`, the clients that may call (`*` for any,
 the default).
-A space's users may ask every airlock of the space; an airlock's own users may ask that airlock
+A token with a role of the space may ask every airlock of the space; one with a role of the airlock's own may ask that airlock
 only. Who may ask the airlock is the gate for everything
 it serves: the rules filter only what the tools return, by the token's roles, and
 `SalesDocumentsContextPreparator` passes every client document, board memos included, to every
-user the airlock admits. That is by design: anyone on the space may ask `${AIRLOCK}`. So put on the
-space only people who may read all of it, give anyone else only the users list of the airlock
-they need, and keep the founders on the space or on the `${AIRLOCK}` airlock's own list. Any other
+user the airlock admits. That is by design: anyone on the space may ask `${AIRLOCK}`. So give the
+space only roles whose holders may read all of it, anyone else only the roles of the airlock
+they need, and keep the founders' role on the space or on the `${AIRLOCK}` airlock's own. Any other
 user then sees no `${AIRLOCK}` airlock in the discovery and gets a 403 at its endpoint. Handlers are
 listed by class
 name and tools by name, and both are the project's: the deploy refuses one the code does

@@ -27,8 +27,20 @@
         "description": "Acme Financial Group intern: no rule grants access"
       },
       {
+        "name": "doctor",
+        "description": "Aldermoor Hospital doctor: may ask their department\u0027s airlock"
+      },
+      {
+        "name": "chief",
+        "description": "Aldermoor Hospital chief of medicine: may ask every department, for statistics"
+      },
+      {
+        "name": "auditor",
+        "description": "Halvard Finch auditor: may ask every company\u0027s airlock"
+      },
+      {
         "name": "aisolate-admin",
-        "description": "AIsolate UI: creates spaces and names their developers and users; may do everything"
+        "description": "AIsolate UI: creates spaces and names the developers and the roles that may ask; may do everything"
       },
       {
         "name": "aisolate-auditor",
@@ -171,17 +183,6 @@
         "employee",
         "founder"
       ]
-    },
-    {
-      "username": "service-account-aisolate-directory",
-      "enabled": true,
-      "serviceAccountClientId": "aisolate-directory",
-      "clientRoles": {
-        "realm-management": [
-          "view-users",
-          "query-users"
-        ]
-      }
     }
   ],
   "clients": [
@@ -393,21 +394,6 @@
         "email",
         "aisolate"
       ]
-    },
-    {
-      "clientId": "aisolate-directory",
-      "name": "AIsolate directory (read-only people search)",
-      "description": "The AIsolate backend's service account: it searches and looks up users, and holds realm-management's view-users and query-users only. It creates, invites and deletes no one.",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": false,
-      "clientAuthenticatorType": "client-secret",
-      "secret": "aisolate-directory-dev-secret",
-      "standardFlowEnabled": false,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": true,
-      "fullScopeAllowed": true
     }
   ],
   "clientScopes": [

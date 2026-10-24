@@ -5,10 +5,10 @@ company's people ask about their employment contract: position, pay, working tim
 notice and confidentiality. The CEO reads every contract, anyone else only their own.
 `aisolate deploy` builds the project and deploys it, together with `aisolate.yaml`, into the
 space `AISOLATE_SPACE` names in `.env`. The space is created in the AIsolate UI first: it lists
-the users who may ask every airlock of it. The LLMs and the data sources are the admin's,
+the roles that may ask every airlock of it. The LLMs and the data sources are the admin's,
 defined for all of AIsolate, on the space or on the airlock: the project names them by id and
 holds no credential. The airlock is created or updated from `aisolate.yaml` on every deploy: its
-name, its description and its own users; a field the file leaves out keeps what the AIsolate UI
+name, its description and its own roles; a field the file leaves out keeps what the AIsolate UI
 set. The full walk-through is `docs/develop.md` in the AIsolate repository.
 
 ## The tree
@@ -65,9 +65,9 @@ Four groups follow, in the order an exchange runs:
 | `postLLM` | `answerVerifier.handlers`, none here |
 | `llms`, `dataSources` | optional, none here: LLMs and databases of the airlock's own, each replacing an inherited one of the same id |
 
-Who may ask: the space lists its users, by e-mail, and the
-airlock its own, `access.users`, and `access.callers`, the clients that may call (`*` for any,
-the default). A space's users may ask every airlock of the space; an airlock's own users may ask
+Who may ask: the space lists the roles, `access.roles`, and the
+airlock its own, `access.roles`, and `access.callers`, the clients that may call (`*` for any,
+the default). A token with a role of the space may ask every airlock of the space; one with a role of the airlock's own may ask
 that airlock only. The token's roles do not admit anyone. What a context preparator passes on is
 its own code's choice: the contracts handler filters by the asking user's roles and e-mail (see
 The contracts). Handlers are listed by class name, and are the project's: the deploy

@@ -18,10 +18,10 @@ import java.util.List;
  * of {@code aisolate.yaml}: the question is embedded with the LLM {@code nomic}, the closest
  * sections are added to the exchange under one evidence id. It filters nothing, by design: everyone
  * the airlock admits reads every section, board memos included. Who may ask this airlock is its
- * space's users and its own, so a user put on the space to ask another airlock may ask this one
- * too. The user lists are the boundary here: put on the space only people who may read every
- * document of every airlock. One instance serves every exchange concurrently: no fields, one
- * connection per call.
+ * space's roles and its own, so a role put on the space to ask another airlock admits its holders
+ * here too. The role lists are the boundary here: put on the space only roles whose holders may
+ * read every document of every airlock. One instance serves every exchange concurrently: no fields,
+ * one connection per call.
  */
 @Description("Read client contracts")
 @DataSources("clients")

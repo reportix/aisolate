@@ -150,13 +150,13 @@ class CreateCommandTest {
   @CsvSource(
       delimiter = '|',
       value = {
-        "auditor|northbeck|Northbeck Logistics GmbH|'  # No users of its own'",
-        "auditor|harwick|Harwick|'  # No users of its own'",
-        "hospital|cardiology|Cardiology|'  access: {users: [noah@aldermoor.example]}'",
-        "hospital|psychiatry|Psychiatry|'  access: {users: [clara@aldermoor.example]}'",
-        "hospital|neurology|Neurology|'  # access: {users: [...]}'"
+        "auditor|northbeck|Northbeck Logistics GmbH|'  # No roles of its own'",
+        "auditor|harwick|Harwick|'  # No roles of its own'",
+        "hospital|cardiology|Cardiology|'  access: {roles: [doctor]}'",
+        "hospital|psychiatry|Psychiatry|'  access: {roles: [doctor]}'",
+        "hospital|neurology|Neurology|'  # access: {roles: [...]}'"
       })
-  void givenParameterisedTemplate_whenCreate_thenItsAirlockDocumentNamesTheAirlockAndItsUsers(
+  void givenParameterisedTemplate_whenCreate_thenItsAirlockDocumentNamesTheAirlockAndItsRoles(
       String template, String airlock, String name, String access) throws Exception {
     // Arrange: an airlock the templates do not know is named after its id
     CommandLine cli = cli();

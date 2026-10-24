@@ -41,9 +41,9 @@ Where each is enforced: [docs/security.md](docs/security.md).
 
 ## How it fits together
 
-An **airlock** is a governed endpoint inside a **space**. The space lists the users who may ask every airlock of
-it and holds the LLM and data sources its airlocks share; the airlock lists its own users, who may ask it alone
-([Users](docs/concepts.md#vocabulary)), and its callers. Each airlock runs as its own pod pair in Kubernetes: the airlock pod (the endpoint, the agent
+An **airlock** is a governed endpoint inside a **space**. The space lists the roles that may ask every airlock of
+it and holds the LLM and data sources its airlocks share; the airlock lists its own roles, which may ask it alone
+([Roles](docs/concepts.md#vocabulary)), and its callers. Each airlock runs as its own pod pair in Kubernetes: the airlock pod (the endpoint, the agent
 loop, the airlock's handlers) and its MCP server (the airlock's tools over the organisation's database, the
 rules compiled into SQL). A **controller** turns the
 `Space` and `Airlock` documents into those pods. A developer's project is one airlock: its
@@ -73,8 +73,8 @@ helm install aisolate ./chart --namespace aisolate --values values.yaml
 
 In the AIsolate UI an admin defines the LLMs `granite` and `nomic` and the data sources `hr` and `clients` for
 all of AIsolate (a project names them by id and holds no credential), and the spaces `hr-space` and
-`acme-financial-group` with their users; each deploy creates or updates its airlock, `hr-contracts` and `sales`,
-with its own users. Then, with the CLI ([docs/develop.md](docs/develop.md#install-the-cli)):
+`acme-financial-group` with their roles; each deploy creates or updates its airlock, `hr-contracts` and `sales`,
+with its own roles. Then, with the CLI ([docs/develop.md](docs/develop.md#install-the-cli)):
 
 ```bash
 export AISOLATE_ENDPOINT=https://api.aisolate.example.com

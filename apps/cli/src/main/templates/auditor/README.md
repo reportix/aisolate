@@ -15,7 +15,7 @@ The code never names a company's database. It reads the data source `ledger`, an
 airlock defines its own `ledger` in the AIsolate UI: the URL of that company's database and a
 database role that can connect to nothing else. The three companies' airlocks are the same
 code, so what makes an answer about one company is the airlock it is asked on. The auditors are
-the space's users and may ask every company's airlock; an answer about one company never draws on
+the space's roles and may ask every company's airlock; an answer about one company never draws on
 another's data, because that airlock's pods never hold a connection to it.
 
 ## The tree

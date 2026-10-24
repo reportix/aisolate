@@ -2,7 +2,7 @@
 
 A project is one airlock: its code (tools, handlers and rule sets) and one `aisolate.yaml` with its
 `Airlock`. The space exists first, created in the AIsolate UI: it
-lists the users who may ask every airlock of it, and the LLM and the data sources its airlocks share are set
+lists the roles that may ask every airlock of it, and the LLM and the data sources its airlocks share are set
 there too. Every deploy creates the airlock from the file's `Airlock`, or updates each field the document
 writes (a field it leaves out keeps what the AIsolate UI set). The `aisolate` CLI creates the project from a
 template and deploys it into that airlock, in a cluster installed with the AIsolate UI (`headless=false`).
@@ -59,7 +59,7 @@ the same and the airlock decides what it reads.
 
 ```
 company-hr/
-  aisolate.yaml                     the Airlock: its name, its own users, the four groups, its LLM by id
+  aisolate.yaml                     the Airlock: its name, its own roles, the four groups, its LLM by id
   .env, .env.example                  AISOLATE_ENDPOINT, AISOLATE_SPACE, no credential; .env is never committed
   src/acme_hr/                      every class of the package belongs to this airlock
     pre_llm/contracts.py              ContractsContextPreparator, a @context_preparator: reads hr.documents on hr
@@ -160,8 +160,8 @@ The templates' handlers: `ContractsContextPreparator` reads `hr.documents` from 
 `hr` with pgvector and keeps at most 5 sections within cosine distance 0.6, with the owner predicate in the
 `WHERE` clause (the CEO reads every contract, anyone else their own) and the asking user's own sections marked as
 theirs; `SalesDocumentsContextPreparator` reads `clients.documents` from
-`clients` the same way and filters nothing: every user the Sales airlock admits, the space's users among
-them, reads every client document, by design, so the space lists only people who may read them all;
+`clients` the same way and filters nothing: every caller the Sales airlock admits, holders of the space's roles among
+them, reads every client document, by design, so the space lists only roles whose holders may read them all;
 `SessionMemory` keeps each user's last three questions while the pod runs. The verifiers each judge one rule of their
 template's questions: company-sales' `CustomerVerifier` (every figure is about the customer the question names), the
 auditor's `PeriodVerifier` (every figure is for a year the question names) and the hospital's `LatestReadingVerifier`
@@ -185,13 +185,13 @@ builder. The deploy refuses code whose rule sets do not parse or sit anywhere bu
 
 ## Write the project file
 
-`aisolate.yaml` is the airlock's one `Airlock` document: its name, description and own users (created or updated on
+`aisolate.yaml` is the airlock's one `Airlock` document: its name, description and own roles (created or updated on
 every deploy, a field it leaves out keeping what the AIsolate UI set), and the four groups: the LLM that answers by its
 id (`spec.llm: granite`) with the `prompt` and `tools` under `spec`. It holds no credential: the LLMs and the data
-sources its code reads by id are the admin's, for all of AIsolate, on the space or on the airlock. Who may ask: the space lists its users in the AIsolate UI, the
+sources its code reads by id are the admin's, for all of AIsolate, on the space or on the airlock. Who may ask: the space lists its roles in the AIsolate UI, the
 airlock its own and its callers, in the file or in the AIsolate UI. The file as the template writes it, and what the
 deploy checks, are in [The project file](documents.md#the-project-file). An airlock created in the AIsolate UI
-has a name, a description, its users and no code; the deploy fills its code, stages, LLM, prompt and
+has a name, a description, its roles and no code; the deploy fills its code, stages, LLM, prompt and
 tools from the project, and replaces its description with the project's `spec.description`, blank when
 the project has none. Another airlock of the same
 space, with other code, is the same project with another `metadata.name`, deployed: the deploy creates it, and
@@ -217,7 +217,7 @@ aisolate logout
 `login` shows "Sign in with your account". Enter, or a click, opens your browser on the identity provider's
 sign-in page (client `aisolate-cli`, PKCE with a redirect to `127.0.0.1`); the URL is printed only when no
 browser can be opened. Sign in as a developer of the space you deploy into, `jasmine` in the demo: the admin
-makes you one on the space's **Users** page; anyone else gets `You are not a developer of space acme: ask its
+names you one of the space's developers; anyone else gets `You are not a developer of space acme: ask its
 admin to add you as Developer.` The session is kept
 per endpoint in `~/.aisolate/session.json`, readable by you only (`AISOLATE_HOME` moves it), refreshed
 silently, and ends after 90 days unused or with `logout`.
@@ -286,16 +286,15 @@ in `./company-sales` creates `acme-financial-group/sales` with its own pod pair.
 ## Define airlocks in the AIsolate UI
 
 The AIsolate UI is a view of the same objects a deploy writes. Who does what is GitLab's group model: the admin
-(`aisolate-admin`) creates a space and adds its users, each with the role Developer or User; a developer sees the
+(`aisolate-admin`) creates a space and names its developers, by e-mail, and the roles that may ask it; a developer sees the
 spaces they develop, creates and edits their airlocks and deploys into them, and sees the space's
-own Users, LLMs and Data sources read-only; a user only asks, in the chat, and sees no space here. Every list, add and edit is a page of its own with its own breadcrumb, and a save applies at once. The
-rail follows where you are: Dashboard and Spaces; inside a space, its Users, LLMs and Data sources; inside an
-airlock, its Overview, Details, Tools, Users, LLMs and Data sources. In the order a project is set up:
+own LLMs and Data sources read-only; anyone else only asks, in the chat, and sees no space here. Every list, add and edit is a page of its own with its own breadcrumb, and a save applies at once. The
+rail follows where you are: Dashboard and Spaces; inside a space, its LLMs and Data sources; inside an
+airlock, its Overview, Details, Tools, LLMs and Data sources. In the order a project is set up:
 
 - **New space** (the admin's): a name and a description; the id is generated from the name. The space's own
-  pages come next, the admin's to change. **Users**: everyone who may ask every airlock of the space, by name and
-  e-mail, with a Role, Developer or User, which the admin changes in the row; **Add users** picks people from the
-  directory and gives them the role chosen (User unless Developer is picked), and the list may be empty. **LLMs**:
+  pages come next, the admin's to change. The form has **Developers**, e-mails typed as chips, who edit the space in the UI, and **Roles**, the
+  roles that may ask every airlock of the space (the realm's roles, typed as chips), and either may be empty. **LLMs**:
   the global ones, inherited, and the space's own; **Add LLM** takes an id, a provider, a URL and a model, and an
   own id that a global one has replaces it. An LLM has no type: the same one chats or embeds, as far as its model
   can. **Data sources**: a table of ids with their URL and credentials; **Add data
@@ -303,11 +302,9 @@ airlock, its Overview, Details, Tools, Users, LLMs and Data sources. In the orde
   project deploys into an existing space.
 - **New airlock**, in the space: a name and a description; the id is generated from the name and names it
   in its endpoint path (the airlock **HR contracts** gets the id `hr-contracts`, which the template's `metadata.name`
-  names). A new airlock starts with no users of its own and the callers `*`. Each of its three pages shows
-  the airlock's own first, then what it takes from the space, read-only. **Users**: **Users of** the airlock,
-  who may ask it alone and need not be users of the space, then **Inherited from the space**, the space's
-  users, then the callers; **Edit users** takes the airlock's own users as one e-mail per line, maybe none, and
-  the callers, `*` for any. **LLMs**: the airlock's own rows over the global and the space's;
+  names). A new airlock starts with no roles of its own and the callers `*`. Each of its three pages shows
+  the airlock's own first, then what it takes from the space, read-only. The **Roles** field takes the airlock's own roles,
+  who may ask it alone, maybe none, shown beside the space's, read-only; the callers, `*` for any. **LLMs**: the airlock's own rows over the global and the space's;
   a row with the id of an inherited one replaces it for the airlock. **Data sources**: the airlock's own rows over the
   space's; a row with the id of one of the space's replaces it for the airlock. An airlock exists
   before its first deploy, with no code, and runs nothing until it.
@@ -328,11 +325,11 @@ airlock, its Overview, Details, Tools, Users, LLMs and Data sources. In the orde
 
 ## Try the airlocks
 
-Sign in to a chat as a user the space or an airlock lists, one of each role. The demo realm has one user per
+Sign in to a chat as a user whose token carries a role the space or an airlock lists. The demo realm has one user per
 role: an employee, the CEO (also a founder and an admin), a co-founder (an employee and a founder), an intern, a
-developer and an admin; the realm file lists their logins. With a space `hr-space` that lists the CEO's e-mail and
-its `hr-contracts` airlock that lists the employee's as its own, a space that lists the two founders' with a `sales`
-airlock with no users of its own, and the two templates deployed, the chat lists the airlocks a user may ask (the
+developer and an admin; the realm file lists their logins. With a space `hr-space` that lists the role `ceo` and
+its `hr-contracts` airlock that lists `employee` as its own, a space that lists `founder` with a `sales`
+airlock with no roles of its own, and the two templates deployed, the chat lists the airlocks a user may ask (the
 employee sees `hr-contracts` alone, the CEO both, through the spaces), and shows the answer and, folded under it,
 what ran: a line per verifier, with its note.
 
@@ -347,12 +344,12 @@ what ran: a line per verifier, with its note.
 | The employee | sales | anything | Discovery lists no `sales` airlock for them; its endpoint answers 403. |
 | The intern | any | anything | Discovery lists no airlock; the endpoint answers 403. |
 
-Who may ask an airlock is the gate for everything it serves: the space's users and its own. The rules filter
-only what the tools return, by the token's roles: a user the airlock admits whose roles match no rule gets zero
+Who may ask an airlock is the gate for everything it serves: the space's roles and its own. The rules filter
+only what the tools return, by the token's roles: a caller the airlock admits whose roles match no rule gets zero
 rows from the tools, never a 403. A context preparator decides in its own code what it passes on, and the answer
-may draw on it: `SalesDocumentsContextPreparator` passes every client document to every user the Sales
-airlock admits. So list on the space only the people who may see all of what every airlock's context
-preparators read, and give someone who may see one airlock's only that airlock's Users page.
+may draw on it: `SalesDocumentsContextPreparator` passes every client document to every caller the Sales
+airlock admits. So give the space only roles whose holders may see all of what every airlock's context
+preparators read, and give someone who may see one airlock's only that airlock's roles.
 
 ## Start over
 

@@ -12,7 +12,7 @@ metadata:
 spec:
   displayName: ${AIRLOCK_NAME}
   description: "${AIRLOCK_DESCRIPTION}"
-  # No users of its own: the firm's auditors are the space's.
+  # No roles of its own: the space's decide.
 
   # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
   preLLM:
