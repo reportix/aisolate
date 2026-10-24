@@ -125,11 +125,11 @@ def create_app(airlock: Airlock, agent: AgentLoop, verifier, audit_log: audit.Au
                 tracing.tag(span, "aisolate.reason", reason)
                 tracing.tag(exchange_span, "aisolate.outcome", "refused")
                 audit_log.record(audit.refusal(began, tracing.trace_id(), airlock.space, airlock.id,
-                                               airlock.revision, user.email, user.azp, question, reason,
+                                               airlock.revision, user.email or user.sub, user.azp, question, reason,
                                                int((time.monotonic() - started) * 1000)))
-                # a machine token has no e-mail: name the client alone
-                who = (f"client {_java(user.azp)}" if user.email is None
-                       else f"roles [{', '.join(sorted(user.roles))}] from client {_java(user.azp)}")
+                # the reason, not the token's shape, picks the text: a machine client can be refused on its roles too
+                who = (f"roles [{', '.join(sorted(user.roles))}] from client {_java(user.azp)}" if reason == "role"
+                       else f"client {_java(user.azp)}")
                 log.warning("403 POST %s: %s/%s does not admit %s", path, airlock.space, airlock.id, who)
                 raise ForbiddenException(problem(403, "forbidden", path))
 

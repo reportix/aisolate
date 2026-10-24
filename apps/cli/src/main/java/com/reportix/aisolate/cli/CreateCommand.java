@@ -112,7 +112,7 @@ final class CreateCommand implements Callable<Integer> {
         known.description(),
         "AIRLOCK_ACCESS",
         known.roles() == null
-            ? "# access: {roles: [...]}   # its own roles; left out, the space's decide"
+            ? "# access: {roles: [...]}   # its own roles; left out, the AIsolate UI's stay"
             : "access: {roles: [" + known.roles() + "]}");
   }
 

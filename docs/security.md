@@ -89,7 +89,7 @@ sequenceDiagram
 | Gate | Where | Checks | On failure |
 |---|---|---|---|
 | 1 | airlock pod, `SecurityConfig` of `libs/identity` | Issuer, JWKS signature, expiry, `aud = aisolate` | 401 with `WWW-Authenticate: Bearer resource_metadata=…` |
-| 2 | airlock pod, `AirlockAdmissionService` | a token role in the space's `access.roles` or the airlock's own, exact; `azp` in the airlock's `access.callers` (`*` admits any client registered at the identity provider). A token without an `email` whose `azp` is exactly one of the airlock's `access.clients` is admitted instead, the callers not consulted (`*` is no wildcard there). No `email` is needed for a person | 403 "forbidden"; the pod's log carries `<space>/<airlock> does not admit user <email> from client <azp>`, or `does not admit client <azp>` for a token without an e-mail, and the audit trail one `refusal` line with `reason` `role` or `client` |
+| 2 | airlock pod, `AirlockAdmissionService` | a token role in the space's `access.roles` or the airlock's own, exact; `azp` in the airlock's `access.callers` (`*` admits any client registered at the identity provider). A token without an `email` whose `azp` is exactly one of the airlock's `access.clients` is admitted instead, the callers not consulted (`*` is no wildcard there). No `email` is needed for a person | 403 "forbidden"; the pod's log carries `<space>/<airlock> does not admit roles [<roles, sorted>] from client <azp>` (reason `role`), or `does not admit client <azp>` (reason `client`), and the audit trail one `refusal` line with `reason` `role` or `client` |
 | 3 | airlock pod, `ChatExchange` and `AgentLoopService` | Only the tools the airlock lists become callbacks; any other name resolves to a stub that answers instead of running; arguments must be a JSON object; at most three tool calls per exchange | Call dropped and the model told, or `error` event |
 | 4 | MCP server, `SecurityConfig` | The same token checks as gate 1, independently | 401 |
 | 5 | MCP server, `GovernedQueryService` with `RulesEvaluator` and `SqlCompiler` | The airlock named in `_meta` at the revision the server loaded; the same admission as gate 2 (the space's and the airlock's roles, the airlock's callers and machine clients; the roles also select the rules) and the tool list re-checked; the tool's plugin and its data source; rules evaluated for the action; arguments validated against the catalog; obligations compiled into the SQL | Silent: evidence with `row_count 0`, never an error the model could read |
@@ -331,7 +331,7 @@ AIsolate UI (`headless`) there is no backend, and stdout is the only copy.
 | `trace_id` | The exchange's trace, its root span's trace id ([Observability](observability.md#traces)); `null` only where nothing traces, as in a test without a tracer |
 | `space`, `airlock` | The airlock the request addressed |
 | `revision` | The revision of the documents that airlock serves; see [Names, ids and revision](documents.md#names-ids-and-revision) |
-| `user` | The token's `email`; `null` when the token has none, as a machine client's has none |
+| `user` | The token's `email`, else its `sub` (a machine client's token has no e-mail); never null |
 | `client` | The token's `azp`, the OAuth client that asked; for a machine client, who asked. The PDF export and the XBRL `User` fact show it where `user` is `null` |
 | `question` | The message as it was sent |
 | `answer` | What the user was told, "I don't know" included when the airlock replaced the model's answer; `null` unless the model answered |

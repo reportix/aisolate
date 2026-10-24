@@ -1,7 +1,6 @@
 package com.reportix.aisolate.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import tools.jackson.core.type.TypeReference;
@@ -35,11 +34,6 @@ public record DiscoveredAirlock(
   }
 
   private static final JsonMapper JSON = JsonMapper.builder().build();
-
-  /** Whether one of {@code tokenRoles} is one of its roles; exact, as admission matches them. */
-  public boolean admits(Collection<String> tokenRoles) {
-    return tokenRoles.stream().anyMatch(roles::contains);
-  }
 
   /** Every airlock of a release. */
   public static List<DiscoveredAirlock> of(Configuration release) {

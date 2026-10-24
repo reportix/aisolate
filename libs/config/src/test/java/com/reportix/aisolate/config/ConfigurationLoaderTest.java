@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -445,26 +444,6 @@ class ConfigurationLoaderTest {
     assertThat(DiscoveredAirlock.toJson(discovered))
         .doesNotContain("granite")
         .doesNotContain("prompt");
-  }
-
-  @ParameterizedTest
-  @CsvSource({
-    "ceo, true",
-    "'offline_access,employee', true",
-    "Ceo, false",
-    "founder, false",
-    "'', false",
-  })
-  void givenTokenRoles_whenAdmits_thenCaseSensitive(String tokenRoles, boolean admits) {
-    // Arrange: hr-assistant lists the space's ceo and hr, and its own employee
-    DiscoveredAirlock airlock = DiscoveredAirlock.of(ConfigurationLoader.load(FIXTURES)).getFirst();
-
-    // Act
-    boolean admitted =
-        airlock.admits(tokenRoles.isEmpty() ? Set.of() : Set.of(tokenRoles.split(",")));
-
-    // Assert
-    assertThat(admitted).isEqualTo(admits);
   }
 
   @Test

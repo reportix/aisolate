@@ -103,7 +103,7 @@ describe("AuditEventView", () => {
         ...detail.event,
         event: "refusal" as const,
         outcome: "refused" as const,
-        reason: "user",
+        reason: "role",
         answer: null,
         grounding: null,
         tools: [],
@@ -115,7 +115,7 @@ describe("AuditEventView", () => {
     const html = view(intact, refusal);
 
     // Assert
-    expect(html).toContain("Nothing was answered: refused · user not listed.");
+    expect(html).toContain("Nothing was answered: refused · no listed role.");
     expect(html).toContain("No tool was called.");
   });
 });

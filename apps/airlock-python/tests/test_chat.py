@@ -355,3 +355,17 @@ async def test_given_model_still_calls_tools_when_it_may_not_then_error_and_no_a
     assert events[-1] == ("error", {"message": prompts.ERROR_COULD_NOT_COMPLETE, "type": "error"})
     assert "done" not in [kind for kind, _ in events]
     assert lines(out)[0]["reason"] == "internal"
+
+
+async def test_given_token_without_email_when_refused_then_audit_user_is_sub():
+    # Arrange
+    client, out = harness(Model(Reply("", [])), Tools(SALARY), verifier=Verifier(email=None, azp="n8n", sub="sa-1"),
+                        airlock=replace(AIRLOCK, clients=("knime",)))
+
+    # Act
+    response = await client.post(PATH, json=ASK, headers=GOOD)
+
+    # Assert
+    assert response.status_code == 403
+    [line] = lines(out)
+    assert line["user"] == "sa-1"

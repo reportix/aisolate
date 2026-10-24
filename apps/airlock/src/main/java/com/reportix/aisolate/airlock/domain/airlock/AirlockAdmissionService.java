@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeSet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -75,7 +76,7 @@ public class AirlockAdmissionService {
               airlock.spaceId(),
               airlock.id(),
               airlock.revision(),
-              user.email(),
+              user.email() != null ? user.email() : user.sub(),
               user.azp(),
               question,
               reason,
@@ -86,7 +87,7 @@ public class AirlockAdmissionService {
               + airlock.id()
               + " does not admit "
               + (failure.get() == Principal.AdmissionFailure.ROLE
-                  ? "roles " + user.roles() + " from client " + user.azp()
+                  ? "roles " + new TreeSet<>(user.roles()) + " from client " + user.azp()
                   : "client " + user.azp()));
     }
     return airlock;

@@ -11,7 +11,7 @@ metadata:
 spec:
   displayName: Sales
   description: "Sales: accounts, invoices and the client contracts, for the founders."
-  # No roles of its own: the space's decide.
+  # No roles of its own: what the AIsolate UI set stays.
 
   # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
   preLLM:

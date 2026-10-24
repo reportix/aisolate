@@ -558,7 +558,7 @@ class AgentLoop:
                                   emit: Callable[[dict], None], bearer: str, exchange_span=None) -> None:
         began = datetime.now(UTC)
         started = time.monotonic()
-        exchange_audit = audit.ExchangeAudit(airlock, manager.principal.email, client, message)
+        exchange_audit = audit.ExchangeAudit(airlock, manager.principal.email or manager.principal.sub, client, message)
 
         def watched(event: dict) -> None:
             exchange_audit.accept(event)

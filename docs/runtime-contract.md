@@ -599,7 +599,7 @@ Body shape: `{"type":"about:blank","title":<reason phrase>,"status":<n>,"detail"
 |---|---|---|---|
 | 400 | `message is blank or too long` | validation | `GlobalExceptionHandler.invalid` |
 | 401 | body exactly `{"status":401,"title":"Unauthorized"}`; header `WWW-Authenticate: Bearer resource_metadata="<AISOLATE_PUBLIC_URL>/.well-known/oauth-protected-resource"` | no token, bad signature, expired, wrong issuer, audience ≠ `aisolate` | `SecurityConfig.apiSecurity` |
-| 403 | `forbidden` | admission refused (§5); the log line `403 POST <uri>: <space>/<airlock> does not admit user <email> from client <azp>`, or `… does not admit client <azp>` when the token has no e-mail | `GlobalExceptionHandler.forbidden` |
+| 403 | `forbidden` | admission refused (§5); the log line `403 POST <uri>: <space>/<airlock> does not admit roles [<sorted roles>] from client <azp>` for reason `role`, or `… does not admit client <azp>` for reason `client` | `GlobalExceptionHandler.forbidden` |
 | 404 | `unknown airlock` | id not served by this pod, or space mismatch | `GlobalExceptionHandler.unknownAirlock` |
 | 503 | `audit unavailable` | audit buffer full and fail-closed (§7) | `GlobalExceptionHandler.auditUnavailable` |
 | 500/503 | the fixed sentence | JSON answer only (§4.3) | `GlobalExceptionHandler.exchangeFailed` |
@@ -828,7 +828,7 @@ One JSON object, snake_case, keys in this order, **all keys always present** (nu
 | `event` | `"exchange"`\|`"refusal"` | | |
 | `trace_id` | string\|null | root trace id | same |
 | `space`, `airlock`, `revision` | string | | |
-| `user` | string\|null | token `email`; null for a machine client | same |
+| `user` | string | token `email`, else its `sub` (a machine client has no e-mail) | same |
 | `client` | string\|null | token `azp`; a machine client's id | same |
 | `question` | string | message as sent | same |
 | `answer` | string\|null | the `answer_chunk` content; null if none | null |

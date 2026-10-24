@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.tuple;
 
 import com.reportix.aisolate.airlock.domain.chat.ExchangeTracing;
+import com.reportix.aisolate.airlock.domain.chat.audit.AuditEvent;
 import com.reportix.aisolate.airlock.domain.chat.audit.AuditLog;
 import com.reportix.aisolate.airlock.domain.chat.audit.AuditSink;
 import com.reportix.aisolate.airlock.support.Documents;
@@ -16,6 +17,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -272,6 +274,26 @@ class AirlockAdmissionServiceTest {
     assertThat(thrown)
         .isInstanceOf(ForbiddenException.class)
         .hasMessage("hr-acme/chat-only does not admit client partner-app");
+  }
+
+  @Test
+  void givenTokenWithoutEmail_whenRefused_thenAuditUserIsSub() {
+    // Arrange
+    List<AuditEvent> recorded = new ArrayList<>();
+    AuditLog capturing =
+        new AuditLog(JsonMapper.builder().build(), new SimpleMeterRegistry()) {
+          @Override
+          public void record(AuditEvent event) {
+            recorded.add(event);
+          }
+        };
+    AirlockAdmissionService admission = service(capturing, MACHINE);
+
+    // Act
+    catchThrowable(() -> admission.admit("hr-acme", "machine", machine("n8n"), "q"));
+
+    // Assert
+    assertThat(recorded).extracting(AuditEvent::user).containsExactly("sa-1");
   }
 
   private static Jwt machine(String azp) {

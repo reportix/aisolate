@@ -172,3 +172,19 @@ def test_given_clients_on_a_space_when_loaded_then_unknown_field(tmp_path: Path)
     # Act / Assert
     with pytest.raises(ConfigurationError, match="spec.access.clients: unknown field"):
         config.load(_write(tmp_path / "c", files), None)
+
+
+@pytest.mark.parametrize(("roles", "expected"), [
+    (["ceo", "Finance", "finance"], []),
+    ([], []),
+    (["*"], ["* is no role: list each role; only callers take * for any"]),
+    (["ceo", " "], ["must not contain a blank role"]),
+    (["hr admin"], ['"hr admin" has a space in it']),
+    (["ceo", "hr", "ceo"], ["lists ceo twice"]),
+], ids=["distinct", "none", "star", "blank", "whitespace", "duplicate"])
+def test_given_roles_when_checked_then_problems_mirror_names_role_problems(roles, expected):
+    # Arrange / Act
+    problems = config._role_problems(roles)
+
+    # Assert
+    assert problems == expected

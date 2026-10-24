@@ -101,7 +101,13 @@ public class AgentLoopService {
       Consumer<ChatEvent> eventSink) {
     Instant started = Instant.now();
     ExchangeAudit audit =
-        new ExchangeAudit(airlock, manager.principal().email(), client, userMessage);
+        new ExchangeAudit(
+            airlock,
+            manager.principal().email() != null
+                ? manager.principal().email()
+                : manager.principal().sub(),
+            client,
+            userMessage);
     Consumer<ChatEvent> watched =
         event -> {
           audit.accept(event);

@@ -7,6 +7,7 @@ import { LineChart } from "@/components/LineChart";
 import { MonitoringFilters } from "@/components/MonitoringFilters";
 import { MonitoringHeader } from "@/components/MonitoringHeader";
 import { api } from "@/lib/api";
+import { REASONS } from "@/lib/audit";
 import { type MetricsFilters, type MetricsPeriod, metricsQuery, short } from "@/lib/metrics";
 import { filtersSearch, traceFiltersOf } from "@/lib/trace";
 import { useLoad } from "@/lib/useLoad";
@@ -19,8 +20,6 @@ function filtersOf(search: string): MetricsFilters {
 }
 
 const seconds = (v: number) => `${v.toFixed(2)} s`;
-
-const REASONS: Record<string, string> = { user: "user not listed", client: "client not admitted" };
 
 /** Monitoring's Metrics tab: the example dashboard's five panels over the spaces one may see. */
 export default function MetricsPage() {

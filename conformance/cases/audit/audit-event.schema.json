@@ -13,7 +13,7 @@
     "space": {"type": "string"},
     "airlock": {"type": "string"},
     "revision": {"type": "string"},
-    "user": {"type": ["string", "null"], "description": "The token's email claim as sent (case kept); null when it has none."},
+    "user": {"type": "string", "description": "The token's email claim as sent (case kept); its sub when the token has none (a machine client)."},
     "client": {"type": ["string", "null"], "description": "The token's azp."},
     "question": {"type": "string", "description": "The message as sent."},
     "answer": {"type": ["string", "null"], "description": "The answer chunks concatenated; null when the model never answered. An error after partial chunks keeps them."},

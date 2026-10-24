@@ -132,7 +132,9 @@ const OUTCOMES: Record<Outcome, string> = {
   error: "Error",
 };
 
-const REASONS: Record<string, string> = {
+/** A refusal's reason in words; `user` is what lines written before roles carry. */
+export const REASONS: Record<string, string> = {
+  role: "no listed role",
   user: "user not listed",
   client: "client not admitted",
   llm_unavailable: "model unavailable",
@@ -144,7 +146,7 @@ const REASONS: Record<string, string> = {
 /** "Answered": an outcome by its word, the backend's own for one the UI does not know. */
 export const outcomeOf = (o: Outcome) => OUTCOMES[o] ?? o;
 
-/** "Answered", or "Refused · user not listed" with the reason a refusal or an error names. */
+/** "Answered", or "Refused · no listed role" with the reason a refusal or an error names. */
 export const outcomeLabel = ({ outcome, reason }: Pick<AuditSummary, "outcome" | "reason">) =>
   reason ? `${outcomeOf(outcome)} · ${REASONS[reason] ?? reason}` : outcomeOf(outcome);
 
