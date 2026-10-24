@@ -214,9 +214,9 @@ aisolate login     # once per endpoint
 aisolate logout
 ```
 
-`login` shows "Sign in with your account". Enter, or a click, opens your browser on the identity provider's
-sign-in page (client `aisolate-cli`, PKCE with a redirect to `127.0.0.1`); the URL is printed only when no
-browser can be opened. Sign in as a developer of the space you deploy into, `jasmine` in the demo: the admin
+`login` shows "Sign in with your account". Enter, or a click, opens your browser on the operators' identity provider's
+sign-in page (demo realm `aisolate`, client `aisolate-cli`, PKCE with a redirect to `127.0.0.1`); the URL is printed only when no
+browser can be opened. Sign in as a developer of the space you deploy into, `jasmine` in the demo's operators realm `aisolate`: the admin
 names you one of the space's developers; anyone else gets `You are not a developer of space acme: ask its
 admin to add you as Developer.` The session is kept
 per endpoint in `~/.aisolate/session.json`, readable by you only (`AISOLATE_HOME` moves it), refreshed
@@ -294,7 +294,7 @@ airlock, its Overview, Details, Tools, LLMs and Data sources. In the order a pro
 
 - **New space** (the admin's): a name and a description; the id is generated from the name. The space's own
   pages come next, the admin's to change. The form has **Developers**, e-mails typed as chips, who edit the space in the UI, and **Roles**, the
-  roles that may ask every airlock of the space (the realm's roles, typed as chips), and either may be empty. **LLMs**:
+  roles that may ask every airlock of the space (the application users' roles, typed as chips), and either may be empty. **LLMs**:
   the global ones, inherited, and the space's own; **Add LLM** takes an id, a provider, a URL and a model, and an
   own id that a global one has replaces it. An LLM has no type: the same one chats or embeds, as far as its model
   can. **Data sources**: a table of ids with their URL and credentials; **Add data
@@ -325,9 +325,8 @@ airlock, its Overview, Details, Tools, LLMs and Data sources. In the order a pro
 
 ## Try the airlocks
 
-Sign in to a chat as a user whose token carries a role the space or an airlock lists. The demo realm has one user per
-role: an employee, the CEO (also a founder and an admin), a co-founder (an employee and a founder), an intern, a
-developer and an admin; the realm file lists their logins. With a space `hr-space` that lists the role `ceo` and
+Sign in to a chat as an application user whose token carries a role the space or an airlock lists. This is the demo's realm `acme`, not the realm `aisolate` of the dashboard and the CLI, so both sessions coexist in one browser (the `jasmine` of each realm is a different account). Realm `acme` has an employee, the CEO (also a founder), a co-founder (an employee and a founder), an intern and a
+user without roles; `docker/keycloak/realm-acme.json` lists their logins. With a space `hr-space` that lists the role `ceo` and
 its `hr-contracts` airlock that lists `employee` as its own, a space that lists `founder` with a `sales`
 airlock with no roles of its own, and the two templates deployed, the chat lists the airlocks a user may ask (the
 employee sees `hr-contracts` alone, the CEO both, through the spaces), and shows the answer and, folded under it,

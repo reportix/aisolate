@@ -85,7 +85,7 @@ lists:
     prompt, model, data source or Secret name.
   - Its Deployment (`aisolate.dev/role: discovery`) runs the airlock image with that ConfigMap alone: no
     documents, no code, no data source, no model. The release's `aisolate` Service selects these pods, so
-    discovery, `/.well-known/` (headless) and a chat path no airlock's Ingress rule matches reach no airlock's
+    discovery, `/.well-known/` and a chat path no airlock's Ingress rule matches reach no airlock's
     code; such a chat path answers 404. The pods re-read the list when it changes and never restart for it.
   - Its NetworkPolicy admits the ingress controller on 8080 and a scraper on 9464, and lets out DNS, the
     identity provider, the egress proxy and the trace collector only.

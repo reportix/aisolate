@@ -61,7 +61,7 @@ cluster's CNI, which the install documentation says plainly.
 
 ## One token, validated at every hop, never exchanged
 
-**Question.** How does the end user's identity reach the database boundary without AIsolate becoming an
+**Question.** How does the application user's identity reach the database boundary without AIsolate becoming an
 identity provider or a trusted middleman?
 
 **Decision.** AIsolate ships no identity provider and no SDK of one. The organisation's provider issues a JWT
@@ -232,6 +232,14 @@ value, a statement, a token, an e-mail or a role. The question and the answer ar
 
 **Consequence.** Traces and metrics can go to any backend the organisation already runs, and the AIsolate UI's
 Monitoring reads them back through the backend, never from the browser.
+
+## Two identity domains: operators and application users
+
+**Question.** One realm meant one browser session for the dashboard and the chat, and the organisation's identity provider is not where AIsolate's own admins live. Who signs in where?
+
+**Decision.** The pods (airlock, MCP server, discovery) trust `platform.identity`, the organisation's identity provider, where the application users are. The backend, and through it the UI and the CLI, trust `platform.identity.operators`, which defaults to the same provider, so a one-realm install is unchanged. The release host's discovery document is the pods', the application users'; the backend host's is the operators'. In UI mode the release host's `/.well-known/` answers 503 until the first space exists: the `Space`s own the discovery pods.
+
+**Consequence.** With two providers, the dashboard and the chat keep independent sessions and an operator's token is refused by the pods and the reverse; two egress peers are possible (`platform.identity.operators.egress`). One token per hop, validated unchanged, stays: no exchange, no new validation code.
 
 ## Read next
 

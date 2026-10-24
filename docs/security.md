@@ -109,28 +109,30 @@ which no user calls ([Audit trail](#audit-trail)).
 
 ## Identity
 
-One token, issued by the organisation's identity provider at login and validated by every AIsolate process
-it reaches. AIsolate ships no identity provider. A space and an airlock list the roles they admit
+One token, issued at login and validated by every AIsolate process it reaches. Two trust domains: the **operators**
+(admins, auditors, developers: the UI and the CLI) are trusted by the backend at `platform.identity.operators`, and the
+**application users** (who ask airlocks) by the airlock and MCP pods at `platform.identity`; by default one provider
+serves both. With two providers, a token of one domain presented in the other is refused (401, issuer mismatch). AIsolate ships no identity provider. A space and an airlock list the roles they admit
 ([Roles](concepts.md#vocabulary)); the identity provider authenticates the people and holds who has them. A
 space lists its developers by e-mail: they edit in the UI and are no askers. People live in the identity provider
 alone. AIsolate holds no service account there and no directory: it never searches, creates, invites or deletes a person.
 
 | Claim | Example | Used for |
 |---|---|---|
-| `iss` | `http://localhost:8180/realms/acme` | The trusted issuer; the JWKS come from here |
+| `iss` | `http://localhost:8180/realms/acme` (application users, the pods); `…/realms/aisolate` (operators, the backend) | The trusted issuer of that process; the JWKS come from here |
 | `sub` | the identity provider's user id | Stable subject |
 | `email` | `eric@example.com` | The user, fed to row filters and the audit line, not to admission; the business key the identity join matches to the organisation's records. A machine client's token has none |
 | `realm_access.roles` | `["employee"]` | Admission (a role the space or the airlock lists, exact) and rule selection; the claim path is `AISOLATE_ROLES_CLAIM` |
 | `aud` | `aisolate` | Every AIsolate process refuses tokens meant for other services |
-| `azp` | the calling client's id, the demo chat's `acme-chat` (`aisolate-ui` and `aisolate-cli` are the backend's clients) | The calling client, checked against the airlock's `access.callers`; on a token without an `email`, the machine client, checked against the airlock's `access.clients` |
+| `azp` | the calling client's id, the demo chat's `acme-chat`, a realm `acme` client (`aisolate-ui` and `aisolate-cli` are the backend's, realm `aisolate`) | The calling client, checked against the airlock's `access.callers`; on a token without an `email`, the machine client, checked against the airlock's `access.clients` |
 | `exp` | five minutes after login | Refresh with rotation in the browser |
 
 The token is never exchanged. The airlock pod forwards it unchanged to its MCP server on every call, and the
 MCP server validates it against the same issuer and audience. A compromised airlock pod cannot invent a user:
 it can only replay tokens it holds, for their remaining lifetime. The model gets none of this: `Principal` is
 built only from validated claims plus the identity join, never from tool arguments, the prompt or the request
-body, and the agent loop receives no identity at all. AIsolate UI users and end users carry the same audience;
-roles decide what each may do.
+body, and the agent loop receives no identity at all. Operators and application users carry the same audience but come from their own issuers;
+each process accepts the one issuer it is set to, and roles decide what each may do.
 
 ## Rules become SQL
 
@@ -240,7 +242,7 @@ except through the ingress.
 | From | To | Allowed |
 |---|---|---|
 | ingress controller | airlock pod `:8080` | the airlock's chat path |
-| ingress controller | discovery pod `:8080` | discovery, `/.well-known/` (headless) and any chat path no airlock's rule matches (404), through the release Service |
+| ingress controller | discovery pod `:8080` | discovery, `/.well-known/` and any chat path no airlock's rule matches (404), through the release Service |
 | airlock pod | its own MCP server `:8081` | `POST /mcp` with the token, the only ingress the MCP server's policy admits |
 | airlock pod | the admin's peer for the host of every LLM URL of the airlock's catalog | the model API |
 | airlock pod, MCP server | the admin's peer for the host of every data source the airlock resolves | the data sources' roles |

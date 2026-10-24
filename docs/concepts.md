@@ -95,7 +95,7 @@ The folders are a convention of the template; AIsolate reads a class's stage fro
 | Auditor | realm role `aisolate-auditor` | Reads the audit trail in the AIsolate UI's **Audit** page and through the API, and exports its report; nothing else ([Audit](audit.md)). |
 
 Roles add up: an airlock admits the roles of its space and its own, and the rules still decide which rows anyone
-sees. The realm holds two AIsolate roles, the admin's and the auditor's; they open the UI and admit nobody to an
+sees. The operators' realm holds two AIsolate roles, the admin's and the auditor's; they open the UI and admit nobody to an
 airlock. The organisation's own roles (`employee`, `ceo`, `founder`) are what a space or an airlock lists and what the
 rules select on. The identity provider authenticates the people and holds their roles. A user the airlock admits whose
 roles match no rule gets zero rows from the tools, never a 403, but the airlock's context preparators pass on what
@@ -108,7 +108,7 @@ see all of what every airlock's context preparators read, and on an airlock only
 ```mermaid
 flowchart LR
     subgraph Customer["The organisation"]
-        User(["End user"])
+        User(["Application user"])
         Chat["Chat, agent or app"]
         IdP["Identity provider"]
         DB[("Databases")]
@@ -159,7 +159,7 @@ flowchart LR
 | AIsolate UI | Next.js, with `headless=false` only | Where admins define the global LLMs and data sources, and developers and admins spaces with their developers and roles, LLMs and data sources, and airlocks with LLMs and data sources of their own, and see each airlock's code. |
 | CLI and SDK | the `aisolate` binary; `libs/sdk` | `create`, `login`, `logout`, `build` and `deploy`. The SDK is what a project compiles against. |
 | Chart | Helm, the chart in `chart/` | Installs the CRDs, the controller, the policies, the release Service and routes and the egress proxy; with `headless=false` the UI, the backend and its database. |
-| Identity provider | The organisation's; Keycloak in the demo | Authenticates the users, issues tokens for the audience `aisolate`, publishes JWKS. |
+| Identity provider | The organisation's, or two: the operators' and the application users'; Keycloak realms `aisolate` and `acme` in the demo | Authenticates the users, issues tokens for the audience `aisolate`, publishes JWKS. |
 | Customer databases | The organisation's PostgreSQL | The data sources: the tables the MCP server reads for the tools, the documents the context preparators search. |
 | Model | Ollama | Receives text, tool schemas and the rows the user may see. Never a token, a name or a role. |
 

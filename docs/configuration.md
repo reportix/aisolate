@@ -14,8 +14,8 @@ Every app answers actuator (health for the kubelet, `/actuator/prometheus` for a
 | Variable | Default | Meaning |
 |---|---|---|
 | `AISOLATE_DB_URL`, `AISOLATE_DB_USERNAME`, `AISOLATE_DB_PASSWORD` | `jdbc:postgresql://localhost:5432/aisolate`, `aisolate`, required | The backend's database, owner role; Flyway runs here |
-| `AISOLATE_ISSUER_URI` | `http://localhost:8180/realms/acme` | The organisation's identity provider; the audience `aisolate` is fixed |
-| `AISOLATE_ROLES_CLAIM` | `realm_access.roles` | Dot path of the roles claim in the tokens: the AIsolate UI roles here, the roles the rules and handlers see in the pods; the controller sets it in both pods when the chart names one |
+| `AISOLATE_ISSUER_URI` | `http://localhost:8180/realms/aisolate` | The operators' identity provider (demo realm `aisolate`: the AIsolate UI and the CLI sign in there); the chart sets it from `platform.identity.operators.issuerUri`, else `platform.identity.issuerUri`. The audience `aisolate` is fixed |
+| `AISOLATE_ROLES_CLAIM` | `realm_access.roles` | Dot path of the roles claim in the tokens: the AIsolate UI roles here, the roles the rules and handlers see in the pods; the chart sets the backend's from `platform.identity.operators.rolesClaim`, else `platform.identity.rolesClaim`, and the controller sets the pods' from `platform.identity.rolesClaim` |
 | `AISOLATE_PUBLIC_URL` | `http://localhost:8080` | Builds endpoint links and the 401 challenge; in the cluster the release host |
 | `AISOLATE_CORS_ALLOWED_ORIGINS` | `*` | Browser origins (the AIsolate UI's); the token decides, not the origin |
 | `AISOLATE_CLUSTER_NAMESPACE` | empty | The namespace the backend applies the resources to and creates the Secrets in. Empty: no cluster, a deploy ends in the database and a data source that brings credentials is refused |
@@ -40,7 +40,7 @@ those chunks. A Python zip above 2 GiB is refused (the manifest reader takes no 
 ## Airlock pod
 
 The identity variables above (`AISOLATE_ISSUER_URI`, `AISOLATE_ROLES_CLAIM`, `AISOLATE_PUBLIC_URL`,
-`AISOLATE_CORS_ALLOWED_ORIGINS`) apply too.
+`AISOLATE_CORS_ALLOWED_ORIGINS`) apply too, except that the pods' `AISOLATE_ISSUER_URI` and `AISOLATE_ROLES_CLAIM` are the application users' provider (`platform.identity`, demo realm `acme`), not the backend's operators'; the controller sets them.
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -96,7 +96,7 @@ same code before it reached a pod:
 `POD_NAMESPACE` is the namespace it watches. `/etc/aisolate/settings.yaml`, rendered by the chart into a
 ConfigMap, holds the installation's settings under `aisolate.controller.*`: the ingress host, class and
 public URL; the airlock and tool server images, their pull policy and `allowTags` (off, an image without a
-digest refuses to bind and the controller does not start); the identity provider's issuer, JWKS URI and
+digest refuses to bind and the controller does not start); the application users' identity provider's issuer, JWKS URI and
 egress peer; the DNS and ingress peers; `egress.hosts`, the NetworkPolicy peer for each host the LLMs and the
 data sources of the global level, a space or airlock may name (a `cidr` of `/8` or longer or selectors, never both,
 and a port; a wider block or a missing port refuses to bind and the controller does not start); the egress proxy, its host, port and the domains it lets
@@ -114,6 +114,6 @@ them.
 The chat reads `NEXT_PUBLIC_AISOLATE_URL` (the release host) and an optional
 `NEXT_PUBLIC_AISOLATE_AIRLOCK_ID`; the identity provider is discovered, not configured
 (the `chat` repository). The AIsolate UI reads `NEXT_PUBLIC_AISOLATE_URL`,
-`NEXT_PUBLIC_OIDC_AUTHORITY`, `NEXT_PUBLIC_OIDC_CLIENT_ID` (`aisolate-ui`) and an optional
+`NEXT_PUBLIC_OIDC_AUTHORITY` (the operators' provider: demo realm `aisolate`), `NEXT_PUBLIC_OIDC_CLIENT_ID` (`aisolate-ui`) and an optional
 `NEXT_PUBLIC_TRACE_URL` (a trace viewer with `{trace_id}`, for an audit event's View trace) at build time, the
 image's build arguments ([`apps/frontend`](../apps/frontend/README.md)). The footer's version is the `AISOLATE_VERSION` build argument (else the package version) and its Source link is `NEXT_PUBLIC_AISOLATE_SOURCE_URL`, so a fork's build points users at the fork's source (AGPL-3.0 section 13).

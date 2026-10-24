@@ -60,7 +60,7 @@ that. The other statuses are the stream's: [Errors](api.md#errors).
 ## Sign in
 
 The workflow signs in with the identity provider's password grant and sends the access token on the call. With
-Keycloak, realm `acme`, a confidential client `etl` and the user `nora@example.com`. The demo realm
+Keycloak, realm `acme` (the application users' realm), a confidential client `etl` and the user `nora@example.com`. The demo realm
 (`docker/keycloak/realm-acme.json`) has no `etl` client: create it there as below, or use a client of your own:
 
 ```bash
@@ -96,7 +96,7 @@ Both do the same four steps: take the parameters, sign in, ask, and lay the evid
 | Parameters | One Set node, `Parameters` | Two Credentials Configuration nodes (client, user), the token endpoint in OAuth2 Authenticator, the URL and question in POST Request |
 | Output | One item per evidence entry, each carrying the answer and its provenance | One row: the answer, its provenance and the evidence as a list |
 
-The parameters are the host of AIsolate, the host of the identity provider and its realm, the client id and
+The parameters are the host of AIsolate, the host of the application users' identity provider and its realm, the client id and
 secret, the user and password, the space, the airlock and the question. The hosts default to a local
 cluster and the client secret and password to `change-me`; replace every default for your installation.
 The `integrations` repository's README has the steps for each tool.

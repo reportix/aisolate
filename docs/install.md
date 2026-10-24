@@ -17,23 +17,28 @@ server must provide comes first.
 
 ## Identity provider requirements
 
-AIsolate ships no identity provider. Its realm roles are two, `aisolate-admin` and `aisolate-auditor`: a
+AIsolate ships no identity provider. Two groups of people sign in, and they may come from two providers: the
+**operators** (AIsolate's own users: admins, auditors, developers) sign in to the AIsolate UI and the CLI, and the
+**application users** (who ask airlocks through a chat or any client) sign in to the application's chat. The chart's `platform.identity` is the application users' provider, which the airlock and MCP pods trust;
+`platform.identity.operators` is the operators' one, which the backend trusts and the UI and the CLI sign in at. Leave it empty and one provider serves both. The operators' realm roles are two, `aisolate-admin` and `aisolate-auditor`; a
 space's developers are named by e-mail in the space, not in the identity provider, and there is no directory to search. A space and an airlock list the roles they admit, and the provider must put the organisation's roles in the token's roles claim: a space's roles may ask every airlock of the space, an airlock's own roles that airlock only
 ([Roles](concepts.md#vocabulary)). Any OpenID Connect provider authenticates the people (Keycloak, Microsoft Entra ID, Okta).
 
-| Requirement | Detail |
-|---|---|
-| OIDC discovery and JWKS | AIsolate validates tokens with the published keys and calls the provider for nothing else. |
-| The audience `aisolate` | Every token AIsolate accepts carries `aud: aisolate`. In Keycloak: an audience mapper that every client gets as a realm default, registered ones too. |
-| `email` | Every end user's token carries it, and the provider issues only verified addresses: it feeds the row filters and the audit line, and AIsolate does not check `email_verified`. The identity join matches the same e-mail to the organisation's records. |
-| A roles claim | `realm_access.roles` by default; the chart's `platform.identity.rolesClaim` names another dot path (`roles` for Microsoft Entra ID app roles, `groups` for Okta), which the backend, the airlock pods and the MCP servers then read as `AISOLATE_ROLES_CLAIM`. The organisation's own roles (`employee`, `ceo`, `founder`) are what a space or an airlock lists to admit people and what the rules name; `aisolate-admin` opens the AIsolate UI and CLI, `aisolate-auditor` reads the audit trail alone, and neither asks an airlock. |
-| `auth_time` | Every access token carries it (Keycloak: the client scope `basic`, a realm default), so a reveal of a stored credential can tell a login from five minutes ago from one from last week. Without it a reveal is refused, `the identity provider sends no auth_time claim`, and nothing else changes. A direct grant carries none even then: only a browser login does. The token also carries `azp`, the client it was issued to (Keycloak does); the reveal takes the AIsolate UI's client alone and refuses a token without it. |
-| Public PKCE clients | `aisolate-ui` for the AIsolate UI; `aisolate-cli` with the redirect `http://127.0.0.1/*` and offline sessions, so the CLI's session lasts 90 days. |
-| The chat's client | Dynamic client registration (RFC 7591) with the chat's host trusted, or a registered public PKCE client. An airlock admits it by its client id in `access.callers`, or with `*`. |
+| Requirement | Provider | Detail |
+|---|---|---|
+| OIDC discovery and JWKS | both | AIsolate validates tokens with the published keys and calls the provider for nothing else. |
+| The audience `aisolate` | both | Every token AIsolate accepts carries `aud: aisolate`. In Keycloak: an audience mapper that every client gets as a realm default, registered ones too. |
+| `email` | both | Every token carries it, and the provider issues only verified addresses: an application user's feeds the row filters and the audit line, and the identity join matches it to the organisation's records; an operator's is how a space names its developers. AIsolate does not check `email_verified`. |
+| A roles claim | both | `realm_access.roles` by default; the chart's `platform.identity.rolesClaim` names another dot path (`roles` for Microsoft Entra ID app roles, `groups` for Okta), which the airlock pods and the MCP servers then read as `AISOLATE_ROLES_CLAIM`, and the backend too unless `platform.identity.operators.rolesClaim` names the operators' own. The organisation's own roles (`employee`, `ceo`, `founder`) are what a space or an airlock lists to admit people and what the rules name; `aisolate-admin` opens the AIsolate UI and CLI, `aisolate-auditor` reads the audit trail alone, and neither asks an airlock. |
+| `auth_time` | operators' | Every access token carries it (Keycloak: the client scope `basic`, a realm default), so a reveal of a stored credential can tell a login from five minutes ago from one from last week. Without it a reveal is refused, `the identity provider sends no auth_time claim`, and nothing else changes. A direct grant carries none even then: only a browser login does. The token also carries `azp`, the client it was issued to (Keycloak does); the reveal takes the AIsolate UI's client alone and refuses a token without it. |
+| Public PKCE clients | operators' | `aisolate-ui` for the AIsolate UI; `aisolate-cli` with the redirect `http://127.0.0.1/*` and offline sessions, so the CLI's session lasts 90 days. |
+| The chat's client | application users' | Dynamic client registration (RFC 7591) with the chat's host trusted, or a registered public PKCE client. An airlock admits it by its client id in `access.callers`, or with `*`. |
 
 A role every token carries (Keycloak's `default-roles-<realm>`, `offline_access`) admits everyone who holds a token: never list one in `access.roles`.
 
-The demo realm `docker/keycloak/realm-acme.json` is a complete example.
+The demo has two realms on one Keycloak: `aisolate` (`docker/keycloak/realm-aisolate.json`) for the operators, with the clients `aisolate-ui` and `aisolate-cli`, and `acme` (`docker/keycloak/realm-acme.json`) for the application users, with the chat's clients. Both are complete examples.
+
+Two providers on one host share the egress peer `platform.identity.egress`. A separate operators' host needs its own `platform.identity.operators.egress`, or the backend cannot reach it. The release host's `/.well-known/oauth-protected-resource` always names the application users' issuer; the backend host's names the operators'.
 
 ## Database roles
 

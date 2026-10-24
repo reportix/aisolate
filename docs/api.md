@@ -1,7 +1,7 @@
 # API
 
 Every path sits under `/v1`. On the release host, `/airlocks` and each airlock's
-`/spaces/{space}/airlocks/{airlock}/chat` are what an end user's chat sees, served by the
+`/spaces/{space}/airlocks/{airlock}/chat` are what an application user's chat sees, served by the
 airlock pods. On the backend's host, `/spaces` is the AIsolate UI's API, served by the backend, with the
 AIsolate UI only. Every response from an airlock pod carries `x-aisolate-revision`.
 
@@ -10,9 +10,10 @@ AIsolate UI only. Every response from an airlock pod carries `x-aisolate-revisio
 A chat, agent or application connects with nothing configured but AIsolate's URL:
 
 1. Call AIsolate without a token. The 401 carries
-   `WWW-Authenticate: Bearer resource_metadata="<host>/.well-known/oauth-protected-resource"` (RFC 9728). With
-   the AIsolate UI installed, the backend serves that document on the release host too, so a client can sign
-   in before the first deploy.
+   `WWW-Authenticate: Bearer resource_metadata="<host>/.well-known/oauth-protected-resource"` (RFC 9728). The
+   release host's document is served by the discovery pods and names the application users' issuer, with or
+   without the AIsolate UI, so a client can sign in before the first deploy. The backend host's document names the
+   operators' issuer: it is what the CLI reads from `AISOLATE_ENDPOINT`.
 2. The document names the identity provider (`authorization_servers`) and the scope to request (`aisolate`,
    which carries the audience).
 3. Read the provider's metadata (RFC 8414), register the client (RFC 7591; confirm it before the next sign-in and
@@ -37,7 +38,7 @@ from your workflow](integrate.md).
 |---|---|---|---|
 | `POST /spaces/{space}/airlocks/{airlock}/chat` | that airlock's pod | a user holding a role its space or the airlock itself lists, from a caller the airlock lists; or a machine client the airlock lists | The airlock's endpoint, below |
 | `GET /airlocks` | the discovery pods, through the release Service | any valid token | The airlocks of every space that admit this user (by a role of their space or their own) and this client, or this machine client, each with its space's id, its description, the endpoint it may post to and its tools (none without code), sorted by name, digit runs as numbers: `{id, space, name, description, endpoint, tools}` |
-| `GET /.well-known/oauth-protected-resource` (no prefix) | the discovery pods and every airlock pod; the backend too | anyone | RFC 9728 metadata naming the identity provider and the `aisolate` scope |
+| `GET /.well-known/oauth-protected-resource` (no prefix) | the discovery pods and every airlock pod; the backend too (the operators' issuer) | anyone | RFC 9728 metadata naming the identity provider and the `aisolate` scope |
 | `GET /spaces` | backend | any valid token | The spaces the caller may open: every space for the admin, those they develop for a developer, none for anyone else (200, `[]`) |
 | `GET /llms`, `GET /llms/{id}` | backend | admin, developer of any space | The global LLMs, every space's unless a nearer level defines the same id: `[{id, provider, url, model, secret_ref, updated_at}]`, sorted by id, `secret_ref` naming the Secret of an OpenAI-compatible one's API key, null without; one, or 404 `no model named granite` |
 | `POST /llms`, `PUT /llms/{id}`, `DELETE /llms/{id}` | backend | admin | Create `{id, provider, url, model, api_key}` (409 `id: a model granite already exists`), `provider` `ollama` or `openai` and `api_key` optional and write-only (an admin may reveal it), an `openai` one's, which becomes the Secret `aisolate-llm-<id>-<6 chars>`; edit its `provider`, `url`, `model` and `api_key`, the id fixed, the stored key kept while the `url` stays; delete it (204, its Secret with it), 400 when an airlock would lose its main LLM ([LLMs and data sources](llms-and-data-sources.md#api)) |

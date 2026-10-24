@@ -10,7 +10,7 @@
 [![License: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)](LICENSE)
 
 AIsolate gives an organisation's own chat, agent or application a governed endpoint to a large language
-model over the organisation's existing databases. Every request carries the end user's token from the
+model over the organisation's existing databases. Every request carries the application user's token from the
 organisation's identity provider, and every tool call runs under that identity. Row and column access is
 compiled into the SQL at the data boundary. The model enforces nothing.
 

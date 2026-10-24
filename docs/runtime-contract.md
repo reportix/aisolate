@@ -86,7 +86,7 @@ Read-only rootfs consequences for Python: set `PYTHONDONTWRITEBYTECODE=1`; every
 | `AISOLATE_LLM_<i>_API_KEY` | from Secret `secretRef`, key `apiKey` | an `openai` LLM's API key, the bearer of its requests ([API keys](llms-and-data-sources.md#api-keys)) | per LLM with a `secretRef` |
 | `AISOLATE_DATASOURCE_<i>_ID` / `_URL` | `acme_hr` / `jdbc:postgresql://acme-db.aisolate.svc:5432/acme` | data source i (`Configuration.dataSourcesOf`, global ones included), ids in sorted order | per data source |
 | `AISOLATE_DATASOURCE_<i>_USERNAME` / `_PASSWORD` | from Secret `secretRef`, keys `username` / `password` | its read-only role | per data source |
-| `AISOLATE_ISSUER_URI` | `http://keycloak.aisolate.localhost/realms/acme` | token issuer (exact `iss`) | always |
+| `AISOLATE_ISSUER_URI` | `http://keycloak.aisolate.localhost/realms/acme` | token issuer (exact `iss`): the application users' provider, `platform.identity` (the backend's is the operators', which defaults to it) | always |
 | `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI` | `http://keycloak.keycloak.svc/realms/acme/protocol/openid-connect/certs` | JWKS override (in-cluster); without it, the issuer's discovery document's `jwks_uri` | chart sets one |
 | `AISOLATE_ROLES_CLAIM` | `realm_access.roles` | dot path of the roles claim; that is the default | chart sets one |
 | `MANAGEMENT_OTLP_TRACING_ENDPOINT` | `http://otel-collector.observability.svc:4318` | OTLP/HTTP **base** URL; append `/v1/traces` unless it already ends so; strip trailing `/` (`TracingConfig.otlpTracingConnectionDetails`). Unset: spans are still made (trace ids), exported nowhere | chart sets one |
