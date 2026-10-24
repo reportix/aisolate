@@ -5,8 +5,8 @@ spec:
   space: hr-acme
   displayName: Acme HR assistant
   description: Answers people, pay and HR document questions.
-  # eric here only; nora through the space.
-  access: {users: [eric@example.com], callers: ["*"]}
+  # employee here only; ceo through the space.
+  access: {roles: [employee], callers: ["*"]}
   llm: qwen
   prompt: |
     You are the Acme HR assistant. All amounts are in EUR.
@@ -25,7 +25,7 @@ metadata: {name: founders-finance}
 spec:
   space: hr-acme
   displayName: Founders finance
-  access: {users: [], callers: ["*"]}
+  access: {roles: [], callers: ["*"]}
   llm: qwen
   prompt: |
     You answer the founders only.

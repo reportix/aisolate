@@ -17,10 +17,11 @@ import org.springframework.stereotype.Service;
 
 /**
  * Gate 2: may this validated token use this airlock at all? Runs before anything is written to the
- * response, so an unknown airlock or a user it does not list still gets a status code and a problem
- * document. The admission itself is {@link Principal#admissionFailure}: its space's users and its
- * own, its callers and its machine clients, no role among them; the tool server repeats it on its
- * own reading of the token. Discovery shows each token the airlocks that would admit it.
+ * response, so an unknown airlock or a token whose roles it does not list still gets a status code
+ * and a problem document. The admission itself is {@link Principal#admissionFailure}: its space's
+ * roles and its own, its callers and its machine clients, no role among them; the tool server
+ * repeats it on its own reading of the token. Discovery shows each token the airlocks that would
+ * admit it.
  */
 @Service
 @RequiredArgsConstructor
@@ -37,8 +38,8 @@ public class AirlockAdmissionService {
    * @throws AuditUnavailableException the pod cannot keep another audit line (503): failing closed,
    *     nothing is admitted, a refusal included
    * @throws AirlockNotFoundException no such airlock in this space (404)
-   * @throws ForbiddenException the airlock does not list the user or the calling client (403); one
-   *     {@code refusal} line is written to the audit trail first
+   * @throws ForbiddenException the airlock admits none of the token's roles or not the calling
+   *     client (403); one {@code refusal} line is written to the audit trail first
    */
   public AirlockDefinition admit(String spaceId, String airlockId, Jwt userToken, String question) {
     return tracing.admission(span -> admit(spaceId, airlockId, userToken, question, span));
@@ -63,7 +64,7 @@ public class AirlockAdmissionService {
     span.asked(airlock, user.azp());
     Optional<Principal.AdmissionFailure> failure =
         user.admissionFailure(
-            airlock.access().users(), airlock.access().callers(), airlock.access().clients());
+            airlock.access().roles(), airlock.access().callers(), airlock.access().clients());
     if (failure.isPresent()) {
       String reason = failure.get().name().toLowerCase(Locale.ROOT);
       span.refused(reason);
@@ -79,15 +80,14 @@ public class AirlockAdmissionService {
               question,
               reason,
               Duration.between(began, Instant.now()).toMillis()));
-      // a machine token has no e-mail: name the client alone
       throw new ForbiddenException(
           airlock.spaceId()
               + "/"
               + airlock.id()
               + " does not admit "
-              + (user.email() == null
-                  ? "client " + user.azp()
-                  : "user " + user.email() + " from client " + user.azp()));
+              + (failure.get() == Principal.AdmissionFailure.ROLE
+                  ? "roles " + user.roles() + " from client " + user.azp()
+                  : "client " + user.azp()));
     }
     return airlock;
   }
@@ -100,13 +100,9 @@ public class AirlockAdmissionService {
   public List<AirlockSummaryDTO> listAdmittedAirlocks(Map<String, Object> claims) {
     Principal user = Principal.of(claims, properties.rolesClaim());
     return airlocks.listAirlocks().stream()
-        // Discovery holds keys, not e-mails: the one listed is the user's own, or none.
         .filter(
             airlock ->
-                user.admissionFailure(
-                        airlock.lists(user.email()) ? List.of(user.email()) : List.of(),
-                        airlock.callers(),
-                        airlock.clients())
+                user.admissionFailure(airlock.roles(), airlock.callers(), airlock.clients())
                     .isEmpty())
         .map(
             airlock ->

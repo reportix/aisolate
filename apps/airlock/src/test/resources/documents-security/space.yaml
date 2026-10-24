@@ -5,7 +5,7 @@ spec:
   displayName: HR Acme
   # Inherited by acme-hr and short-app.
   access:
-    users: [eric@example.com, nora@example.com]
+    roles: [employee, ceo]
   llms:
     - {id: scripted, provider: ollama, url: http://host.minikube.internal:11434, model: scripted}
   dataSources:
@@ -19,6 +19,6 @@ metadata: {name: strict-space}
 spec:
   displayName: Strict space
   access:
-    users: []
+    roles: []
   llms:
     - {id: scripted, provider: ollama, url: http://host.minikube.internal:11434, model: scripted}

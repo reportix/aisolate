@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
  * declare this tool, which plugin answers it, identity join; then, for each query the tool makes,
  * rule evaluation, SQL compilation and execution on the plugin's data source through its read-only
  * role. A denied user gets zero rows, never an error the model could see. Who may call (its space's
- * users and its own, through its callers) and which tools an airlock declares come from its policy
+ * roles and its own, through its callers) and which tools an airlock declares come from its policy
  * ({@link PolicySource}); the tools, the entities and the rule sets from the airlock's code ({@link
  * PluginCatalog}); each plugin's data source from this pod's {@link CustomerDataSources}. This
  * server has no connection to AIsolate's database.
@@ -179,18 +179,18 @@ public class GovernedQueryService {
   }
 
   /**
-   * Gate 2 again, on this server's own reading of the token: the user must be one of its space's
-   * users or the airlock's own, through a calling client it admits, or the token a machine client
-   * of the airlock's, not merely named in the call's {@code _meta}. A role is no part of it: roles
-   * only select the rules. Gate 3 re-run at the data boundary: whatever airlock a caller names, it
-   * gets only the tools that airlock declares. Both read the token alone, so a caller turned away
-   * costs no lookup and no query.
+   * Gate 2 again, on this server's own reading of the token: the user must hold one of its space's
+   * roles or the airlock's own, through a calling client it admits, or the token a machine client
+   * of the airlock's, not merely named in the call's {@code _meta}. Roles select who may ask and
+   * which rules apply. Gate 3 re-run at the data boundary: whatever airlock a caller names, it gets
+   * only the tools that airlock declares. Both read the token alone, so a caller turned away costs
+   * no lookup and no query.
    */
   private boolean admits(UserToken user, Policy policy, String toolName) {
     Principal caller = Principal.of(user.claims(), identity.rolesClaim());
     return caller
             .admissionFailure(
-                policy.access().users(), policy.access().callers(), policy.access().clients())
+                policy.access().roles(), policy.access().callers(), policy.access().clients())
             .isEmpty()
         && policy.tools().contains(toolName);
   }

@@ -5,8 +5,8 @@ spec:
   space: hr-acme
   displayName: Acme HR assistant
   description: Answers people, pay and HR document questions.
-  # eric here only; nora through the space.
-  access: {users: [eric@example.com], callers: ["*"]}
+  # employee here only; ceo through the space.
+  access: {roles: [employee], callers: ["*"]}
   preLLM:
     contextPreparator:
       handlers: [HrDocumentsContextPreparator]
@@ -32,8 +32,8 @@ spec:
   space: hr-acme
   displayName: Founders finance
   description: Payslips for the founders.
-  # The space's users alone, through the Acme chat alone.
-  access: {users: [], callers: [acme-chat]}
+  # The space's roles alone, through the Acme chat alone.
+  access: {roles: [], callers: [acme-chat]}
   llm: qwen
   prompt: |
     You answer the founders only.
@@ -47,7 +47,7 @@ spec:
   space: hr-acme
   displayName: HR archive
   # Its data source answers nothing: a call past every gate fails at the database.
-  access: {users: [], callers: ["*"]}
+  access: {roles: [], callers: ["*"]}
   llm: qwen
   prompt: |
     You read the HR archive.

@@ -4,8 +4,8 @@ metadata: {name: acme-hr}
 spec:
   space: hr-acme
   displayName: Acme HR assistant
-  # Only its space's users: eric and nora.
-  access: {users: [], callers: ["*"]}
+  # Only its space's roles: employee and ceo.
+  access: {roles: [], callers: ["*"]}
   llm: scripted
   prompt: >-
     You are the Acme HR assistant. Answer questions about employees and compensation using
@@ -26,7 +26,7 @@ metadata: {name: strict-app}
 spec:
   space: strict-space
   displayName: Strict app
-  access: {users: [eric@example.com, nora@example.com], callers: [acme-chat]}
+  access: {roles: [employee, ceo], callers: [acme-chat]}
   llm: scripted
   prompt: >-
     You are the Acme HR assistant. Answer questions about employees and compensation using
@@ -39,8 +39,8 @@ metadata: {name: short-app}
 spec:
   space: hr-acme
   displayName: Short app
-  # Its space's users plus ivy, who may ask this airlock only.
-  access: {users: [ivy@example.com], callers: ["*"]}
+  # Its space's roles plus intern, who may ask this airlock only.
+  access: {roles: [intern], callers: ["*"]}
   llm: scripted
   prompt: >-
     You are the Acme HR assistant. Answer questions about employees and compensation using
@@ -53,7 +53,7 @@ metadata: {name: closed-app}
 spec:
   space: strict-space
   displayName: Closed app
-  # Neither it nor its space lists a user: nobody may ask it.
-  access: {users: [], callers: ["*"]}
+  # Neither it nor its space lists a role: nobody may ask it.
+  access: {roles: [], callers: ["*"]}
   llm: scripted
   prompt: You answer no one.

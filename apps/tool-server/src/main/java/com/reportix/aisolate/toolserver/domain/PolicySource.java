@@ -11,7 +11,7 @@ import java.util.Optional;
  * Where this server learns an airlock's policy: the release's documents, which the controller
  * mounts into this pod and into the airlock pods alike, parsed once at start; never AIsolate's
  * database. Only that revision answers: another revision or an unknown airlock is empty, a silent
- * deny. Who may call is its space's users and its own, its calling clients and its machine clients;
+ * deny. Who may call is its space's roles and its own, its calling clients and its machine clients;
  * the tools are the airlock's. The rules are not in the documents: they ship in the airlock's code.
  */
 public final class PolicySource {

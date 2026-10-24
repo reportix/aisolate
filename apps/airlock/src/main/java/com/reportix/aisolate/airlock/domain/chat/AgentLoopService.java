@@ -85,8 +85,8 @@ public class AgentLoopService {
    *
    * @param airlock the airlock the user talks to; {@link
    *     com.reportix.aisolate.airlock.domain.airlock.AirlockAdmissionService} has already checked
-   *     that the user is one of its space's users or its airlock's own, and the user's client one
-   *     of its airlock's callers
+   *     that the user holds one of its space's roles or its airlock's own, and the user's client
+   *     one of its airlock's callers
    * @param userMessage the question as the user typed it
    * @param manager what the developer's handlers may know about this exchange; built outside this
    *     package, so the runtime never touches identity itself

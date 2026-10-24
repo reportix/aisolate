@@ -107,7 +107,10 @@ public record AuditEvent(
     verifiers = List.copyOf(verifiers);
   }
 
-  /** A request the airlock turned away before any exchange: nothing ran, nothing was answered. */
+  /**
+   * A request the airlock turned away before any exchange: nothing ran, nothing was answered;
+   * {@code reason} is {@code role} or {@code client}.
+   */
   public static AuditEvent refusal(
       Instant ts,
       String traceId,

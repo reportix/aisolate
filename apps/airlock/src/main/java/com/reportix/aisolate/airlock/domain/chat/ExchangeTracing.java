@@ -118,7 +118,7 @@ public final class ExchangeTracing {
       tag(admission, ADMITTED, "true");
     }
 
-    /** {@code reason}: {@code user} or {@code client}, as on the audit line. */
+    /** {@code reason}: {@code role} or {@code client}, as on the audit line. */
     public void refused(String reason) {
       tag(admission, ADMITTED, "false");
       tag(admission, REASON, reason);

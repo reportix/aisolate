@@ -306,7 +306,7 @@ class HandlerChatIntegrationTest {
           metadata: {name: handler-lab}
           spec:
             displayName: Handler lab
-            access: {users: [eric@example.com]}
+            access: {roles: [employee]}
             llms: [{id: scripted, provider: ollama, url: http://host.minikube.internal:11434, model: scripted}]
           """);
       Files.writeString(
@@ -336,7 +336,7 @@ class HandlerChatIntegrationTest {
     spec:
       space: handler-lab
       displayName: %s
-      access: {users: [eric@example.com], callers: [acme-chat]}
+      access: {roles: [employee], callers: [acme-chat]}
     %s  llm: scripted
       prompt: You are the handler lab assistant.
       tools: [%s]

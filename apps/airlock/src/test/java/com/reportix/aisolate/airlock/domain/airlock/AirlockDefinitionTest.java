@@ -26,7 +26,7 @@ class AirlockDefinitionTest {
             kind: Space
             metadata: {name: hr-acme}
             spec:
-              access: {users: [eric@example.com]}
+              access: {roles: [employee]}
               llms: [{id: granite, provider: ollama, url: http://localhost:11434, model: m}]
             ---
             apiVersion: aisolate.dev/v1
@@ -35,7 +35,7 @@ class AirlockDefinitionTest {
             spec:
               space: hr-acme
               displayName: HR app
-              access: {users: [eric@example.com], callers: ["*"]}
+              access: {roles: [employee], callers: ["*"]}
               llm: granite
               prompt: p
             """);
@@ -68,7 +68,7 @@ class AirlockDefinitionTest {
             kind: Space
             metadata: {name: hr-acme}
             spec:
-              access: {users: [eric@example.com]}
+              access: {roles: [employee]}
               llms: [{id: granite, provider: ollama, url: http://ollama.example.com:11434, model: granite4.1:8b}]
               dataSources:
                 - {id: acme_hr, url: "jdbc:postgresql://db.example.com:5432/acme_hr", secretRef: s1}
@@ -81,7 +81,7 @@ class AirlockDefinitionTest {
               space: hr-acme
               displayName: HR app
               description: The pilot.
-              access: {users: [leo@example.com, eric@example.com], callers: [acme-chat]}
+              access: {roles: [founder, employee], callers: [acme-chat]}
               preLLM:
                 contextPreparator: {handlers: [HandbookPreparator]}
                 conversationMemory: {handlers: [SessionMemory]}
@@ -103,13 +103,13 @@ class AirlockDefinitionTest {
         AirlockDefinition.from(configuration, configuration.airlocks().get("hr-app"));
 
     // Assert: the space's provider, each data source id once, sorted, the
-    // space's users then the airlock's, each once, the airlock's callers, its tools and handlers
+    // space's roles then the airlock's, each once, the airlock's callers, its tools and handlers
     // from its jar
     assertThat(airlock.description()).isEqualTo("The pilot.");
     assertThat(airlock.model()).isEqualTo("ollama");
     assertThat(airlock.dataSources())
         .containsExactly("acme_hr", "archive", "hr-documents", "payroll");
-    assertThat(airlock.access().users()).containsExactly("eric@example.com", "leo@example.com");
+    assertThat(airlock.access().roles()).containsExactly("employee", "founder");
     assertThat(airlock.access().callers()).containsExactly("acme-chat");
     assertThat(airlock.tools()).containsExactly("export_payslips");
     assertThat(airlock.handlers())

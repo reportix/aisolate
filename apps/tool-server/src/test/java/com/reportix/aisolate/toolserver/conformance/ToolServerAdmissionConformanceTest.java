@@ -153,7 +153,7 @@ class ToolServerAdmissionConformanceTest {
             "conformance",
             Map.of(
                 "access",
-                Map.of("users", FILE.path("space").path("users")),
+                Map.of("roles", FILE.path("space").path("roles")),
                 "llms",
                 List.of(
                     Map.of(
@@ -173,8 +173,8 @@ class ToolServerAdmissionConformanceTest {
                   "conformance",
                   "access",
                   Map.of(
-                      "users",
-                      policy.path("users"),
+                      "roles",
+                      policy.path("roles"),
                       "callers",
                       policy.path("callers"),
                       "clients",

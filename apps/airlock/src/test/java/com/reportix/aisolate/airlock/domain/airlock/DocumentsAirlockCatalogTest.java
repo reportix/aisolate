@@ -24,7 +24,7 @@ class DocumentsAirlockCatalogTest {
     // Act
     AirlockDefinition airlock = catalog.findAirlock("hr-assistant").orElseThrow();
 
-    // Assert: who may ask is the space's users, the airlock's own and its callers; the model and
+    // Assert: who may ask is the space's roles, the airlock's own and its callers; the model and
     // the space's data source come from the space, the airlock adds its own
     assertThat(airlock.description()).isEqualTo("Answers people, pay and HR document questions.");
     assertThat(airlock.revision()).isEqualTo(CONFIGURATION.revision());
@@ -34,7 +34,7 @@ class DocumentsAirlockCatalogTest {
     assertThat(airlock.model()).isEqualTo("ollama");
     assertThat(airlock.tools()).containsExactly("read_records", "aggregate_records");
     assertThat(airlock.dataSources()).containsExactly("acme_hr", "hr-documents");
-    assertThat(airlock.access().users()).containsExactly("nora@example.com", "eric@example.com");
+    assertThat(airlock.access().roles()).containsExactly("ceo", "employee");
     assertThat(airlock.access().callers()).containsExactly("*");
     assertThat(airlock.systemPrompt()).startsWith("You are the Acme HR assistant.");
     assertThat(catalog.listAirlocks())
@@ -55,7 +55,7 @@ class DocumentsAirlockCatalogTest {
                 spec:
                   space: hr-acme
                   displayName: Travel desk
-                  access: {users: [eric@example.com], callers: ["*"]}
+                  access: {roles: [employee], callers: ["*"]}
                 """),
             null);
 

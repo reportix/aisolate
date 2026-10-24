@@ -166,8 +166,8 @@ class ChatEndpointSecurityTest {
   }
 
   @Test
-  void givenUserOfTheSpaceOnly_whenChatAnAirlockWithUsersOfItsOwn_thenAdmitted() {
-    // Arrange: eric is on hr-acme's list, not short-app's own: a union, not an override
+  void givenRoleOfTheSpaceOnly_whenChatAnAirlockWithRolesOfItsOwn_thenAdmitted() {
+    // Arrange: eric holds a role of hr-acme's list, not short-app's own: a union, not an override
     model.answer("Hello.");
 
     // Act
@@ -180,8 +180,8 @@ class ChatEndpointSecurityTest {
   }
 
   @Test
-  void givenUserOfOneAirlockOnly_whenChatItAndTheOthers_thenAdmittedThereAlone() {
-    // Arrange: ivy is short-app's own user, not hr-acme's
+  void givenRoleOfOneAirlockOnly_whenChatItAndTheOthers_thenAdmittedThereAlone() {
+    // Arrange: ivy holds short-app's own role (intern), not hr-acme's
     String intern = Tokens.forUser("ivy", "password");
     model.answer("Hello.");
 
@@ -200,8 +200,8 @@ class ChatEndpointSecurityTest {
   }
 
   @Test
-  void givenAirlockAndSpaceListingNoOne_whenChat_then403() {
-    // Arrange: closed-app and its space list no one: an empty union admits no one, not anyone
+  void givenAirlockAndSpaceListingNoRole_whenChat_then403() {
+    // Arrange: closed-app and its space list no role: an empty union admits no one, not anyone
     String jasmine = Tokens.forUser("jasmine", "password");
 
     // Act
@@ -214,8 +214,8 @@ class ChatEndpointSecurityTest {
   }
 
   @Test
-  void givenUserNotOnTheAirlock_whenChatAsJson_then403() {
-    // Arrange: ivy is short-app's own user; acme-hr and its space do not list her
+  void givenTokenWithoutListedRole_whenChatAsJson_then403() {
+    // Arrange: ivy holds short-app's own role (intern); acme-hr and its space do not list it
     String intern = Tokens.forUser("ivy", "password");
 
     // Act
@@ -229,8 +229,9 @@ class ChatEndpointSecurityTest {
   }
 
   @Test
-  void givenUserNotOnTheAirlock_whenChat_then403OneRefusalAuditLineAndRefusedAdmissionSpan() {
-    // Arrange: ivy is short-app's own user; acme-hr and its space do not list her
+  void
+      givenTokenWithoutListedRole_whenChat_then403AndRefusalReasonRoleAuditLineAndRefusedAdmissionSpan() {
+    // Arrange: ivy holds short-app's own role (intern); acme-hr and its space do not list it
     String intern = Tokens.forUser("ivy", "password");
 
     // Act
@@ -244,7 +245,7 @@ class ChatEndpointSecurityTest {
     JsonNode line = audit.events().getFirst();
     assertThat(line.path("event").asString()).isEqualTo("refusal");
     assertThat(line.path("outcome").asString()).isEqualTo("refused");
-    assertThat(line.path("reason").asString()).isEqualTo("user");
+    assertThat(line.path("reason").asString()).isEqualTo("role");
     assertThat(line.path("user").asString()).isEqualTo("ivy@example.com");
     assertThat(line.path("client").asString()).isEqualTo("acme-chat");
     assertThat(line.path("question").asString()).isEqualTo("What does Eric earn?");
@@ -266,7 +267,7 @@ class ChatEndpointSecurityTest {
     SpanData admission = spanNamed(trace, "admission");
     assertThat(admission.getParentSpanId()).isEqualTo(root.getSpanId());
     assertThat(attribute(admission, "aisolate.admitted")).isEqualTo("false");
-    assertThat(attribute(admission, "aisolate.reason")).isEqualTo("user");
+    assertThat(attribute(admission, "aisolate.reason")).isEqualTo("role");
     assertThat(attribute(root, "aisolate.outcome")).isEqualTo("refused");
     // Failed by type alone: the refusal's message names her
     assertThat(trace).noneMatch(span -> exposed(span).contains("ivy"));
@@ -410,7 +411,7 @@ class ChatEndpointSecurityTest {
     assertThat(metrics.body())
         .contains("aisolate_exchanges_total{" + airlock + "outcome=\"answered\"}")
         .contains("aisolate_exchanges_total{" + airlock + "outcome=\"refused\"}")
-        .contains("aisolate_refusals_total{" + airlock + "reason=\"user\"}")
+        .contains("aisolate_refusals_total{" + airlock + "reason=\"role\"}")
         .contains("aisolate_tool_calls_total{" + airlock + "tool=\"read_records\"}")
         .contains("aisolate_exchange_duration_seconds_bucket{" + airlock + "le=\"")
         .contains("gen_ai_client_token_usage_total{" + airlock)

@@ -26,14 +26,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Discovery: each token sees the airlocks that admit its user (a user of their space or one of
- * their own) and its client, each with its endpoint and tools, none before its first deploy. In the
- * fixtures the space lists nora; hr-assistant lists eric as its own user; founders-finance lists no
- * user of its own.
+ * Discovery: each token sees the airlocks that admit one of its roles (a role of their space or one
+ * of their own) and its client, each with its endpoint and tools, none before its first deploy. In
+ * the fixtures the space lists ceo; hr-assistant lists employee as its own role; founders-finance
+ * lists no role of its own.
  */
 class AirlockAdmissionServiceTest {
 
-  /** An airlock of hr-acme created before its first deploy, listing eric as its own user. */
+  /** An airlock of hr-acme created before its first deploy, listing employee as its own role. */
   private static final String TRAVEL_DESK =
       """
       ---
@@ -43,10 +43,10 @@ class AirlockAdmissionServiceTest {
       spec:
         space: hr-acme
         displayName: Travel desk
-        access: {users: [eric@example.com], callers: ["*"]}
+        access: {roles: [employee], callers: ["*"]}
       """;
 
-  /** An airlock of hr-acme listing eric, asked through the Acme chat alone. */
+  /** An airlock of hr-acme listing employee, asked through the Acme chat alone. */
   private static final String CHAT_ONLY =
       """
       ---
@@ -56,7 +56,7 @@ class AirlockAdmissionServiceTest {
       spec:
         space: hr-acme
         displayName: Chat only
-        access: {users: [eric@example.com], callers: [acme-chat]}
+        access: {roles: [employee], callers: [acme-chat]}
       """;
 
   /** An airlock of hr-acme a workflow tool asks as itself, with no user behind its token. */
@@ -69,7 +69,7 @@ class AirlockAdmissionServiceTest {
       spec:
         space: hr-acme
         displayName: Machine
-        access: {users: [], callers: [acme-chat], clients: [knime]}
+        access: {roles: [], callers: [acme-chat], clients: [knime]}
         llm: qwen
         prompt: You answer the workflow tool.
       """;
@@ -91,7 +91,7 @@ class AirlockAdmissionServiceTest {
     full.offer("{}");
     AirlockAdmissionService service =
         service(new AuditLog(JsonMapper.builder().build(), new SimpleMeterRegistry(), full, true));
-    Jwt nora = jwt(token("nora@example.com"));
+    Jwt nora = jwt(token("nora@example.com", "ceo"));
 
     try {
       // Act / Assert: an admitted question's line could not be kept
@@ -115,8 +115,16 @@ class AirlockAdmissionServiceTest {
         catalog, properties, auditLog, new ExchangeTracing(ObservationRegistry.NOOP));
   }
 
-  private static Map<String, Object> token(String email) {
-    return Map.of("sub", "u-1", "azp", "acme-chat", "email", email);
+  private static Map<String, Object> token(String email, String... roles) {
+    return Map.of(
+        "sub",
+        "u-1",
+        "azp",
+        "acme-chat",
+        "email",
+        email,
+        "realm_access",
+        Map.of("roles", List.of(roles)));
   }
 
   private static Jwt jwt(Map<String, Object> claims) {
@@ -125,9 +133,9 @@ class AirlockAdmissionServiceTest {
 
   @Test
   void givenEmployeeOnOneAirlock_whenListed_thenThatAirlockAlone() {
-    // Arrange: eric is hr-assistant's own user, not the space's
+    // Arrange: eric holds hr-assistant's own role, not the space's
     AirlockAdmissionService admission = service();
-    Map<String, Object> eric = token("eric@example.com");
+    Map<String, Object> eric = token("eric@example.com", "employee");
 
     // Act
     List<AirlockSummaryDTO> airlocks = admission.listAdmittedAirlocks(eric);
@@ -148,17 +156,19 @@ class AirlockAdmissionServiceTest {
   @CsvSource(
       delimiter = '|',
       value = {
-        "eric@example.com|hr-assistant,travel-desk",
-        "Nora@Example.Com|hr-assistant,founders-finance,travel-desk",
-        "jasmine@example.com|''"
+        "employee|hr-assistant,travel-desk",
+        "ceo|hr-assistant,founders-finance,travel-desk",
+        "CEO|''",
+        "intern|''"
       })
-  void givenUsersOfTheSpaceAndOfOneAirlock_whenListed_thenExactlyTheAirlocksTheUnionAdmits(
-      String email, String expected) {
-    // Arrange: nora inherits every airlock from the space, eric is listed on two of them
+  void givenRolesOfTheSpaceAndOfOneAirlock_whenListed_thenExactlyTheAirlocksTheUnionAdmits(
+      String role, String expected) {
+    // Arrange: ceo inherits every airlock from the space, employee is listed on two of them; roles
+    // match exactly
     AirlockAdmissionService admission = service(TRAVEL_DESK);
 
     // Act
-    List<AirlockSummaryDTO> airlocks = admission.listAdmittedAirlocks(token(email));
+    List<AirlockSummaryDTO> airlocks = admission.listAdmittedAirlocks(token("u@example.com", role));
 
     // Assert
     assertThat(airlocks)
@@ -171,14 +181,22 @@ class AirlockAdmissionServiceTest {
     // Arrange: eric asks through partner-app; chat-only lists him but not that client
     AirlockAdmissionService admission = service(CHAT_ONLY);
     Map<String, Object> viaPartner =
-        Map.of("sub", "u-1", "azp", "partner-app", "email", "eric@example.com");
+        Map.of(
+            "sub",
+            "u-1",
+            "azp",
+            "partner-app",
+            "email",
+            "eric@example.com",
+            "realm_access",
+            Map.of("roles", List.of("employee")));
 
     // Act
     List<AirlockSummaryDTO> airlocks = admission.listAdmittedAirlocks(viaPartner);
 
     // Assert: hidden from that client, listed through the chat, without tools before its deploy
     assertThat(airlocks).extracting(AirlockSummaryDTO::id).containsExactly("hr-assistant");
-    assertThat(admission.listAdmittedAirlocks(token("eric@example.com")))
+    assertThat(admission.listAdmittedAirlocks(token("eric@example.com", "employee")))
         .extracting(AirlockSummaryDTO::id, AirlockSummaryDTO::tools)
         .containsExactly(
             tuple("hr-assistant", List.of("read_records", "aggregate_records")),
@@ -215,7 +233,7 @@ class AirlockAdmissionServiceTest {
   }
 
   @Test
-  void givenUnlistedMachineClient_whenAdmitting_thenRefusedNamingTheClient() {
+  void givenUnlistedMachineClient_whenAdmitting_thenRefusedNamingNoRolesAndTheClient() {
     // Arrange
     AirlockAdmissionService admission = service(MACHINE);
 
@@ -223,10 +241,37 @@ class AirlockAdmissionServiceTest {
     Throwable thrown =
         catchThrowable(() -> admission.admit("hr-acme", "machine", machine("n8n"), "q"));
 
-    // Assert: the log line names the client, not a missing user
+    // Assert: no roles, so ROLE comes first
     assertThat(thrown)
         .isInstanceOf(ForbiddenException.class)
-        .hasMessage("hr-acme/machine does not admit client n8n");
+        .hasMessage("hr-acme/machine does not admit roles [] from client n8n");
+  }
+
+  @Test
+  void givenRoleOfTheSpaceFromUnlistedCaller_whenAdmitting_thenRefusedNamingTheClient() {
+    // Arrange: nora holds ceo, but this deployed airlock lists acme-chat alone
+    AirlockAdmissionService admission =
+        service(CHAT_ONLY + "  llm: qwen\n  prompt: You answer the chat.\n");
+    Jwt viaPartner =
+        jwt(
+            Map.of(
+                "sub",
+                "u-1",
+                "azp",
+                "partner-app",
+                "email",
+                "nora@example.com",
+                "realm_access",
+                Map.of("roles", List.of("ceo"))));
+
+    // Act
+    Throwable thrown =
+        catchThrowable(() -> admission.admit("hr-acme", "chat-only", viaPartner, "q"));
+
+    // Assert
+    assertThat(thrown)
+        .isInstanceOf(ForbiddenException.class)
+        .hasMessage("hr-acme/chat-only does not admit client partner-app");
   }
 
   private static Jwt machine(String azp) {

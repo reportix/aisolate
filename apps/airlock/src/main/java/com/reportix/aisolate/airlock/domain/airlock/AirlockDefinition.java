@@ -14,8 +14,8 @@ import java.util.Objects;
  * it: they ship in the airlock's jar and only the tool server applies them.
  *
  * @param description empty when the airlock has none
- * @param access who may ask: its space's users and its own, case ignored, its callers by {@code
- *     azp}, {@code *} for any, and its machine clients by {@code azp}, exact
+ * @param access who may ask: its space's roles and its own, exact, its callers by {@code azp},
+ *     {@code *} for any, and its machine clients by {@code azp}, exact
  * @param model the provider id its model runs on: its own, its space's or a global one
  * @param dataSources the ids of the data sources its code reads: its space's and its own
  */

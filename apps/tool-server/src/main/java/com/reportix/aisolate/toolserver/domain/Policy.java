@@ -5,11 +5,11 @@ import java.util.List;
 
 /**
  * One airlock at one revision as the release's documents describe it: who may call (its space's
- * users and its own, through its callers) and which tools it declares. The rules and the data
+ * roles and its own, through its callers) and which tools it declares. The rules and the data
  * sources are not part of it: the rules ship in the airlock's code, the data sources are this
  * pod's.
  *
- * @param access its space's users and its own, case ignored, its callers and its machine clients
+ * @param access its space's roles and its own, exact, its callers and its machine clients
  */
 public record Policy(
     String id, String revision, AirlockDocument.Access access, List<String> tools) {
