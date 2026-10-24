@@ -19,6 +19,7 @@ tests start the same images through Testcontainers.
 docker compose -f docker/compose.yaml up -d
 AISOLATE_DB_PASSWORD=aisolate ./gradlew :apps:backend:bootRun # :8080, runs the migrations
 npm ci && npm run dev -w apps/frontend     # :3001
+npm run dev -w apps/chat                   # :3000
 ```
 
 Spaces and airlocks can be defined there. Nothing answers without a cluster, and a data source that
@@ -58,12 +59,13 @@ Both pods take `AISOLATE_PLUGINS_DIR` and `AISOLATE_PLUGIN_DIGESTS` for an airlo
 | `apps/backend/` | The AIsolate UI's API, with `headless=false`: spaces (developers, roles, LLM, data sources), airlocks (roles, callers, LLM, data sources) with their code (`JarInspector`: the tools with their plugin and data source, the handlers, the rule sets), the deploy call (one `Airlock` checked against its code and its space), cluster sync and the data sources' Secrets, and the audit trail: the ingest on its own port, the append-only table chained per airlock, its reading and verify ([docs/audit.md](docs/audit.md)). Owns the schema (Flyway). |
 | `apps/cli/` | The `aisolate` CLI (picocli, GraalVM native image, macOS and Windows installers). `src/main/templates/` holds the four templates, `company-hr`, `company-sales`, `auditor` and `hospital`, each one airlock with its code and its `aisolate.yaml` ([docs/develop.md](docs/develop.md)). |
 | `apps/frontend/` | The AIsolate UI (Next.js). |
+| `apps/chat/` | The sample chat client of the airlock endpoint (Next.js): sign-in with PKCE, discovery, the SSE stream, the answer with its provenance. |
 | `libs/sdk/` | What a project compiles against: `ToolPlugin` (with `dataSource()`), `Entity`, `Column`, `Tool`, `GovernedQuery`, `Filter`, `Result`, `Arguments`, the handler interfaces (`ContextPreparator`, `ConversationMemory`, `AnswerVerifier`) and `AIsolateManager` (`embed`, `dataSource(id)`). |
 | `libs/config/` | The document kinds, the loader and its validation, the LLM and data sources an airlock resolves from the global level, its space and itself (`llmOf`, `dataSourcesOf`), the rules grammar, URL checks, project variables, the YAML format and the revision. Jackson only, no Spring. |
 | `libs/identity/` | The resource-server `SecurityConfig` (JWT validation, the roles claim, CORS, the RFC 9728 document) and `Principal`. |
 | `libs/plugins/` | Reading an airlock's code: `JarScan` finds the tool plugins and handlers by scanning the classes, in any package; the code fetch and digest pin every pod applies at start (`CodeFetch`, `JarDigests`). |
 | `libs/audit-report/` | The AIsolate Audit report as one xBRL-XML instance (`AuditReport`, `AuditLine`), which the backend's audit export writes ([docs/audit.md](docs/audit.md#export)). |
-| `libs/ui/` | `@aisolate/ui`: design tokens, primitives and the HTTP, OIDC and env helpers of the AIsolate UI. One npm workspace with `apps/frontend`, rooted at `package.json`. |
+| `libs/ui/` | `@aisolate/ui`: design tokens, primitives and the HTTP, OIDC and env helpers of the AIsolate UI. One npm workspace with `apps/frontend` and `apps/chat`, rooted at `package.json`. |
 | `chart/` | The Helm chart: CRDs, templates, values and its README. |
 | `tests/chart/` | The chart's tests. |
 | `docker/` | The compose stack for the laptop. |

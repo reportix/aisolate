@@ -1,10 +1,14 @@
-# Build context for apps/frontend/Dockerfile: the npm workspace only.
+# Build context for apps/frontend/Dockerfile and apps/chat/Dockerfile: the npm workspace only.
 *
 !package.json
 !package-lock.json
 !tsconfig.base.json
 !libs/ui/**
 !apps/frontend/**
+!apps/chat/**
 libs/ui/node_modules
 apps/frontend/node_modules
 apps/frontend/.next
+apps/chat/node_modules
+apps/chat/.next
+apps/chat/.env.local

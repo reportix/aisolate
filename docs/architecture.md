@@ -10,16 +10,15 @@ way is [Design decisions](design-decisions.md).
 
 | Repository | Holds | Licence |
 |---|---|---|
-| `aisolate` (this one) | The airlock pod and the MCP server in Java and in Python, the controller, the backend, the AIsolate UI, the `aisolate` CLI with its templates, the two SDKs, the shared libraries, the conformance cases and this documentation, the Helm chart in `chart/` (the CRDs, the controller, the policies, the egress proxy; with `headless=false` the UI, the backend and its database) and its tests | AGPL-3.0-only |
-| `chat` | A sample chat client of the airlock endpoint: sign-in with PKCE, discovery, the SSE stream, the answer with its provenance | AGPL-3.0-only |
+| `aisolate` (this one) | The airlock pod and the MCP server in Java and in Python, the controller, the backend, the AIsolate UI, the sample chat client (`apps/chat`), the `aisolate` CLI with its templates, the two SDKs, the shared libraries, the conformance cases and this documentation, the Helm chart in `chart/` (the CRDs, the controller, the policies, the egress proxy; with `headless=false` the UI, the backend and its database) and its tests | AGPL-3.0-only |
 | `integrations` | An n8n node and KNIME nodes that ask an airlock as a machine client | Apache-2.0 |
 | `aisolate-reset` | A CLI that gives an install with the AIsolate UI a clean slate | AGPL-3.0-only |
 | `website` | The public site; it renders this documentation | AGPL-3.0-only |
 
 ## The modules of this repository
 
-One Gradle build (`settings.gradle.kts`, Java 25), one npm workspace (`package.json`: `libs/ui` and
-`apps/frontend`) and four Python modules, each with its own `pyproject.toml` and `uv.lock`. Every app depends on
+One Gradle build (`settings.gradle.kts`, Java 25), one npm workspace (`package.json`: `libs/ui`,
+`apps/frontend` and `apps/chat`) and four Python modules, each with its own `pyproject.toml` and `uv.lock`. Every app depends on
 libraries only, never on another app; every library depends only on the ones below it.
 
 ```mermaid
@@ -56,6 +55,7 @@ flowchart BT
 | `apps/backend` | Spring Boot, JDBC, Flyway, fabric8 | 8080 for the API, 8085 for the ingest | The AIsolate UI's API and the CLI's deploy endpoint; owns the schema; applies every save to the cluster; keeps the audit trail and serves the code to the pods. Only with `headless=false`. |
 | `apps/cli` | picocli, GraalVM native image | — | `aisolate create`, `login`, `logout`, `build`, `deploy`; the four templates in Java and in Python. |
 | `apps/frontend` | Next.js, React, Tailwind | 3000 (3001 in development) | The AIsolate UI. Signs in with PKCE in the browser and calls the backend with the token. |
+| `apps/chat` | Next.js, React, Tailwind | 3000 | The sample chat client of the airlock endpoint: sign-in with PKCE, discovery, the SSE stream, the answer with its provenance. |
 | `apps/airlock-python` | Starlette, uvicorn, `mcp` as client | 8080, 9464 | The airlock pod for a Python project: the same contract as `apps/airlock`. |
 | `apps/tool-server-python` | Starlette, uvicorn, `mcp` as server, pg8000 | 8081, 9464 | The MCP server for a Python project: the same contract as `apps/tool-server`. |
 | `libs/sdk`, `libs/sdk-python` | plain Java; plain Python | — | `ToolPlugin`, `Entity`, `Column`, `Tool`, `GovernedQuery`, `ContextPreparator`, `ConversationMemory`, `AnswerVerifier`, `AIsolateManager`; in Python the same as classes and decorators, plus `aisolate build`. |

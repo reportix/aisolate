@@ -1,0 +1,135 @@
+/* The chat's own look, apart from the neutral AIsolate admin UI: it is the customer's chat. Light and airy,
+   white paper for answers, a neutral gray sidebar, purple for source markers, a deeper baby blue for
+   focus and sending. Every pair the chat sets is checked for WCAG AA in
+   src/ui/__tests__/contrast.test.ts. Light only. */
+:root {
+  --bg-primary: #ffffff;
+  /* A flat wash where a gradient has no room (sign-in, code blocks). */
+  --bg-secondary: #f4f7ff;
+  /* Hover and pressed tints on paper and on the wash. */
+  --bg-tertiary: #e9effc;
+  /* The sidebar: neutral gray, so only the answer carries colour. */
+  --sidebar: #f9f9f9;
+  --sidebar-hover: #efefef;
+  --sidebar-active: #e8e8e8;
+  --sidebar-border: #ebebeb;
+  --border-primary: #e4e9f5;
+  --border-secondary: #d5dcec;
+  /* An editable box's edge: 3:1 on paper and on the wash (WCAG 1.4.11). */
+  --border-control: #7d859b;
+  /* Baby blue, deepened until a focus outline and a white arrow on it reach 3:1. */
+  --border-focus: #3b82f6;
+  --text-primary: #1e2333;
+  --text-secondary: #4a5166;
+  --text-tertiary: #5a6075;
+  --text-muted: #9aa1b5;
+  --text-inverse: #ffffff;
+  /* Purple: primary actions, a source marker's number. */
+  --accent-primary: #5b47c8;
+  --accent-primary-hover: #4e3bb5;
+  --accent-primary-pressed: #43319e;
+  /* Lavender: the soft fill behind purple text. */
+  --accent-surface: #eee9ff;
+  --accent-surface-strong: #e3dbff;
+  --accent-border: #d6ccff;
+  /* Decorative purple only (icons beside a label, the pending dot): never text. */
+  --accent-purple: #8b6cf0;
+  /* The send button; the user's own message is its pale wash. */
+  --accent-blue: #3b82f6;
+  --accent-blue-hover: #2f6fe0;
+  --accent-blue-wash: #e7f1ff;
+  --error: #b91c1c;
+  --error-wash: #fef2f2;
+  --error-border: #fecaca;
+  --ok: #15803d;
+  --ok-wash: #f0fdf4;
+  --ok-border: #bbf7d0;
+  /* A figure the model typed. */
+  --warn: #b45309;
+  --warn-wash: #fffbeb;
+  --warn-border: #fde68a;
+  /* Soft, blue-tinted shadows: a row lifted off the wash, a card, a popover. */
+  --shadow-soft: 0 1px 2px rgba(30, 35, 80, 0.06), 0 2px 8px rgba(60, 72, 150, 0.06);
+  --shadow-card: 0 1px 3px rgba(30, 35, 80, 0.05), 0 6px 24px rgba(60, 72, 150, 0.08);
+  --shadow-overlay: 0 1px 3px rgba(30, 35, 80, 0.06), 0 10px 32px rgba(60, 72, 150, 0.14);
+  /* The baby-blue halo around a focused control. */
+  --shadow-glow: 0 0 0 4px rgba(124, 184, 255, 0.45);
+}
+
+@theme inline {
+  --color-paper: var(--bg-primary);
+  --color-desk: var(--bg-secondary);
+  --color-panel: var(--bg-tertiary);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-hairline: var(--border-primary);
+  --color-hairline-strong: var(--border-secondary);
+  --color-control: var(--border-control);
+  --color-focus: var(--border-focus);
+  --color-ink: var(--text-primary);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-tertiary: var(--text-tertiary);
+  --color-ink-muted: var(--text-muted);
+  --color-ink-inverse: var(--text-inverse);
+  --color-pen: var(--accent-primary);
+  --color-pen-hover: var(--accent-primary-hover);
+  --color-pen-press: var(--accent-primary-pressed);
+  --color-pen-wash: var(--accent-surface);
+  --color-mark: var(--accent-primary);
+  --color-mark-wash: var(--accent-surface);
+  --color-mark-wash-strong: var(--accent-surface-strong);
+  --color-mark-border: var(--accent-border);
+  --color-purple: var(--accent-purple);
+  --color-sky: var(--accent-blue);
+  --color-sky-hover: var(--accent-blue-hover);
+  --color-sky-wash: var(--accent-blue-wash);
+  --color-error: var(--error);
+  --color-error-wash: var(--error-wash);
+  --color-error-border: var(--error-border);
+  --color-ok: var(--ok);
+  --color-ok-wash: var(--ok-wash);
+  --color-ok-border: var(--ok-border);
+  --color-warn: var(--warn);
+  --color-warn-wash: var(--warn-wash);
+  --color-warn-border: var(--warn-border);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, Menlo, monospace;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  caret-color: var(--accent-blue);
+}
+
+::selection {
+  background: rgba(124, 184, 255, 0.35);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-secondary) transparent;
+}
+
+/* Keyboard focus is always visible: a baby-blue outline and its soft halo. */
+:focus-visible {
+  outline: 1.5px solid var(--border-focus);
+  outline-offset: 1px;
+  box-shadow: var(--shadow-glow);
+}
+
+/* A field in focus draws its own border blue and doubled, with no outline or halo around it. */
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}

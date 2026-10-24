@@ -151,7 +151,7 @@ flowchart LR
 
 | Component | Runs as | Does |
 |---|---|---|
-| Customer's chat | The organisation's app; the `chat` repository is the sample | Signs the user in with PKCE, discovers the airlocks, posts questions with the user's token, renders the answer and its evidence. |
+| Customer's chat | The organisation's app; `apps/chat` is the sample | Signs the user in with PKCE, discovers the airlocks, posts questions with the user's token, renders the answer and its evidence. |
 | Airlock pod | `aisolate/airlock`, one per airlock | The airlock's endpoint. Validates the token, admits the user who holds a role the space or the airlock lists and the client the airlock lists, or a machine client the airlock lists, runs the airlock's handlers and the agent loop, streams the answer. Serves its airlock only. |
 | MCP server | `aisolate/tool-server`, one per airlock | Publishes the airlock's tools. Validates the token again, evaluates the rules, compiles them into one SELECT on the tool's data source, returns evidence. Reachable from its own airlock pod only. |
 | Controller | `aisolate/controller`, one per install | Watches `Space` and `Airlock` and renders the pod pair, Services, routes, policies, the documents' ConfigMap and the token Secrets of every valid airlock. Reports status. |

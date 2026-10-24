@@ -7,7 +7,7 @@ there too. Every deploy creates the airlock from the file's `Airlock`, or update
 writes (a field it leaves out keeps what the AIsolate UI set). The `aisolate` CLI creates the project from a
 template and deploys it into that airlock, in a cluster installed with the AIsolate UI (`headless=false`).
 An airlock runs only as a pod: the deploy becomes a pod pair there, and a chat such as
-the sample in the `chat` repository asks it.
+the sample in `apps/chat` asks it.
 
 ## Install the CLI
 

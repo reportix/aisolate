@@ -113,7 +113,7 @@ them.
 
 The chat reads `NEXT_PUBLIC_AISOLATE_URL` (the release host) and an optional
 `NEXT_PUBLIC_AISOLATE_AIRLOCK_ID`; the identity provider is discovered, not configured
-(the `chat` repository). The AIsolate UI reads `NEXT_PUBLIC_AISOLATE_URL`,
+([`apps/chat`](../apps/chat/README.md)). The AIsolate UI reads `NEXT_PUBLIC_AISOLATE_URL`,
 `NEXT_PUBLIC_OIDC_AUTHORITY` (the operators' provider: demo realm `aisolate`), `NEXT_PUBLIC_OIDC_CLIENT_ID` (`aisolate-ui`) and an optional
 `NEXT_PUBLIC_TRACE_URL` (a trace viewer with `{trace_id}`, for an audit event's View trace) at build time, the
 image's build arguments ([`apps/frontend`](../apps/frontend/README.md)). The footer's version is the `AISOLATE_VERSION` build argument (else the package version) and its Source link is `NEXT_PUBLIC_AISOLATE_SOURCE_URL`, so a fork's build points users at the fork's source (AGPL-3.0 section 13).

@@ -15,7 +15,7 @@ spotless:
   image: eclipse-temurin:25-jdk
   script: ./gradlew spotlessCheck --console=plain
 
-# One npm workspace: the shared UI package and the AIsolate UI, installed once from the root.
+# One npm workspace: the shared UI package, the AIsolate UI and the sample chat, installed once from the root.
 web-check:
   stage: check
   image: node:24

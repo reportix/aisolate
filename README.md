@@ -56,8 +56,7 @@ documents through the organisation's own pipeline. See [docs/concepts.md](docs/c
 
 | Repository | Holds |
 |---|---|
-| `aisolate` (this one; the others are published beside it) | The airlock core, the MCP server, the controller, the backend, the AIsolate UI, the CLI with its `company-hr`, `company-sales`, `auditor` and `hospital` templates, the SDK and the shared libraries, the Helm chart (`chart/`) and its tests |
-| `chat` | A sample chat client of the airlock endpoint |
+| `aisolate` (this one; the others are published beside it) | The airlock core, the MCP server, the controller, the backend, the AIsolate UI, the CLI with its `company-hr`, `company-sales`, `auditor` and `hospital` templates, the SDK and the shared libraries, the sample chat client of the airlock endpoint (`apps/chat`), the Helm chart (`chart/`) and its tests |
 | `aisolate-reset` | A CLI that gives an install with the AIsolate UI a clean slate |
 | `website` | The public site |
 
