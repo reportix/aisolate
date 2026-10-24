@@ -41,9 +41,9 @@ medication list joins both departments' care teams, so each department's doctor 
 list of their own patients. `ClinicalNotesContextPreparator` reads the notes of the department
 whose airlock the exchange runs on, about the asking doctor's patients only, and only for a doctor.
 
-Who may ask is the airlock's: a department's doctors hold the role `doctor`; the chief of medicine's role `chief` is the space's and asks every department, for statistics only. The role lists are the second
-line of defence: a doctor admitted to the other department's airlock reads none of its records,
-since a department's care teams list only its own clinicians.
+Who may ask is the airlock's: a department's doctors hold the role `doctor`; the chief of medicine's role `chief` is the space's and asks every department, for statistics only. Both departments' airlocks admit `doctor`, so the
+rules are the line of defence: a doctor who asks the other department's airlock reads none of its
+records, since a department's care teams list only its own clinicians.
 
 ## The tree
 

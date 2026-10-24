@@ -151,7 +151,7 @@ CREATE TABLE data_sources (
 ```
 
 A space's and an airlock's `definition` JSON holds `llms` in place of the four fields, each row with its
-`secret_ref`; an airlock's holds `llm`, `prompt` and `tools` too. `V1.1__test_seed.sql` follows.
+`secret_ref`; an airlock's holds `llm`, `prompt` and `tools` too. `V2.1__test_seed.sql` follows.
 
 ### Validation and messages
 

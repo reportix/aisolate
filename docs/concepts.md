@@ -102,7 +102,6 @@ roles match no rule gets zero rows from the tools, never a 403, but the airlock'
 their own code chooses.
 Who may ask an airlock is the gate for everything the airlock serves: list on the space only the roles whose holders may
 see all of what every airlock's context preparators read, and on an airlock only those who may see all of its.
-see all of what every airlock's context preparators read, and on an airlock only those who may see all of its.
 
 ## Components
 
@@ -157,7 +156,7 @@ flowchart LR
 | MCP server | `aisolate/tool-server`, one per airlock | Publishes the airlock's tools. Validates the token again, evaluates the rules, compiles them into one SELECT on the tool's data source, returns evidence. Reachable from its own airlock pod only. |
 | Controller | `aisolate/controller`, one per install | Watches `Space` and `Airlock` and renders the pod pair, Services, routes, policies, the documents' ConfigMap and the token Secrets of every valid airlock. Reports status. |
 | Backend | `aisolate/backend`, with the AIsolate UI only | The UI's API and the CLI's endpoint. Keeps spaces, airlocks and their code in its own PostgreSQL, applies them to the cluster after every write, keeps credentials in Secrets. |
-| AIsolate UI | Next.js, with `headless=false` only | Where admins define the global LLMs and data sources, and developers and admins spaces with their users, LLMs and data sources, and airlocks with LLMs and data sources of their own, and see each airlock's code. |
+| AIsolate UI | Next.js, with `headless=false` only | Where admins define the global LLMs and data sources, and developers and admins spaces with their developers and roles, LLMs and data sources, and airlocks with LLMs and data sources of their own, and see each airlock's code. |
 | CLI and SDK | the `aisolate` binary; `libs/sdk` | `create`, `login`, `logout`, `build` and `deploy`. The SDK is what a project compiles against. |
 | Chart | Helm, the chart in `chart/` | Installs the CRDs, the controller, the policies, the release Service and routes and the egress proxy; with `headless=false` the UI, the backend and its database. |
 | Identity provider | The organisation's; Keycloak in the demo | Authenticates the users, issues tokens for the audience `aisolate`, publishes JWKS. |

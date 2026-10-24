@@ -10,7 +10,7 @@ the moment of an exchange and never kept.
 | Store | Holds | Owned by | Exists |
 |---|---|---|---|
 | The documents | `Global`, `Space`, `Airlock`: what runs, who may ask, which LLMs and data sources, the code's digest | the cluster; written by the backend or the organisation's pipeline | always |
-| The backend's PostgreSQL | what the AIsolate UI defines (spaces, airlocks, the global LLMs and data sources), each airlock's code bytes, and the audit trail | the backend, which runs its one Flyway migration | with `headless=false` |
+| The backend's PostgreSQL | what the AIsolate UI defines (spaces, airlocks, the global LLMs and data sources), each airlock's code bytes, and the audit trail | the backend, which runs its Flyway migrations (the V1 baseline and `V2__roles.sql`) | with `headless=false` |
 | Secrets | each data source's user and password, each `openai` LLM's API key; per airlock the code token and the audit token | the document that defines the data source or LLM; the controller for the two tokens | always |
 
 The documents are the interface between the two halves: the backend writes them, the controller reads them, and
@@ -63,7 +63,7 @@ classDiagram
 
 ## The backend's tables
 
-One baseline migration, `V1__baseline.sql`. The backend owns the schema and no other process writes it.
+The V1 baseline, `V1__baseline.sql`, and `V2__roles.sql`. The backend owns the schema and no other process writes it.
 
 ```mermaid
 erDiagram

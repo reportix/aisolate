@@ -28,7 +28,7 @@
       },
       {
         "name": "doctor",
-        "description": "Aldermoor Hospital doctor: may ask their department\u0027s airlock"
+        "description": "Aldermoor Hospital doctor: is listed by both departments\u0027 airlocks, so the rules are what keeps a department\u0027s records apart"
       },
       {
         "name": "chief",

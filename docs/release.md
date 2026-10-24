@@ -14,7 +14,7 @@ the backend at start ([Where an airlock's code comes from](security.md#where-an-
 headless install, which has no backend, runs airlocks without code only; one with code does not start.
 
 An install upgraded from before roles replaced the e-mail lists (the V2 migration) has every airlock with no roles: it
-admits nobody until an admin sets its roles, or its space's.
+admits no person (machine clients in `access.clients` are still admitted) until an admin sets its roles, or its space's.
 
 ## Create the Secrets
 

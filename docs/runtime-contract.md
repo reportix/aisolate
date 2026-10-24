@@ -281,7 +281,7 @@ Bearer from `Authorization: Bearer <jwt>` only.
   `identityAttribute` (tool server only, when the join found a row).
 
 Admission (`Principal.admissionFailure(roles, callers, clients)`), the same in both pods: admitted when the e-mail
-is null, `azp` non-null and `clients` contains `azp` (exact, case-sensitive, `*` no wildcard; callers not
+is null, `azp` non-null and `clients` contains `azp` (exact, case-sensitive, `*` no wildcard; roles and callers not
 consulted); else `ROLE` when no token role equals a listed role (exact, case-sensitive, `*` no wildcard; no e-mail is
 needed); else `CLIENT` unless `azp` is non-null and callers contain `*` or
 `azp`; else admitted.

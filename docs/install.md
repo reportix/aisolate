@@ -31,6 +31,8 @@ space's developers are named by e-mail in the space, not in the identity provide
 | Public PKCE clients | `aisolate-ui` for the AIsolate UI; `aisolate-cli` with the redirect `http://127.0.0.1/*` and offline sessions, so the CLI's session lasts 90 days. |
 | The chat's client | Dynamic client registration (RFC 7591) with the chat's host trusted, or a registered public PKCE client. An airlock admits it by its client id in `access.callers`, or with `*`. |
 
+A role every token carries (Keycloak's `default-roles-<realm>`, `offline_access`) admits everyone who holds a token: never list one in `access.roles`.
+
 The demo realm `docker/keycloak/realm-acme.json` is a complete example.
 
 ## Database roles
