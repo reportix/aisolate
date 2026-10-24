@@ -31,7 +31,7 @@ class ProjectDocumentsTest {
       kind: Space
       metadata: {name: hr-acme}
       spec:
-        access: {users: [eric@example.com]}
+        access: {roles: [employee]}
         llms: [{id: granite, provider: ollama, url: "http://ollama:11434", model: "granite4.1:8b"}]
         dataSources:
           - id: payroll
@@ -44,7 +44,7 @@ class ProjectDocumentsTest {
       metadata: {name: hr-assistant}
       spec:
         space: hr-acme
-        access: {users: [eric@example.com], callers: ["*"]}
+        access: {roles: [employee], callers: ["*"]}
         llm: granite
         prompt: Answer from the tools.
         llms:

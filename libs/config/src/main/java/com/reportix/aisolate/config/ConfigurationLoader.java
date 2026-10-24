@@ -281,7 +281,7 @@ public final class ConfigurationLoader {
           problems.add(where + ": spec is required");
           continue;
         }
-        validateUserNames(spec.access() == null ? List.of() : spec.access().users(), where);
+        validateRoleNames(spec.access() == null ? List.of() : spec.access().roles(), where);
         validateLlms(spec.llms(), where + ": spec.llms");
         validateDataSources(spec.dataSources(), where + ": spec.dataSources");
       }
@@ -307,18 +307,18 @@ public final class ConfigurationLoader {
       }
     }
 
-    private void validateUserNames(List<String> users, String where) {
-      Names.userProblems(users)
-          .forEach(problem -> problems.add(where + ": spec.access.users " + problem));
+    private void validateRoleNames(List<String> roles, String where) {
+      Names.roleProblems(roles)
+          .forEach(problem -> problems.add(where + ": spec.access.roles " + problem));
     }
 
     /**
-     * Who may ask besides the space's users: any users of its own, at least one calling client, and
-     * any machine clients.
+     * Who may ask besides holders of the space's roles: any roles of its own, at least one calling
+     * client, and any machine clients.
      */
     private void validateAirlockAccess(AirlockDocument.Access access, String where) {
       List<String> callers = access == null ? List.of() : access.callers();
-      validateUserNames(access == null ? List.of() : access.users(), where);
+      validateRoleNames(access == null ? List.of() : access.roles(), where);
       if (callers.isEmpty()) {
         problems.add(where + ": spec.access.callers " + Names.NO_CALLER);
       }

@@ -69,8 +69,8 @@ class ConfigurationTest {
   }
 
   @Test
-  void givenUsersOnSpaceAndAirlock_whenAccessOf_thenTheSpacesThenTheAirlocksEachOnce() {
-    // Arrange: mark is on both levels, elena on hr only
+  void givenRoleOnSpace_whenAccessOf_thenMergedDistinct() {
+    // Arrange: ceo is on both levels, employee on hr only, CEO another role
     Configuration configuration =
         new Configuration(
             "rev",
@@ -80,27 +80,22 @@ class ConfigurationTest {
                 new SpaceDocument(
                     new Metadata("acme"),
                     new SpaceDocument.Spec(
-                        null,
-                        null,
-                        new SpaceDocument.Access(List.of("mark@example.com", "lucas@example.com")),
-                        null,
-                        null))),
+                        null, null, new SpaceDocument.Access(List.of("ceo", "hr")), null, null))),
             Map.of(
                 "hr",
                 buildAirlock(
                     "hr",
-                    new AirlockDocument.Access(
-                        List.of("elena@example.com", "mark@example.com"), List.of("*"))),
+                    new AirlockDocument.Access(List.of("employee", "ceo", "CEO"), List.of("*"))),
                 "sales",
                 buildAirlock("sales", new AirlockDocument.Access(List.of(), List.of("*")))));
 
     // Act
-    List<String> hr = configuration.accessOf("hr").users();
-    List<String> sales = configuration.accessOf("sales").users();
+    List<String> hr = configuration.accessOf("hr").roles();
+    List<String> sales = configuration.accessOf("sales").roles();
 
     // Assert
-    assertThat(hr).containsExactly("mark@example.com", "lucas@example.com", "elena@example.com");
-    assertThat(sales).containsExactly("mark@example.com", "lucas@example.com");
+    assertThat(hr).containsExactly("ceo", "hr", "employee", "CEO");
+    assertThat(sales).containsExactly("ceo", "hr");
   }
 
   static Stream<Arguments> lookupsOfUnknownNames() {

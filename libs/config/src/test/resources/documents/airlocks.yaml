@@ -5,7 +5,7 @@ spec:
   space: hr-acme
   displayName: Acme HR assistant
   description: Answers people, pay and HR document questions.
-  access: {users: [eric@example.com, nora@example.com], callers: ["*"]}
+  access: {roles: [employee, hr], callers: ["*"]}
   preLLM:
     contextPreparator:
       handlers: [HrDocumentsContextPreparator]
@@ -30,7 +30,7 @@ metadata: {name: founders-finance}
 spec:
   space: hr-acme
   displayName: Founders finance
-  access: {users: [eric@example.com, nora@example.com], callers: ["*"]}
+  access: {roles: [founder], callers: ["*"]}
   llm: qwen
   prompt: You answer the founders only.
   tools: []

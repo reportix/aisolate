@@ -9,9 +9,9 @@ import java.util.Set;
 
 /**
  * The end user as the validated token describes them, as far as AIsolate needs: who is calling
- * ({@code azp}), the e-mail an airlock admits its users by and a developer handler may filter with,
- * and the roles. Built only from verified claims (plus, on the tool server, the plugin's identity
- * join), never from the request body, tool arguments or the prompt.
+ * ({@code azp}), the roles an airlock admits by, and the e-mail a developer handler may filter with
+ * and the audit trail records. Built only from verified claims (plus, on the tool server, the
+ * plugin's identity join), never from the request body, tool arguments or the prompt.
  *
  * @param attributes what a row filter may compare with as {@code principal.<name>}: {@code sub},
  *     {@code email}, and the plugin's identity attribute when the join found a row
@@ -84,27 +84,28 @@ public record Principal(
 
   /** What gate 2 found wrong, for the audit trail; the client is told only "forbidden". */
   public enum AdmissionFailure {
-    USER,
+    ROLE,
     CLIENT
   }
 
   /**
    * Gate 2, the one place it is decided. A token without an e-mail whose calling client is one of
-   * the airlock's machine clients is admitted (exact, {@code *} is no wildcard; callers are not
-   * consulted). Any other token is admitted when the e-mail is one of the airlock's space's users
-   * or its own (identity providers keep the case a user typed, so case is ignored) and the calling
-   * client one of its callers ({@code *} admits any client registered at the identity provider);
-   * else why not, the user looked at first.
+   * the airlock's machine clients is admitted (exact, {@code *} is no wildcard; roles and callers
+   * are not consulted). Any other token is admitted when one of its roles is one of the airlock's
+   * space's roles or its own (exact: the identity provider names roles, {@code *} is no wildcard)
+   * and the calling client one of its callers ({@code *} admits any client registered at the
+   * identity provider); else why not, the role looked at first. Who holds a role is the identity
+   * provider's to decide, so no e-mail is needed.
    */
   public Optional<AdmissionFailure> admissionFailure(
-      Collection<String> allowedUsers,
+      Collection<String> allowedRoles,
       Collection<String> allowedCallers,
       Collection<String> allowedClients) {
     if (email == null && azp != null && allowedClients.contains(azp)) {
       return Optional.empty();
     }
-    if (email == null || allowedUsers.stream().noneMatch(email::equalsIgnoreCase)) {
-      return Optional.of(AdmissionFailure.USER);
+    if (roles.stream().noneMatch(allowedRoles::contains)) {
+      return Optional.of(AdmissionFailure.ROLE);
     }
     boolean callerListed =
         azp != null && (allowedCallers.contains("*") || allowedCallers.contains(azp));

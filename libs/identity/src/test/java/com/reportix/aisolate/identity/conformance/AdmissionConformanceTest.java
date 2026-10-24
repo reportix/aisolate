@@ -45,8 +45,8 @@ class AdmissionConformanceTest {
       JsonNode admission) {
     // Arrange
     JsonNode airlock = FILE.path("airlocks").path(admission.path("airlock").asString());
-    Set<String> users = new LinkedHashSet<>(strings(FILE.path("space").path("users")));
-    users.addAll(strings(airlock.path("users")));
+    Set<String> roles = new LinkedHashSet<>(strings(FILE.path("space").path("roles")));
+    roles.addAll(strings(airlock.path("roles")));
     List<String> callers = strings(airlock.path("callers"));
     List<String> clients = strings(airlock.path("clients"));
     Map<String, Object> claims =
@@ -55,7 +55,7 @@ class AdmissionConformanceTest {
 
     // Act
     Optional<Principal.AdmissionFailure> failure =
-        principal.admissionFailure(List.copyOf(users), callers, clients);
+        principal.admissionFailure(List.copyOf(roles), callers, clients);
 
     // Assert
     JsonNode expect = admission.path("expect");

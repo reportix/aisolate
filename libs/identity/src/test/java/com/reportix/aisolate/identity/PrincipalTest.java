@@ -25,7 +25,7 @@ class PrincipalTest {
           "realm_access", Map.of("roles", List.of("employee", "offline_access")),
           "roles", "single");
 
-  private static final List<String> USERS = List.of("eric@example.com", "nora@example.com");
+  private static final List<String> ROLES = List.of("ceo", "employee");
 
   @ParameterizedTest
   @CsvSource({
@@ -79,11 +79,11 @@ class PrincipalTest {
   }
 
   /** Gate 2's whole decision: the airlock pod and the tool server only call it. */
-  static Stream<Arguments> givenClaimsUsersAndCallers_whenAdmissionFailure_thenExpected() {
+  static Stream<Arguments> givenClaimsRolesAndCallers_whenAdmissionFailure_thenExpected() {
     List<String> anyCaller = List.of("*");
-    // the identity provider keeps the case the user typed
-    Map<String, Object> upperCase =
-        Map.of("sub", "u-1", "email", "Eric@Example.Com", "azp", "acme-chat");
+    Map<String, Object> withoutRoles =
+        Map.of("sub", "u-1", "email", "eric@example.com", "azp", "acme-chat");
+    // a person is admitted by role: the e-mail plays no part
     Map<String, Object> withoutEmail =
         Map.of(
             "sub", "u-1",
@@ -95,39 +95,44 @@ class PrincipalTest {
             "email", "eric@example.com",
             "realm_access", Map.of("roles", List.of("employee")));
     return Stream.of(
-        arguments(named("caller listed", KEYCLOAK_CLAIMS), USERS, List.of("acme-chat"), null),
-        arguments(named("any caller", KEYCLOAK_CLAIMS), USERS, anyCaller, null),
-        arguments(named("e-mail in another case", upperCase), USERS, anyCaller, null),
+        arguments(named("caller listed", KEYCLOAK_CLAIMS), ROLES, List.of("acme-chat"), null),
+        arguments(named("any caller", KEYCLOAK_CLAIMS), ROLES, anyCaller, null),
+        arguments(named("no email claim", withoutEmail), ROLES, anyCaller, null),
         arguments(
-            named("email not among users", KEYCLOAK_CLAIMS),
-            List.of("nora@example.com"),
+            named("role in another case", KEYCLOAK_CLAIMS),
+            List.of("Employee"),
             anyCaller,
-            Principal.AdmissionFailure.USER),
+            Principal.AdmissionFailure.ROLE),
         arguments(
-            named("no email claim", withoutEmail),
-            USERS,
+            named("no role listed", KEYCLOAK_CLAIMS),
+            List.of("ceo"),
             anyCaller,
-            Principal.AdmissionFailure.USER),
+            Principal.AdmissionFailure.ROLE),
+        arguments(
+            named("no roles claim", withoutRoles),
+            ROLES,
+            anyCaller,
+            Principal.AdmissionFailure.ROLE),
         arguments(
             named("caller not listed", KEYCLOAK_CLAIMS),
-            USERS,
+            ROLES,
             List.of("other-client"),
             Principal.AdmissionFailure.CLIENT),
         arguments(
-            named("no azp claim", withoutAzp), USERS, anyCaller, Principal.AdmissionFailure.CLIENT),
-        // the user is looked at first: when both fail, it is the user
+            named("no azp claim", withoutAzp), ROLES, anyCaller, Principal.AdmissionFailure.CLIENT),
+        // the role is looked at first: when both fail, it is the role
         arguments(
             named("neither listed", KEYCLOAK_CLAIMS),
-            List.of("nora@example.com"),
+            List.of("ceo"),
             List.of("other-client"),
-            Principal.AdmissionFailure.USER));
+            Principal.AdmissionFailure.ROLE));
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource
-  void givenClaimsUsersAndCallers_whenAdmissionFailure_thenExpected(
+  void givenClaimsRolesAndCallers_whenAdmissionFailure_thenExpected(
       Map<String, Object> claims,
-      List<String> users,
+      List<String> roles,
       List<String> callers,
       Principal.AdmissionFailure expected) {
     // Arrange
@@ -135,7 +140,7 @@ class PrincipalTest {
 
     // Act
     Optional<Principal.AdmissionFailure> failure =
-        principal.admissionFailure(users, callers, List.of());
+        principal.admissionFailure(roles, callers, List.of());
 
     // Assert
     assertThat(failure).isEqualTo(Optional.ofNullable(expected));

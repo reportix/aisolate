@@ -58,23 +58,23 @@ public record AirlockDocument(Metadata metadata, Spec spec) {
   }
 
   /**
-   * Who may ask the airlock besides its space's users: its own users by the token's {@code email}
-   * claim, case ignored, none at all allowed, the OAuth clients that may call by {@code azp},
-   * {@code *} for any, and the machine clients admitted by {@code azp} alone on a token without an
-   * e-mail, exact and none by default.
+   * Who may ask the airlock besides holders of its space's roles: holders of its own roles (the
+   * token's roles claim, exact; {@code *} is no wildcard, none at all allowed), through the OAuth
+   * clients that may call by {@code azp}, {@code *} for any, and the machine clients admitted by
+   * {@code azp} alone on a token without an e-mail, exact and none by default.
    */
   public record Access(
-      List<String> users,
+      List<String> roles,
       List<String> callers,
       @JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> clients) {
     public Access {
-      users = users == null ? List.of() : List.copyOf(users);
+      roles = roles == null ? List.of() : List.copyOf(roles);
       callers = callers == null ? List.of() : List.copyOf(callers);
       clients = clients == null ? List.of() : List.copyOf(clients);
     }
 
-    public Access(List<String> users, List<String> callers) {
-      this(users, callers, List.of());
+    public Access(List<String> roles, List<String> callers) {
+      this(roles, callers, List.of());
     }
   }
 

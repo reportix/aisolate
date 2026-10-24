@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -42,8 +43,7 @@ class ConfigurationLoaderTest {
     SpaceDocument space = configuration.spaces().get("hr-acme");
     assertThat(space.spec().description())
         .isEqualTo("Acme people and compensation data for the HR assistant.");
-    assertThat(space.spec().access())
-        .isEqualTo(new SpaceDocument.Access(List.of("eric@example.com", "nora@example.com")));
+    assertThat(space.spec().access()).isEqualTo(new SpaceDocument.Access(List.of("ceo", "hr")));
     assertThat(space.spec().llms()).containsExactly(NOMIC);
     assertThat(space.spec().dataSources())
         .containsExactly(new DataSource("acme_hr", DB_URL, "hr-acme-ds-acme-hr-a1b2c3"));
@@ -53,9 +53,7 @@ class ConfigurationLoaderTest {
     assertThat(airlock.spec().description())
         .isEqualTo("Answers people, pay and HR document questions.");
     assertThat(airlock.spec().access())
-        .isEqualTo(
-            new AirlockDocument.Access(
-                List.of("eric@example.com", "nora@example.com"), List.of("*")));
+        .isEqualTo(new AirlockDocument.Access(List.of("employee", "hr"), List.of("*")));
     assertThat(airlock.spec().llms()).isEmpty();
     assertThat(configuration.spaceOf("hr-assistant").name()).isEqualTo("hr-acme");
     assertThat(airlock.contextPreparatorHandlers()).containsExactly("HrDocumentsContextPreparator");
@@ -179,18 +177,14 @@ class ConfigurationLoaderTest {
         // Kubernetes refuses the name, so every sync of its space would fail.
         "name: hr-assistant}|name: hr-assistant-}|metadata.name 'hr-assistant-': use 2 to 41",
         "space: hr-acme|space: \" \"|hr-assistant: spec.space is required",
-        // The space's users sit in a block, the airlocks' in a flow: the block is the space's
+        // The space's roles sit in a block, the airlocks' in a flow: the block is the space's
         // alone.
-        "'access:\n    users: [eric@example.com, nora@example.com]'"
-            + "|'access:\n    users: [eric@example.com, Eric@Example.Com]'"
-            + "|hr-acme: spec.access.users lists eric@example.com twice",
-        // A removed field stays refused: the roles are gone.
-        "callers: [\"*\"]}|callers: [\"*\"], roles: [ceo]}|hr-assistant: Unrecognized property"
-            + " \"roles\"",
-        // The airlocks come before the space in file order: the first match is hr-assistant's.
-        "users: [eric@example.com, nora@example.com]|users: [eric@example.com,"
-            + " Eric@Example.Com]|hr-assistant: spec.access.users lists eric@example.com"
-            + " twice",
+        "'access:\n    roles: [ceo, hr]'|'access:\n    roles: [ceo, ceo]'"
+            + "|hr-acme: spec.access.roles lists ceo twice",
+        "roles: [employee, hr]|roles: [employee, employee]|hr-assistant: spec.access.roles lists"
+            + " employee twice",
+        "roles: [employee, hr]|roles: [employee, \" \"]|hr-assistant: spec.access.roles must not"
+            + " contain a blank role",
         "callers: [\"*\"]|callers: []|hr-assistant: spec.access.callers must name at least one"
             + " calling client",
         "callers: [\"*\"]|callers: [\"*\", \" \"]|hr-assistant: spec.access.callers must not"
@@ -250,27 +244,60 @@ class ConfigurationLoaderTest {
         "llm: granite|llm: gemma|hr-assistant: llm gemma is no model of it, of Space hr-acme or"
             + " of AIsolate",
         // The last of two lists would load, silently
-        "'    users: [eric@example.com, nora@example.com]'|'    users: [eric@example.com]\n"
-            + "    users: [nora@example.com]'|Duplicate Object property \"users\"",
-        // Never the token's e-mail, so it would admit no one
-        "users: [eric@example.com, nora@example.com]|users: [\" eric@example.com\"]"
-            + "|\" eric@example.com\" has a space in it"
+        "'    roles: [ceo, hr]'|'    roles: [ceo]\n    roles: [hr]'|Duplicate Object property"
+            + " \"roles\"",
+        // Never a role the token carries, so it would admit no one
+        "roles: [employee, hr]|roles: [\" employee\"]|hr-assistant: spec.access.roles"
+            + " \" employee\" has a space in it"
       })
   void givenBrokenDocument_whenLoad_thenProblemNamesDocumentAndField(
       String from, String to, String expected) throws IOException {
     // Arrange: one edit to the fixtures, applied to the first file that carries the text
-    Map<String, String> files = read(FIXTURES);
-    for (Map.Entry<String, String> file : files.entrySet()) {
-      if (file.getValue().contains(from)) {
-        file.setValue(file.getValue().replaceFirst(Pattern.quote(from), to));
-        break;
-      }
-    }
+    Map<String, String> files = edited(from, to);
 
     // Act / Assert
     assertThatThrownBy(() -> ConfigurationLoader.parse(files))
         .isInstanceOf(ConfigurationException.class)
         .hasMessageContaining(expected);
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "'    roles: [ceo, hr]'|'    users: [eric@example.com]'|Space hr-acme",
+        "roles: [employee, hr]|users: [eric@example.com]|Airlock hr-assistant"
+      })
+  void givenUsersField_whenLoad_thenRefusedAsUnknown(String from, String to, String document)
+      throws IOException {
+    // Arrange: a document written before roles; admitting nobody silently would hide it
+    Map<String, String> files = edited(from, to);
+
+    // Act / Assert
+    assertThatThrownBy(() -> ConfigurationLoader.parse(files))
+        .isInstanceOf(ConfigurationException.class)
+        .hasMessageContaining(document + ": Unrecognized property \"users\"");
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "'    roles: [ceo, hr]'|'    roles: [ceo, \"*\"]'|Space hr-acme",
+        "roles: [employee, hr]|roles: [\"*\"]|Airlock hr-assistant"
+      })
+  void givenStarRole_whenLoad_thenRefused(String from, String to, String document)
+      throws IOException {
+    // Arrange: * would read as everyone, but roles match exactly
+    Map<String, String> files = edited(from, to);
+
+    // Act / Assert
+    assertThatThrownBy(() -> ConfigurationLoader.parse(files))
+        .isInstanceOf(ConfigurationException.class)
+        .hasMessageContaining(
+            document
+                + ": spec.access.roles * is no role: list each role; only callers take * for"
+                + " any");
   }
 
   @ParameterizedTest
@@ -307,7 +334,7 @@ class ConfigurationLoaderTest {
         "onboarding.yaml",
         "{apiVersion: aisolate.dev/v1, kind: Airlock, metadata: {name: onboarding},"
             + " spec: {space: hr-acme, displayName: Onboarding,"
-            + " access: {users: [eric@example.com], callers: [\"*\"]}}}");
+            + " access: {roles: [employee], callers: [\"*\"]}}}");
 
     // Act
     Configuration configuration = ConfigurationLoader.parse(files);
@@ -321,19 +348,19 @@ class ConfigurationLoaderTest {
   }
 
   @Test
-  void givenSpaceWithoutUsers_whenLoad_thenAccepted() throws IOException {
-    // Arrange: the AIsolate UI creates a space by name and description, users come afterwards
+  void givenSpaceWithoutRoles_whenLoad_thenAccepted() throws IOException {
+    // Arrange: the AIsolate UI creates a space by name and description, roles come afterwards
     Map<String, String> files = read(FIXTURES);
     files.put(
         "empty.yaml",
         "{apiVersion: aisolate.dev/v1, kind: Space, metadata: {name: empty-space},"
-            + " spec: {displayName: Empty space, access: {users: []}}}");
+            + " spec: {displayName: Empty space, access: {roles: []}}}");
 
     // Act
     Configuration configuration = ConfigurationLoader.parse(files);
 
     // Assert
-    assertThat(configuration.spaces().get("empty-space").spec().access().users()).isEmpty();
+    assertThat(configuration.spaces().get("empty-space").spec().access().roles()).isEmpty();
   }
 
   @ParameterizedTest
@@ -341,25 +368,20 @@ class ConfigurationLoaderTest {
       delimiter = '|',
       value = {
         "[]|''",
-        "[ivy@example.com]|ivy@example.com",
-        // the space lists eric@: admission ignores the case, the document keeps it as written
-        "[Eric@Example.Com]|Eric@Example.Com"
+        "[auditor]|auditor",
+        // the space lists ceo: roles match exactly, so Ceo is another role
+        "[Ceo]|Ceo"
       })
-  void givenAirlockUsersNoneNotOnTheSpaceOrInAnotherCase_whenLoad_thenAccepted(
-      String users, String kept) throws IOException {
-    // Arrange: a space's users, then an airlock's own
-    Map<String, String> files = read(FIXTURES);
-    files.put(
-        "airlocks.yaml",
-        files
-            .get("airlocks.yaml")
-            .replaceFirst("users: \\[eric@example.com, nora@example.com\\]", "users: " + users));
+  void givenAirlockRolesNoneNotOnTheSpaceOrInAnotherCase_whenLoad_thenAccepted(
+      String roles, String kept) throws IOException {
+    // Arrange: a space's roles, then an airlock's own
+    Map<String, String> files = edited("roles: [employee, hr]", "roles: " + roles);
 
     // Act
     Configuration configuration = ConfigurationLoader.parse(files);
 
     // Assert
-    assertThat(configuration.airlocks().get("hr-assistant").spec().access().users())
+    assertThat(configuration.airlocks().get("hr-assistant").spec().access().roles())
         .isEqualTo(kept.isEmpty() ? List.of() : List.of(kept));
   }
 
@@ -417,11 +439,32 @@ class ConfigurationLoaderTest {
                 "Answers people, pay and HR document questions.",
                 List.of("read_records", "aggregate_records")),
             tuple("founders-finance", "Founders finance", "", List.of()));
-    assertThat(discovered.getFirst().lists("Eric@Example.com")).isTrue();
+    assertThat(discovered)
+        .extracting(DiscoveredAirlock::roles)
+        .containsExactly(List.of("ceo", "hr", "employee"), List.of("ceo", "hr", "founder"));
     assertThat(DiscoveredAirlock.toJson(discovered))
         .doesNotContain("granite")
-        .doesNotContain("prompt")
-        .doesNotContain("eric@example.com");
+        .doesNotContain("prompt");
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "ceo, true",
+    "'offline_access,employee', true",
+    "Ceo, false",
+    "founder, false",
+    "'', false",
+  })
+  void givenTokenRoles_whenAdmits_thenCaseSensitive(String tokenRoles, boolean admits) {
+    // Arrange: hr-assistant lists the space's ceo and hr, and its own employee
+    DiscoveredAirlock airlock = DiscoveredAirlock.of(ConfigurationLoader.load(FIXTURES)).getFirst();
+
+    // Act
+    boolean admitted =
+        airlock.admits(tokenRoles.isEmpty() ? Set.of() : Set.of(tokenRoles.split(",")));
+
+    // Assert
+    assertThat(admitted).isEqualTo(admits);
   }
 
   @Test
@@ -464,7 +507,7 @@ class ConfigurationLoaderTest {
       delimiter = '|',
       value = {
         "{apiVersion: aisolate.dev/v1, kind: Airlock, metadata: {name: onboarding},"
-            + " spec: {space: hr-acme, access: {users: [eric@example.com],"
+            + " spec: {space: hr-acme, access: {roles: [employee],"
             + " callers: [\"*\"]}, dataSources: [{id: acme_hr, url:"
             + " \"jdbc:postgresql://db:5432/a\"}, {id: acme_hr, url:"
             + " \"jdbc:postgresql://db:5432/b\"}]}}"
@@ -564,6 +607,21 @@ class ConfigurationLoaderTest {
     try (Stream<Path> list = Files.list(dir)) {
       for (Path file : list.sorted().toList()) {
         files.put(file.getFileName().toString(), Files.readString(file));
+      }
+    }
+    return files;
+  }
+
+  /**
+   * The fixtures with one edit, applied to the first file, in name order, that carries {@code
+   * from}.
+   */
+  private static Map<String, String> edited(String from, String to) throws IOException {
+    Map<String, String> files = read(FIXTURES);
+    for (Map.Entry<String, String> file : files.entrySet()) {
+      if (file.getValue().contains(from)) {
+        file.setValue(file.getValue().replaceFirst(Pattern.quote(from), to));
+        break;
       }
     }
     return files;

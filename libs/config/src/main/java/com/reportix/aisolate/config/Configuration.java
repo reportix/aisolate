@@ -29,16 +29,15 @@ public record Configuration(
 
   /**
    * Who may ask {@code airlock}, as the airlock pod, the tool server and discovery all read it: its
-   * space's users then its own, its callers and its machine clients. A duplicate user is kept once;
-   * admission ignores the case anyway.
+   * space's roles then its own, a duplicate kept once, its callers and its machine clients.
    */
   public AirlockDocument.Access accessOf(String airlock) {
     SpaceDocument.Access space = spaceOf(airlock).spec().access();
     AirlockDocument.Access own = require(airlocks, "Airlock", airlock).spec().access();
     return new AirlockDocument.Access(
         Stream.concat(
-                space == null ? Stream.empty() : space.users().stream(),
-                own == null ? Stream.empty() : own.users().stream())
+                space == null ? Stream.empty() : space.roles().stream(),
+                own == null ? Stream.empty() : own.roles().stream())
             .distinct()
             .toList(),
         own == null ? List.of() : own.callers(),

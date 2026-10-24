@@ -90,7 +90,7 @@ public final class Names {
   private Names() {}
 
   /**
-   * A list of users, callers, tools or handlers: no blank entry, none with a space in it (it would
+   * A list of roles, callers, tools or handlers: no blank entry, none with a space in it (it would
    * never match), and none twice (a handler would run twice); each repeated name once, in list
    * order.
    *
@@ -118,20 +118,25 @@ public final class Names {
   }
 
   /**
-   * A space's or an airlock's users: e-mails, none blank and none twice. A {@code *} admits no one
-   * here, unlike among the callers, so it is refused rather than read as everyone.
+   * A space's or an airlock's roles: names as the token's roles claim carries them, none blank,
+   * with a space or twice. A {@code *} admits no one here, unlike among the callers, so it is
+   * refused rather than read as everyone.
    */
-  public static List<String> userProblems(List<String> users) {
-    List<String> problems = new ArrayList<>(problems("e-mail", emailKeys(users)));
-    users.stream()
-        .filter(user -> user != null && !user.isBlank() && !user.contains("@"))
+  public static List<String> roleProblems(List<String> roles) {
+    List<String> problems = new ArrayList<>(problems("role", roles));
+    if (roles.contains("*")) {
+      problems.add("* is no role: list each role; only callers take * for any");
+    }
+    return problems;
+  }
+
+  /** A space's developers: e-mails, none blank and none twice in any case. */
+  public static List<String> emailProblems(List<String> emails) {
+    List<String> problems = new ArrayList<>(problems("e-mail", emailKeys(emails)));
+    emails.stream()
+        .filter(email -> email != null && !email.isBlank() && !email.contains("@"))
         .distinct()
-        .forEach(
-            user ->
-                problems.add(
-                    user.equals("*")
-                        ? "* is no e-mail: list each user; only callers take * for any"
-                        : user + " is no e-mail"));
+        .forEach(email -> problems.add(email + " is no e-mail"));
     return problems;
   }
 
@@ -147,9 +152,11 @@ public final class Names {
     return problems;
   }
 
-  /** Users as admission compares their e-mails: {@code Eric@} and {@code eric@} are one user. */
-  private static List<String> emailKeys(List<String> users) {
-    return users.stream().map(user -> user == null ? null : user.toLowerCase(Locale.ROOT)).toList();
+  /** E-mails as compared for repeats: {@code Eric@} and {@code eric@} are one mailbox. */
+  private static List<String> emailKeys(List<String> emails) {
+    return emails.stream()
+        .map(email -> email == null ? null : email.toLowerCase(Locale.ROOT))
+        .toList();
   }
 
   /**

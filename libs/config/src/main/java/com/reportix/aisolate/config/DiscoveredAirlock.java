@@ -1,24 +1,21 @@
 package com.reportix.aisolate.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
+import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
  * One airlock as discovery lists it, the projection the discovery pods mount for every space
- * ({@code aisolate-discovery}): no prompt, model, data source or Secret name, and its users only as
- * {@link #userKey keys}. No airlock's pod mounts it.
+ * ({@code aisolate-discovery}): no prompt, model, data source or Secret name. Its roles are names
+ * the identity provider defines, not people, so they travel as they are. No airlock's pod mounts
+ * it.
  *
  * @param space the id of its space
  * @param description its description, {@code ""} without one
- * @param userKeys its space's users and its own, each as {@link #userKey}
+ * @param roles its space's roles and its own, each once
  * @param callers its callers by {@code azp}, {@code *} for any
  * @param clients its machine clients by {@code azp}, exact; none when absent
  * @param tools the tools its model may call; none before its first deploy
@@ -28,7 +25,7 @@ public record DiscoveredAirlock(
     String space,
     String name,
     String description,
-    List<String> userKeys,
+    List<String> roles,
     List<String> callers,
     @JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> clients,
     List<String> tools) {
@@ -39,40 +36,27 @@ public record DiscoveredAirlock(
 
   private static final JsonMapper JSON = JsonMapper.builder().build();
 
-  /** SHA-256 of the lower-cased e-mail, hex: who is listed, without the list. */
-  public static String userKey(String email) {
-    try {
-      return HexFormat.of()
-          .formatHex(
-              MessageDigest.getInstance("SHA-256")
-                  .digest(email.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8)));
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
-  /** Whether {@code email} is one of its users; case ignored, as admission ignores it. */
-  public boolean lists(String email) {
-    return email != null && userKeys.contains(userKey(email));
+  /** Whether one of {@code tokenRoles} is one of its roles; exact, as admission matches them. */
+  public boolean admits(Collection<String> tokenRoles) {
+    return tokenRoles.stream().anyMatch(roles::contains);
   }
 
   /** Every airlock of a release. */
   public static List<DiscoveredAirlock> of(Configuration release) {
     return release.airlocks().values().stream()
         .map(
-            airlock ->
-                new DiscoveredAirlock(
-                    airlock.name(),
-                    release.spaceOf(airlock.name()).name(),
-                    airlock.displayName(),
-                    Objects.requireNonNullElse(airlock.spec().description(), ""),
-                    release.accessOf(airlock.name()).users().stream()
-                        .map(DiscoveredAirlock::userKey)
-                        .distinct()
-                        .toList(),
-                    release.accessOf(airlock.name()).callers(),
-                    release.accessOf(airlock.name()).clients(),
-                    airlock.tools()))
+            airlock -> {
+              AirlockDocument.Access access = release.accessOf(airlock.name());
+              return new DiscoveredAirlock(
+                  airlock.name(),
+                  release.spaceOf(airlock.name()).name(),
+                  airlock.displayName(),
+                  Objects.requireNonNullElse(airlock.spec().description(), ""),
+                  access.roles(),
+                  access.callers(),
+                  access.clients(),
+                  airlock.tools());
+            })
         .toList();
   }
 

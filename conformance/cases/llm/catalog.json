@@ -8,7 +8,7 @@
       ],
       "dataSources": []}},
     "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-      "displayName": "Acme", "access": {"users": ["elena@acme.example"]}}},
+      "displayName": "Acme", "access": {"roles": ["hr"]}}},
     "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
       "space": "acme", "displayName": "HR", "access": {"callers": ["acme-chat"]},
       "llm": "granite", "prompt": "Answer HR questions."}}
@@ -33,7 +33,7 @@
       "files": {
         "Global-aisolate.yaml": null,
         "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-          "access": {"users": ["elena@acme.example"]},
+          "access": {"roles": ["hr"]},
           "llms": [{"id": "granite", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "granite4.1:8b"}]}}
       },
       "expect": {
@@ -47,7 +47,7 @@
       "description": "Distinct ids from all three levels: the union, sorted by id, whatever level each came from.",
       "files": {
         "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-          "access": {"users": ["elena@acme.example"]},
+          "access": {"roles": ["hr"]},
           "llms": [{"id": "bge", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "bge-m3"}]}},
         "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
           "space": "acme", "access": {"callers": ["acme-chat"]}, "llm": "local", "prompt": "Answer HR questions.",
@@ -73,7 +73,7 @@
       "description": "The space's granite replaces the global one whole: its url and its model, nothing of the global entry kept.",
       "files": {
         "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-          "access": {"users": ["elena@acme.example"]},
+          "access": {"roles": ["hr"]},
           "llms": [{"id": "granite", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "granite4.1:3b"}]}}
       },
       "expect": {
@@ -90,7 +90,7 @@
       "description": "granite on every level: the airlock's own entry is the one seen, and the main LLM.",
       "files": {
         "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-          "access": {"users": ["elena@acme.example"]},
+          "access": {"roles": ["hr"]},
           "llms": [{"id": "granite", "provider": "ollama", "url": "http://space.acme.example:11434", "model": "granite4.1:8b"}]}},
         "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
           "space": "acme", "access": {"callers": ["acme-chat"]}, "llm": "granite", "prompt": "Answer HR questions.",
@@ -110,7 +110,7 @@
       "description": "The airlock's nomic replaces the space's, which replaced the global one.",
       "files": {
         "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-          "access": {"users": ["elena@acme.example"]},
+          "access": {"roles": ["hr"]},
           "llms": [{"id": "nomic", "provider": "ollama", "url": "http://space.acme.example:11434", "model": "nomic-embed-text"}]}},
         "Airlock-hr.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Airlock", "metadata": {"name": "hr"}, "spec": {
           "space": "acme", "access": {"callers": ["acme-chat"]}, "llm": "granite", "prompt": "Answer HR questions.",
@@ -130,7 +130,7 @@
       "description": "An OpenAI-compatible model names the Secret that holds its API key; the documents never hold the key.",
       "files": {
         "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-          "access": {"users": ["elena@acme.example"]},
+          "access": {"roles": ["hr"]},
           "llms": [{"id": "gpt", "provider": "openai", "url": "https://api.openai.example/v1", "model": "gpt-4o-mini", "secretRef": "acme-llm-gpt-a1b2c3"}]}}
       },
       "expect": {
@@ -154,7 +154,7 @@
             {"id": "hr", "url": "jdbc:postgresql://global.aisolate.svc:5432/hr", "secretRef": "aisolate-ds-hr-d4e5f6"}
           ]}},
         "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-          "access": {"users": ["elena@acme.example"]},
+          "access": {"roles": ["hr"]},
           "dataSources": [{"id": "hr", "url": "jdbc:postgresql://db.acme.example:5432/hr", "secretRef": "acme-ds-hr-g7h8i9"}]}}
       },
       "expect": {
@@ -218,7 +218,7 @@
       "id": "entry-bad-id",
       "files": {
         "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-          "access": {"users": ["elena@acme.example"]},
+          "access": {"roles": ["hr"]},
           "llms": [{"id": "Granite", "provider": "ollama", "url": "http://gpu.acme.example:11434", "model": "granite4.1:8b"}]}}
       },
       "expect": {"problems": ["Space-acme.yaml: Space acme: spec.llms[0].id Granite: 1 to 41 lowercase letters, digits, _ or -, starting with a letter or digit"]}
@@ -249,7 +249,7 @@
       "id": "entry-blank-url",
       "files": {
         "Space-acme.yaml": {"apiVersion": "aisolate.dev/v1", "kind": "Space", "metadata": {"name": "acme"}, "spec": {
-          "access": {"users": ["elena@acme.example"]},
+          "access": {"roles": ["hr"]},
           "llms": [{"id": "bge", "provider": "ollama", "url": " ", "model": "bge-m3"}]}}
       },
       "expect": {"problems": ["Space-acme.yaml: Space acme: spec.llms[0].url is required"]}

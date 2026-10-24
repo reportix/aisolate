@@ -12,7 +12,7 @@ is the reference. A case that fails for one runtime is a divergence to fix, neve
 
 | Directory | What it pins | Java code | Java runner | Python runner |
 |---|---|---|---|---|
-| `cases/admission/airlock.json` | Gate 2 and gate 5's admission: users × callers × claims | `Principal.admissionFailure` | `libs/identity` `AdmissionConformanceTest` | `apps/airlock-python/tests/conformance/test_admission.py` and `apps/tool-server-python/tests/conformance/test_admission.py` |
+| `cases/admission/airlock.json` | Gate 2 and gate 5's admission: roles × callers × clients × claims | `Principal.admissionFailure` | `libs/identity` `AdmissionConformanceTest` | `apps/airlock-python/tests/conformance/test_admission.py` and `apps/tool-server-python/tests/conformance/test_admission.py` |
 | `cases/admission/token.json` | Gates 1 and 4: signature, issuer, audience, time | `libs/identity` `SecurityConfig` (Spring Boot resource-server defaults) | `apps/airlock` `TokenConformanceTest`, `apps/tool-server` `TokenConformanceTest` | `tests/conformance/test_token.py` in both Python apps |
 | `cases/admission/tool-server.json` | Gate 5 before any query: the `_meta` pin, admission, the tool list; the silent empty result and its metric | `GovernedQueryService.call`, `PolicySource`, `GovernedToolsConfig` | `apps/tool-server` `ToolServerAdmissionConformanceTest` | `apps/tool-server-python/tests/conformance/test_tool_admission.py` |
 | `cases/rules/compensation.json`, `cases/rules/vitals.json` | Rule evaluation, the compiled statement, the result JSON and its rows | `RulesEvaluator`, `ToolArgs`, `SqlCompiler`, `GovernedQueryService.Bound`, `Result` | `apps/tool-server` `RulesConformanceTest` | `apps/tool-server-python/tests/conformance/test_rules.py` |
@@ -58,17 +58,20 @@ kept true.
 
 ## admission/airlock.json
 
-Shared inputs: `space.users`; `airlocks.<id>.{users, callers}`. A case: `airlock`, `claims` (the validated token's
-claims), `expect.admitted`, and when refused `expect.reason` (`user` | `client`).
+Shared inputs: `space.roles`; `airlocks.<id>.{roles, callers, clients}` (`clients` absent: none). A case: `airlock`,
+`claims` (the validated token's claims), `expect.admitted`, and when refused `expect.reason` (`role` | `client`).
 
-The runner computes the allowed users as the space's users followed by the airlock's own, without duplicates
-(`Configuration.accessOf`), the callers as the airlock's, and calls its admission over a principal built from
-`claims` with roles claim `realm_access.roles`. The rules it pins: the e-mail is matched case-insensitively and
-untrimmed against the list, `*` among the users is no wildcard; the `azp` is matched exactly, `*` among the callers
-admits any present `azp`; a missing or non-string `email` refuses as `user`, a missing or non-string `azp` as
-`client`; the user is checked first; roles never admit. The airlock answers a refusal 403
-(`application/problem+json`, detail `forbidden`) after writing one `refusal` audit event with that reason; the tool
-server answers it with the empty result of `admission/tool-server.json`.
+The runner computes the allowed roles as the space's roles followed by the airlock's own, without duplicates
+(`Configuration.accessOf`), the callers and clients as the airlock's, and calls its admission over a principal built
+from `claims` with roles claim `realm_access.roles`. The rules it pins: a token without a string `email` whose `azp`
+is one of the clients is admitted, roles and callers not consulted (client ids exact, `*` no wildcard). Any other
+token needs one of its roles listed and its `azp` among the callers; an e-mail is not needed. The roles claim is a
+list (its non-string entries ignored) or one string, read at that path only; a role is matched exactly,
+case-sensitively and untrimmed, `*` among the roles is no wildcard; the `azp` is matched exactly, `*` among the
+callers admits any present `azp`; no listed role refuses as `role`, a missing or non-string `azp` as `client`; the
+role is checked first. The airlock answers a refusal 403 (`application/problem+json`, detail `forbidden`) after
+writing one `refusal` audit event with that reason; the tool server answers it with the empty result of
+`admission/tool-server.json`.
 
 ## admission/token.json
 
@@ -83,7 +86,7 @@ body `{"status":401,"title":"Unauthorized"}`.
 
 ## admission/tool-server.json
 
-Shared inputs: `served_revision`, `space.users`, `policies` (airlock, own users, callers, tools),
+Shared inputs: `served_revision`, `space.roles`, `policies` (airlock, own roles, callers, clients, tools),
 `published_tools` (tool → the data source of the plugin publishing it). A case: `claims`, `meta` (the `_meta` of
 the `tools/call`; `null` for none), `tool`, and `expect`: `admitted: true` (the call goes on to the rules), or
 `admitted: false` with the exact tool result JSON (`result`) and the labels of the one increment of
@@ -244,8 +247,8 @@ and the project artifact are mounted as the controller mounts them.
 2. The same with `Accept: application/json`: one document with exactly `answer`, `dont_know`, `segments`,
    `figures`, `tables`, `quotes`, `provenance`, `evidence`, `verification`, `revision`, `trace_id`.
 3. No token, an unknown key, another audience: 401 with the `WWW-Authenticate` header; the model is never called.
-4. A user neither list holds, a client the airlock does not list: 403 `forbidden`; one `refusal` line reaches the
-   ingest with reason `user` / `client`; the model is never called.
+4. A token with no role either list holds, a client the airlock does not list: 403 `forbidden`; one `refusal` line
+   reaches the ingest with reason `role` / `client`; the model is never called.
 5. Unknown airlock: 404; a blank message or one over 4000 characters: 400.
 6. The ingest receives one `exchange` line per exchange, with the airlock's bearer token, valid against
    `cases/audit/audit-event.schema.json`, `trace_id` equal to the exchange's trace; the same line on stdout.

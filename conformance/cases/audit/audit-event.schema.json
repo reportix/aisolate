@@ -18,7 +18,7 @@
     "question": {"type": "string", "description": "The message as sent."},
     "answer": {"type": ["string", "null"], "description": "The answer chunks concatenated; null when the model never answered. An error after partial chunks keeps them."},
     "outcome": {"enum": ["answered", "dont_know", "refused", "error"]},
-    "reason": {"enum": [null, "user", "client", "llm_unavailable", "no_model_endpoint", "deadline", "internal"]},
+    "reason": {"enum": [null, "role", "client", "llm_unavailable", "no_model_endpoint", "deadline", "internal"]},
     "tools": {"type": "array", "description": "One per tool call the model made, in call order. All but name, data_source and error are null when the call produced no evidence (failed).", "items": {
       "type": "object", "additionalProperties": false,
       "required": ["name", "args", "data_source", "rows", "rule_version", "sql_hash", "rows_hash", "error"],
@@ -54,7 +54,7 @@
   },
   "allOf": [
     {"if": {"properties": {"event": {"const": "refusal"}}},
-     "then": {"properties": {"outcome": {"const": "refused"}, "reason": {"enum": ["user", "client"]}, "answer": {"const": null},
+     "then": {"properties": {"outcome": {"const": "refused"}, "reason": {"enum": ["role", "client"]}, "answer": {"const": null},
               "tools": {"maxItems": 0}, "evidence": {"maxItems": 0}, "verifiers": {"maxItems": 0},
               "figures": {"const": null}, "grounding": {"const": null}, "model": {"const": null}}}},
     {"if": {"properties": {"event": {"const": "exchange"}}},

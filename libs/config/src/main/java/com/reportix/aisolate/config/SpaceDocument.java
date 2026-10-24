@@ -3,7 +3,7 @@ package com.reportix.aisolate.config;
 import java.util.List;
 
 /**
- * A space as the AIsolate UI defines it: its name, its description, the users every one of its
+ * A space as the AIsolate UI defines it: its name, its description, the roles every one of its
  * airlocks admits, and the LLMs and data sources its airlocks share beside the global ones. Its
  * airlocks name it.
  */
@@ -22,12 +22,13 @@ public record SpaceDocument(Metadata metadata, Spec spec) {
   }
 
   /**
-   * The users every airlock of the space admits, by the token's {@code email} claim, case ignored;
-   * an airlock may add its own.
+   * The roles every airlock of the space admits, matched exactly against the token's roles claim;
+   * an airlock may add its own. The identity provider decides who holds a role, so AIsolate keeps
+   * no list of people.
    */
-  public record Access(List<String> users) {
+  public record Access(List<String> roles) {
     public Access {
-      users = users == null ? List.of() : List.copyOf(users);
+      roles = roles == null ? List.of() : List.copyOf(roles);
     }
   }
 

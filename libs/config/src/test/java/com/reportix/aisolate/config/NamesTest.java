@@ -53,4 +53,64 @@ class NamesTest {
     // Assert
     assertThat(problems).containsExactlyElementsOf(expected);
   }
+
+  static Stream<Arguments> roles() {
+    return Stream.of(
+        // roles match exactly: another case is another role
+        arguments(named("distinct roles", List.of("ceo", "Finance", "finance")), List.of()),
+        arguments(named("no roles", List.of()), List.of()),
+        arguments(
+            named("a star", List.of("employee", "*")),
+            List.of("* is no role: list each role; only callers take * for any")),
+        // the general rules first, the star's own sentence once
+        arguments(
+            named("a star twice", List.of("*", "*")),
+            List.of("lists * twice", "* is no role: list each role; only callers take * for any")),
+        arguments(
+            named("a blank role", List.of("ceo", " ")), List.of("must not contain a blank role")),
+        arguments(
+            named("a role with a space", List.of("hr admin")),
+            List.of("\"hr admin\" has a space in it")),
+        arguments(named("a role twice", List.of("ceo", "hr", "ceo")), List.of("lists ceo twice")));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("roles")
+  void givenRoles_whenRoleProblems_thenOneSentencePerRule(
+      List<String> roles, List<String> expected) {
+    // Arrange: the row's roles
+
+    // Act
+    List<String> problems = Names.roleProblems(roles);
+
+    // Assert
+    assertThat(problems).containsExactlyElementsOf(expected);
+  }
+
+  static Stream<Arguments> emails() {
+    return Stream.of(
+        arguments(
+            named("distinct e-mails", List.of("eric@example.com", "nora@example.com")), List.of()),
+        // one mailbox in two cases
+        arguments(
+            named("one e-mail in two cases", List.of("eric@example.com", "Eric@Example.com")),
+            List.of("lists eric@example.com twice")),
+        // a star is no e-mail like any other word
+        arguments(
+            named("no addresses", List.of("eric", "*", "eric")),
+            List.of("lists eric twice", "eric is no e-mail", "* is no e-mail")));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("emails")
+  void givenEmails_whenEmailProblems_thenRepeatsInAnyCaseAndNonAddressesRefused(
+      List<String> emails, List<String> expected) {
+    // Arrange: the row's e-mails
+
+    // Act
+    List<String> problems = Names.emailProblems(emails);
+
+    // Assert
+    assertThat(problems).containsExactlyElementsOf(expected);
+  }
 }
