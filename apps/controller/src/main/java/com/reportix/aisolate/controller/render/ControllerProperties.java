@@ -21,6 +21,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     when absent
  * @param audit where the airlock pods hand their audit lines over; none without the AIsolate UI
  * @param code where an airlock's pods fetch its code; none without the AIsolate UI
+ * @param scheduling the chart's {@code platform.scheduling}, a nodeSelector and tolerations on
+ *     every pod rendered; none: the scheduler's choice
  */
 @ConfigurationProperties("aisolate.controller")
 public record ControllerProperties(
@@ -34,7 +36,12 @@ public record ControllerProperties(
     Observability observability,
     PodResources resources,
     Audit audit,
-    Code code) {
+    Code code,
+    Scheduling scheduling) {
+
+  public ControllerProperties {
+    scheduling = scheduling == null ? new Scheduling(null, null) : scheduling;
+  }
 
   /**
    * @param url the backend's ingest, in the cluster; blank: no backend (headless), stdout alone
@@ -171,4 +178,16 @@ public record ControllerProperties(
       limits = limits == null ? Map.of() : Map.copyOf(limits);
     }
   }
+
+  /** On a cluster whose node pools are tainted, both; without them the pods stay Pending. */
+  public record Scheduling(Map<String, String> nodeSelector, List<Toleration> tolerations) {
+    public Scheduling {
+      nodeSelector = nodeSelector == null ? Map.of() : Map.copyOf(nodeSelector);
+      tolerations = tolerations == null ? List.of() : List.copyOf(tolerations);
+    }
+  }
+
+  /** A Kubernetes toleration as the chart writes it; absent fields stay absent. */
+  public record Toleration(
+      String key, String operator, String value, String effect, Long tolerationSeconds) {}
 }

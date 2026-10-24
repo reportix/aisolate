@@ -26,6 +26,8 @@ import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
+import io.fabric8.kubernetes.api.model.Toleration;
+import io.fabric8.kubernetes.api.model.TolerationBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMount;
@@ -887,7 +889,24 @@ public final class Renderer {
             .withContainers(containers)
             .withVolumes(volumes);
     if (notBlank(runtimeClass)) builder.withRuntimeClassName(runtimeClass);
+    ControllerProperties.Scheduling scheduling = settings.scheduling();
+    if (!scheduling.nodeSelector().isEmpty()) {
+      builder.withNodeSelector(new TreeMap<>(scheduling.nodeSelector()));
+    }
+    if (!scheduling.tolerations().isEmpty()) {
+      builder.withTolerations(scheduling.tolerations().stream().map(Renderer::toleration).toList());
+    }
     return builder.build();
+  }
+
+  private static Toleration toleration(ControllerProperties.Toleration t) {
+    return new TolerationBuilder()
+        .withKey(t.key())
+        .withOperator(t.operator())
+        .withValue(t.value())
+        .withEffect(t.effect())
+        .withTolerationSeconds(t.tolerationSeconds())
+        .build();
   }
 
   /** {@code resources} null: none rendered. */

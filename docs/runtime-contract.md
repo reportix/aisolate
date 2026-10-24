@@ -59,7 +59,8 @@ Every container (`Renderer.buildContainer`):
 - `securityContext`: `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, capabilities drop `ALL`.
 - Pod (`Renderer.buildPod`): `runAsNonRoot: true` (the image must set a **numeric** non-root `USER`; the Java
   images use `10001:10001`, `apps/tool-server/Dockerfile`), seccomp `RuntimeDefault`,
-  `automountServiceAccountToken: false`; every pod gets `platform.airlock.runtimeClassName` when set.
+  `automountServiceAccountToken: false`; every pod gets `platform.airlock.runtimeClassName` and the chart's
+  `platform.scheduling.nodeSelector` / `tolerations` (the settings' `scheduling.*`) when set.
 - Pod template annotation `aisolate.dev/revision: <revision>`; labels `aisolate.dev/role` (`airlock` |
   `tool-server`), `aisolate.dev/space`, `aisolate.dev/airlock`,
   `aisolate.dev/managed-by: controller`.

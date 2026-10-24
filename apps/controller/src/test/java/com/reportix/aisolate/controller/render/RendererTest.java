@@ -20,6 +20,7 @@ import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.TolerationBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
@@ -378,6 +379,54 @@ class RendererTest {
             d ->
                 assertThat(d.getSpec().getTemplate().getSpec().getRuntimeClassName())
                     .isEqualTo(expected));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void givenScheduling_whenRendered_thenEveryPodKindCarriesItsNodeSelectorAndTolerations(
+      boolean set) {
+    // Arrange: a tainted node pool, as the chart passes platform.scheduling on; unset: nothing
+    Map<String, String> nodeSelector = Map.of("pool", "robot");
+    Renderer scheduled =
+        new Renderer(
+            TestSettings.withScheduling(
+                TestSettings.SETTINGS,
+                set
+                    ? new ControllerProperties.Scheduling(
+                        nodeSelector,
+                        List.of(
+                            new ControllerProperties.Toleration(
+                                "pool", "Equal", "robot", "NoSchedule", null)))
+                    : null));
+
+    // Act
+    List<HasMetadata> airlock = scheduled.render(RELEASE, HR, OWNERS);
+    List<HasMetadata> discovery =
+        scheduled.renderDiscovery(List.of(RELEASE), List.of(spaceOwner("hr-acme")));
+
+    // Assert: the airlock pod, its MCP server and the discovery pods alike
+    assertThat(
+            Stream.concat(
+                of(airlock, Deployment.class).stream(), of(discovery, Deployment.class).stream()))
+        .hasSize(3)
+        .allSatisfy(
+            d -> {
+              var pod = d.getSpec().getTemplate().getSpec();
+              if (set) {
+                assertThat(pod.getNodeSelector()).isEqualTo(nodeSelector);
+                assertThat(pod.getTolerations())
+                    .containsExactly(
+                        new TolerationBuilder()
+                            .withKey("pool")
+                            .withOperator("Equal")
+                            .withValue("robot")
+                            .withEffect("NoSchedule")
+                            .build());
+              } else {
+                assertThat(pod.getNodeSelector()).isNullOrEmpty();
+                assertThat(pod.getTolerations()).isNullOrEmpty();
+              }
+            });
   }
 
   @ParameterizedTest

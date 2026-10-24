@@ -14,6 +14,9 @@ server must provide comes first.
   every proxy and load balancer in front of it needs an idle timeout above that (an AWS ALB's default is 60 s).
 - Optional: a runtime class (gVisor, Kata) for every pod the controller renders, airlock, MCP server and
   discovery, `platform.airlock.runtimeClassName`.
+- Optional: on a cluster whose node pools are tainted, `platform.scheduling.nodeSelector` and
+  `platform.scheduling.tolerations` go on those same pods, besides the chart's own; the chart passes them to the
+  controller as its settings' `scheduling.nodeSelector` and `scheduling.tolerations`.
 
 ## Identity provider requirements
 

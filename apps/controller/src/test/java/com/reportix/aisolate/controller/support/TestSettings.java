@@ -65,7 +65,8 @@ public final class TestSettings {
                   Map.of("cpu", "1", "memory", "1Gi", "ephemeral-storage", "512Mi"))),
           new ControllerProperties.Audit(
               "http://backend.aisolate.svc:8085/v1/audit/events", "test-ingest-key", true, true),
-          new ControllerProperties.Code("http://backend.aisolate.svc:8085/v1/code"));
+          new ControllerProperties.Code("http://backend.aisolate.svc:8085/v1/code"),
+          new ControllerProperties.Scheduling(Map.of(), List.of()));
 
   /** The same installation with the egress proxy on or off. */
   public static ControllerProperties withProxy(ControllerProperties s, boolean enabled) {
@@ -85,7 +86,8 @@ public final class TestSettings {
         s.observability(),
         s.resources(),
         s.audit(),
-        s.code());
+        s.code(),
+        s.scheduling());
   }
 
   /** The same installation sending its traces to {@code endpoint}; blank for nowhere. */
@@ -101,7 +103,8 @@ public final class TestSettings {
         new ControllerProperties.Observability(endpoint),
         s.resources(),
         s.audit(),
-        s.code());
+        s.code(),
+        s.scheduling());
   }
 
   /** The same installation with every pod the controller renders under {@code runtimeClass}. */
@@ -117,7 +120,8 @@ public final class TestSettings {
         s.observability(),
         s.resources(),
         s.audit(),
-        s.code());
+        s.code(),
+        s.scheduling());
   }
 
   /** The same installation without the AIsolate UI's backend: no audit ingest, no code to fetch. */
@@ -133,7 +137,28 @@ public final class TestSettings {
         s.observability(),
         s.resources(),
         new ControllerProperties.Audit("", "", true, true),
-        new ControllerProperties.Code(""));
+        new ControllerProperties.Code(""),
+        s.scheduling());
+  }
+
+  /**
+   * The same installation with every pod the controller renders scheduled as {@code scheduling}.
+   */
+  public static ControllerProperties withScheduling(
+      ControllerProperties s, ControllerProperties.Scheduling scheduling) {
+    return new ControllerProperties(
+        s.namespace(),
+        s.ingress(),
+        s.images(),
+        s.identity(),
+        s.egress(),
+        s.airlockPods(),
+        s.corsAllowedOrigins(),
+        s.observability(),
+        s.resources(),
+        s.audit(),
+        s.code(),
+        scheduling);
   }
 
   private TestSettings() {}

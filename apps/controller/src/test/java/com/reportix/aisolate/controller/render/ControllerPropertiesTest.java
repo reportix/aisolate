@@ -99,6 +99,51 @@ class ControllerPropertiesTest {
   }
 
   @ParameterizedTest
+  @CsvSource({"true", "false"})
+  void givenSchedulingInSettingsYaml_whenBound_thenNodeSelectorAndTolerationsBindOrStayEmpty(
+      boolean set) throws IOException {
+    // Arrange: a tainted pool, or the chart's defaults ({} and [])
+    String yaml =
+        set
+            ? """
+            aisolate:
+              controller:
+                scheduling:
+                  nodeSelector: {pool: robot}
+                  tolerations:
+                    - {key: pool, operator: Equal, value: robot, effect: NoSchedule}
+                    - {key: pool, operator: Exists, effect: NoExecute, tolerationSeconds: 300}
+            """
+            : """
+            aisolate:
+              controller:
+                scheduling: {nodeSelector: {}, tolerations: []}
+            """;
+    StandardEnvironment environment = new StandardEnvironment();
+    new YamlPropertySourceLoader()
+        .load("settings.yaml", new ByteArrayResource(yaml.getBytes()))
+        .forEach(source -> environment.getPropertySources().addFirst(source));
+
+    // Act
+    ControllerProperties settings =
+        new Binder(ConfigurationPropertySources.get(environment))
+            .bind("aisolate.controller", ControllerProperties.class)
+            .get();
+
+    // Assert
+    if (set) {
+      assertThat(settings.scheduling().nodeSelector()).containsExactly(Map.entry("pool", "robot"));
+      assertThat(settings.scheduling().tolerations())
+          .containsExactly(
+              new ControllerProperties.Toleration("pool", "Equal", "robot", "NoSchedule", null),
+              new ControllerProperties.Toleration("pool", "Exists", null, "NoExecute", 300L));
+    } else {
+      assertThat(settings.scheduling().nodeSelector()).isEmpty();
+      assertThat(settings.scheduling().tolerations()).isEmpty();
+    }
+  }
+
+  @ParameterizedTest
   @CsvSource({"false, true", "true, false"})
   void givenATagOnlyImage_whenImagesBuilt_thenRefusedNamingItUnlessTagsAreAllowed(
       boolean allowTags, boolean refused) {
