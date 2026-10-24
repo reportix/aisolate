@@ -80,6 +80,10 @@ SCALES = frozenset(
 CURRENCIES = frozenset("EUR USD GBP CHF JPY CNY SEK NOK DKK PLN CZK HUF CAD AUD".split())
 SYMBOLS = {"€": "EUR", "$": "USD", "£": "GBP", "euro": "EUR", "euros": "EUR", "percent": "%"}
 SELF = frozenset({"self", "me", "you", "the user", "asking user"})
+# A column's unit, currency or filler token is not what it is about: salary_eur is the salary.
+UNIT_WORDS = frozenset(c.lower() for c in CURRENCIES) | frozenset(
+    "days hours pct percent amount value total num id".split()
+)
 
 EXACT = decimal.Context(prec=34, rounding=decimal.ROUND_HALF_EVEN)  # DECIMAL128
 # BigDecimal's add, subtract and multiply never round.
@@ -930,11 +934,15 @@ def _conflict(
 
 
 def _same_concept(claimed: str, row: _Resolved) -> bool:
-    """The column's name, or, where each row holds one figure of a named concept, a text of the row
-    holding every word of the claim."""
+    """The column's name, the column's content words all in the claim (salary_eur in gross annual salary),
+    or, where each row holds one figure of a named concept, a text of the row holding every word of the
+    claim."""
     if _same_words(claimed, row.column):
         return True
     claim = _words(claimed)
+    content = _words(row.column) - UNIT_WORDS
+    if content and content <= claim:
+        return True
     return bool(claim) and any(isinstance(v, str) and _words(v) >= claim for v in row.row.values())
 
 

@@ -34,6 +34,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Turns the model's answer into the user's: each placeholder resolved against this exchange's
@@ -127,6 +128,15 @@ final class Grounding {
       Map.of("€", "EUR", "$", "USD", "£", "GBP", "euro", "EUR", "euros", "EUR", "percent", "%");
 
   private static final Set<String> SELF = Set.of("self", "me", "you", "the user", "asking user");
+
+  /**
+   * A column's unit, currency or filler token is not what it is about: salary_eur is the salary.
+   */
+  private static final Set<String> UNIT_WORDS =
+      Stream.concat(
+              CURRENCIES.stream().map(c -> c.toLowerCase(Locale.ROOT)),
+              Stream.of("days", "hours", "pct", "percent", "amount", "value", "total", "num", "id"))
+          .collect(Collectors.toSet());
 
   private static final MathContext EXACT = MathContext.DECIMAL128;
 
@@ -895,14 +905,20 @@ final class Grounding {
   }
 
   /**
-   * The column's name, or, where each row holds one figure of a named concept (a reported figure:
-   * concept, period, value), a text of the row holding every word of the claim.
+   * The column's name, the column's content words all in the claim (salary_eur in gross annual
+   * salary), or, where each row holds one figure of a named concept (a reported figure: concept,
+   * period, value), a text of the row holding every word of the claim.
    */
   private static boolean sameConcept(String claimed, Resolved row) {
     if (sameWords(claimed, row.column())) {
       return true;
     }
     Set<String> claim = words(claimed);
+    Set<String> content = new HashSet<>(words(row.column()));
+    content.removeAll(UNIT_WORDS);
+    if (!content.isEmpty() && claim.containsAll(content)) {
+      return true;
+    }
     return !claim.isEmpty()
         && row.row().values().stream()
             .filter(String.class::isInstance)

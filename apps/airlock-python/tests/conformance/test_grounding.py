@@ -10,6 +10,8 @@ from aisolate_airlock.grounding import MISMATCH, UNSOURCED, Call, Figure, Ground
 from conftest import read_case
 
 TEMPLATES = ["company-hr", "company-sales", "auditor", "hospital"]
+# Beyond the templates' sets: one rule's cases over their own evidence.
+EXTRA = ["concept-wording"]
 
 ERRORS = {
     "correct",
@@ -30,8 +32,8 @@ ERRORS = {
     "ranking_other_evidence",
 }
 
-FIXTURES = {template: read_case("grounding", f"{template}.json") for template in TEMPLATES}
-CASES = [(template, golden) for template in TEMPLATES for golden in FIXTURES[template]["cases"]]
+FIXTURES = {name: read_case("grounding", f"{name}.json") for name in TEMPLATES + EXTRA}
+CASES = [(name, golden) for name in TEMPLATES + EXTRA for golden in FIXTURES[name]["cases"]]
 
 
 def grounding(fixture, question):

@@ -212,7 +212,9 @@ that value, `null` for absent; `null`: nothing sent), then one of `result`, `err
 ## Grounding
 
 One file per template (`company-hr`, `company-sales`, `auditor`, `hospital`): 121 cases. The object is `template`,
-`about`, `evidence[]` and `cases[]`.
+`about`, `evidence[]` and `cases[]`. `concept-wording.json`, over its own evidence and no template, holds one rule's
+cases: a concept claim in the model's words (`gross annual salary`) agrees with the column whose content words it
+contains (`salary_eur`).
 
 - `evidence[]`, what the exchange gathered before the final turn, in `ev-n` order:
   - a tool result: `id` (`ev-n`), `tool`, `args`, `entity`, `columns[]`, `labels` (`row_key`, `subject`, `period`,

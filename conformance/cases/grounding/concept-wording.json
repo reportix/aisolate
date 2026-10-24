@@ -1,0 +1,97 @@
+{
+  "about": "An employee asks about their own pay; the tool names its columns by unit (salary_eur), the model says what the figure is in its own words.",
+  "evidence": [
+    {
+      "id": "ev-1",
+      "tool": "fetch_salary",
+      "args": {
+        "entity": "hr.salary"
+      },
+      "entity": "hr.salary",
+      "columns": [
+        "self",
+        "employee_id",
+        "salary_eur",
+        "bonus_eur"
+      ],
+      "labels": {
+        "row_key": "employee_id",
+        "subject": null,
+        "period": null,
+        "units": {
+          "salary_eur": "EUR",
+          "bonus_eur": "EUR"
+        },
+        "unit_columns": {},
+        "masked": [],
+        "function": null
+      },
+      "rows": {
+        "r1": {
+          "self": true,
+          "employee_id": 1,
+          "salary_eur": 82000.0,
+          "bonus_eur": 8000.0
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "error": "correct",
+      "name": "the concept in the model's own words",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross annual salary is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-1",
+              "row": "r1",
+              "column": "salary_eur"
+            },
+            "about": {
+              "subject": "self",
+              "concept": "gross annual salary"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "sourced"
+      },
+      "rendered": "Your gross annual salary is 82,000 EUR."
+    },
+    {
+      "error": "wrong_concept",
+      "name": "the bonus for the salary, in the model's own words",
+      "question": "What is my gross salary?",
+      "answer": {
+        "text": "Your gross annual salary is {f1}.",
+        "figures": [
+          {
+            "id": "f1",
+            "cell": {
+              "evidence": "ev-1",
+              "row": "r1",
+              "column": "bonus_eur"
+            },
+            "about": {
+              "subject": "self",
+              "concept": "gross annual salary"
+            }
+          }
+        ],
+        "quotes": [],
+        "dont_know": false
+      },
+      "expect": {
+        "f1": "mismatch"
+      },
+      "reason": "bonus_eur, not gross annual salary"
+    }
+  ]
+}

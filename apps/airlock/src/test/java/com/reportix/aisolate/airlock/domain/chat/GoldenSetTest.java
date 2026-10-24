@@ -34,6 +34,9 @@ class GoldenSetTest {
   static final List<String> TEMPLATES =
       List.of("company-hr", "company-sales", "auditor", "hospital");
 
+  /** Beyond the templates' sets: one rule's cases over their own evidence. */
+  static final List<String> EXTRA = List.of("concept-wording");
+
   /** Every template's set covers each of these. */
   static final Set<String> ERRORS =
       Set.of(
@@ -60,7 +63,7 @@ class GoldenSetTest {
 
   static Stream<Arguments> cases() {
     List<Arguments> cases = new ArrayList<>();
-    for (String template : TEMPLATES) {
+    for (String template : Stream.concat(TEMPLATES.stream(), EXTRA.stream()).toList()) {
       JsonNode fixture = fixture(template);
       for (JsonNode golden : fixture.path("cases")) {
         String name =
