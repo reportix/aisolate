@@ -163,7 +163,7 @@ public class SecurityConfig {
     // Any browser-based client may discover and call AIsolate; the token, not the origin,
     // decides.
     cors.setAllowedOriginPatterns(properties.cors().allowedOrigins());
-    cors.setAllowedMethods(List.of("GET", "POST", "PUT", "OPTIONS"));
+    cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     // If-Match: the AIsolate UI's saves name what their form was read at.
     cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "If-Match"));
     // The backend's answer to a save: whether the cluster took it; an export's file name.

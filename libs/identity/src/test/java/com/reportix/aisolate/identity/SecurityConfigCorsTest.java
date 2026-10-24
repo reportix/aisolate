@@ -60,8 +60,20 @@ class SecurityConfigCorsTest {
     // Assert: a header left out fails the preflight, and the save with it; unexposed, the
     // "saved, not applied" notice could not read the answer's header
     assertThat(allowed).containsExactlyElementsOf(sent);
-    assertThat(cors.checkHttpMethod(HttpMethod.PUT)).contains(HttpMethod.PUT);
     assertThat(cors.getExposedHeaders()).contains("AIsolate-Cluster");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"GET", "POST", "PUT", "DELETE"})
+  void givenAMethodTheUiUses_whenItsPreflightIsChecked_thenTheMethodIsAllowed(String method) {
+    // Arrange
+    CorsConfiguration cors = corsFor("/v1/llms/granite");
+
+    // Act
+    List<HttpMethod> allowed = cors.checkHttpMethod(HttpMethod.valueOf(method));
+
+    // Assert: a method left out fails the preflight; the UI then reports the API as unreachable
+    assertThat(allowed).contains(HttpMethod.valueOf(method));
   }
 
   @Test
