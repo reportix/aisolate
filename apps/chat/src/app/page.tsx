@@ -383,7 +383,6 @@ const EASY_QUESTIONS: Record<string, string[]> = {
     "Which payments to related parties are above 10,000 EUR?",
     "Which invoices have no matching contract?",
     "List the figures the company reported for FY2025.",
-    "Which payments did we make to Apple?",
   ],
 };
 /** The cast's own questions, by airlock id then e-mail, over the airlock's defaults above. */
