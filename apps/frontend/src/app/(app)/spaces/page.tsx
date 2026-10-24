@@ -25,7 +25,7 @@ export default function SpacesPage() {
     <div className="grid gap-6">
       <PageHeader
         title="Spaces"
-        description="Each space holds the airlocks of one team or product, and the users, models and data sources they share."
+        description="Each space holds the airlocks of one team or product, and the roles, models and data sources they share."
       />
       {error && <Banner message={error} />}
       {!error && (
@@ -46,7 +46,7 @@ export default function SpacesPage() {
                   <Th>Name</Th>
                   <Th>Description</Th>
                   <Th>Airlocks</Th>
-                  <Th>Users</Th>
+                  <Th>Roles</Th>
                 </tr>
               </thead>
               <tbody>
@@ -63,7 +63,7 @@ export default function SpacesPage() {
                       {s.description || "—"}
                     </Td>
                     <Td>{data.airlocks.filter((a) => a.space_id === s.id).length}</Td>
-                    <Td>{s.members.length}</Td>
+                    <Td>{s.roles.length}</Td>
                   </Tr>
                 ))}
               </tbody>

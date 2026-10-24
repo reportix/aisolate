@@ -36,8 +36,8 @@ export function authHeaders(token: string, accept = "application/json"): Record<
 
 /**
  * Passes a 2xx response through; a 401 becomes Unauthorized, a dead gateway Unreachable, anything
- * else the problem it carries. A 502 with a problem body is the backend's own (its directory did
- * not answer): the backend is up, so it is that problem, not Unreachable.
+ * else the problem it carries. A 502 with a problem body is the backend's own: the backend is
+ * up, so it is that problem, not Unreachable.
  */
 export async function expectOk(res: Response): Promise<Response> {
   if (res.status === 401) throw new Unauthorized();

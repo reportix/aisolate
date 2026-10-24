@@ -41,42 +41,15 @@ export type Global<R> = R & { updated_at: string };
 /** Who defines an LLM or a data source an airlock sees, nearest first. */
 export type Origin = "airlock" | "space" | "global";
 
-/** Someone of the company's directory, as AIsolate sees them: nothing more. */
-export type Person = { name: string | null; username: string; email: string };
-
-/** What a space member may do: a developer also edits its airlocks; both ask them. */
-export type Role = "developer" | "user";
-
-/** One of a space's users by e-mail, with their role in it. */
-export type Member = { email: string; role: Role };
-
-/** A listed user with who they are; without a directory only the e-mail is known. */
-export type User = {
-  email: string;
-  name: string | null;
-  username: string | null;
-  /** False once the e-mail no longer resolves in the directory; null without a directory. */
-  in_directory: boolean | null;
-  /** A space's row: the member's role; null on an airlock's own rows. */
-  role: Role | null;
-};
-
-/** The users of a space, or an airlock's own and those it inherits from its space. */
-export type Users = {
-  /** Whether a directory is connected: people are picked from it, else e-mails typed. */
-  directory: boolean;
-  users: User[];
-  /** An airlock's users that come from its space; empty for a space. */
-  inherited: User[];
-};
-
-/** A space: the users every airlock of it admits, and the LLMs and data sources they share. */
+/** A space: the roles every airlock of it admits, its developers, and the LLMs and data sources they share. */
 export type Space = {
   id: string;
   name: string;
   description: string;
-  /** Its users with their role: every one may ask every airlock of the space. */
-  members: Member[];
+  /** The e-mails of who edits it in the AIsolate UI; they do not ask by being listed. */
+  developers: string[];
+  /** The roles of a token that may ask every airlock of the space. */
+  roles: string[];
   /** Its own; AIsolate's come with every space. */
   llms: Llm[];
   data_sources: DataSource[];
@@ -147,17 +120,17 @@ export type Pipeline = {
 };
 
 /**
- * An airlock, on its own endpoint: its name, who may ask it, the LLMs and data sources it defines
+ * An airlock, on its own endpoint: its name, which roles may ask it, the LLMs and data sources it defines
  * over the space's, and what it runs, which `aisolate deploy` brings. A save from the UI sends the
- * identity, users and catalogs ({@link AirlockForm}); the deploy's fields stay as they are.
+ * identity, roles and catalogs ({@link AirlockForm}); the deploy's fields stay as they are.
  */
 export type Airlock = {
   id: string;
   space_id: string;
   name: string;
   description: string;
-  /** The e-mails of its own users, who may ask it besides the space's; maybe none. */
-  users: string[];
+  /** The roles that may ask it besides the space's; maybe none. */
+  roles: string[];
   /** The OAuth clients (azp) they may ask from; `*` admits any. */
   callers: string[];
   /** The machine clients (azp, exact) it admits on a token without an e-mail; maybe none. */

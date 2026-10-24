@@ -17,13 +17,12 @@ describe("railOf", () => {
     ["/spaces", "top", "spaces"],
     ["/spaces/new", "top", "spaces"],
     [SPACE, "space", "space"],
-    [`${SPACE}/users/add`, "space", "users"],
     [`${SPACE}/airlocks`, "space", "airlocks"],
     [`${SPACE}/airlocks/new`, "space", "airlocks"],
     [AIRLOCK, "airlock", "airlock"],
     // The airlock's own tabs light its row, as its page does.
     [`${AIRLOCK}/tools`, "airlock", "airlock"],
-    [`${AIRLOCK}/users/add`, "airlock", "users"],
+    [`${AIRLOCK}/llms/new`, "airlock", "llms"],
   ])("givenPath_%s_whenRailOf_thenContext_%s_andOnlyRow_%s_isLit", (path, context, litKey) => {
     // Arrange / Act
     const rail = railOf(path, null);
@@ -48,7 +47,6 @@ describe("railOf", () => {
       [
         ["space", SPACE, "acme", null],
         ["airlocks", `${SPACE}/airlocks`, "Airlocks", "airlocks"],
-        ["users", `${SPACE}/users`, "Users", "users"],
         ["llms", `${SPACE}/llms`, "Models", "llm"],
         ["data-sources", `${SPACE}/data-sources`, "Data sources", "data-sources"],
       ],
@@ -58,7 +56,6 @@ describe("railOf", () => {
       "Airlock",
       [
         ["airlock", AIRLOCK, "hr", null],
-        ["users", `${AIRLOCK}/users`, "Users", "users"],
         ["llms", `${AIRLOCK}/llms`, "Models", "llm"],
         ["data-sources", `${AIRLOCK}/data-sources`, "Data sources", "data-sources"],
       ],
@@ -112,10 +109,9 @@ describe("trailOf", () => {
     [SPACE, [S, ["Acme"]], false],
     [`${SPACE}/airlocks`, [S, R, ["Airlocks"]], false],
     [`${SPACE}/airlocks/new`, [S, R, A, ["New airlock"]], false],
-    [`${AIRLOCK}/users`, [S, R, A, H, ["Users"]], false],
+    [`${AIRLOCK}/llms`, [S, R, A, H, ["Models"]], false],
     [`${AIRLOCK}/details`, [S, R, A, H, ["Details"]], false],
     [`${AIRLOCK}/tools`, [S, R, A, H, ["Tools"]], false],
-    [`${SPACE}/users/add`, [S, R, ["Users", `${SPACE}/users`], ["Add users"]], false],
     [`${SPACE}/llms/new`, [S, R, ["Models", `${SPACE}/llms`], ["Add model"]], false],
     [
       `${AIRLOCK}/llms/granite/edit`,
@@ -157,10 +153,16 @@ describe("trailOf", () => {
 
   it("givenNoOverview_whenTrailOf_thenTheCrumbsCarryTheIds", () => {
     // Arrange / Act: the overview has not arrived yet
-    const trail = trailOf(`${AIRLOCK}/users`, null);
+    const trail = trailOf(`${AIRLOCK}/llms`, null);
 
     // Assert
-    expect(trail.crumbs.map((c) => c.label)).toEqual(["Spaces", "acme", "Airlocks", "hr", "Users"]);
+    expect(trail.crumbs.map((c) => c.label)).toEqual([
+      "Spaces",
+      "acme",
+      "Airlocks",
+      "hr",
+      "Models",
+    ]);
   });
 });
 

@@ -56,7 +56,14 @@ export default function SpacePage() {
       {/* Editing hides the airlocks, so the form's save stays the page's one primary action. */}
       {editing ? (
         <IdentityForm
-          initial={{ id: space.id, name: space.name, description: space.description }}
+          initial={{
+            id: space.id,
+            name: space.name,
+            description: space.description,
+            developers: space.developers,
+            roles: space.roles,
+          }}
+          lists={["developers", "roles"]}
           id="fixed"
           url={{ label: "Space URL", path: "/spaces/" }}
           label="Save"

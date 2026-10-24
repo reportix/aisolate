@@ -12,7 +12,6 @@ import {
   SpacesIcon,
   Tile,
   UserMenu,
-  UsersIcon,
   cx,
 } from "@aisolate/ui";
 import Link from "next/link";
@@ -27,7 +26,6 @@ const ICONS: Record<RailIcon, ComponentType<{ size?: number; className?: string 
   spaces: SpacesIcon,
   audit: AuditIcon,
   airlocks: AirlockIcon,
-  users: UsersIcon,
   llm: CpuIcon,
   "data-sources": DatabaseIcon,
   monitoring: ActivityIcon,

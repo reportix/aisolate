@@ -39,7 +39,8 @@ const space: SpaceForm = {
   id: "hr-acme",
   name: "HR Acme",
   description: "",
-  members: [{ email: "eric@example.com", role: "user" }],
+  developers: ["eric@example.com"],
+  roles: ["staff"],
   llms: [GRANITE],
   data_sources: [],
 };
@@ -48,7 +49,7 @@ const airlock: AirlockForm = {
   id: "hr-assistant",
   name: "HR assistant",
   description: "",
-  users: ["eric@example.com", "jasmine@example.com"],
+  roles: ["hr-staff", "hr-lead"],
   callers: ["acme-chat"],
   clients: [],
   llms: [],

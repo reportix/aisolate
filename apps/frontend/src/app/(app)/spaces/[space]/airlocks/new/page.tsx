@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
 import { emptyAirlockForm, useSave } from "@/lib/scope";
 
-/** A new airlock: its id, label and description; its users, LLM and data sources have pages of their own. */
+/** A new airlock: its id, label and description; its LLM and data sources have pages of their own. */
 export default function NewAirlockPage() {
   const router = useRouter();
   // The id alone: the create answers 404 for a space that is gone, so nothing is loaded first.
@@ -21,11 +21,12 @@ export default function NewAirlockPage() {
     <div className="grid gap-6">
       <PageHeader
         title="New airlock"
-        description="Its users, models and data sources have pages of their own; aisolate deploy brings its code."
+        description="Its models and data sources have pages of their own; aisolate deploy brings its code."
       />
       {banner && <Banner message={banner} />}
       <IdentityForm
         initial={{ id: "", name: "", description: "" }}
+        lists={["roles"]}
         id="new"
         url={{ label: "Airlock URL", path: `/spaces/${spaceId}/airlocks/` }}
         label="Save airlock"

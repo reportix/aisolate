@@ -35,7 +35,7 @@ describe("mayChange", () => {
   it.each<[Space["caller_role"], boolean, boolean]>([
     ["admin", false, true],
     ["admin", true, true],
-    // A developer reads the space's own users, LLM and data sources; its airlocks are theirs
+    // A developer reads the space's own developers, roles, LLM and data sources; its airlocks are theirs
     ["developer", false, false],
     ["developer", true, true],
     [null, true, false],

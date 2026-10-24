@@ -29,10 +29,8 @@ import type {
   Global,
   Llm,
   LlmInput,
-  Person,
   Space,
   SpaceForm,
-  Users,
 } from "./types";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
@@ -208,8 +206,6 @@ export const api = {
       call<Space>(t, "POST", "/spaces", { ...bodyOf(form), id: undefined }),
     update: (t: string, form: SpaceForm, readAt: string) =>
       call<Space>(t, "PUT", space(form.id), bodyOf(form), ifMatch(readAt)),
-    /** Its users, named from the directory when one is connected. */
-    users: (t: string, id: string) => call<Users>(t, "GET", `${space(id)}/users`),
   },
   airlocks: {
     list: (t: string, spaceId: string) => call<Airlock[]>(t, "GET", `${space(spaceId)}/airlocks`),
@@ -219,14 +215,6 @@ export const api = {
       call<Airlock>(t, "POST", `${space(spaceId)}/airlocks`, { ...bodyOf(form), id: undefined }),
     update: (t: string, spaceId: string, form: AirlockForm, readAt: string) =>
       call<Airlock>(t, "PUT", airlock(spaceId, form.id), bodyOf(form), ifMatch(readAt)),
-    /** Its own users and those it inherits from the space, named from the directory. */
-    users: (t: string, spaceId: string, id: string) =>
-      call<Users>(t, "GET", `${airlock(spaceId, id)}/users`),
-  },
-  directory: {
-    /** People whose name, username or e-mail holds `q`, at most 20; 404 with no directory. */
-    search: (t: string, q: string) =>
-      call<Person[]>(t, "GET", `/directory/people?q=${encodeURIComponent(q)}`),
   },
   credentials: {
     // The values stay in the component that asked, never in a cache.

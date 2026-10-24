@@ -3,7 +3,7 @@ import type { Overview } from "./useOverview";
 
 type RailContext = "top" | "space" | "airlock";
 export type RailIcon =
-  "home" | "spaces" | "audit" | "airlocks" | "users" | "llm" | "data-sources" | "monitoring";
+  "home" | "spaces" | "audit" | "airlocks" | "llm" | "data-sources" | "monitoring";
 
 export type RailRow = {
   key: string;
@@ -20,15 +20,14 @@ export type Rail = { context: RailContext; label: "Space" | "Airlock" | null; ro
 /** A section's key is also the path segment it lives at, under its space or airlock. */
 const SECTIONS = {
   airlocks: { label: "Airlocks", icon: "airlocks" },
-  users: { label: "Users", icon: "users" },
   llms: { label: "Models", icon: "llm" },
   "data-sources": { label: "Data sources", icon: "data-sources" },
 } as const satisfies Record<string, { label: string; icon: RailIcon }>;
 
 type Section = keyof typeof SECTIONS;
 
-const SPACE_SECTIONS: Section[] = ["airlocks", "users", "llms", "data-sources"];
-const AIRLOCK_SECTIONS: Section[] = ["users", "llms", "data-sources"];
+const SPACE_SECTIONS: Section[] = ["airlocks", "llms", "data-sources"];
+const AIRLOCK_SECTIONS: Section[] = ["llms", "data-sources"];
 
 /** The airlock's own tabs, under its row in the trail; the rail lights its row for them. */
 const TABS: Record<string, string> = { details: "Details", tools: "Tools" };
@@ -100,8 +99,8 @@ function contextRail(
 
 /**
  * The rail a path shows: one context per level. Top (Dashboard, Spaces, Models, Data sources,
- * Audit), a space (its row, then Airlocks, Users, Models, Data sources) or an airlock (its row, then Users,
- * Models, Data sources). Entity rows carry the name from the overview, the id until it arrives.
+ * Audit), a space (its row, then Airlocks, Models, Data sources) or an airlock (its row, then Models,
+ * Data sources). Entity rows carry the name from the overview, the id until it arrives.
  */
 export function railOf(pathname: string, overview: Overview | null, viewer: Viewer = NOBODY): Rail {
   const [root, spaceId, segment, airlockId, section] = pathname.split("/").filter(Boolean);
@@ -197,7 +196,6 @@ function sectionTrail(crumbs: Crumb[], base: string, segment: string, tail: stri
   const end = (last: string) => ({ crumbs: [...crumbs, { label: last }], heading: false });
   if (tail.length === 0) return end(label);
   crumbs = [...crumbs, { label, href: `${base}/${segment}` }];
-  if (tail[0] === "add") return end("Add users");
   const noun = NOUNS[segment as Section] ?? segment;
   return end(`${tail[0] === "new" ? "Add" : "Edit"} ${noun}`);
 }

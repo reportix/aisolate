@@ -19,13 +19,13 @@ import { AirlockContext } from "@/lib/useAirlock";
 import { useLoad } from "@/lib/useLoad";
 import { subscribeOverview } from "@/lib/useOverview";
 
-/** One airlock: its header, then Overview | Details | Tools | Users | Models | Data sources over one load of it. */
+/** One airlock: its header, then Overview | Details | Tools | Models | Data sources over one load of it. */
 export default function AirlockLayout({ children }: { children: ReactNode }) {
   const { space: spaceId, id } = useParams<{ space: string; id: string }>();
   // The layout stays across the tabs, so the open tab is read from the path on every render.
   const pathname = usePathname();
   const [editing, setEditing] = useState(false);
-  // A tab's save (users, models, data sources) changes the airlock under this header: every save
+  // A tab's save (models, data sources) changes the airlock under this header: every save
   // calls reloadOverview(), so the airlock is read again after each.
   const [saves, setSaves] = useState(0);
   useEffect(() => subscribeOverview(() => setSaves((n) => n + 1)), []);
@@ -55,7 +55,6 @@ export default function AirlockLayout({ children }: { children: ReactNode }) {
     { href: base, label: "Overview" },
     { href: `${base}/details`, label: "Details" },
     { href: `${base}/tools`, label: "Tools" },
-    { href: `${base}/users`, label: "Users" },
     { href: `${base}/llms`, label: "Models" },
     { href: `${base}/data-sources`, label: "Data sources" },
   ];
@@ -92,7 +91,13 @@ export default function AirlockLayout({ children }: { children: ReactNode }) {
       {/* Editing hides the tabs, so the form's save stays the page's one primary action. */}
       {editing ? (
         <IdentityForm
-          initial={{ id: airlock.id, name: airlock.name, description: airlock.description }}
+          initial={{
+            id: airlock.id,
+            name: airlock.name,
+            description: airlock.description,
+            roles: airlock.roles,
+          }}
+          lists={["roles"]}
           id="fixed"
           url={{ label: "Airlock URL", path: `/spaces/${space.id}/airlocks/` }}
           label="Save"

@@ -8,7 +8,7 @@ const SPACE = spaceOf({
 });
 
 const AIRLOCK = airlockOf({
-  users: ["eric@example.com"],
+  roles: ["hr-staff"],
   callers: ["acme-chat"],
   clients: ["acme-batch"],
 });
@@ -27,21 +27,21 @@ describe("writeOwner", () => {
     const route = { spaceId: "acme", airlockId: "hr", space: SPACE, airlock: null };
 
     // Act
-    const written = writeOwner("token", route, { users: [] });
+    const written = writeOwner("token", route, { roles: [] });
 
     // Assert
     await expect(written).rejects.toThrow("The airlock has not loaded yet");
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("givenAnAirlockRouteWithMachineClients_whenWriteItsUsers_thenTheClientsGoBackUntouched", async () => {
+  it("givenAnAirlockRouteWithMachineClients_whenWriteItsRoles_thenTheClientsGoBackUntouched", async () => {
     // Arrange: the clients came from a project file; the UI has no editor for them
     const fetch = vi.fn(async () => Response.json(AIRLOCK));
     vi.stubGlobal("fetch", fetch);
     const route = { spaceId: "acme", airlockId: "hr", space: SPACE, airlock: AIRLOCK };
 
     // Act
-    await writeOwner("token", route, { users: ["nora@example.com"] });
+    await writeOwner("token", route, { roles: ["hr-lead"] });
 
     // Assert: the PUT replaces the list, so leaving it out would drop acme-batch
     const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
@@ -50,7 +50,7 @@ describe("writeOwner", () => {
       id: "hr",
       name: "HR",
       description: "",
-      users: ["nora@example.com"],
+      roles: ["hr-lead"],
       callers: ["acme-chat"],
       clients: ["acme-batch"],
       llms: [],
@@ -80,7 +80,8 @@ describe("writeOwner", () => {
       id: "acme",
       name: "Acme",
       description: "",
-      members: SPACE.members,
+      developers: SPACE.developers,
+      roles: SPACE.roles,
       llms: [nomic],
       data_sources: [],
     });

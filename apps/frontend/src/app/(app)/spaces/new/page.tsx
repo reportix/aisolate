@@ -17,11 +17,12 @@ export default function NewSpacePage() {
     <div className="grid gap-6">
       <PageHeader
         title="New space"
-        description="A space holds the airlocks of one team or product; users, a model and data sources come after."
+        description="A space holds the airlocks of one team or product; roles, a model and data sources come after."
       />
       {banner && <Banner message={banner} />}
       <IdentityForm
         initial={{ id: "", name: "", description: "" }}
+        lists={["developers", "roles"]}
         id="new"
         url={{ label: "Space URL", path: "/spaces/" }}
         label="Save space"

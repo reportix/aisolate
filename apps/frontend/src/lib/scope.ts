@@ -31,21 +31,21 @@ const emptyParts = () => ({
   data_sources: [],
 });
 
-/** A new space: a name and a description to type; users, LLMs and data sources come after. */
-export const emptySpaceForm = (): SpaceForm => ({ ...emptyParts(), members: [] });
+/** A new space: a name, description, developers and roles to type; LLMs and data sources come after. */
+export const emptySpaceForm = (): SpaceForm => ({ ...emptyParts(), developers: [], roles: [] });
 
 /**
- * A new airlock: no users or machine clients of its own, and any client may call it. Every key here
+ * A new airlock: no roles or machine clients of its own, and any client may call it. Every key here
  * is sent on a save, so the clients set in a project file survive a save in the UI.
  */
 export const emptyAirlockForm = (): AirlockForm => ({
   ...emptyParts(),
-  users: [],
+  roles: [],
   callers: ["*"],
   clients: [],
 });
 
-/** What a part's page changes: an airlock's users, a space's members, either's LLMs or data sources. */
+/** What a part's page changes: an airlock's roles, a space's developers and roles, either's LLMs or data sources. */
 export type Part = Partial<AirlockForm & SpaceForm>;
 
 /** The fields of `entity` that `form` has: a save never sends the server's own (dates, counts). */
@@ -117,7 +117,7 @@ export function writeOwner(t: string, route: Route, part: Part) {
 
 /**
  * The route's space, and its airlock under airlocks/[id]: read fresh, never from the rail's cache,
- * since a save PUTs all of it. `owner` is the airlock there, else the space: whose users, LLM and
+ * since a save PUTs all of it. `owner` is the airlock there, else the space: whose LLM and
  * data sources the page shows.
  */
 export function useScope() {

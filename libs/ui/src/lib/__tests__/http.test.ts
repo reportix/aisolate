@@ -72,9 +72,9 @@ describe("expectOk", () => {
   });
 
   it("givenTheBackendsOwn502Problem_whenExpectOk_thenThatProblemNotUnreachable", async () => {
-    // Arrange: the backend answered; its directory did not
+    // Arrange: the backend answered; a dependency of it did not
     const res = Response.json(
-      { status: 502, detail: "the directory did not answer" },
+      { status: 502, detail: "a dependency did not answer" },
       { status: 502, headers: { "Content-Type": "application/problem+json" } },
     );
 
@@ -84,6 +84,6 @@ describe("expectOk", () => {
     // Assert
     expect(e).not.toBeInstanceOf(Unreachable);
     expect(e.status).toBe(502);
-    expect(e.message).toBe("the directory did not answer");
+    expect(e.message).toBe("a dependency did not answer");
   });
 });
