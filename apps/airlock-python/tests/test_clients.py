@@ -247,7 +247,7 @@ async def test_given_openai_model_when_asked_then_tools_response_format_and_usag
                                                               "arguments": '{"entity": "hr.compensation"}'}}]
     path, authorization, body = sent[0]
     assert (path, authorization) == ("/v1/chat/completions", bearer)
-    assert body == {"model": "gpt-4o-mini", "temperature": 0.1,
+    assert body == {"model": "gpt-4o-mini",
                     "messages": [{"role": "system", "content": "s"}, {"role": "user", "content": "q"}],
                     "tools": [{"type": "function", "function": {"name": "t", "description": "d",
                                                                 "parameters": {"type": "object"}}}],
@@ -315,3 +315,18 @@ def test_given_a_provider_when_the_catalog_is_read_then_its_client(provider, kin
     # Assert
     assert type(llms["m"]) is kind and llms["m"].provider == provider
     assert "sk-secret-77" not in repr(llms["m"])
+
+
+@pytest.mark.parametrize("model,temperature", [
+    (llm.OpenAi("g", "http://x/v1", "gpt-5"), None),
+    (llm.Ollama("q", "http://x", "q"), 0.1)])
+def test_given_provider_when_body_built_then_only_ollama_carries_temperature(model, temperature):
+    # Arrange
+    messages = [{"role": "user", "content": "q"}]
+
+    # Act
+    body = model._body(messages) if hasattr(model, "_body") else model._chat_body(messages)
+
+    # Assert
+    sent = body.get("options", body).get("temperature")
+    assert sent == temperature

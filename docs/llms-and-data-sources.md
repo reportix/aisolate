@@ -213,7 +213,7 @@ resolution.
 **The agent loop** asks the main LLM with today's options (temperature `0.1`, `think=false`, `keep_alive=-1m`,
 `AISOLATE_MODEL_READ_TIMEOUT`, no retries). The `NO_MODEL_ENDPOINT` check compares the main LLM's provider. An
 `openai` main LLM is asked at `POST <url>/chat/completions` (Java: Spring AI's OpenAI model, 5 s connect, the same
-read timeout, no retries) with `temperature` `0.1`, the tools as OpenAI functions (`{"type": "function", "function":
+read timeout, no retries) without a `temperature` (GPT-5 models refuse any but the default), the tools as OpenAI functions (`{"type": "function", "function":
 {name, description, parameters}}`), the assistant's `tool_calls` with their ids and each result as `{"role": "tool",
 "tool_call_id"}`; the final turn's answer format as `response_format` `{"type": "json_schema", "json_schema":
 {"name": "json_schema", "strict": false, "schema": …}}` (OpenAI's strict mode refuses the format's optional fields).
@@ -227,7 +227,7 @@ Tokens come from `usage.prompt_tokens` / `completion_tokens`.
   **400** `… does not support chat` for a model that cannot chat (pinned in the conformance case).
 - An `openai` entry instead: `embed` at `POST <url>/embeddings` `{"model", "input"}` → `data[].embedding` in the
   order of `index`; `chat` at `POST <url>/chat/completions` `{"model", "messages": [{"role": "user", "content":
-  <prompt>}], "temperature": 0.1}` → `choices[0].message.content`; both with `Authorization: Bearer <key>` when
+  <prompt>}]}` → `choices[0].message.content`; both with `Authorization: Bearer <key>` when
   the entry has a key, no header otherwise. The same rules read its answers: 501 on embed, 400 `does not support
   chat` on chat (what Ollama's `/v1` answers); a **401** is the refused key.
 - Any other failure (unreachable, timeout, 5xx) raises as today's `embed` does.

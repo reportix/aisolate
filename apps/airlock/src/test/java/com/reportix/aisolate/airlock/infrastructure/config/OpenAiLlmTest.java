@@ -94,7 +94,7 @@ class OpenAiLlmTest {
     assertThat(bearers).containsOnly("Bearer sk-test-1234");
     JsonNode first = received.getFirst();
     assertThat(first.path("model").asString()).isEqualTo("gpt-4o-mini");
-    assertThat(first.path("temperature").asDouble()).isEqualTo(0.1);
+    assertThat(first.has("temperature")).isFalse();
     JsonNode tool = first.path("tools").get(0);
     assertThat(tool.path("type").asString()).isEqualTo("function");
     assertThat(tool.path("function").path("name").asString()).isEqualTo("read_records");

@@ -178,7 +178,8 @@ class OpenAi(_Model):
         self._headers = {"Authorization": f"Bearer {api_key}"} if (api_key or "").strip() else {}
 
     def _body(self, messages: list[dict]) -> dict:
-        return {"model": self.model, "messages": messages, "temperature": 0.1}
+        # No temperature: GPT-5/o-series accept only the default (Azure 400s otherwise); grounding checks, not sampling, make answers reliable.
+        return {"model": self.model, "messages": messages}
 
     def _key_refused(self, response) -> None:
         # The body may quote the key, masked or not: neither reaches the message.

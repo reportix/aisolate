@@ -69,7 +69,8 @@ public final class OpenAiLlm implements CatalogLlm {
                     // Empty, not null: null would read OPENAI_API_KEY; empty sends no header.
                     .apiKey(entry.apiKey() == null ? "" : entry.apiKey())
                     .model(entry.model())
-                    .temperature(0.1)
+                    // No temperature: GPT-5/o-series accept only the default (Azure 400s
+                    // otherwise); the grounding checks, not sampling, make answers reliable.
                     // As Ollama's: a retried model call outlasts the exchange's budget.
                     .maxRetries(0)
                     .build())
