@@ -18,8 +18,7 @@ Its host must be mapped in `platform.egress.hosts` or proxied: otherwise every s
 that host. Without the value nothing leaves the pods: the spans still exist, so the audit line and the JSON
 answer still carry a `trace_id`, but they go nowhere.
 
-Every exchange is a trace: sampling is 1.0. A question costs one trace of a few dozen spans, and an airlock
-answers questions one person types at a time.
+Every exchange is a trace: sampling is 1.0.
 
 ### What one trace shows
 
@@ -61,19 +60,14 @@ http post /v1/spaces/{spaceId}/airlocks/{airlockId}/chat
 
 A refusal is three spans: the HTTP span (403), `exchange` and `admission`, both with status ERROR.
 
-- A handler's span is named by its `@Description`, or else by its class; `aisolate.handler` is its class.
 - Every AIsolate span carries `aisolate.airlock` and `aisolate.revision`; the airlock pod's
   also carry `aisolate.space`.
 - `aisolate.outcome` on the `exchange` span is the audit line's: `answered`, `dont_know`, `refused` or `error`.
   On the tool server's span it is `rows`, `empty`, `denied` (no rule granted anything, the silent deny),
   `invalid` (arguments the tool refused) or `error`.
-- The airlock pod sends the W3C `traceparent` of the `tool <name>` span with each call, so the tool server's
-  spans join the same trace.
 - A caller's own `traceparent`, `tracestate` and `baggage` are ignored at the airlock pod: every exchange starts
   its trace there, so a caller can neither choose the `trace_id` the audit line and the answer carry nor sample
   an exchange out of the trace store.
-- The audit line's `trace_id` and the JSON answer's are the root's: the trace store opens the exchange's trace by
-  it (in Jaeger, `/trace/<trace_id>`).
 
 ### What never goes into a span
 
@@ -81,9 +75,8 @@ No question, answer, prompt, completion, passage, row, figure's value, SQL state
 role: the audit line names the user and the trace. The `exchange` span counts the answer's figures by
 provenance, never what they are. Spring Security makes no spans here: its spans list the caller's roles, and
 in a small team a role names one person. A span that failed has status ERROR and `error.type`, the exception's
-class, and no message: an exception's message may quote any of these. Spring AI's content observations stay off
-(`spring.ai.chat.observations.log-prompt`, `log-completion`, their `chat.client` twins and
-`spring.ai.tools.observations.include-content`, all `false`). The question and the answer are in the audit line
+class, and no message: an exception's message may quote any of these.
+The question and the answer are in the audit line
 only.
 
 ### In the AIsolate UI
@@ -100,9 +93,8 @@ tool call's arguments come from the audit line, never from a span. The steps com
 backend reads in the cluster; the browser never calls it. The chart's `platform.tracing.queryUrl` names its query
 API, Jaeger's (`http://jaeger.monitoring.svc:16686`) or any store that answers Jaeger's `GET /api/traces/{id}`
 alike, and `platform.tracing.egress` the NetworkPolicy peer the backend reaches it at, that host and port only.
-Unset, the AIsolate UI has no Monitoring and the trace endpoints are 404. A trace the store no longer holds
-(Jaeger's in-memory store keeps a bounded number) still shows its audit line, and the page says the steps are
-gone. The endpoints: [The trace endpoints](api.md#the-trace-endpoints).
+Unset, the AIsolate UI has no Monitoring and the trace endpoints are 404.
+The endpoints: [The trace endpoints](api.md#the-trace-endpoints).
 
 **Monitoring > Metrics** draws the example dashboard's five panels without Grafana: exchanges and tokens per
 minute by airlock, the p95 exchange duration, refusals by reason and tool calls by tool, over the last hour, day,
@@ -143,6 +135,6 @@ minute and tokens by airlock, refusals by reason, tool calls by tool and the p95
 and airlock, with a Space and an Airlock picker. The series name the airlock, not the space: copy
 the pod label `aisolate.dev/space` onto a `space` label when you scrape (Prometheus:
 `source_labels: [__meta_kubernetes_pod_label_aisolate_dev_space]`, `target_label: space`). Without it the panels
-still show every airlock, unsplit by space. The two counts over the dashboard's range also count a series that
-began within it: a pod's counter appears at its first increment, which `increase()` alone misses. Import it and
+still show every airlock, unsplit by space.
+Import it and
 pick the Prometheus data source; any other tool that queries Prometheus can draw the same series.

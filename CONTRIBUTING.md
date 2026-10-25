@@ -53,19 +53,6 @@ Both pods take `AISOLATE_PLUGINS_DIR` and `AISOLATE_PLUGIN_DIGESTS` for an airlo
 
 | Directory | What |
 |---|---|
-| `apps/airlock/` | The airlock core, one airlock per pod: the chat and discovery controllers, the exchange and the agent loop, admission (the roles of the space and of the airlock, and the airlock's callers; the roles also select the rules), the model and MCP clients, the airlock's handlers from its code, fetched from the backend at start, with a `javax.sql.DataSource` per data source, SSE, `validate`. No database of its own. |
-| `apps/tool-server/` | The MCP server: publishes the airlock's tools, runs each call through the gates and hands the tool a governed query on its plugin's data source (token, admission, tool gate, identity join, rules, SQL, evidence). Holds no customer code and no tool of its own. |
-| `apps/controller/` | The controller: the resources and their status, CRD generation (`./gradlew :apps:controller:syncCrds` writes them to `crds/`), the renderer, release validation, one reconciler per kind. |
-| `apps/backend/` | The AIsolate UI's API, with `headless=false`: spaces (developers, roles, LLM, data sources), airlocks (roles, callers, LLM, data sources) with their code (`JarInspector`: the tools with their plugin and data source, the handlers, the rule sets), the deploy call (one `Airlock` checked against its code and its space), cluster sync and the data sources' Secrets, and the audit trail: the ingest on its own port, the append-only table chained per airlock, its reading and verify ([docs/audit.md](docs/audit.md)). Owns the schema (Flyway). |
-| `apps/cli/` | The `aisolate` CLI (picocli, GraalVM native image, macOS and Windows installers). `src/main/templates/` holds the four templates, `company-hr`, `company-sales`, `auditor` and `hospital`, each one airlock with its code and its `aisolate.yaml` ([docs/develop.md](docs/develop.md)). |
-| `apps/frontend/` | The AIsolate UI (Next.js). |
-| `apps/chat/` | The sample chat client of the airlock endpoint (Next.js): sign-in with PKCE, discovery, the SSE stream, the answer with its provenance. |
-| `libs/sdk/` | What a project compiles against: `ToolPlugin` (with `dataSource()`), `Entity`, `Column`, `Tool`, `GovernedQuery`, `Filter`, `Result`, `Arguments`, the handler interfaces (`ContextPreparator`, `ConversationMemory`, `AnswerVerifier`) and `AIsolateManager` (`embed`, `dataSource(id)`). |
-| `libs/config/` | The document kinds, the loader and its validation, the LLM and data sources an airlock resolves from the global level, its space and itself (`llmOf`, `dataSourcesOf`), the rules grammar, URL checks, project variables, the YAML format and the revision. Jackson only, no Spring. |
-| `libs/identity/` | The resource-server `SecurityConfig` (JWT validation, the roles claim, CORS, the RFC 9728 document) and `Principal`. |
-| `libs/plugins/` | Reading an airlock's code: `JarScan` finds the tool plugins and handlers by scanning the classes, in any package; the code fetch and digest pin every pod applies at start (`CodeFetch`, `JarDigests`). |
-| `libs/audit-report/` | The AIsolate Audit report as one xBRL-XML instance (`AuditReport`, `AuditLine`), which the backend's audit export writes ([docs/audit.md](docs/audit.md#export)). |
-| `libs/ui/` | `@aisolate/ui`: design tokens, primitives and the HTTP, OIDC and env helpers of the AIsolate UI. One npm workspace with `apps/frontend` and `apps/chat`, rooted at `package.json`. |
 | `crds/` | The three CRDs, generated from the controller's resource classes by `./gradlew :apps:controller:syncCrds`; never edited by hand. The chart's pin script in `aisolate-chart` copies them. |
 | `docker/` | The compose stack for the laptop. |
 | `docs/` | The documentation, indexed in `README.md`. |

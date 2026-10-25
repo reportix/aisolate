@@ -60,12 +60,6 @@ Windows Terminal, PowerShell and the Command Prompt.
 
 `AISOLATE_HOME` moves the folder.
 
-## Terminal output
-
-On a terminal that shows color, the CLI marks each line with a colored symbol, and the sign-in choice is a link.
-Without color, the sign-in URL follows the choice on its own line, to copy. A Windows console that does not use
-UTF-8 shows ASCII symbols (`*`, `+`, `x`, `>`) instead of the Unicode ones.
-
 ## Build the CLI yourself
 
 The installers are native images built with GraalVM 25 (`native-image`). A native image is built on the system
@@ -94,6 +88,4 @@ On Windows with NSIS, `.\gradlew.bat :apps:cli:createWindowsInstaller` does both
 Without GraalVM, `./gradlew :apps:cli:installDist` (`.\gradlew.bat` on Windows) builds a CLI that runs on JDK 25:
 put `apps/cli/build/install/aisolate/bin` on your `PATH`.
 
-The CI builds no native image. Its job `cli-windows-installer`, run by hand, packages an exe built on a Windows
-machine: set `WINDOWS_EXE_URL`, where the runner can download it, and `WINDOWS_EXE_SHA256`. The installer is the
-job's artifact. The CLI bundles the SDKs of the checkout it was built from; rebuild it after pulling.
+The CLI bundles the SDKs of the checkout it was built from; rebuild it after pulling.

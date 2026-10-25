@@ -26,7 +26,7 @@ text with placeholders, and for each placeholder what it refers to.
 
 The user gets "Your gross salary is 235,000 EUR. You have 18 days left this year; the notice period is "six
 months to the end of a calendar quarter"." with each figure's provenance beside it: the evidence, the entity, the column,
-the row's key and its labels, "Nora Varga · EUR · hr.compensation".
+the row's key and its labels.
 
 A placeholder refers to one of:
 
@@ -43,25 +43,12 @@ A placeholder refers to one of:
 the asking user's own row), `period`, `concept` (the column, or the concept a row names) and `unit`, each
 optional. It is checked against the row; a claim that disagrees is a mismatch.
 
-The model sees every tool result's rows with a handle, `{"row": "r1", ...}`, numbered across the exchange (a
-second tool result goes on at `r4`), and every passage under its evidence id and index, `[ev-1, passage 2]`. The
-handle stays inside the airlock, mapped to the row.
-
 ## How the format is asked for
 
-- The airlock appends the format's instruction and its JSON schema to every airlock's system prompt, after the
-  airlock's own prompt: it is the platform's, not a template's.
-- The model answers after its tool calls. An answer already in the format is used as it is.
-- An answer not in the format is asked for once more: the final turn, without tools, constrained to the
-  schema by the provider's structured output where it has one (Ollama's `format`, an OpenAI-compatible
-  server's non-strict `json_schema`, through Spring AI's `outputSchema`), with the tool results repeated. An answer that still does not parse is asked for once more,
-  with what was wrong ("it is not JSON", "text is missing"); the text of that error never quotes the answer.
 - Still not in the format: the model's text is shown as it wrote it, and every number in it, and every value of a
   fact column, is unsourced.
 - An answer without a number, from no tool rows (a greeting, an answer from documents alone), needs no format and
   no extra turn: there is nothing to ground.
-- When the rules deny every row, the answer is exactly "I don't know" whatever the model wrote; a
-  format answer with `dont_know` true is exactly "I don't know" too.
 
 ## The checks
 
@@ -77,9 +64,7 @@ Each figure gets one status:
 A reference resolves when the evidence exists in this exchange and is a tool result, the row handle is one of
 its rows, and the column is one of its columns. A mismatch carries a `reason` a reader understands:
 
-- **No such reference**: "there is no evidence ev-9 in this exchange", "ev-1 is a document, not a tool result:
-  quote it", "ev-2 has no row r9", "r5 is a row of ev-3, not of ev-2", "ev-3 (hr.leave) has no column
-  gross_salary", "the answer places {f2} but gives no reference for it".
+- **No such reference**: "there is no evidence ev-9 in this exchange".
 - **Masked or hidden**: a hidden column never reaches the airlock, so it has no column to cite; a masked one
   arrives as `****` and is refused: "column iban of ev-2 is masked: it cannot be cited". Its figure shows `…`,
   never the stars.
@@ -98,11 +83,9 @@ its rows, and the column is one of its columns. A mismatch carries a `reason` a 
 - **Computations**: operands must be numbers in one unit ("add mixes EUR and GBP"); a division by zero is a
   mismatch. `percent_change` is in `%`; `divide` keeps the numerator's unit over a unitless count.
 - **Rankings and tables**: the ranked rows must be exactly the top or bottom n of the evidence by that column,
-  in order; rows tied at the cut may be either. "the rows are out of order: Leo Brandt (r7) ranks before Nora
-  Varga (r5)", "Tailspin Air (r7) belongs in the top 2 by contract_value_eur and is missing", "Fabrikam
-  Logistics (r6) is not in the top 3", "a row is ranked twice". A column whose rows are in different units cannot
-  be ranked ("gross_salary of ev-2 is in EUR and GBP"). A max or min names the row: "Nora Varga (r5) does not hold
-  the highest remaining_days of ev-3; Leo Brandt (r7) does".
+  in order; rows tied at the cut may be either.
+  A column whose rows are in different units cannot
+  be ranked. A max or min names the row.
 - **Quotes**: the words must be in the passage, whitespace aside: "these words are not in ev-1, passage 2". A
   quote that is not in the passage keeps its text, and its numbers and fact values are unsourced.
 
@@ -113,12 +96,7 @@ it numbers a list item at the start of a line. Its `reason` names a cell holding
 
 Typed facts: a value of a fact column ([the labels](#the-labels)) of any tool result of the exchange, typed in the
 text outside a placeholder, is an `unsourced` figure in the same sequence, shown as typed, unless the question holds
-the same phrase. The value is matched as a whole phrase: in any case, with any run of spaces between its words, at
-least three characters, and never inside a longer word or number (`insulin` is not in "insulinoma", `5 mg` is not in
-"2.5 mg"); of two values the longer wins ("insulin glargine", not "insulin"). A verbatim quote is the passage's words
-and is not scanned. The digits scan then runs over the text the facts leave, so `5 mg` typed from a `dose` column is
-one unsourced figure, not a bare `5`. The `reason` names a cell holding the value ("typed in the text, not
-referenced; ev-3 r4 drug holds the same value").
+the same phrase.
 
 The answer's `provenance` counts the figures, a table counting once: `status` is `has_mismatch` if any is a
 mismatch, else `has_unsourced` if any is unsourced, else `all_sourced`, and `no_figures` when there is none.
@@ -126,22 +104,7 @@ Quotes are listed apart, `quoted` or `mismatch`, and do not count.
 
 ## The labels
 
-A figure's labels come from the entity its tool read, which the plugin declares with the SDK:
-
-```java
-new Entity("hr.compensation", "...", "employee_id",
-        new Column("full_name", "e.full_name", Column.Type.TEXT),
-        new Column("gross_salary", "c.gross_salary", Column.Type.NUMBER).withUnitFrom("currency"),
-        new Column("currency", "c.currency", Column.Type.TEXT))
-    .withSubjectName("full_name");
-
-new Entity("hr.leave", "...", "employee_id",
-        new Column("year", "l.year", Column.Type.NUMBER),
-        new Column("remaining_days", "l.remaining_days", Column.Type.NUMBER).withUnit("days"))
-    .withSubjectName("full_name")
-    .withPeriod("year");
-```
-
+A figure's labels come from the entity its tool read, which the plugin declares with the SDK.
 - `withSubjectName(column)`: the column naming whom a row is about, for a reader. `withSubject(column)` stays
   what it was, the id a minimum group size counts and the `self` mark compares; an id is no name, so an entity
   that names none labels no subject.
@@ -151,9 +114,7 @@ new Entity("hr.leave", "...", "employee_id",
 - `Column.asFact()` (Python `fact=True`, or `with_fact()`) on a text column whose values are facts of the row, such as
   a drug, a dose, a frequency or a diagnosis: the model must cite one, and a value of it typed in the text is
   unsourced (Typed facts, above). A number column takes no mark, since every number typed is checked, and refuses it.
-  No text column is scanned unless marked: a status or category word ("overdue", "payment") is ordinary prose. The
-  hospital marks `drug`, `dose` and `frequency` of its medications and `diagnosis` and `icd10` of its diagnoses; the
-  other templates mark none.
+  No text column is scanned unless marked: a status or category word ("overdue", "payment") is ordinary prose.
 
 The tool server sends them with every result as `labels`, only for the columns the user may see: a masked
 column labels nothing, and a masked fact column is not scanned (its values arrive as stars). An aggregate's rows
@@ -201,45 +162,6 @@ run after the answer is grounded, on the grounded answer (each figure with its s
 subject, period and unit), the question and the evidence, and return PASS, WARN or FAIL with a sentence; their
 verdicts are `verification` on the answer, apart from the figures. A verdict annotates and never blocks, and a PASS
 says the rule found nothing wrong, not that the answer is right. To write one: [Write handlers](develop.md#write-handlers).
-
-The templates ship these, one class per language, as reference code for a project's own questions. The title is the
-handler's `@Description`, which the AIsolate UI shows in the airlock's graph.
-
-- `LatestReadingVerifier`, hospital ("Check the latest reading"): a question for the last, latest, most recent or
-  current reading is answered with the latest row of every series the answer cites (one patient's readings of a lab
-  test, the vitals, the ECGs or the sessions, among the rows the tool returned); earlier rows may come with it. "Last"
-  as a date ("last Thursday", "last night", "at last") is no such question.
-- `FormularyVerifier`, hospital ("Check the drugs named"): a drug of the hospital's medication list, read once
-  through its data source `ehr`, that the answer's own words name must be on a medication list the exchange returned;
-  words quoted from a note and what a figure or a table writes in are not the model's own, a drug the question names is
-  expected, and a drug the hospital never prescribes is not on the list the check knows.
-- `PatientVerifier`, hospital ("Check the patient asked"): when the question names a patient, every figure the
-  answer cites is about a patient it names.
-- `PeriodVerifier`, auditor ("Check the period asked"): when the question names a year, every figure and table cell
-  is for a year it names, read by the first year of its period ("FY2025" and "2025-10-03" are 2025); the cells a
-  computation is made of are not judged, and the years they span are expected too, so a growth shown from 2024 to
-  2025 passes. An amount in the question ("2000 EUR", "$2000", "2000%") is no year.
-- `CustomerVerifier`, company-sales ("Check the customer asked"): when the question names a customer, every figure
-  the answer cites is about a customer it names.
-
-A patient or a customer is named by the first word of three letters or more in the name, as a tool result's subject
-column holds it. A question the rule does not apply to (one that names no patient, customer or year, or does not ask
-for the latest) has nothing to check and passes. company-hr, the hr-contracts airlock, has none: its answers are quotes,
-which grounding checks. The rules are the templates' own words (English question words, ISO-like periods, their
-entities): potassium for troponin, profit for revenue or a group's average for one person's get past all of them,
-and a project adds a verifier for the question shapes of its own domain.
-
-## In the audit trail
-
-The audit line counts the answer's figures, `"figures": {"sourced": 1, "computed": 0, "unsourced": 0,
-"mismatch": 0}` (never a value), lists as `evidence` what its figures, tables and quotes cite, and records per tool
-call its `args`, the rule version, the SQL hash and `rows_hash`: the sha256 of the rows it returned, as compact
-JSON with each row's keys sorted and every number as plain decimal text without trailing zeros. An auditor who
-re-runs the governed query at the same revision gets the same hash, or sees that the data changed since ([Security,
-Audit trail](security.md#audit-trail)). The arguments are the model's, as it wrote them: it saw a masked column as
-`****`, so no masked value is among them, and a call the tool server refused records none. The counts stay in the audit trail (the **Audit** page, the API); the XBRL
-audit report carries each exchange's verifier verdicts instead ([Audit](audit.md#the-taxonomy)). The exchange's
-span carries the same four counts ([Observability](observability.md#traces)).
 
 ## Re-running a tool call
 
@@ -294,9 +216,8 @@ call that failed: there is nothing to re-run.
 
 ## The golden set
 
-`conformance/cases/grounding/` holds one set per template, read by both runtimes,: the evidence its tools return (the labels
-are the template's own entities', which the CLI's template test checks; `company-hr.json` keeps the HR entities the
-template had before it became the hr-contracts airlock) and answers in the format, each with one
+`conformance/cases/grounding/` holds one set per template, read by both runtimes: the evidence its tools return
+and answers in the format, each with one
 injected error or none, with the status every figure must get. `GoldenSetTest` runs them, no model involved:
 
 | Error | Injected as | Caught as |
@@ -312,11 +233,6 @@ injected error or none, with the status every figure must get. `GoldenSetTest` r
 | scale, sign | a scale word or sign beside the figure; a scaled or negated number typed | mismatch, unsourced |
 | masked | a masked column cited | mismatch |
 | tables, rankings | out of order, a row missing, a row of another tool result | mismatch |
-
-Every attribution error in a cited figure is a mismatch and every typed number unsourced, in all four templates;
-the correct answers are all sourced or computed. A typed text fact is in the hospital's set alone, the one template
-that marks fact columns, and company-sales' correct answer that writes "overdue" in prose stays clean: nothing marks
-it.
 
 ```
 ./gradlew :apps:airlock:test --tests '*GoldenSetTest*'

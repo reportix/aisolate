@@ -4,7 +4,7 @@ A project is one airlock: its code (tools, handlers and rule sets) and one `aiso
 `Airlock`. The space exists first, created in the AIsolate UI: it
 lists the roles that may ask every airlock of it, and the LLM and the data sources its airlocks share are set
 there too. Every deploy creates the airlock from the file's `Airlock`, or updates each field the document
-writes (a field it leaves out keeps what the AIsolate UI set). The `aisolate` CLI creates the project from a
+writes. The `aisolate` CLI creates the project from a
 template and deploys it into that airlock, in a cluster installed with the AIsolate UI (`headless=false`).
 An airlock runs only as a pod: the deploy becomes a pod pair there, and a chat such as
 the sample in `apps/chat` asks it.
@@ -12,13 +12,6 @@ the sample in `apps/chat` asks it.
 ## Install the CLI
 
 Install the `aisolate` CLI on macOS or Windows, or build it yourself: [Command-line interface](cli.md).
-
-The CLI bundles the SDKs of the checkout it was built from, the Java one (`libs/aisolate-sdk.jar`) and the
-Python one (`libs/sdk-python`, written into a Python project as `libs/aisolate-sdk/`). Rebuild it after
-pulling. A Java project builds with its own Gradle wrapper, which provisions JDK 25. A Python project builds
-with [uv](https://docs.astral.sh/uv/), which installs Python 3.13 when the machine has none, or, without uv,
-with `python3.13` on the PATH; with neither the build stops with
-`a Python project builds with uv (https://docs.astral.sh/uv/) or Python 3.13: …`.
 
 ## Create a project
 
@@ -31,11 +24,8 @@ aisolate create -s=hr-space -t=company-hr     # offline
 cd company-hr
 ```
 
-The project is Python by default; `--language=java` (`-l`) writes the same template in Java instead. Every template
-exists in both languages, with the same `aisolate.yaml`, the same `rules/*.json`, the same tools, entities and
-handlers by name: the airlock behaves the same, only the pods' images differ. A Python project is
-`pyproject.toml`, `src/<package>/` (`tools/`, `pre_llm/`, `post_llm/`), `rules/`, `tests/` (pytest) and the SDK
-in `libs/aisolate-sdk/`; [The Python artifact](python-artifact.md) has its layout and what its build writes.
+The project is Python by default; `--language=java` (`-l`) writes the same template in Java instead.
+[The Python artifact](python-artifact.md) has its layout and what its build writes.
 
 `create` writes the project into a directory named after the template, `./company-hr`, with
 `AISOLATE_SPACE=hr-space` in `.env` and the project's name, `company-hr`, in `pyproject.toml` (in
@@ -53,10 +43,6 @@ airlock it names. The CLI ships four templates:
 | `auditor` | none: `--airlock=<company>` is required | one audited company's books, minutes and policies, by the audit firm's auditors: one airlock per company, each defining its own data source `ledger` in the AIsolate UI |
 | `hospital` | `cardiology` | one department's part of the hospital's one health record, the space's data source `ehr`: `--airlock=cardiology` or `--airlock=psychiatry` decides which tools the airlock offers and whose notes it reads |
 
-`company-hr` and `company-sales` deploy one project each, in the demo into two spaces, and bring their own
-data source; `auditor` and `hospital` bring none, so the code of every company's or department's airlock is
-the same and the airlock decides what it reads.
-
 ```
 company-hr/
   aisolate.yaml                     the Airlock: its name, its own roles, the four groups, its LLM by id
@@ -69,28 +55,9 @@ company-hr/
   README.md, .gitignore               what each file does; .gitignore keeps .env and build/ out of git
 ```
 
-With `--language=java` the same project is a Gradle build, the same `aisolate.yaml` and `.env`:
-
-```
-company-hr/
-  src/main/java/com/acme/hr/   every class belongs to this airlock
-    pre_llm/ContractsContextPreparator.java   ContextPreparator, reads hr.documents on the data source hr
-    pre_llm/SessionMemory.java                ConversationMemory
-  src/test/java/com/acme/hr/   the tests, with FakeAIsolateManager standing in for AIsolate
-  build.gradle.kts                    one jar, named after the template
-  settings.gradle.kts, gradlew, gradle/, libs/aisolate-sdk.jar
-  README.md, .gitignore               what each file does; .gitignore keeps .env and build/ out of git
-```
-
-`company-hr` has no tools, no rules and no verifier: the contracts are all it reads. `company-sales/` adds them:
-`rules/clients.accounts.json` and `rules/clients.invoices.json`, the package `acme_sales` (`com/acme/sales/` in
-Java) with `TodayContext`, `SalesDocumentsContextPreparator`, `SessionMemory`, `SalesTools` and
-`CustomerVerifier`, and the data source `clients`; its Java build ships `rules/` at
-`aisolate/rules/<entity>.json`.
-
 `.env` holds `AISOLATE_ENDPOINT`, `AISOLATE_SPACE` and the variables the file reads
 ([.env](documents.md#env)). `libs/aisolate-sdk/` (`libs/aisolate-sdk.jar` in Java) is the one AIsolate library the
-project depends on. The project's own `README.md` says what each file does.
+project depends on.
 
 ## Where code goes
 
@@ -123,10 +90,7 @@ call with a generic error. It holds no connection and no rules: the MCP server c
 builds it from the entity's own expressions, never from model text. Within one airlock's code a tool name is
 published once and an entity declared once. A column is a SQL expression the plugin writes: a date column is
 exposed as ISO text (`o.updated_on::text`), so the model filters it with `gte` and `lt`; a derived column such
-as an invoice's status is a `CASE` expression. The `company-sales` template's `SalesTools` declares
-`clients.accounts` and `clients.invoices` on `clients`, with no identity join, because no row is anyone's own,
-and publishes `read_records` (at most 20 rows) and `aggregate_records`; each takes the entity it reads as an
-argument, an enum of the plugin's entities.
+as an invoice's status is a `CASE` expression.
 
 ## Write handlers
 
@@ -140,8 +104,7 @@ An airlock runs the handlers it lists, by class simple name, in `preLLM.contextP
 `preLLM.conversationMemory.handlers` and `postLLM.answerVerifier.handlers`. A handler listed nowhere exists but
 runs nowhere. A handler may name itself in a short title, two to four words, with `@Description("…")`
 (`com.reportix.aisolate.sdk.Description`), such as "Read employment contracts"; the AIsolate UI shows that title in the
-airlock's graph, and the class name when there is none. It may name the data sources it reads, `@DataSources("hr")`, which the graph shows as its Source. Within a stage the handlers run by `order()`, 0 unless the class overrides it, then by name. The pods fetch the airlock's code once
-at start from the backend and check its digest; code that does not arrive whole or does not load fails the start.
+airlock's graph, and the class name when there is none. It may name the data sources it reads, `@DataSources("hr")`, which the graph shows as its Source. Within a stage the handlers run by `order()`, 0 unless the class overrides it, then by name.
 
 A handler reads a data source through `AIsolateManager.dataSource(id)`: a `javax.sql.DataSource` on a data
 source the airlock resolves. An id the airlock does not resolve throws `IllegalArgumentException`
@@ -151,23 +114,10 @@ A handler reaches an LLM through `AIsolateManager.llm(id)`, by its id in the cat
 LLMs, its space's and the global ones ([Where LLMs and data sources are defined](concepts.md#where-llms-and-data-sources-are-defined)). The same
 LLM embeds (`embed(text)`, `embed(texts)`: one vector per text) and chats (`chat(prompt)`), as far as its model
 can: `aisolate.llm("nomic").embed(exchange.question())`. An unknown id, an embed on a model that cannot embed and a
-chat on one that cannot chat throw `LlmException`, an `IllegalArgumentException` with a plain message (`no model
-named gemma in this airlock's space or globally`, `granite4.1:8b (model granite) cannot embed: name an embedding model
-such as nomic in aisolate.llm(...)`); the pod logs a handler failing with it as `handler <name> failed at <stage>:
-<message>`, any other failure by its type alone. Ids are known only at run time: a deploy never checks them.
+chat on one that cannot chat throw `LlmException`, an `IllegalArgumentException` with a plain message.
+Ids are known only at run time: a deploy never checks them.
 
-The templates' handlers: `ContractsContextPreparator` reads `hr.documents` from the data source
-`hr` with pgvector and keeps at most 5 sections within cosine distance 0.6, with the owner predicate in the
-`WHERE` clause (the CEO reads every contract, anyone else their own) and the asking user's own sections marked as
-theirs; `SalesDocumentsContextPreparator` reads `clients.documents` from
-`clients` the same way and filters nothing: every caller the Sales airlock admits, holders of the space's roles among
-them, reads every client document, by design, so the space lists only roles whose holders may read them all;
-`SessionMemory` keeps each user's last three questions while the pod runs. The verifiers each judge one rule of their
-template's questions: company-sales' `CustomerVerifier` (every figure is about the customer the question names), the
-auditor's `PeriodVerifier` (every figure is for a year the question names) and the hospital's `LatestReadingVerifier`
-(a question for the latest reading is answered with the latest row), `FormularyVerifier` (every drug the answer names
-is in the records the tools returned) and `PatientVerifier` (every figure is about the patient the question names);
-company-hr, the hr-contracts airlock, has none. AIsolate's grounding writes every figure of the answer in from the
+AIsolate's grounding writes every figure of the answer in from the
 evidence and flags every number the model typed itself, and every value of a fact column
 ([Verification](verification.md)). A verifier gets the grounded answer and each evidence as JSON text
 (`groundingJson()` and `contentJson()` in Java, `grounding_json` and `content_json` in Python); Java project code reads
@@ -190,17 +140,15 @@ builder. The deploy refuses code whose rule sets do not parse or sit anywhere bu
 
 ## Write the project file
 
-`aisolate.yaml` is the airlock's one `Airlock` document: its name, description and own roles (created or updated on
-every deploy, a field it leaves out keeping what the AIsolate UI set), and the four groups: the LLM that answers by its
+`aisolate.yaml` is the airlock's one `Airlock` document: its name, description and own roles,
+and the four groups: the LLM that answers by its
 id (`spec.llm: granite`) with the `prompt` and `tools` under `spec`. It holds no credential: the LLMs and the data
 sources its code reads by id are the admin's, for all of AIsolate, on the space or on the airlock. Who may ask: the space lists its roles in the AIsolate UI, the
 airlock its own and its callers, in the file or in the AIsolate UI. The file as the template writes it, and what the
 deploy checks, are in [The project file](documents.md#the-project-file). An airlock created in the AIsolate UI
 has a name, a description, its roles and no code; the deploy fills its code, stages, LLM, prompt and
 tools from the project, and replaces its description with the project's `spec.description`, blank when
-the project has none. Another airlock of the same
-space, with other code, is the same project with another `metadata.name`, deployed: the deploy creates it, and
-the first keeps running with its own code.
+the project has none.
 
 ## Set the variables
 
@@ -221,9 +169,9 @@ aisolate logout
 
 `login` shows "Sign in with your account". Enter, or a click, opens your browser on the operators' identity provider's
 sign-in page (demo realm `aisolate`, client `aisolate-cli`, PKCE with a redirect to `127.0.0.1`); the URL is printed only when no
-browser can be opened. Sign in as a developer of the space you deploy into, `jasmine` in the demo's operators realm `aisolate`: the admin
-names you one of the space's developers; anyone else gets `You are not a developer of space acme: ask its
-admin to add you as Developer.` The session is kept
+browser can be opened. Sign in as a developer of the space you deploy into: the admin
+names you one of the space's developers.
+The session is kept
 per endpoint in `~/.aisolate/session.json`, readable by you only (`AISOLATE_HOME` moves it), refreshed
 silently, and ends after 90 days unused or with `logout`.
 
@@ -247,26 +195,12 @@ at another version, naming the package and both versions, and a package without 
 ([python-artifact.md](python-artifact.md#the-zip)). Without uv, a project with dependencies of its own does not
 build: install uv. The templates depend on nothing else.
 
-The zip has no size limit unless the install sets one: each pod fetches it from the backend at start, so a binary
-package such as numpy travels like any other. The manifest records the CPU it was built for, and a pod on another
+The manifest records the CPU it was built for, and a pod on another
 CPU refuses to start, naming the `--arch` to rebuild with.
 
 One call sends the built project and `aisolate.yaml` as written, with the values of the variables it reads,
-to `POST /v1/spaces/{space}/deploy`, the space being `AISOLATE_SPACE`. The backend:
-
-- reads the code: its tools, each with its plugin and data source, its handlers and its rule sets;
-- checks the file: one `Airlock`, its `metadata.name` the id of an airlock of the space, or of one to create;
-- checks the file against the code: every tool in `tools` and every handler the file lists is the code's;
-- checks the airlock with the global and the space's documents: its `llm` names an LLM it sees
-  (`llm: no model named granite in this airlock's space or globally`), and every data source a tool plugin names
-  is defined at one of the three levels;
-- creates the airlock when its id is new, or updates it in place with the new code and bumps its revision,
-  in one transaction;
-- turns the credentials of each data source the airlock defines itself into a Secret owned by the airlock;
-- applies the space to the cluster.
-
-Nothing is deleted. Every class of the project
-belongs to this airlock. The CLI prints the deploy's warnings, then the airlock with its change count
+to `POST /v1/spaces/{space}/deploy`, the space being `AISOLATE_SPACE`.
+Nothing is deleted. The CLI prints the deploy's warnings, then the airlock with its change count
 (`revision 1`, one more on every save or deploy; not the [revision](concepts.md#vocabulary) of its documents):
 
 ```
@@ -281,12 +215,9 @@ belongs to this airlock. The CLI prints the deploy's warnings, then the airlock 
 ```
 
 A refusal prints its reasons and exits 1 ([The deploy call](api.md#the-deploy-call)). Without a terminal (CI,
-a pipe) a missing session stops the deploy before the build. The code has no size limit unless the install sets one
-(`platform.backend.maxArtifactSize`, refused before anything is stored); the pods fetch it from the backend at
-start, so a bigger artifact starts more slowly. Within a minute
+a pipe) a missing session stops the deploy before the build.
+Within a minute
 `kubectl -n aisolate get airlocks` shows `hr-contracts` Ready ([Check status](release.md#check-status)).
-The second project deploys the same way: `aisolate create -s=acme-financial-group -t=company-sales`, then `deploy`
-in `./company-sales` creates `acme-financial-group/sales` with its own pod pair.
 
 ## Define airlocks in the AIsolate UI
 
@@ -299,38 +230,20 @@ airlock, its Overview, Details, Tools, LLMs and Data sources. In the order a pro
 
 - **New space** (the admin's): a name and a description; the id is generated from the name. The space's own
   pages come next, the admin's to change. The form has **Developers**, e-mails typed as chips, who edit the space in the UI, and **Roles**, the
-  roles that may ask every airlock of the space (the application users' roles, typed as chips), and either may be empty. **LLMs**:
-  the global ones, inherited, and the space's own; **Add LLM** takes an id, a provider, a URL and a model, and an
-  own id that a global one has replaces it. An LLM has no type: the same one chats or embeds, as far as its model
-  can. **Data sources**: a table of ids with their URL and credentials; **Add data
-  source** takes an id, a URL, a user and a password, a row's pencil edits it and its trash removes it. A
+  roles that may ask every airlock of the space (the application users' roles, typed as chips), and either may be empty.
+  A
   project deploys into an existing space.
 - **New airlock**, in the space: a name and a description; the id is generated from the name and names it
   in its endpoint path (the airlock **HR contracts** gets the id `hr-contracts`, which the template's `metadata.name`
-  names). A new airlock starts with no roles of its own and the callers `*`. Each of its three pages shows
-  the airlock's own first, then what it takes from the space, read-only. The **Roles** field takes the airlock's own roles,
-  who may ask it alone, maybe none, shown beside the space's, read-only; the callers, `*` for any. **LLMs**: the airlock's own rows over the global and the space's;
-  a row with the id of an inherited one replaces it for the airlock. **Data sources**: the airlock's own rows over the
-  space's; a row with the id of one of the space's replaces it for the airlock. An airlock exists
+  names). A new airlock starts with no roles of its own and the callers `*`.
+  An airlock exists
   before its first deploy, with no code, and runs nothing until it.
 - **`aisolate deploy`** into the airlock brings the airlock's code, its stages, its prompt and its data
   sources, and its description from `spec.description` in place of the one typed here ([Deploy](#deploy)).
-- **The airlock's own pages**, read-only, with a **Copy endpoint** button. **Overview**: the exchange left to right in the
-  order the code runs it, a node for each handler by its short title (context preparators and conversation
-  memories, then the LLM by its model, then the answer verifiers); before a deploy, one sentence says what to
-  run. **Details**: the endpoint with a **Copy** button, then the same in words with the class names, the LLM
-  and where each value comes from, the prompt, and the data sources with their origin. **Tools**: the tools the airlock lists (the ones the model may call), with
-  their data source and description, and its rule sets. An airlock without code shows no handlers and no tools
-  until `aisolate deploy` brings them; **Edit** changes its name and description, never the code, the stages or
-  the prompt.
-- A typed user and password become a Secret; the form shows the Secret's name, never a password, and a blank
-  password on edit keeps it. Every save applies at once and rolls the pods whose documents it changes onto the
-  new revision ([Names, ids and revision](documents.md#names-ids-and-revision)). The UI deletes no space
-  or airlock; the trash of a data source row removes the row and its Secret.
 
 ## Try the airlocks
 
-Sign in to a chat as an application user whose token carries a role the space or an airlock lists. This is the demo's realm `acme`, not the realm `aisolate` of the dashboard and the CLI, so both sessions coexist in one browser (the `jasmine` of each realm is a different account). Realm `acme` has an employee, the CEO (also a founder), a co-founder (an employee and a founder), an intern and a
+Sign in to a chat as an application user whose token carries a role the space or an airlock lists. Realm `acme` has an employee, the CEO (also a founder), a co-founder (an employee and a founder), an intern and a
 user without roles; `docker/keycloak/realm-acme.json` lists their logins. With a space `hr-space` that lists the role `ceo` and
 its `hr-contracts` airlock that lists `employee` as its own, a space that lists `founder` with a `sales`
 airlock with no roles of its own, and the two templates deployed, the chat lists the airlocks a user may ask (the
@@ -342,18 +255,6 @@ what ran: a line per verifier, with its note.
 | The employee | contracts | What is my notice period? | "three months to the end of a calendar month", quoted from their own contract, marked as their own; no tool call. |
 | The employee | contracts | The CEO's salary, asked by name | "I don't know": the context preparator passes them only their own contract. |
 | The CEO | contracts | The employee's notice period, asked by name | "three months to the end of a calendar month": the CEO reads every contract. |
-| The co-founder | sales | Which invoices are overdue? | The rows of `clients.invoices` whose `status` is `overdue`, under `founders`. |
-| The co-founder | sales | Total contract value by industry? | One row per industry from `aggregate_records`; the founders' rule sets no group minimum. |
-| The CEO | sales | What did we agree with Varnholt on the price cap? | The Pricing section of the agreement; evidence with source `client-documents`. |
-| The employee | sales | anything | Discovery lists no `sales` airlock for them; its endpoint answers 403. |
-| The intern | any | anything | Discovery lists no airlock; the endpoint answers 403. |
-
-Who may ask an airlock is the gate for everything it serves: the space's roles and its own. The rules filter
-only what the tools return, by the token's roles: a caller the airlock admits whose roles match no rule gets zero
-rows from the tools, never a 403. A context preparator decides in its own code what it passes on, and the answer
-may draw on it: `SalesDocumentsContextPreparator` passes every client document to every caller the Sales
-airlock admits. So give the space only roles whose holders may see all of what every airlock's context
-preparators read, and give someone who may see one airlock's only that airlock's roles.
 
 ## Start over
 

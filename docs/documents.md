@@ -70,64 +70,10 @@ spec:
     # language: python                           # a Python project's zip; absent for a jar
 ```
 
-The `company-sales` template deploys into a second space, `acme-financial-group`, which lists the two
-founders: its `Airlock` `sales` has no roles of its own (`roles: []`), so the space's roles may ask it, and the
-employee may not, since `employee` is a role of `hr-contracts` alone. The template's context preparator filters nothing, so the
-space lists only roles whose holders may read every client document. It reads the data source
-`clients`, a global one beside `hr`, offers the model the tools its code publishes (`tools`, `jar.tools`) and runs
-an answer verifier (`postLLM`). An airlock created in the AIsolate UI has no `llm` and no `prompt` until its first
-deploy, and runs nothing. No document carries rules: the rules that hold are the ones in the airlocks' code. Roles
-and callers admit: the space's roles, the airlock's own and the airlock's callers, or, for a token
-without an e-mail, the airlock's machine clients (`access.clients`); the token's roles also select the rules.
-
 ## The project file
 
 `aisolate.yaml` as `aisolate create -s=hr-space -t=company-hr` writes it. `aisolate deploy`
 sends it as written, with the values of the variables it reads.
-
-```yaml
-# The contracts airlock, in the order an exchange runs. The space it deploys into is
-# AISOLATE_SPACE in .env; the space is created in the AIsolate UI, where it lists its roles. The
-# LLMs and data sources are the admin's, defined for all of AIsolate or on the space or the
-# airlock: this file names them by id and holds no credential.
-# The Airlock below is created or updated on every deploy: each field it writes replaces
-# the airlock's, a field left out keeps what the AIsolate UI set.
-apiVersion: aisolate.dev/v1
-kind: Airlock
-metadata:
-  name: hr-contracts
-spec:
-  displayName: HR contracts
-  description: "Employment contracts: position, pay, working time, notice and confidentiality."
-  access:
-    roles: [employee]   # its own roles, besides the space's
-
-  # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
-  preLLM:
-    contextPreparator:
-      handlers: [ContractsContextPreparator]
-    conversationMemory:
-      handlers: [SessionMemory]
-
-  # LLM, the model writes the answer: the LLM granite, by id. The admin defines the LLMs, for
-  # all of AIsolate or on the space or the airlock; the code names one the same way, as the
-  # context preparator's aisolate.llm("nomic") does to embed. No tools: the contracts are all
-  # it reads.
-  llm: granite
-  prompt: >-
-    You are the Acme contracts assistant. Answer only from the employment contract passages
-    provided to you; each passage's title names whose contract it is. A question about my
-    contract (me, my, I) is about the asking user's own contract, the passages marked as theirs;
-    a question about a person is answered only from that person's contract. Quote the words
-    that answer, copied from the passage character for character: the text holds no digit, and
-    every number is only inside a quote. When no passage answers, reply exactly: I don't know.
-    Your reply is only the JSON object of the answer format, for example
-    {"text":"After the probation period your notice period is {q1}.","figures":[],"quotes":[{"id":"q1","passage":{"evidence":"ev-1","index":2},"text":"three months to the end of a calendar month"}],"dont_know":false}.
-
-  # No dataSources and no credentials: the code names its database by id, a handler with
-  # aisolate.dataSource(id), here hr. The admin defines it, with its role's password, for all of
-  # AIsolate or on the space or the airlock.
-```
 
 | In the project file | Rule |
 |---|---|
@@ -156,9 +102,7 @@ spec:
 | `AISOLATE_SPACE` | every one | the space given to `create -s` | the CLI: the space the project deploys into; required |
 
 No template carries a credential or a URL: the LLMs and data sources its code names by id are the admin's,
-defined for all of AIsolate, on the space or on the airlock in the AIsolate UI (in the demo, `hr` and `clients`
-for all of AIsolate, `ledger` and `ehr` on each airlock). An airlock's own data source would read its
-`username` and `password` from variables here.
+defined for all of AIsolate, on the space or on the airlock in the AIsolate UI.
 
 ## Rule set
 
@@ -178,19 +122,6 @@ A rule set lives in the airlock's code at `aisolate/rules/<entity>.json`, copied
   ]
 }
 ```
-
-A user the airlock admits whose roles match no rule gets zero rows from the tools, never a 403: the space's
-and the airlock's roles and the airlock's callers admit (a machine client, its `access.clients`), and the roles
-also select the rules. The rules filter
-only what the tools return; what a context preparator passes on is its own code's choice. Who may ask an airlock
-is the gate for everything it serves, so list on the space only the people who may see all of what every
-airlock's context preparators read, and on an airlock only those who may see all of its.
-
-`cardiology.ecgs.json` and `cardiology.labs.json` sit beside it with the same two rules for their entities: a
-doctor reads the rows of their own patients, the chief aggregates in groups of five or more. The `company-sales`
-template's
-`clients.accounts.json` and `clients.invoices.json` hold one rule each, `founders`: the role `founder` reads
-and aggregates every row.
 
 | Field | Meaning |
 |---|---|
@@ -213,7 +144,7 @@ compiled: [Rules become SQL](security.md#rules-become-sql).
 | Name | Form |
 |---|---|
 | Airlock id | A global slug, `^[a-z]([a-z0-9-]{0,39}[a-z0-9])$`, generated from the name (`-2`, `-3`, … when taken or when its cluster name would collide). It names the airlock in the endpoint path, after its space's id. |
-| Cluster name | `<space>-<airlock>`, unique across the install and never a space's id: `ab` with `cd-ef` and `ab-cd` with `ef` would share pods and Secrets, so the second is refused (409). Messages, logs and the CLI write an airlock `<space>/<airlock>`: `hr-space/hr-contracts`. Every create holds one PostgreSQL advisory lock while it checks and saves, so two cannot both pass. |
+| Cluster name | `<space>-<airlock>`, unique across the install and never a space's id: `ab` with `cd-ef` and `ab-cd` with `ef` would share pods and Secrets, so the second is refused (409). Messages, logs and the CLI write an airlock `<space>/<airlock>`: `hr-space/hr-contracts`. |
 | Data source id, LLM id | `^[a-z0-9][a-z0-9_-]{0,40}$`, once per list. The same id globally, on the space and the airlock is one data source (one LLM), the nearest definition winning. |
 | Pods | `<space>-<airlock>-airlock` and `<space>-<airlock>-mcp-server`. The longer one is at most 63 characters, Kubernetes' limit: an airlock that leaves no room is refused when created (400), naming the length. |
 | ConfigMaps | `<space>-<airlock>-config` (the documents the airlock serves), `aisolate-discovery` (`<space>.json` per valid space: what discovery lists, no document). |

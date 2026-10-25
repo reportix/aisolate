@@ -20,34 +20,10 @@ curl -s -X POST "$AISOLATE/v1/spaces/acme/airlocks/hr/chat" \
   -d '{"message": "What is my gross salary?"}'
 ```
 
-```json
-{
-  "answer": "Your gross salary is 235,000 EUR.",
-  "dont_know": false,
-  "segments": [{"text": "Your gross salary is "}, {"figure": "f1"}, {"text": "."}],
-  "figures": [{"id": "f1", "display": "235,000 EUR", "value": "235000", "status": "sourced",
-    "source": {"evidence": "ev-1", "entity": "hr.compensation", "column": "gross_salary", "row_key": "1",
-               "subject": "Nora Varga", "unit": "EUR"}}],
-  "tables": [],
-  "quotes": [],
-  "provenance": {"status": "all_sourced", "sourced": 1, "computed": 0, "unsourced": 0, "mismatch": 0},
-  "evidence": [{"id": "ev-1", "source": "read_my_records", "name": "hr.compensation", "rows": 1, "data_source": "hr"}],
-  "verification": {"verified": false, "verdicts": []},
-  "revision": "a2cf258ece3d",
-  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736"
-}
-```
-
 | Field | Meaning |
 |---|---|
-| `answer` | The text the user gets, every figure written in by AIsolate from the evidence |
 | `segments`, `figures`, `tables`, `quotes` | The answer in pieces and where each figure, table and quote comes from: `status` `sourced`, `computed`, `unsourced` (a number or a fact value the model typed) or `mismatch`, with a `reason` ([API](api.md#the-chat-endpoint), [Verification](verification.md)) |
 | `provenance` | `status`: `all_sourced`, `has_unsourced`, `has_mismatch` or `no_figures`, and the four counts. A workflow that must not act on an unchecked number branches on it |
-| `dont_know` | `true` when the answer is empty or begins with "I don't know": nothing the caller may read supports one |
-| `evidence` | One entry per thing the answer rests on: `id` (the id the figures cite), `source` (the tool, or the context preparator that added passages), `name` (what it read: the entity), `rows` (how many rows or passages), `data_source` (the data source a tool read, `null` for passages) |
-| `verification` | `verified` is `true` when at least one verifier ran and every verdict is `PASS`; without verifiers it is `false` and `verdicts` is empty. A `verdict` is `PASS`, `WARN` or `FAIL` |
-| `revision` | The release of the airlock that answered |
-| `trace_id` | The exchange's trace, the one its audit line names |
 
 The header must be exactly `Accept: application/json` (or `application/*`): an `Accept` that also lists `*/*` or
 `text/event-stream`, as many HTTP clients send by default, gets the stream, so set it explicitly in the tool.
@@ -103,17 +79,10 @@ The `aisolate-integrations` repository's README has the steps for each tool.
 
 ## What the workflow sees
 
-The workflow is a caller like a chat: the token decides what the answer may contain. The tool server applies the
-airlock's rules to the user named in the token, so the user the workflow signs in as is the user whose rows the
-answer may rest on. A row that user may not read never reaches the model, and so never the answer. A machine
-client's token names no user: the rules see the roles set on the client, and with no e-mail for the identity join
-no row is its own.
-
 The answer document goes one step further and carries no rows at all. The workflow gets the answer text, the
 evidence **ids**, the name of the tool and of the entity each one came from, and **how many** rows it held;
 never the rows, columns or passages themselves. A downstream node that logs, mails or stores the answer cannot
-leak data the answer does not already state, and a denied question is `dont_know: true` with no evidence,
-never "access denied".
+leak data the answer does not already state.
 
 Use `dont_know` and `provenance` as the workflow's own gates: both templates carry the status (`provenance`) and its
 four counts on every item, so a workflow routes an answer that is `has_unsourced` or `has_mismatch` to a person

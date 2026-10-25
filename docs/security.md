@@ -42,34 +42,6 @@ sequenceDiagram
     AP-->>Chat: answer_chunk, verification, done
 ```
 
-- **1 to 6, once per session.** The chat has no login of its own. It calls the release host without a token,
-  reads the protected-resource metadata the 401 names, registers itself at the identity provider and signs the
-  user in with PKCE. The token carries `sub`, `email`, the roles, `aud = aisolate` and the chat's client id
-  as `azp`. See [Connect a client](api.md#connect-a-client).
-- **7 to 8.** The release's Ingress routes the airlock's path to its airlock pod. Gate 1 checks
-  issuer, signature, expiry and audience; gate 2 checks that the token holds a role the space or the airlock lists
-  and that the airlock admits the calling client, or, for a token without an e-mail, that its `azp` is one of the
-  airlock's machine clients (`access.clients`). On success the SSE stream opens and the exchange runs on
-  the request's own virtual thread.
-- **9 to 13.** The `ContextPreparator` handlers the airlock lists run with the user's roles and e-mail, read
-  their data source and add the passages the user may read, under an evidence id. `ConversationMemory` handlers add what
-  the airlock remembers. The pod lists its MCP server's tools once, on its first exchange, and sends the model
-  the platform preamble, the airlock's system prompt, the question, the passages and the tool schemas. Nothing
-  about the user is in that prompt. Gate 3: only the tools the airlock lists are callable; the model's call goes
-  to the browser as `tool_call`.
-- **14 to 17.** The airlock pod calls the tool over MCP with the same token and the airlock and
-  revision in `_meta`. Gate 4 validates the token again. Gate 5 reads the airlock's policy from the mounted
-  documents at that revision, re-checks admission and the tool list, takes the data source the tool's plugin
-  names, resolves the business key through the identity join there, evaluates the rules and compiles the
-  obligations and the model's validated arguments into one parameterised SELECT on that data source's
-  own role. The result is an evidence document.
-- **18 to 21.** The browser receives the `evidence` event without the rows. The model receives the rows and
-  writes the answer, in AIsolate's answer format: every figure a reference to a cell. Gate 6 replaces it with
-  "I don't know" when every evidence is empty. AIsolate writes each figure in from the evidence and marks it
-  sourced, computed, unsourced or mismatched ([Verification](verification.md)); a masked or hidden value never
-  becomes one. Gate 7 runs the airlock's `AnswerVerifier` handlers, which annotate the answer. The pod sends
-  `answer_chunk`, `verification` and `done`, which carries every figure's provenance.
-
 | Situation | Result |
 |---|---|
 | No token, forged signature, expired token, token for another audience | 401 before any model or data access |
@@ -80,16 +52,14 @@ sequenceDiagram
 | Model calls a tool the airlock does not list | Call dropped, model told the tool is unavailable |
 | Model names an unknown, hidden or masked column, or an unknown operator | Tool error "Invalid arguments", no SQL built |
 | Database or driver failure in the MCP server | Fixed tool error by kind (login refused, unreachable, failed) with its data source id, no SQL text or credential leaks |
-| Tool result that is not an evidence document | Model told the result was unreadable, answer "I don't know" |
 | The MCP server cannot be listed | `error` event; the exchange fails closed |
-| The model server refuses, times out or cannot be reached | `error` event: the model is not available right now |
 
 ## The gates
 
 | Gate | Where | Checks | On failure |
 |---|---|---|---|
 | 1 | airlock pod, `SecurityConfig` of `libs/identity` | Issuer, JWKS signature, expiry, `aud = aisolate` | 401 with `WWW-Authenticate: Bearer resource_metadata=…` |
-| 2 | airlock pod, `AirlockAdmissionService` | a token role in the space's `access.roles` or the airlock's own, exact; `azp` in the airlock's `access.callers` (`*` admits any client registered at the identity provider). A token without an `email` whose `azp` is exactly one of the airlock's `access.clients` is admitted instead, the callers not consulted (`*` is no wildcard there). No `email` is needed for a person | 403 "forbidden"; the pod's log carries `<space>/<airlock> does not admit roles [<roles, sorted>] from client <azp>` (reason `role`), or `does not admit client <azp>` (reason `client`), and the audit trail one `refusal` line with `reason` `role` or `client` |
+| 2 | airlock pod, `AirlockAdmissionService` | a token role in the space's `access.roles` or the airlock's own, exact; `azp` in the airlock's `access.callers` (`*` admits any client registered at the identity provider). A token without an `email` whose `azp` is exactly one of the airlock's `access.clients` is admitted instead, the callers not consulted (`*` is no wildcard there). No `email` is needed for a person | 403 "forbidden"; the audit trail one `refusal` line with `reason` `role` or `client` |
 | 3 | airlock pod, `ChatExchange` and `AgentLoopService` | Only the tools the airlock lists become callbacks; any other name resolves to a stub that answers instead of running; arguments must be a JSON object; at most three tool calls per exchange | Call dropped and the model told, or `error` event |
 | 4 | MCP server, `SecurityConfig` | The same token checks as gate 1, independently | 401 |
 | 5 | MCP server, `GovernedQueryService` with `RulesEvaluator` and `SqlCompiler` | The airlock named in `_meta` at the revision the server loaded; the same admission as gate 2 (the space's and the airlock's roles, the airlock's callers and machine clients; the roles also select the rules) and the tool list re-checked; the tool's plugin and its data source; rules evaluated for the action; arguments validated against the catalog; obligations compiled into the SQL | Silent: evidence with `row_count 0`, never an error the model could read |
@@ -101,17 +71,15 @@ code, so the agent loop has no way to reach the token; only the MCP client may r
 may `org.keycloak` be imported: AIsolate speaks only OIDC discovery and JWKS. The airlock pod has no database
 of its own, no Spring JDBC and no write endpoint; it hands the airlock's handlers a `javax.sql.DataSource` per
 data source the airlock resolves. The backend has no model client and no MCP client. Every backend endpoint
-names who may call it, one expression of the backend's `Access`: the admin (`aisolate-admin`), a developer of the
-space in its path (a member the space lists by e-mail, read from the space, never from the token), a
-developer of any space, the audit's readers (`aisolate-auditor` too), or any token for the spaces
-list, which holds only what the caller may open; with one exception the rules pin by name: the audit ingest,
+names who may call it,
+with one exception the rules pin by name: the audit ingest,
 which no user calls ([Audit trail](#audit-trail)).
 
 ## Identity
 
 One token, issued at login and validated by every AIsolate process it reaches. Two trust domains: the **operators**
-(admins, auditors, developers: the UI and the CLI) are trusted by the backend at `platform.identity.operators`, and the
-**application users** (who ask airlocks) by the airlock and MCP pods at `platform.identity`; by default one provider
+(admins, auditors, developers: the UI and the CLI) are trusted by the backend, and the
+**application users** (who ask airlocks) by the airlock and MCP pods; by default one provider
 serves both. With two providers, a token of one domain presented in the other is refused (401, issuer mismatch). AIsolate ships no identity provider. A space and an airlock list the roles they admit
 ([Roles](concepts.md#vocabulary)); the identity provider authenticates the people and holds who has them. A
 space lists its developers by e-mail: they edit in the UI and are no askers. People live in the identity provider
@@ -124,7 +92,7 @@ alone. AIsolate holds no service account there and no directory: it never search
 | `email` | `eric@example.com` | The user, fed to row filters and the audit line, not to admission; the business key the identity join matches to the organisation's records. A machine client's token has none |
 | `realm_access.roles` | `["employee"]` | Admission (a role the space or the airlock lists, exact) and rule selection; the claim path is `AISOLATE_ROLES_CLAIM` |
 | `aud` | `aisolate` | Every AIsolate process refuses tokens meant for other services |
-| `azp` | the calling client's id, the demo chat's `acme-chat`, a realm `acme` client (`aisolate-ui` and `aisolate-cli` are the backend's, realm `aisolate`) | The calling client, checked against the airlock's `access.callers`; on a token without an `email`, the machine client, checked against the airlock's `access.clients` |
+| `azp` | the calling client's id | The calling client, checked against the airlock's `access.callers`; on a token without an `email`, the machine client, checked against the airlock's `access.clients` |
 | `exp` | five minutes after login | Refresh with rotation in the browser |
 
 The token is never exchanged. The airlock pod forwards it unchanged to its MCP server on every call, and the
@@ -152,7 +120,7 @@ a masked column would reveal its value. Values are bound as parameters with the 
 
 **Catalog and SQL.** The catalog the plugin declares is the allow-list of what a tool may query. SQL is
 assembled from the catalog's own expressions; model text never enters it, and the model's filters can only
-narrow the result. The two shapes, columns shortened:
+narrow the result. The shape, columns shortened:
 
 ```sql
 -- read_records for Eric (own-record): self flag, masked iban, no internal_notes, row filter AND model filters
@@ -160,27 +128,19 @@ SELECT (c.employee_id = ?) AS self, c.employee_id AS employee_id, e.full_name AS
 FROM hr.compensation c JOIN hr.employees e ON e.id = c.employee_id
 WHERE (c.employee_id = ?) AND (e.full_name ILIKE ?)
 ORDER BY c.employee_id LIMIT ?
-
--- aggregate_records for the CEO (leadership): min_group_size becomes HAVING over distinct subjects
--- (people, not rows), also without GROUP BY
-SELECT e.department AS department, avg(c.gross_salary) AS value, count(*) AS n
-FROM hr.compensation c JOIN hr.employees e ON e.id = c.employee_id
-GROUP BY e.department HAVING count(DISTINCT c.employee_id) >= ? LIMIT ?
 ```
 
 The query runs on the data source the tool's plugin names, as its own role (SELECT on the entities' tables, a
-statement timeout; `default_transaction_read_only` on a role no context preparator writes embeddings through).
-The MCP server's pool is read-only whatever the role allows, and a statement gives up after 12 seconds. The tool returns an evidence document: entity, row
+statement timeout).
+The MCP server's pool is read-only whatever the role allows. The tool returns an evidence document: entity, row
 count, columns, rows, rule version, matched rule names and a hash of the SQL shape. Rows travel to the model,
 never to the browser.
 
 ## Deny is silent
 
-Eric asks "What does Nora Varga earn?". The model adds a filter on the name; the MCP server ANDs it under
-Eric's obligation `employee_id = 2`, so the query returns no row. The evidence says `row_count 0`, every
-evidence is empty, and the answer becomes exactly "I don't know", whatever the model wrote. The same rule makes
-an employee's aggregate return nothing (no rule grants `aggregate` to `employee`) and suppresses the CEO's
-average over a department with fewer than three people. The model is never told what lies behind a rule, and no
+The evidence says `row_count 0`, every
+evidence is empty, and the answer becomes exactly "I don't know", whatever the model wrote.
+The model is never told what lies behind a rule, and no
 answer ever reads "access denied".
 
 ## Credentials
@@ -192,9 +152,8 @@ Secret's name (`secret_ref`), with a fresh nonce per row and the name as associa
 to another row does not open. It writes the same values into one Secret per credential, owned by the `Global`,
 `Space` or `Airlock` resource that defines it, and the rows keep only its name. The backend's Role may create
 and delete Secrets, never read, list or patch them: the Secret is for the pods, the row is the backend's own
-copy. A blank password on edit keeps both; new credentials make a new Secret and a new row, so the revision
-changes and the pods roll, and the replaced Secret and row are deleted. The controller hands both pods of an
-airlock the `username` and `password` keys of every data source the airlock resolves. No password sits in a
+copy.
+No password sits in a
 document, and no pod reads Secrets from the Kubernetes API. The Secrets themselves are stored as the cluster
 stores them; AIsolate uses no external secret store.
 
@@ -204,15 +163,14 @@ realm role `aisolate-admin` whose login is fresher than five minutes, by the tok
 browser to the identity provider and back. The reveal takes tokens of the AIsolate UI's client alone, by the
 token's `azp` (`AISOLATE_CREDENTIALS_REVEAL_CLIENTS`, default `aisolate-ui`): the CLI's and a chat client's
 tokens are refused (403 `not from the AIsolate UI`), as is a token without `azp`. A token without `auth_time`
-cannot reveal either. Keycloak puts it only into tokens from a browser login, so a reveal from a script or the
-CLI is refused and the AIsolate UI is the way. The UI shows a value for 30 seconds and forgets it; everyone
-but an admin sees a lock, "Only an admin can reveal it". Through the API a developer can replace a credential,
+cannot reveal either.
+Through the API a developer can replace a credential,
 never read it. A Java deploy is the exception (see the residual risks): its code runs in the backend, which
 holds the key.
 
 Every store, delete, reveal and refused reveal is one row of `credential_events`: who, when, which Secret and
-level, and for a refusal why (`unknown`, `wrong_client`, `no_auth_time`, `stale_login`, `no_ciphertext`, `key_changed`,
-`unreadable`). It is append-only as `audit_events` is, written as the role `aisolate_audit_writer` with triggers
+level, and for a refusal why.
+It is append-only as `audit_events` is, written as the role `aisolate_audit_writer` with triggers
 that refuse UPDATE, DELETE and TRUNCATE, and no value is ever in a row, a log line or a list response.
 
 ## Pod isolation
@@ -229,7 +187,7 @@ a Python airlock's code never runs there.
 | Network | what each pod reaches | the namespace's default-deny and one policy per pod, below |
 | Code | what runs | images pinned by digest, the chart and the controller both refusing a reference without one; the Java images are distroless (a JRE and its libraries, no shell, no package manager), the Python ones the same with the interpreter; each airlock's code fetched from the backend at start and its sha256 checked against the digest its `Airlock` names, a mismatch or a failed fetch failing the start ([Where an airlock's code comes from](#where-an-airlocks-code-comes-from)); read-only root filesystem, the fetched code only in the pod's `/tmp` |
 | Credentials | what each pod holds | both pods of an airlock hold the roles of the data sources the airlock resolves, and nothing of any other airlock; neither holds a ServiceAccount token |
-| Discovery | which pod a user's token reaches outside its airlock's path | the release's `aisolate` Service selects only the discovery pods: the airlock image with the `aisolate-discovery` list alone, no documents, no code, no data source, no model, so discovery and a stray chat path (404) carry no token to an airlock's code. No airlock's pod mounts the list; it holds only airlock ids, names, descriptions and tools, callers, clients and roles, by name |
+| Discovery | which pod a user's token reaches outside its airlock's path | the release's `aisolate` Service selects only the discovery pods: the airlock image with the `aisolate-discovery` list alone, no documents, no code, no data source, no model, so discovery and a stray chat path (404) carry no token to an airlock's code. |
 | Process | memory, CPU, rollout | its own pod with limits, under the restricted Pod Security Standard (non-root, no capabilities) |
 | Kernel | what a kernel exploit reaches | `platform.airlock.runtimeClassName` (gVisor, Kata) on every pod the controller renders: airlock, MCP server and discovery |
 
@@ -258,26 +216,20 @@ except through the ingress.
 With the AIsolate UI installed, its pods share the namespace with their own policies inside the default-deny.
 A host on `platform.egress.proxy.domains` gets no direct rule: the pods reach it through the egress proxy
 (CONNECT only, port 443, exact names, every connection logged). An airlock whose resolved URLs name a host
-neither mapped nor proxied is Invalid and runs nothing. The peer map itself is checked twice, by the chart at
-install and by the controller at start: a `cidr` is `/8` or longer and never stands next to selectors, and every
-peer but `ingressFrom` names one port; `0.0.0.0/0`, a cidr with selectors or a missing port fails the render and
-the start rather than rendering a rule that bounds nothing.
+neither mapped nor proxied is Invalid and runs nothing.
 
 ## Where an airlock's code comes from
 
 A deploy brings the airlock's artifact (a jar, or a Python zip with its dependencies) to the backend, which keeps
 it in its database with its digest, `sha256:<hex>` of the bytes; the `Airlock`'s `spec.jar.digest` names
 it. At start each of the airlock's two pods fetches it from the backend's ingest port, `GET
-/v1/code/<space>/<airlock>/<digest>`, with the airlock's code token: HMAC-SHA256 of
-`code/<space>/<airlock>` under the install's key, rendered by the controller into the Secret
-`<space>-<airlock>-code`, mounted into those two pods alone. The backend answers 401 without a token,
-403 for another airlock's (or its ingest token, a different message), and 404 when the airlock holds other code
-by now. The pod writes the bytes to its `/tmp` (the root filesystem stays read-only), hashes them as they arrive
-and refuses to start unless they hash to the digest; a failed fetch is retried with backoff (a connection
-failure or a 5xx only), then refuses the start too, and the pod is not Ready until the code is loaded. The code
+/v1/code/<space>/<airlock>/<digest>`, with the airlock's code token
+mounted into those two pods alone.
+The pod writes the bytes to its `/tmp` (the root filesystem stays read-only), hashes them as they arrive
+and refuses to start unless they hash to the digest;
+the pod is not Ready until the code is loaded. The code
 never travels through the API server or a ConfigMap, and no artifact size limit applies but the operator's
-(`platform.backend.maxArtifactSize`). A headless install has no backend to fetch from: there an airlock with code
-does not start.
+(`platform.backend.maxArtifactSize`).
 
 ## Context preparators
 
@@ -289,19 +241,14 @@ and adds the closest passages to the context under an evidence id. The predicate
 The rules filter only what the tools return. A context preparator's passages reach every user the airlock admits,
 as far as its own predicates let them, and they are evidence: gate 6 keeps the answer when they hold anything.
 Who may ask an airlock is the gate for everything it serves, so list on the space only the roles whose holders may see all
-of what every airlock's context preparators read, and on an airlock only those who may see all of its. The demo's
-`SalesDocumentsContextPreparator` filters nothing: every user the Sales airlock admits, the holders of the space's roles
-among them, reads every client document and the board memo.
+of what every airlock's context preparators read, and on an airlock only those who may see all of its.
 
 | Threat | Enters through | Held by | Left to the developer |
 |---|---|---|---|
 | Indirect prompt injection: a document carries instructions | the passages in the model's context | no credential in the prompt; passages and handler context travel in a user-role `<context>` message the preamble calls data, never in the system message; only the airlock's governed tools are callable; only text leaves | a wrong figure or misleading advice: `AnswerVerifier` handlers annotate, they do not block |
-| Mis-tagged documents (`audience`, `owner_email`) | the data | the handler shows only what is tagged for everyone or owned by the user | tagging is the data owner's responsibility |
 | Ranking leak: filtering after top-k reveals a restricted passage by its absence | the search query | the audience and owner predicates in the `WHERE` clause, before `ORDER BY` and `LIMIT`, as the template has them | the handler author's invariant |
 | Embedding egress: questions and sections go to the embedding model | the embedding call | an LLM of the airlock's catalog, a local Ollama in the demo | a confidential corpus needs an embedding model inside the network |
 | Model egress: an OpenAI-compatible model outside the network receives the questions, passages and tool results | the main LLM and code's `llm(id)` calls | its host must be one the admin mapped (`platform.egress.hosts`); its API key stays in a Secret, never in a document, a response or a log line | choose a provider whose terms fit the data; a key with the least scope |
-| Poisoned corpus: whoever writes documents writes the model's context | write access to the table | the handler's role may update only the embedding column | restrict who writes documents |
-| Passages are personal data | the browser, the logs | evidence names the source and counts the passages; logs name handlers and count rows; neither carries text | |
 
 ## Audit trail
 
@@ -317,10 +264,9 @@ Where it goes: AIsolate keeps it. The airlock pod hands every line to the backen
 append-only table chained per airlock ([Audit](audit.md)); the AIsolate UI's **Audit** page and the API
 read it back, for admins and the `aisolate-auditor` role, and for a space's developers its
 own events alone. The pod also
-prints each line to its stdout (`platform.audit.stdout`, on by default), written to the logger `aisolate.audit`
-with nothing in front of the object, for a SIEM to collect: the pod's own log shares the stream in Spring
-Boot's usual format, a line that starts with `{"ts"` is an audit line, and no other line does. Without the
-AIsolate UI (`headless`) there is no backend, and stdout is the only copy.
+prints each line to its stdout (`platform.audit.stdout`, on by default)
+with nothing in front of the object, for a SIEM to collect:
+a line that starts with `{"ts"` is an audit line, and no other line does.
 
 ```json
 {"ts":"2026-10-16T20:58:38.434Z","event":"exchange","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","space":"acme","airlock":"sales","revision":"7b2280eab4b5","user":"eric@example.com","client":"acme-chat","question":"What does Northwind owe?","answer":"Northwind owes 18,400 EUR.","outcome":"answered","reason":null,"tools":[{"name":"read_records","args":{"entity":"clients.invoices","filters":[{"column":"client","op":"ilike","value":"Northwind"},{"column":"status","op":"eq","value":"open"}]},"data_source":"clients","rows":1,"rule_version":"7b2280eab4b5","sql_hash":"3f9a1c0d2b7e","rows_hash":"5c1e9b0a4d7f2e8c3b6a1d0f9e8c7b6a5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a","error":null}],"evidence":["ev-1"],"verifiers":[{"name":"CustomerVerifier","verdict":"PASS"}],"figures":{"sourced":1,"computed":0,"unsourced":0,"mismatch":0},"grounding":{"segments":[{"text":"Northwind owes "},{"figure":"f1"},{"text":"."}],"figures":[{"id":"f1","display":"18,400 EUR","status":"sourced","source":{"evidence":"ev-1","entity":"clients.invoices","column":"amount_eur","row_key":"412"}}],"tables":[],"quotes":[]},"model":{"provider":"ollama","name":"qwen3.6:27b-q4_K_M","calls":2,"input_tokens":1840,"output_tokens":212},"duration_ms":6114}
@@ -339,7 +285,7 @@ AIsolate UI (`headless`) there is no backend, and stdout is the only copy.
 | `answer` | What the user was told, "I don't know" included when the airlock replaced the model's answer; `null` unless the model answered |
 | `outcome` | `answered`, `dont_know` (the answer is empty or begins with "I don't know"), `refused` (a 403) or `error` |
 | `reason` | A refusal: `role` (the token holds no role the space or the airlock lists, or has no e-mail and its `azp` is none of the airlock's machine clients) or `client` (the `azp` is not admitted). An error: `llm_unavailable` (the model server could not be reached or refused), `no_model_endpoint` (the airlock names a model this install has no provider for), `deadline` (the exchange's time was spent) or `internal`. Otherwise `null` |
-| `tools` | One entry per tool call the model made: `name`, `args`, `data_source`, `rows`, `rule_version`, `sql_hash`, `rows_hash` and `error`. `args` are the arguments the call ran with, as the model wrote them, so the governed query can be re-run ([Verification, Re-running a tool call](verification.md#re-running-a-tool-call)); the model only ever saw a masked column as `****`, so no masked value is among them, and a call the tool server refused (a filter on a hidden or masked column among them) records none: `null`. `rows` is `null` when the call failed. `data_source` is the data source the tool's plugin reads, as the tool server reports it with the evidence or the failure; `null` when the tool reads none or the tool server named none. `rule_version` and `sql_hash` are the rules applied and the shape of the statement; `rows_hash` is the sha256 of the rows returned (compact JSON, each row's keys sorted, numbers as plain decimal text without trailing zeros): an auditor re-running the governed query at the same revision gets the same hash, or sees that the data changed. All three `null` when the call failed. `error` is `null` when the call returned evidence, else why it did not: `login_refused` (its data source refused the login), `unreachable` (it could not be reached) or `failed` (anything else); never the tool server's words, a credential or a statement |
+| `tools` | One entry per tool call the model made: `name`, `args`, `data_source`, `rows`, `rule_version`, `sql_hash`, `rows_hash` and `error`. `args` are the arguments the call ran with, so the governed query can be re-run ([Verification, Re-running a tool call](verification.md#re-running-a-tool-call)); no masked value is among them. `rows` is `null` when the call failed. `rule_version` and `sql_hash` are the rules applied and the shape of the statement; `rows_hash` is the sha256 of the rows returned: an auditor re-running the governed query at the same revision gets the same hash, or sees that the data changed. All three `null` when the call failed. `error` is `null` when the call returned evidence, else why it did not: `login_refused` (its data source refused the login), `unreachable` (it could not be reached) or `failed` (anything else); never the tool server's words, a credential or a statement |
 | `evidence` | The evidence ids the answer cites: those its sourced and computed figures, its tables and its quotes rest on, and any `[ev-1]` its text still names; passages and tool results alike; empty when nothing was answered |
 | `verifiers` | One entry per verifier of the airlock: `name` and `verdict` (`PASS`, `WARN` or `FAIL`) |
 | `figures` | The answer's figures by provenance, `sourced`, `computed`, `unsourced` and `mismatch`, a table counting once ([Verification](verification.md)): counts, never a value. `null` when nothing was answered |
@@ -369,16 +315,12 @@ airlock writes it after the fact and reads it back nowhere.
   backend's ingest port, which answers the ingest and the airlock's code fetch and nothing else, so a pod that holds its users' tokens gains
   no route to the backend's API.
 - **The ingest and the code fetch are the endpoints without a user.** Every other backend endpoint names the
-  roles that may call it; these two check the airlock's token instead, each its own. The ArchUnit rule keeps
-  them the only exceptions, and
-  `AuditIntegrationTest` pins that it refuses a missing token (401), another airlock's or space's
-  token and a user's token (403), and is not answered on the API port.
+  roles that may call it; these two check the airlock's token instead, each its own.
 - **What the airlock's own code could still do.** Its handlers run in the airlock pod's JVM and can read what
   the pod reads, its ingest token among them. Such code could post lines of its own, or print lines that look
   like audit lines to stdout. It cannot write another airlock's lines, change or remove a stored one (the pod has
-  no route to the backend's database), or reach the backend's API through the ingest port. A line it posts is
-  attributed to its airlock, its space and airlock fixed by the token, as the airlock's own; it could
-  also fill its pod's buffer, which, failing closed, stops only that airlock. The trail is as trustworthy as
+  no route to the backend's database), or reach the backend's API through the ingest port.
+  The trail is as trustworthy as
   every jar the airlock loads, and the airlock's developer answers for that code
   ([Residual risks](#residual-risks)).
 - **Fail closed.** A pod that cannot keep a line refuses new questions (503 `audit unavailable`) rather than
@@ -393,13 +335,13 @@ airlock writes it after the fact and reads it back nowhere.
   stale or forged time defeats it, and one that sends none turns reveal off, which fails closed
   ([Identity provider requirements](install.md#identity-provider-requirements)).
 - A developer of a space can replace a credential of the space or its airlocks without seeing it through the
-  API. Replacing is a `stored` and a `deleted` row, not a reveal. A Java deploy runs the developer's code inside
+  API. A Java deploy runs the developer's code inside
   the backend process (next bullet), which holds `AISOLATE_CREDENTIALS_KEY` and the database password: a
   developer who deploys Java code can decrypt every credential of the install, until deploys stop running
   code in the backend.
 - A deploy runs a Java airlock's code in the backend. To list a jar's tools and handlers, the backend loads its
-  plugin and handler classes, which runs their static initialisers and no-arg constructors, and calls each
-  plugin's `name`, `entities`, `tools` and `dataSource`, inside the backend's process and before any check. That
+  plugin and handler classes
+  inside the backend's process and before any check. That
   code holds what the backend holds: its ServiceAccount token (the namespace's Spaces, Airlocks
   and the Secrets it creates), its database password, and the requests and tokens of everyone using the AIsolate UI.
   Being made Developer of a space is therefore code execution in the backend, whichever space. A Python project
@@ -413,8 +355,7 @@ airlock writes it after the fact and reads it back nowhere.
   pair is the boundary, not the class loader. Planned: the project's code runs in a container of its own.
 - The MCP server accepts any valid `aisolate` token that reaches its port and does not check `azp` against a
   list of its own. It re-runs the airlock's admission, machine clients included, and the same rules, so the
-  yield equals what that user or machine client may see anyway, and its NetworkPolicy admits only its own airlock pod to that port (a pod labelled
-  `aisolate.dev/scraper` reaches its management port, where only health and metrics answer).
+  yield equals what that user or machine client may see anyway, and its NetworkPolicy admits only its own airlock pod to that port.
 - Both pods of an airlock receive the user and password of every data source the airlock resolves, and may reach
   each of their hosts. A beaten airlock pod can query the tools' tables as their read-only role, outside the
   rules.
@@ -422,7 +363,6 @@ airlock writes it after the fact and reads it back nowhere.
   the organisation's service mesh or certificates.
 - DNS tunnelling through kube-dns stays open; only Cilium's DNS rules or a CoreDNS without upstream forwarding
   close it.
-- The egress proxy runs one replica. If it is down when the JWKS cache expires, every airlock rejects tokens.
 - Admission trusts the token's `email` as the identity provider issues it
   ([Identity provider requirements](install.md#identity-provider-requirements)). A machine client is admitted
   on its `azp` alone when the token has no e-mail: list only a confidential client whose single grant is client
@@ -437,12 +377,11 @@ airlock writes it after the fact and reads it back nowhere.
   deploy, an unmapped host or an invalid install setting takes the airlock down rather than leaving it on its
   last good revision ([What the controller checks](release.md#what-the-controller-checks)).
 - On the chat path an airlock that exists but refuses the user answers 403, one that does not exist
-  404: any valid token can tell which names exist. Discovery hides a refusing airlock like an unknown one; the
-  chat path keeps the difference so a client can say "not for you" rather than "not found".
+  404: any valid token can tell which names exist.
 - `min_group_size` holds per query, not across queries. Two aggregates that each cover enough people can differ
   by one: the sum over a department minus the sum over that department without one name is that person's value.
   A role allowed `aggregate` with a minimum group size can therefore learn an individual's value with a few
   calls, and a prompt injection can make the model place them. Give `aggregate` only to roles that may know the
   values it sums.
 - Data leaves through the allowed destinations: in the answer, or to a model outside the network, which sees the
-  prompt by design. Ollama has no authentication; run it where it has no egress of its own.
+  prompt by design.

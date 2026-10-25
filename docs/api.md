@@ -18,8 +18,7 @@ A chat, agent or application connects with nothing configured but AIsolate's URL
    which carries the audience).
 3. Read the provider's metadata (RFC 8414), register the client (RFC 7591; confirm it before the next sign-in and
    register again if the provider forgot it, RFC 7592), and sign the user in with Authorization Code and PKCE.
-   Keep the token in memory. A provider may refuse browser-originated registrations; the sample chat forwards
-   the registration through its own server route.
+   Keep the token in memory.
 4. Send the token on every call. `GET /v1/airlocks` lists the airlocks this user may use, in every space, with
    the endpoint it may post to. A client names the airlock it talks to.
 
@@ -47,10 +46,10 @@ from your workflow](integrate.md).
 | `POST /credentials/{secretRef}/reveal` | backend | admin, signed in within five minutes | A stored API key or data source login in clear, `{values: {apiKey}}` or `{values: {username, password}}`, `Cache-Control: no-store`; every call is recorded ([below](#post-v1credentialssecretrefreveal)) |
 | `GET /spaces/{space}` | backend | admin, developer of the space | The space with its `developers` (e-mails) and `roles` (the roles that may ask every airlock of it), its own `llms` and `data_sources`, and `caller_role`, what the caller may do there: `admin` or `developer` |
 | `POST /spaces`, `PUT /spaces/{space}` | backend | admin | Create a space, with no developer yet if need be; edit its name, description, developers, roles, LLMs and data sources |
-| `DELETE /spaces` | backend | admin | Every space with its airlocks and their code, the rows in one transaction; then, with a cluster, their resources and Secrets, waiting up to 45 s for the pods to go. No confirmation and no undo: the install's clean slate. Create a space and an airlock again before the next deploy |
+| `DELETE /spaces` | backend | admin | Every space with its airlocks and their code, the rows in one transaction; then, with a cluster, their resources and Secrets. No confirmation and no undo: the install's clean slate. |
 | `POST /spaces/{space}/deploy` | backend | admin, developer of the space | The CLI's one call, below |
 | `GET /spaces/{space}/airlocks`, `GET /spaces/{space}/airlocks/{airlock}` | backend | admin, developer of the space | The airlocks, by name, digit runs as numbers; each with its roles, callers, `clients` (its machine clients), endpoint, revision, form (`llm`, `prompt`, `context_preparators`, `memory_handlers`, `tools`, `verifiers`, `llms`, `data_sources`), its `main_llm: {id, provider, url, model, from}` (`from` `airlock`, `space` or `global`; `null` when `llm` resolves to nothing) and code: `jar: {digest, size, tools, handlers, rules}`, `null` without code |
-| `POST /spaces/{space}/airlocks`, `PUT /spaces/{space}/airlocks/{airlock}` | backend | admin, developer of the space | Create an airlock with its name, description, roles, callers, clients, LLMs and data sources (the id is generated, or pinned with `id`); edit them in place, which bumps its revision, one more on every save or deploy: a counter, not the release [revision](concepts.md#vocabulary) in `x-aisolate-revision`, twelve hex digits of the SHA-256 of its documents. An airlock made here has no code, so it lists no tools and no handlers until a deploy brings them, with its `llm` and `prompt`; a save keeps what the last deploy brought |
+| `POST /spaces/{space}/airlocks`, `PUT /spaces/{space}/airlocks/{airlock}` | backend | admin, developer of the space | Create an airlock with its name, description, roles, callers, clients, LLMs and data sources (the id is generated, or pinned with `id`); edit them in place, which bumps its revision, one more on every save or deploy: a counter, not the release [revision](concepts.md#vocabulary) in `x-aisolate-revision`, twelve hex digits of the SHA-256 of its documents. |
 | `GET /audit/events`, `GET /audit/events/{id}`, `GET /audit/events/{id}/export`, `GET /audit/export`, `GET /audit/verify`, `GET /audit/data-error` | backend | admin, auditor; a developer for the spaces they develop | The audit trail: the exchanges and refusals, newest first; one with all it recorded; all a search finds, or one event, as a PDF, JSON or XBRL file; whether an airlock's chain is intact; the data source an airlock could not read ([The audit endpoints](#the-audit-endpoints)) |
 | `GET /monitoring` | backend | admin, developer of any space | Which of Monitoring's views the install has: `{tracing, metrics}`, each `true` when its store is configured; the AIsolate UI shows the rail item and a tab per view |
 | `GET /metrics?space=&airlock=&period=` | backend, with a metrics store configured (404 otherwise) | admin; a developer for the spaces they develop | Monitoring's charts ([The metrics endpoint](#the-metrics-endpoint)) |
@@ -61,24 +60,20 @@ from your workflow](integrate.md).
 A space's and an airlock's `name` is its label, optional: a blank or missing one, on create or on a `PUT`, is
 stored as the id, so every list, header and discovery answer shows the id instead.
 
-A caller who is neither the admin nor a developer of the space gets 403 with `detail` naming it: `You are not a
-developer of space acme: ask its admin to add you as a developer.`; the other refusals' 403 says `forbidden`. A
-space's developers and roles are the admin's: a space form's `developers` is a list of e-mails (one without an `@`,
-blank or repeated, case ignored, is 400: `developers: eric is no e-mail`) and its `roles` a list of role names. The
-identity provider holds who has a role; there is no user list and no directory to search.
+A caller who is neither the admin nor a developer of the space gets 403 with `detail` naming it.
 
 Who may ask an airlock is the holders of its space's roles and of its own (see [Roles](concepts.md#vocabulary)); a developer asks like anyone, by a role. A create form that
 sends no `roles` starts the airlock with no roles of its own, and one that sends no `callers` with `*`. An
 airlock's own roles need not be the space's, and either list may be empty: an airlock nobody may ask is allowed.
-A role is a non-blank name with no whitespace, listed once; `*` is 400 (`roles: * is no role: list each role; only callers take * for any`).
-A `PUT` that leaves out `roles` clears the airlock's own roles; `roles` may be empty, an empty `callers` is 400 (`callers: must name at least
-one calling client`). `clients`, the machine clients admitted on a token without an e-mail, may be empty and
-are client ids matched exactly: a blank, repeated or spaced one, or `*`, is 400 (`clients: * is no wildcard: list
-each client id`). A `PUT` that leaves out `clients` clears them too; the AIsolate UI has no field for them and
+A role is a non-blank name with no whitespace, listed once; `*` is 400.
+A `PUT` that leaves out `roles` clears the airlock's own roles; `roles` may be empty, an empty `callers` is 400.
+`clients`, the machine clients admitted on a token without an e-mail, may be empty and
+are client ids matched exactly: a blank, repeated or spaced one, or `*`, is 400.
+A `PUT` that leaves out `clients` clears them too; the AIsolate UI has no field for them and
 sends them back unchanged on every save.
 Removing a role from a space never touches its airlocks. An airlock is created with a name and a description alone;
 its `llm` and `prompt` come with `aisolate deploy`, and until both are there it runs nothing. An airlock names the LLM that
-answers by id (`llm`), resolved, once set, at every create, save and deploy: `llm: no model named granite in this airlock's space or globally`.
+answers by id (`llm`), resolved, once set, at every create, save and deploy.
 
 An LLM (a model, in the UI) is `{id, provider, url, model}` and has no type: the same entry chats or embeds as far
 as its model can. `provider` is `ollama` or `openai` (an OpenAI-compatible server, its `url` the API's base with
@@ -89,24 +84,21 @@ a row keeps it while its `url` stays (`llms[0].api_key: required again with a ne
 row names none (`llms[0].api_key: an Ollama model takes no API key`), and a project's rows take none.
 The admin's global ones, a space's and an airlock's own (`llms`) are one catalog by id, the nearest
 replacing the farther whole; data sources likewise. A space's or an airlock's GET returns its own rows only: the
-inherited ones are `GET /llms`, `GET /data-sources` and the space's. An entry is refused on its field:
-`llms[1].id: granite is listed twice`, `llms[0].provider: bedrock is not one of [ollama, openai]`, `llms[0].model:
-required`, and the URL rules' messages on `llms[i].url`.
+inherited ones are `GET /llms`, `GET /data-sources` and the space's.
 
 With a cluster, every create and save of a space, an airlock, a global LLM or a global data source
 (which applies the install's one `Global`) is applied to it before the answer,
 which says in the header `AIsolate-Cluster` whether the cluster took it: `applied`, or `not applied` (the
 backend log says why; the backend applies every space again every five minutes). A `PUT` may send `If-Match`
 with the `updated_at` (a space) or the `revision` (an airlock) its form was read at: when another
-save came between, it is refused with 409 `updated_at: Saved by someone else since you opened it; reload it and
-save again.` (`revision: …` for an airlock), so a stale tab cannot give a removed user access back. Without the
+save came between, it is refused with 409,
+so a stale tab cannot give a removed user access back. Without the
 header the last save wins.
 
 A save of a space or an airlock, or a delete of a global LLM or data source, that would leave an airlock
 without what it resolves today, its main LLM or a data source its code reads, is 400: the controller would hold
-that airlock back and it would serve no one. The message names the airlocks and where to define it instead, for
-example `llms: acme/hr and acme/sales would have no model granite; define it on the airlock first`, and for a
-global delete `id: acme/hr would have no model granite; define it on its space first`. Define an LLM nearer before
+that airlock back and it would serve no one. The message names the airlocks and where to define it instead.
+Define an LLM nearer before
 removing it farther out.
 
 Every airlock's pods are named `<space>-<airlock>-mcp-server` and similar, at most 63 characters, as
@@ -163,22 +155,11 @@ Content-Type: application/json
 - The message is at most 4,000 characters; a blank or longer one is 400.
 - The release's Ingress routes the path to that airlock's pod. At a pod, any other airlock is 404.
 - At most three tool calls per exchange. One exchange runs at most `AISOLATE_EXCHANGE_MAX_DURATION`.
-- The answer is grounded: when every evidence is empty the answer is exactly "I don't know". Every figure in
-  it is written in by AIsolate from a cell the model cites, or computed from such cells, and checked; a number or
-  a fact value the model typed itself is flagged unsourced ([Verification](verification.md)).
+- The answer is grounded ([Verification](verification.md)).
 - `Accept: text/event-stream`, or no preference (`*/*`, none), is the stream below. A caller that cannot read
   server-sent events, such as a workflow tool or a script, sends `Accept: application/json` and gets the whole
   exchange as one document, with the same token, admission and rules. Send exactly `Accept: application/json`;
   a list that also contains `*/*` or `text/event-stream` gets the stream.
-
-```
-POST /v1/spaces/acme/airlocks/hr/chat
-Authorization: Bearer <token>
-Accept: application/json
-Content-Type: application/json
-
-{"message": "What is my gross salary?"}
-```
 
 ```json
 {
@@ -239,10 +220,6 @@ Content-Type: application/json
   audit line names ([Observability](observability.md#traces)); the airlock starts it, whatever `traceparent`
   the caller sent, and it is `null` only where nothing traces.
 - Those twelve fields, in that order, are the whole document.
-- An exchange that cannot finish is a problem document, not a frame: 503 "The model is not available right
-  now. Please try again in a moment." when the model server refuses, times out or cannot be reached, 503 "The
-  airlock's model endpoint is not available" when the airlock names a model this AIsolate has no endpoint for,
-  and 500 "The assistant could not complete the request" otherwise.
 
 ## SSE events
 
@@ -285,8 +262,6 @@ data: {"evidence_ids":["ev-1"],"grounded":true,"answer":"Your gross salary is 78
   out or cannot be reached; "The airlock's model endpoint is not available" when the airlock names a model provider
   this AIsolate has no client for; "The assistant could not complete the request" for the tool-call limit, the
   exchange deadline and anything unexpected. The cause stays in the pod's log.
-- AIsolate queues nothing in front of the model: a busy model server reaches the user as the first of those
-  two messages, and the user retries.
 
 ## The audit endpoints
 
@@ -375,11 +350,11 @@ gets their spaces' lines, another space's 403), every page of it, as one file to
 
 | `format` | |
 |---|---|
-| `pdf` | `aisolate-audit-2026-10-19.pdf`: a plain report to read. Its heading: the search, the period, when and by whom it was generated; then one block per line, newest first: the time (UTC), space / airlock, user, outcome (and its reason), question, answer, the tools called with their rows, tokens and duration. A character its font cannot draw prints as `?` |
+| `pdf` | `aisolate-audit-2026-10-19.pdf`: a plain report to read. |
 | `json` | `aisolate-audit-2026-10-19.json`: `{"events": [...]}`, newest first, each entry what `GET /v1/audit/events/{id}` gives: `id`, `received_at`, `prev_hash`, `hash` and `event`, the line as stored |
-| `xbrl` | `aisolate-audit-2026-10-19.xbrl`: the AIsolate Audit report ([Audit](audit.md#export)), one XBRL 2.1 instance in XML (xBRL-XML), each exchange a context of the typed dimension `aisolate:ExchangeAxis`. Its period is whole UTC days, from `from`'s (the oldest line's without one) to `to`'s (today without one); its entity `AISOLATE_AUDIT_ENTITY` ([Configuration](configuration.md)). A line the report cannot use is left out |
+| `xbrl` | `aisolate-audit-2026-10-19.xbrl`: the AIsolate Audit report ([Audit](audit.md#export)), one XBRL 2.1 instance in XML (xBRL-XML), its entity `AISOLATE_AUDIT_ENTITY` ([Configuration](configuration.md)) |
 
-Another `format` is 400 `format: pdf, json or xbrl`. The file is built in the backend's memory.
+Another `format` is 400 `format: pdf, json or xbrl`.
 
 ### `GET /v1/audit/events/{id}/export?format=`
 
@@ -393,11 +368,6 @@ Re-walks one airlock's chain, oldest to newest, and says whether it is intact:
 ```json
 {"space": "acme", "airlock": "hr", "status": "ok", "events": 1042, "first_id": 1, "last_id": 1042,
  "head": "e3b0…64 hex digits", "broken": null}
-```
-
-```json
-{"space": "acme", "airlock": "hr", "status": "broken", "events": 1042, "first_id": 1, "last_id": 1042,
- "head": "e3b0…", "broken": {"id": 517, "reason": "altered"}}
 ```
 
 `status` is `ok` or `broken`; an airlock without lines is `ok` with `events` 0 and the ids and `head` `null`.
@@ -524,18 +494,12 @@ metrics store did not answer` when Prometheus fails.
 }
 ```
 
-A line's points are [epoch seconds, value], one per `step_seconds`, a value Prometheus could not compute left out:
-exchanges and tokens (in and out, never the provider's total) per minute, the 95th percentile of the exchange
-duration in seconds. A bar counts over the whole period, what it counts in `name`: a refusal's reason, a tool;
-the largest first, none that is zero. The queries are the dashboard's (`examples/grafana-dashboard.json`), per
-minute where it is per second, each rate's window at least the step.
-
 ## The code fetch
 
 `GET /v1/code/{space}/{airlock}/{digest}`, on the backend's ingest port 8085 alone (the API port answers
 404, and no Ingress routes to it): how an airlock's two pods get its artifact at start
 ([The code](configuration.md#the-code)). `Authorization: Bearer <code token>`, the token the controller renders
-into the airlock's Secret: HMAC-SHA256 of `code/<space>/<airlock>` under the install's ingest key, so it
+into the airlock's Secret, so it
 admits that airlock's code alone and no audit line. `{digest}` is the `sha256:<hex>` of `spec.jar.digest`.
 
 - 200 `application/octet-stream` with `Content-Length`: the bytes, streamed from the database a chunk at a time;
@@ -551,9 +515,9 @@ Errors are RFC 9457 problem documents.
 |---|---|
 | 400 | An invalid form, with field errors; a blank or too long message; a deploy the backend refuses, with the reasons |
 | 401 | No token, a forged or expired one, or one for another audience, with `WWW-Authenticate: Bearer resource_metadata=…` |
-| 403 | `forbidden`. At an airlock pod: a user neither its space nor its airlock lists, or a calling client it does not admit; the reason goes to the pod's log (`<space>/<airlock> does not admit roles [<roles>] from client <azp>`) ([The gates](security.md#the-gates)). At the backend: a token without the UI roles; a reveal's refusals add a `reason` property (`wrong_client`, `no_auth_time`, `stale_login`) ([reveal](#post-v1credentialssecretrefreveal)) |
+| 403 | `forbidden`. At an airlock pod: a user neither its space nor its airlock lists, or a calling client it does not admit; the reason goes to the pod's log ([The gates](security.md#the-gates)). At the backend: a token without the UI roles; a reveal's refusals add a `reason` property (`wrong_client`, `no_auth_time`, `stale_login`) ([reveal](#post-v1credentialssecretrefreveal)) |
 | 404 | `unknown airlock`, `unknown space`, `unknown credential`; at a pod, any path but its own |
-| 409 | A reveal's three refusals (`no_ciphertext`, `key_changed`, `unreadable`) ([reveal](#post-v1credentialssecretrefreveal)). A create whose id is taken, then one whose cluster name, `<space>` or `<space>-<airlock>`, another one has (a deploy's too): `An airlock with the id hr already exists in this space.`, `The id cd-ef can't be used here: it would collide with the airlock ef in space ab-cd. Choose another id.` The same message is in `errors`, on its field (`id`). An id derived from the name skips both |
+| 409 | A reveal's three refusals (`no_ciphertext`, `key_changed`, `unreadable`) ([reveal](#post-v1credentialssecretrefreveal)). A create whose id is taken, then one whose cluster name, `<space>` or `<space>-<airlock>`, another one has (a deploy's too) |
 | 500, 503 | The JSON form of a chat exchange that could not finish, as the [chat endpoint](#the-chat-endpoint) says: 503 when the model server cannot be reached or the airlock's model has no endpoint, 500 otherwise; the stream puts the same sentence in an `error` frame |
 
 ## The deploy call
@@ -571,58 +535,31 @@ The backend reads the code first and refuses (400) code it cannot use:
 
 - `jar: required`, `jar: not a jar file`, and, only when the operator set a limit (`AISOLATE_MAX_ARTIFACT_SIZE`, the
   chart's `platform.backend.maxArtifactSize`; none by default), `jar: larger than 500 MiB, the most this install takes`;
-- `jar: nothing to load: no ToolPlugin class, no handler class, no aisolate/rules file`;
-- `jar: handler SessionMemory is declared twice`;
 - code the MCP server would refuse to start with, in [its words](configuration.md#mcp-server): `jar: tool
   read_records is published twice`, `jar: plugin hr-tools declares entities but names no data source`,
-  `jar: rule set hr.compensation: rule own-record names column ibna no plugin declares`;
-- `jar: aisolate/rules/<path>: a rule set is rules/<entity>.json`;
-- `language: java or python, not <language>`.
+  `jar: rule set hr.compensation: rule own-record names column ibna no plugin declares`.
 
 The upload is written to disk as it arrives and stored in 1 MiB chunks, never held whole in memory. A Python zip is
 read, never extracted or imported: its `aisolate-manifest.json` against
 [its schema](python-artifact.schema.json), its rule files, then the same checks as a jar's, each error starting
-`artifact: `: `artifact: not a zip file`, ``artifact: no aisolate-manifest.json: build the project with
-`python -m aisolate build` ``, `artifact: aisolate-manifest.json /language: …` (a schema error, at its JSON
-pointer), `artifact: entry <name> is a symlink`, `artifact: entry <name> is not a plain path inside the zip`,
-`artifact: aisolate-manifest.json lists the rule files [...], the zip holds [...]`, `artifact: tool <name> names
-plugin <plugin>, which the manifest does not list`, and the catalog's own words (`artifact: rule set
-hr.compensation: rule own-record names column ibna no plugin declares`).
+`artifact: `.
 
 Then the file. It refuses (400):
 
 - anything but one `Airlock` (a `Space`, a second `Airlock`, another kind):
   `aisolate.yaml: a project is one Airlock; the Space is defined in the AIsolate UI`;
-- an `Airlock` with a space, `aisolate.yaml: Airlock hr: spec.space is AISOLATE_SPACE's to set; leave
-  it out`; then, in the loader's words, an unknown field or a value it refuses (`aisolate.yaml: Airlock hr:
-  …`), and, each prefixed `Airlock <name>: `, what the airlock form refuses, such as `roles: * is no role: list each
-  role; only callers take * for any`;
-- a data source with a `secretRef` (`… spec.dataSources[i].secretRef is AIsolate's to set; give username and
-  password`), and a `spec.jar` (`… spec.jar is the deploy's to set`);
-- a model with a `secretRef` (`… spec.llms[i].secretRef is AIsolate's to set; give the model's API key in the
-  AIsolate UI`): a project holds no key;
 - a variable without a value, a URL that carries a credential, an LLM provider other than `ollama` or `openai`;
 - a tool the file lists and the code lacks: `aisolate.yaml: Airlock <name>: spec.tools
-  export_payslips is not a tool of this airlock's code`;
-- then, each problem prefixed
-  `Airlock <name>: `, an `llm` that the file, the space and the global LLMs do not define
-  (`llm: no model named granite in this airlock's space or globally`; ids the code names are not checked), an id past
-  Kubernetes' 63 characters (`id: it would run as …`), a handler the code lacks (`context_preparators: X is not a context preparator of this airlock's
-  code`, likewise `memory_handlers` and `verifiers`), and a data source a tool plugin names and nothing defines (`tools: plugin hr-tools reads
-  data source payroll, which this airlock does not define`);
-- then, 409, an id whose cluster name another one has:
-  `id: The id cd-ef can't be used here: it would collide with the airlock ef in space ab-cd. Choose another id.`
+  export_payslips is not a tool of this airlock's code`.
 
 An airlock id another space holds
 is 409, `An airlock with the id hr already exists in space other.`; an unknown space is 404. Otherwise, in one
 transaction, the file's `Airlock` creates the airlock, or updates in place the one the AIsolate UI or an earlier
-deploy created: each field it writes is saved over the stored one (a field it leaves out keeps what the AIsolate
-UI or the last deploy set; nothing different, nothing saved), with the new code, stages, prompt, main LLM, LLMs,
+deploy created: each field it writes is saved over the stored one,
+with the new code, stages, prompt, main LLM, LLMs,
 data sources and description of the project and a new revision; each data source's credentials become a Secret;
 the space is applied. Nothing is deleted.
 
 The response carries `airlock: {id, name, revision, endpoint, created, updated}` (both false: as it was),
 `jar: {digest, tools, handlers}`, `warnings` and `cluster: {applied, problem}`. A warning names what the code
-and the file leave unused: `tool export_payslips of this project is not in tools, so the model cannot call
-it`, `verifier X of this project is listed nowhere and runs nowhere` (likewise a context preparator or a
-conversation memory).
+and the file leave unused.

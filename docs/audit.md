@@ -19,29 +19,12 @@ no backend, so there the stdout line is the only copy.
 1. The airlock pod writes the line to its buffer: one file per line on an `emptyDir` of the pod
    (`/var/lib/aisolate/audit`, at most 64 MB of lines), so a restarted container keeps what was not sent.
 2. One sender hands the oldest line to the backend's ingest, `POST /v1/audit/events` on its ingest port 8085,
-   with the airlock's **ingest token**, and deletes it once the backend took it (201, or 200 for a line it
-   already holds). While the backend is away it retries with backoff, from half a second to thirty, in order:
-   no line overtakes another. A line the backend refuses as no audit line (400) is dropped and logged, so it
-   cannot hold back every line after it.
+   with the airlock's **ingest token**, and deletes it once the backend took it.
+   While the backend is away it retries, in order: no line overtakes another.
 3. **Fail closed.** When the buffer is full, the pod refuses new questions with 503 `audit unavailable` until it
    drains: no exchange runs that the trail could not keep. An exchange already admitted is always kept. Chart
    value `platform.audit.failClosed` (default `true`); `false` keeps answering and drops the lines that do not
    fit, counted in `aisolate.audit.dropped`. `aisolate.audit.buffered.bytes` is the buffer's fill.
-4. A pod that stops (a redeploy replaces it) tries for ten seconds to hand over what is left; what it could not
-   is logged by its size, as the `emptyDir` goes with the pod.
-
-**The ingest token.** The controller renders one Secret per airlock, `<space>-<airlock>-audit`, and
-mounts it into that airlock's pod alone; its MCP server and the discovery pods get none. The token is
-HMAC-SHA256 of `<space>/<airlock>` under the install's ingest key, a Secret the chart generates
-(`audit-ingest`) and gives the controller and the backend only. The backend takes a line only with the token of
-the airlock the line names (403 otherwise), so one airlock's pod cannot write another's lines, and keeps no table
-of tokens. The pod's NetworkPolicy reaches the backend's ingest port and no other port of it; the ingest port
-answers nothing but the ingest, and the API port never answers the ingest.
-
-**SIEM forwarding (optional).** Each line is also printed to the pod's stdout on the logger `aisolate.audit`, one
-JSON object per line with nothing in front of it, for a log collector to ship to a SIEM. Chart value
-`platform.audit.stdout` (default `true`); `false` keeps the lines in AIsolate alone. Without a backend the line
-is always printed.
 
 ### Storage
 
@@ -58,21 +41,14 @@ client, outcome, reason, question, answer, figure counts, tokens, duration), and
   the first line that fails: `altered` (its line or a column no longer gives its hash) or `removed` (it no
   longer follows the line before it). What that proves and what it does not: [Security, Audit
   trail](security.md#audit-trail).
-- A retry whose answer was lost sends the same line again; the backend finds it by its digest and answers with
-  the stored id, so a line is stored once.
 
 ### Retention
 
 The table is partitioned by month (UTC) of receipt. The backend keeps the current month and
 `platform.audit.retentionMonths` months before it (default 84, seven years) and drops older months whole, at
-start and every six hours; it also creates this month's and next month's partition ahead of time. Dropping a
+start and every six hours. Dropping a
 month is the only way a line leaves, and it runs as the table's owner, not as the writer. After a drop, the
 oldest month kept anchors the chain: verify starts at its first line.
-
-The trail is only as durable as the backend's database: the chart keeps it on the PersistentVolumeClaim `db`
-(`persistence.postgres.storage`), which outlives the pod and goes with `helm uninstall`. Back that database up.
-A headless install has no backend: there the trail is the pods' stdout alone, kept by your log pipeline or not
-at all.
 
 ### Reading it
 
@@ -129,20 +105,9 @@ The report's entity is `AISOLATE_AUDIT_ENTITY`, an LEI or `<scheme>:<id>`, the i
 ([Configuration](configuration.md)). Its period is whole UTC days: from `from`'s day (the oldest line's without
 one) to `to`'s (today without one).
 
-An audit line the report cannot use (no space, airlock or time; an unknown outcome or verdict; a negative
-or fractional count) is left out. An exchange is reported once, from its first line.
-
 The report holds the question and the answer as they were asked and given: a hospital's report holds what its
 doctors asked about patients and what they were told, so it stays inside the organisation, as the audit trail
 does.
-
-How the lines become facts: `trace_id` is the exchange's `aisolate:ExchangeId` (the start time when a line has
-none), `space` and `airlock` the Space and Airlock, `ts` the Exchange time, `model` the
-Model (`provider/name`) and its token counts, `duration_ms` the Duration, `tools` and `verifiers` the numbered tool
-calls and verifier runs (a verdict in lower case). An answer that is empty or begins with "I don't know" (after any leading emphasis or quote marks) is
-`dont_know`, as the airlock logs it, even on a line an older airlock wrote as `answered`. A refusal reports its
-space, airlock, time, user, question, outcome and duration, never an answer, a model, a tool or a
-verifier. Token counts a provider did not report are left out, not zero.
 
 ## Validating the report
 
