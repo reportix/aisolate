@@ -18,9 +18,7 @@ export const env = {
   },
   /** Where the source of this version lives (AGPL section 13); a fork's build points it at the fork. */
   get sourceUrl() {
-    return (
-      process.env.NEXT_PUBLIC_AISOLATE_SOURCE_URL || "https://gitlab.reportix.com/aisolate/aisolate"
-    );
+    return process.env.NEXT_PUBLIC_AISOLATE_SOURCE_URL || "https://github.com/reportix/aisolate";
   },
   get oidcClientId() {
     return required("NEXT_PUBLIC_OIDC_CLIENT_ID", process.env.NEXT_PUBLIC_OIDC_CLIENT_ID);
