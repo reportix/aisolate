@@ -1,5 +1,24 @@
-# AIsolate CI. Public images only.
-stages: [check, test, scan, package]
+# Reportix's release component scans main for vulnerabilities and publishes the runtime images: to docker-internal
+# on every merge, to docker-public, which anyone can pull, on a tag X.Y.Z. Every merge request bumps `version` in
+# gradle.properties. The UI and the chat bake their deployment's URLs at build time, so deployments build them.
+include:
+  - component: $CI_SERVER_FQDN/reportix/ci-templates/release@1
+    inputs:
+      image: docker-internal.sonatype.reportix.com/reportix/ci-images/java:latest
+      release_channel: public
+      internal_publish_command: './scripts/publish-images.sh "$RESOLVED_VERSION" "$PUBLISH_CHANNEL"'
+      release_publish_command: './scripts/publish-images.sh "$CI_COMMIT_TAG" "$PUBLISH_CHANNEL"'
+      image_names: >-
+        docker-${PUBLISH_CHANNEL}.sonatype.reportix.com/aisolate/backend
+        docker-${PUBLISH_CHANNEL}.sonatype.reportix.com/aisolate/airlock
+        docker-${PUBLISH_CHANNEL}.sonatype.reportix.com/aisolate/tool-server
+        docker-${PUBLISH_CHANNEL}.sonatype.reportix.com/aisolate/controller
+        docker-${PUBLISH_CHANNEL}.sonatype.reportix.com/aisolate/airlock-python
+        docker-${PUBLISH_CHANNEL}.sonatype.reportix.com/aisolate/tool-server-python
+        docker-${PUBLISH_CHANNEL}.sonatype.reportix.com/aisolate/keycloak
+      version_gate: increase
+
+stages: [check, test, package, publish-internal, publish-release]
 
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
@@ -67,18 +86,9 @@ python-test:
     - export PATH="$HOME/.local/bin:$PATH"
   script: ./gradlew pythonTest --console=plain
 
-# Vulnerabilities in locked dependencies (gradle.lockfile, package-lock.json) and leaked secrets.
-trivy:
-  stage: scan
-  image:
-    name: aquasec/trivy:latest
-    entrypoint: [""]
-  script:
-    - trivy fs --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed .
-
 # The Windows CLI's installer. A native image is built on the system it runs on, so aisolate.exe is built on a
 # Windows machine; this job packages it with NSIS. Run it by hand with WINDOWS_EXE_URL (where the runner can
-# download that exe) and WINDOWS_EXE_SHA256 set; never in an MR pipeline.
+# download that exe) and WINDOWS_EXE_SHA256 set.
 cli-windows-installer:
   stage: package
   needs: []
@@ -86,8 +96,6 @@ cli-windows-installer:
     default: false
   image: debian:bookworm-slim
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: never
     - when: manual
       allow_failure: true
   before_script:

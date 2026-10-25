@@ -10,7 +10,6 @@ plugins {
 
 allprojects {
     group = "com.reportix.aisolate"
-    version = "0.1.0-SNAPSHOT"
 }
 
 // Typed catalog accessors are not available inside `subprojects {}`; capture at root scope.
