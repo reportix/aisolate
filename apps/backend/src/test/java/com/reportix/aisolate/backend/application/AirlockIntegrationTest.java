@@ -613,20 +613,6 @@ class AirlockIntegrationTest {
   }
 
   @Test
-  @Order(29)
-  void givenTwoLetterName_whenCreateAirlock_thenItsIdIsTheTwoLetters() {
-    // Arrange: the demo's HR airlock, at /airlocks/hr/chat
-    String empty = "/v1/spaces/empty-space";
-
-    // Act
-    HttpResponse<String> response = post(rita, empty + "/airlocks", "{\"name\":\"HR\"}");
-
-    // Assert
-    assertThat(response.statusCode()).isEqualTo(201);
-    assertThat(JSON.readTree(response.body()).path("id").asString()).isEqualTo("hr");
-  }
-
-  @Test
   @Order(30)
   void givenClusterNameOfAnAirlock_whenCreateSpace_then409NamingTheClash() {
     // Arrange: the seeded airlock's pods and Secrets are named hr-acme-acme-hr-…

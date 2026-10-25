@@ -9,6 +9,8 @@ import com.reportix.aisolate.backend.support.OwnDatabase;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessException;
@@ -68,41 +70,22 @@ class CredentialRepositoryIntegrationTest {
     assertThat(events.get(0).reason()).isNull();
   }
 
-  @Test
-  void givenAnEvent_whenUpdated_thenTheTriggerRefuses() {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "UPDATE credential_events SET actor = 'x'",
+        "DELETE FROM credential_events",
+        "TRUNCATE credential_events"
+      })
+  void givenAnEvent_whenChangedOrRemoved_thenTheTriggerRefuses(String sql) {
     // Arrange
     repository.record(CredentialRepository.Event.of(row(ref()), "a", "stored", null));
 
     // Act
-    var update =
-        assertThatThrownBy(() -> db.sql("UPDATE credential_events SET actor = 'x'").update());
+    var change = assertThatThrownBy(() -> db.sql(sql).update());
 
     // Assert
-    update.isInstanceOf(DataAccessException.class).hasStackTraceContaining("append-only");
-  }
-
-  @Test
-  void givenAnEvent_whenDeleted_thenTheTriggerRefuses() {
-    // Arrange
-    repository.record(CredentialRepository.Event.of(row(ref()), "a", "stored", null));
-
-    // Act
-    var delete = assertThatThrownBy(() -> db.sql("DELETE FROM credential_events").update());
-
-    // Assert
-    delete.isInstanceOf(DataAccessException.class).hasStackTraceContaining("append-only");
-  }
-
-  @Test
-  void givenEvents_whenTruncated_thenTheTriggerRefuses() {
-    // Arrange
-    repository.record(CredentialRepository.Event.of(row(ref()), "a", "stored", null));
-
-    // Act
-    var truncate = assertThatThrownBy(() -> db.sql("TRUNCATE credential_events").update());
-
-    // Assert
-    truncate.isInstanceOf(DataAccessException.class).hasStackTraceContaining("append-only");
+    change.isInstanceOf(DataAccessException.class).hasStackTraceContaining("append-only");
   }
 
   @Test

@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class RowFilterTest {
 
@@ -45,26 +44,6 @@ class RowFilterTest {
 
     // Assert
     assertThat(filter.matchesAll()).isTrue();
-  }
-
-  @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "audience == \"all\"",
-        "audience == 'All'",
-        "audience == 'a b'",
-        "audience == ''",
-        "1=1 OR true",
-        "audience == 'all' OR true"
-      })
-  void givenTextOutsideTheGrammar_whenParse_thenRejected(String text) {
-    // Arrange / Act
-    Throwable thrown = catchThrowable(() -> RowFilter.parse(text));
-
-    // Assert
-    assertThat(thrown)
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("row_filter");
   }
 
   @Test

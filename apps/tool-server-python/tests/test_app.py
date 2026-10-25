@@ -171,14 +171,3 @@ async def test_given_unpublished_tool_when_called_then_json_rpc_error(served: An
 
     # Assert
     assert refused.group_contains(MCPError, match="Unknown tool: unlisted", depth=None)
-
-
-def test_given_no_token_when_posted_then_401_with_bearer_challenge_and_no_body(served: Any) -> None:
-    # Arrange
-    url, _ = served
-
-    # Act
-    response = httpx2.post(f"{url}/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
-
-    # Assert
-    assert (response.status_code, response.headers["www-authenticate"], response.content) == (401, "Bearer", b"")

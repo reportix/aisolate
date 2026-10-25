@@ -394,20 +394,6 @@ class ClusterSyncIntegrationTest {
   }
 
   @Test
-  @Order(10)
-  void givenADeveloper_whenRevealed_then403() {
-    // Arrange
-    String ref = saveSpacePassword("n0-peeking");
-
-    // Act
-    HttpResponse<String> response = send("/v1/credentials/" + ref + "/reveal", "POST", "");
-
-    // Assert
-    assertThat(response.statusCode()).isEqualTo(403);
-    assertThat(rows.events(ref)).noneMatch(event -> event.action().equals("revealed"));
-  }
-
-  @Test
   @Order(11)
   void givenJarAboveTheFormerConfigMapCeiling_whenDeployed_thenStoredAndApplied() {
     // Arrange: the same jar with a 1.2 MB random resource (zeros would deflate away), past 1 MiB

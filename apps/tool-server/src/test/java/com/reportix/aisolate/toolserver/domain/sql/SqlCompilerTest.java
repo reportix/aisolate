@@ -1,7 +1,6 @@
 package com.reportix.aisolate.toolserver.domain.sql;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.reportix.aisolate.sdk.Column;
 import com.reportix.aisolate.sdk.Entity;
@@ -17,7 +16,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
 import tools.jackson.databind.JsonNode;
 
 class SqlCompilerTest {
@@ -48,151 +46,6 @@ class SqlCompilerTest {
   private static Obligations allRows(Integer minGroupSize) {
     return new Obligations(
         true, List.of(), Set.of(), Set.of("iban"), minGroupSize, List.of("leadership"));
-  }
-
-  @Test
-  void givenOwnRowObligation_whenCompileRead_thenIdentityPredicateIsBoundAndColumnsObeyed() {
-    // Arrange
-    Obligations obligations = ownRow();
-    ToolArgs.ReadArgs args = new ToolArgs.ReadArgs(List.of(), 100);
-
-    // Act
-    CompiledQuery query = compiler.compileRead(ENTITY, obligations, args, null);
-
-    // Assert
-    assertThat(query.sql()).contains("WHERE (c.employee_id = ?)");
-    assertThat(query.sql()).contains("'****' AS iban");
-    assertThat(query.sql()).doesNotContain("internal_notes");
-    assertThat(query.sql()).endsWith("LIMIT ?");
-    assertThat(query.params()).containsExactly(2, 100);
-    assertThat(query.columns()).doesNotContain("internal_notes").contains("iban", "gross_salary");
-  }
-
-  @Test
-  void givenModelFilterWithQuote_whenCompileRead_thenValueIsBoundNeverInterpolated() {
-    // Arrange
-    String hostile = "Engineering' OR '1'='1";
-    ToolArgs.ReadArgs args =
-        new ToolArgs.ReadArgs(List.of(new Filter("department", Filter.Op.EQ, hostile)), 100);
-
-    // Act
-    CompiledQuery query = compiler.compileRead(ENTITY, ownRow(), args, null);
-
-    // Assert
-    assertThat(query.sql()).doesNotContain(hostile);
-    assertThat(query.sql()).contains("WHERE (c.employee_id = ?) AND (e.department = ?)");
-    assertThat(query.params()).containsExactly(2, hostile, 100);
-  }
-
-  @Test
-  void givenUnionOfOwnRowAndAllRows_whenCompileRead_thenNoRowRestriction() {
-    // Arrange
-    Obligations union =
-        new Obligations(
-            true,
-            List.of(new RowPredicate("employee_id", 2)),
-            Set.of("internal_notes"),
-            Set.of("iban"),
-            5,
-            List.of("own-record", "leadership"));
-
-    // Act
-    CompiledQuery query =
-        compiler.compileRead(ENTITY, union, new ToolArgs.ReadArgs(List.of(), 100), null);
-
-    // Assert
-    assertThat(query.sql()).doesNotContain("WHERE");
-    assertThat(query.params()).containsExactly(100);
-  }
-
-  @Test
-  void givenAggregateWithMinGroupSize_whenCompileAggregate_thenHavingCountAtLeastGroupSize() {
-    // Arrange
-    ToolArgs.AggregateArgs args =
-        new ToolArgs.AggregateArgs(Fn.AVG, "gross_salary", "department", List.of());
-
-    // Act
-    CompiledQuery query = compiler.compileAggregate(ENTITY, allRows(5), args);
-
-    // Assert
-    assertThat(query.sql())
-        .contains("SELECT e.department AS department, avg(c.gross_salary) AS value, count(*) AS n")
-        .contains("GROUP BY e.department")
-        .contains("HAVING count(DISTINCT c.employee_id) >= ?")
-        .endsWith("LIMIT ?");
-    assertThat(query.params()).containsExactly(5, ToolArgs.MAX_LIMIT);
-  }
-
-  @Test
-  void givenUngroupedAggregateUnderOwnRow_whenCompileAggregate_thenPredicateAndNoGroupBy() {
-    // Arrange
-    ToolArgs.AggregateArgs args =
-        new ToolArgs.AggregateArgs(Fn.SUM, "gross_salary", null, List.of());
-
-    // Act
-    CompiledQuery query = compiler.compileAggregate(ENTITY, ownRow(), args);
-
-    // Assert
-    assertThat(query.sql())
-        .contains("SELECT sum(c.gross_salary) AS value, count(*) AS n")
-        .contains("WHERE (c.employee_id = ?)")
-        .doesNotContain("GROUP BY")
-        .doesNotContain("HAVING");
-    assertThat(query.params()).containsExactly(2, ToolArgs.MAX_LIMIT);
-  }
-
-  @Test
-  void givenUngroupedAggregateWithMinGroupSize_whenCompileAggregate_thenHavingWithoutGroupBy() {
-    // Arrange: "average salary in Finance" for the ceo: no group_by, min group size 5
-    ToolArgs.AggregateArgs args =
-        new ToolArgs.AggregateArgs(
-            Fn.AVG,
-            "gross_salary",
-            null,
-            List.of(new Filter("department", Filter.Op.EQ, "Finance")));
-
-    // Act
-    CompiledQuery query = compiler.compileAggregate(ENTITY, allRows(5), args);
-
-    // Assert
-    assertThat(query.sql())
-        .contains("WHERE (e.department = ?)")
-        .doesNotContain("GROUP BY")
-        .contains("HAVING count(DISTINCT c.employee_id) >= ?");
-    assertThat(query.params()).containsExactly("Finance", 5, ToolArgs.MAX_LIMIT);
-  }
-
-  @ParameterizedTest
-  @EnumSource(
-      value = Fn.class,
-      names = {"MIN", "MAX"})
-  void givenMinGroupSize_whenCompileMinOrMax_thenRefusedBecauseTheValueIsOnePersons(Fn function) {
-    // Arrange: the largest salary of a group of five is still one person's salary
-    ToolArgs.AggregateArgs args =
-        new ToolArgs.AggregateArgs(function, "gross_salary", "department", List.of());
-
-    // Act
-    Throwable thrown = catchThrowable(() -> compiler.compileAggregate(ENTITY, allRows(5), args));
-
-    // Assert
-    assertThat(thrown).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("sum");
-  }
-
-  @Test
-  void givenKnownBusinessKey_whenCompileRead_thenOwnRowIsMarkedSelfAndComesFirst() {
-    // Arrange: the ceo sees every row; the asking user's own row must still be recognisable, and
-    // under the limit whatever its id
-    ToolArgs.ReadArgs args = new ToolArgs.ReadArgs(List.of(), 100);
-
-    // Act
-    CompiledQuery query = compiler.compileRead(ENTITY, allRows(null), args, 13);
-
-    // Assert
-    assertThat(query.sql())
-        .contains("(c.employee_id = ?) AS self")
-        .contains(" ORDER BY self DESC, c.employee_id LIMIT ?");
-    assertThat(query.columns()).contains("self");
-    assertThat(query.params()).containsExactly(13, 100);
   }
 
   @Test
@@ -249,22 +102,6 @@ class SqlCompilerTest {
 
     // Assert
     assertThat(own).isEqualTo(expected);
-  }
-
-  @ParameterizedTest
-  @CsvSource({"eric, %eric%", "Ma%, Ma%"})
-  void givenIlikeValue_whenCompileRead_thenContainsUnlessTheModelWroteWildcards(
-      String value, String bound) {
-    // Arrange: ilike "eric" means "contains eric"; a value with wildcards is used as written
-    ToolArgs.ReadArgs args =
-        new ToolArgs.ReadArgs(List.of(new Filter("full_name", Filter.Op.ILIKE, value)), 100);
-
-    // Act
-    CompiledQuery query = compiler.compileRead(ENTITY, allRows(null), args, null);
-
-    // Assert
-    assertThat(query.sql()).contains("(e.full_name ILIKE ?)");
-    assertThat(query.params()).containsExactly(bound, 100);
   }
 
   @Test

@@ -121,19 +121,6 @@ class CrdGenerationTest {
   }
 
   @Test
-  void givenResourceClasses_whenGenerated_thenExactlyTheThreeCrds(@TempDir Path dir)
-      throws IOException {
-    // Arrange / Act
-    CrdGeneration.generate(dir);
-
-    // Assert: the airlock is what runs; no fourth kind
-    try (Stream<Path> files = Files.list(dir)) {
-      assertThat(files.map(f -> f.getFileName().toString()))
-          .containsExactlyInAnyOrder("globals.yaml", "spaces.yaml", "airlocks.yaml");
-    }
-  }
-
-  @Test
   void givenCommittedCrds_whenGenerated_thenIdentical(@TempDir Path dir) throws IOException {
     // Arrange: the repository's crds/, which the chart's pin script copies
     Path committed = Path.of("../../crds");

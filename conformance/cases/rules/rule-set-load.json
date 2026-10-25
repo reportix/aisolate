@@ -127,6 +127,18 @@
       "error" : "rule r: a deny takes no row_filter, columns or aggregation; it drops every row for its role and actions"
     }
   }, {
+    "id" : "deny-with-aggregation",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"aggregate\"],\"effect\":\"deny\",\"aggregation\":{\"min_group_size\":5}}]}",
+    "expect" : {
+      "error" : "rule r: a deny takes no row_filter, columns or aggregation; it drops every row for its role and actions"
+    }
+  }, {
+    "id" : "deny-without-role",
+    "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"effect\":\"deny\",\"actions\":[\"read\"]}]}",
+    "expect" : {
+      "error" : "rule r: principals.role is required"
+    }
+  }, {
     "id" : "min-group-size-zero",
     "json" : "{\"entity\":\"x\",\"rules\":[{\"name\":\"r\",\"principals\":{\"role\":\"a\"},\"actions\":[\"aggregate\"],\"effect\":\"allow\",\"row_filter\":\"true\",\"aggregation\":{\"min_group_size\":0}}]}",
     "expect" : {

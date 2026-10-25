@@ -2,6 +2,8 @@ package com.reportix.aisolate.backend.domain.credential;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -19,9 +21,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -142,13 +148,27 @@ class CredentialServiceTest {
     assertThat(e.getReason()).isEqualTo("unknown");
   }
 
-  @Test
-  void givenATokenFromAnotherClient_whenRevealed_then403WrongClientRecorded() {
+  static Stream<Arguments> tokensNotFromTheUi() {
+    Map<String, Object> noAzp =
+        Jwt.withTokenValue("t")
+            .header("alg", "none")
+            .claim("email", "andrew@example.com")
+            .claim("auth_time", NOW.minusSeconds(10).getEpochSecond())
+            .build()
+            .getClaims();
+    return Stream.of(
+        arguments(named("the CLI's", claimsFrom("aisolate-cli"))),
+        arguments(named("one without azp", noAzp)));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("tokensNotFromTheUi")
+  void givenATokenNotFromTheUi_whenRevealed_then403WrongClientRecorded(Map<String, Object> claims) {
     // Arrange
     when(airlocks.isSecretReferenced(REF)).thenReturn(true);
 
     // Act
-    CredentialException e = refused(REF, claimsFrom("aisolate-cli"));
+    CredentialException e = refused(REF, claims);
 
     // Assert
     assertThat(e.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -157,160 +177,72 @@ class CredentialServiceTest {
     verifyRefusal("wrong_client");
   }
 
-  @Test
-  void givenATokenWithoutAzp_whenRevealed_then403WrongClient() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-    Map<String, Object> noAzp =
-        Jwt.withTokenValue("t")
-            .header("alg", "none")
-            .claim("email", "andrew@example.com")
-            .claim("auth_time", NOW.minusSeconds(10).getEpochSecond())
-            .build()
-            .getClaims();
-
-    // Act
-    CredentialException e = refused(REF, noAzp);
-
-    // Assert
-    assertThat(e.getReason()).isEqualTo("wrong_client");
-    verifyRefusal("wrong_client");
+  static Stream<Arguments> loginsTooOldOrUnknown() {
+    return Stream.of(
+        arguments(named("no auth_time", claims()), "no_auth_time"),
+        arguments(named("auth_time as a string", claims("1761300000")), "no_auth_time"),
+        arguments(
+            named("a non-finite auth_time", claims(Double.POSITIVE_INFINITY)), "no_auth_time"),
+        arguments(named("a login 301 s ago", signedInSecondsAgo(301)), "stale_login"),
+        arguments(named("auth_time beyond Instant's range", claims(Long.MAX_VALUE)), "stale_login"),
+        arguments(named("ten minutes in the future", signedInSecondsAgo(-600)), "stale_login"),
+        arguments(named("61 s in the future", signedInSecondsAgo(-61)), "stale_login"));
   }
 
-  @Test
-  void givenNoAuthTime_whenRevealed_then403NoAuthTime() {
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("loginsTooOldOrUnknown")
+  void givenALoginTooOldOrUnknown_whenRevealed_then403ForItsReasonRecorded(
+      Map<String, Object> claims, String reason) {
     // Arrange
     when(airlocks.isSecretReferenced(REF)).thenReturn(true);
 
     // Act
-    CredentialException e = refused(REF, claims());
+    CredentialException e = refused(REF, claims);
 
     // Assert
     assertThat(e.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
-    assertThat(e.getReason()).isEqualTo("no_auth_time");
-    assertThat(e.getMessage()).isEqualTo("the identity provider sends no auth_time claim");
-    verifyRefusal("no_auth_time");
+    assertThat(e.getReason()).isEqualTo(reason);
+    assertThat(e.getMessage())
+        .isEqualTo(
+            Map.of(
+                    "no_auth_time", "the identity provider sends no auth_time claim",
+                    "stale_login", "sign in again to reveal")
+                .get(reason));
+    verifyRefusal(reason);
   }
 
-  @Test
-  void givenAuthTimeAsAString_whenRevealed_then403NoAuthTime() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-
-    // Act
-    CredentialException e = refused(REF, claims("1761300000"));
-
-    // Assert
-    assertThat(e.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
-    assertThat(e.getReason()).isEqualTo("no_auth_time");
+  static Stream<Arguments> freshLogins() {
+    return Stream.of(
+        arguments(named("a login 10 s ago", signedInSecondsAgo(10))),
+        arguments(named("60 s in the future, within the skew", signedInSecondsAgo(-60))),
+        arguments(
+            named(
+                "a fractional auth_time 30 s ago",
+                claims((double) NOW.minusSeconds(30).getEpochSecond()))));
   }
 
-  @Test
-  void givenAStaleLogin_whenRevealed_then403StaleLogin() {
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("freshLogins")
+  void givenAFreshLoginAndARow_whenRevealed_thenValuesAndRevealedRecorded(
+      Map<String, Object> claims) {
     // Arrange
     when(airlocks.isSecretReferenced(REF)).thenReturn(true);
+    when(rows.find(REF))
+        .thenReturn(
+            Optional.of(sealedRow(REF, Map.of("username", "reader", "password", "hunter2"))));
 
     // Act
-    CredentialException e = refused(REF, signedInSecondsAgo(301));
+    CredentialService.Revealed revealed = service.reveal(REF, claims);
 
     // Assert
-    assertThat(e.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
-    assertThat(e.getReason()).isEqualTo("stale_login");
-    assertThat(e.getMessage()).isEqualTo("sign in again to reveal");
-    verifyRefusal("stale_login");
-  }
-
-  @Test
-  void givenAnAuthTimeBeyondInstantsRange_whenRevealed_then403StaleLoginRecorded() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-
-    // Act
-    CredentialException e = refused(REF, claims(Long.MAX_VALUE));
-
-    // Assert
-    assertThat(e.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
-    assertThat(e.getReason()).isEqualTo("stale_login");
-    verifyRefusal("stale_login");
-  }
-
-  @Test
-  void givenAnAuthTimeTenMinutesInTheFuture_whenRevealed_then403StaleLogin() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-
-    // Act
-    CredentialException e = refused(REF, signedInSecondsAgo(-600));
-
-    // Assert
-    assertThat(e.getReason()).isEqualTo("stale_login");
-  }
-
-  @Test
-  void givenAnAuthTimeSixtySecondsInTheFuture_whenRevealed_thenItReveals() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-    when(rows.find(REF)).thenReturn(Optional.of(sealedRow(REF, Map.of("apiKey", "sk-1"))));
-
-    // Act
-    CredentialService.Revealed revealed = service.reveal(REF, signedInSecondsAgo(-60));
-
-    // Assert
-    assertThat(revealed.values()).isEqualTo(Map.of("apiKey", "sk-1"));
-  }
-
-  @Test
-  void givenAnAuthTimeSixtyOneSecondsInTheFuture_whenRevealed_then403StaleLogin() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-
-    // Act
-    CredentialException e = refused(REF, signedInSecondsAgo(-61));
-
-    // Assert
-    assertThat(e.getReason()).isEqualTo("stale_login");
-  }
-
-  @Test
-  void givenANonFiniteAuthTime_whenRevealed_then403NoAuthTime() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-
-    // Act
-    CredentialException e = refused(REF, claims(Double.POSITIVE_INFINITY));
-
-    // Assert
-    assertThat(e.getReason()).isEqualTo("no_auth_time");
-  }
-
-  @Test
-  void givenADoubleAuthTimeThirtySecondsAgo_whenRevealed_thenValues() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-    when(rows.find(REF)).thenReturn(Optional.of(sealedRow(REF, Map.of("apiKey", "sk-1"))));
-    double authTime = NOW.minusSeconds(30).getEpochSecond();
-
-    // Act
-    CredentialService.Revealed revealed = service.reveal(REF, claims(authTime));
-
-    // Assert
-    assertThat(revealed.values()).isEqualTo(Map.of("apiKey", "sk-1"));
-  }
-
-  @Test
-  void givenAFreshLoginAndNoRow_whenRevealed_then409NoCiphertext() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-    when(rows.find(REF)).thenReturn(Optional.empty());
-
-    // Act
-    CredentialException e = refused(REF, signedInSecondsAgo(299));
-
-    // Assert
-    assertThat(e.getStatus()).isEqualTo(HttpStatus.CONFLICT);
-    assertThat(e.getReason()).isEqualTo("no_ciphertext");
-    assertThat(e.getMessage()).isEqualTo("entered before encryption — enter it again");
-    verifyRefusal("no_ciphertext");
+    assertThat(revealed.values()).isEqualTo(Map.of("username", "reader", "password", "hunter2"));
+    verify(rows)
+        .record(
+            argThat(
+                e ->
+                    e.action().equals("revealed")
+                        && e.actor().equals("andrew@example.com")
+                        && e.secretRef().equals(REF)));
   }
 
   @Test
@@ -343,60 +275,51 @@ class CredentialServiceTest {
     verifyRefusal("key_changed");
   }
 
-  @Test
-  void givenARowThatDoesNotOpen_whenRevealed_then409Unreadable() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-    when(rows.find(REF)).thenReturn(Optional.of(sealedRow("other-ref", Map.of("apiKey", "sk-1"))));
-
-    // Act
-    CredentialException e = refused(REF, signedInSecondsAgo(10));
-
-    // Assert
-    assertThat(e.getStatus()).isEqualTo(HttpStatus.CONFLICT);
-    assertThat(e.getReason()).isEqualTo("unreadable");
-    assertThat(e.getMessage()).isEqualTo("cannot be read");
-    verifyRefusal("unreadable");
+  static Stream<Arguments> rowsThatDoNotOpen() {
+    return Stream.of(
+        arguments(
+            named(
+                "no row",
+                (Function<CredentialServiceTest, Optional<CredentialRepository.Row>>)
+                    t -> Optional.empty()),
+            "no_ciphertext",
+            "entered before encryption — enter it again"),
+        arguments(
+            named(
+                "a row sealed for another ref",
+                (Function<CredentialServiceTest, Optional<CredentialRepository.Row>>)
+                    t -> Optional.of(t.sealedRow("other-ref", Map.of("apiKey", "sk-1")))),
+            "unreadable",
+            "cannot be read"),
+        arguments(
+            named(
+                "a row whose plaintext is not JSON",
+                (Function<CredentialServiceTest, Optional<CredentialRepository.Row>>)
+                    t -> Optional.of(t.sealedRow(REF, "not json: hunter2".getBytes()))),
+            "unreadable",
+            "cannot be read"));
   }
 
-  @Test
-  void givenARowWhosePlaintextIsNotJson_whenRevealed_then409UnreadableRecorded(
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("rowsThatDoNotOpen")
+  void givenAFreshLoginAndARowThatDoesNotOpen_whenRevealed_then409NothingLeaked(
+      Function<CredentialServiceTest, Optional<CredentialRepository.Row>> row,
+      String reason,
+      String message,
       CapturedOutput output) {
-    // Arrange
+    // Arrange: 299 s is still within the five minutes
     when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-    when(rows.find(REF)).thenReturn(Optional.of(sealedRow(REF, "not json: hunter2".getBytes())));
+    when(rows.find(REF)).thenReturn(row.apply(this));
 
     // Act
-    CredentialException e = refused(REF, signedInSecondsAgo(10));
+    CredentialException e = refused(REF, signedInSecondsAgo(299));
 
     // Assert
     assertThat(e.getStatus()).isEqualTo(HttpStatus.CONFLICT);
-    assertThat(e.getReason()).isEqualTo("unreadable");
-    assertThat(e.getMessage()).doesNotContain("hunter2");
+    assertThat(e.getReason()).isEqualTo(reason);
+    assertThat(e.getMessage()).isEqualTo(message);
     assertThat(output).doesNotContain("hunter2");
-    verifyRefusal("unreadable");
-  }
-
-  @Test
-  void givenAFreshLoginAndARow_whenRevealed_thenValuesAndRevealedRecorded() {
-    // Arrange
-    when(airlocks.isSecretReferenced(REF)).thenReturn(true);
-    when(rows.find(REF))
-        .thenReturn(
-            Optional.of(sealedRow(REF, Map.of("username", "reader", "password", "hunter2"))));
-
-    // Act
-    CredentialService.Revealed revealed = service.reveal(REF, signedInSecondsAgo(10));
-
-    // Assert
-    assertThat(revealed.values()).isEqualTo(Map.of("username", "reader", "password", "hunter2"));
-    verify(rows)
-        .record(
-            argThat(
-                e ->
-                    e.action().equals("revealed")
-                        && e.actor().equals("andrew@example.com")
-                        && e.secretRef().equals(REF)));
+    verifyRefusal(reason);
   }
 
   @Test

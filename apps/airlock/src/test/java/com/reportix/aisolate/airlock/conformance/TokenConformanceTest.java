@@ -18,6 +18,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.reportix.aisolate.airlock.AirlockApplication;
 import com.reportix.aisolate.airlock.support.AirlockTestConfig;
+import com.reportix.aisolate.airlock.support.ScriptedChatModel;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,14 +36,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
@@ -56,6 +63,7 @@ import tools.jackson.databind.json.JsonMapper;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = AirlockApplication.class)
 @ContextConfiguration(initializers = TokenConformanceTest.Issuer.class)
+@Import(TokenConformanceTest.Stubs.class)
 class TokenConformanceTest {
 
   private static final JsonMapper JSON = JsonMapper.builder().build();
@@ -103,7 +111,23 @@ class TokenConformanceTest {
     }
   }
 
+  /** The model a served airlock would ask: a rejected token must never reach it. */
+  @TestConfiguration
+  static class Stubs {
+    @Bean
+    @Primary
+    ScriptedChatModel scriptedChatModel() {
+      return new ScriptedChatModel();
+    }
+  }
+
   @LocalServerPort int port;
+  @Autowired ScriptedChatModel model;
+
+  @BeforeEach
+  void resetModel() {
+    model.reset();
+  }
 
   static Stream<Arguments> cases() {
     List<Arguments> cases = new ArrayList<>();
@@ -115,11 +139,16 @@ class TokenConformanceTest {
   @MethodSource("cases")
   void givenBearer_whenChat_thenValidOr401WithTheChallenge(JsonNode token) throws Exception {
     String id = token.path("id").asString();
-    // Arrange: an airlock this pod does not serve, so a valid token stops at 404, never the model
+    // Arrange: a token the case rejects goes to a served airlock, whose model it must never reach;
+    // a valid one to an airlock this pod does not serve, so it stops at 404 before any model
+    boolean rejected = !token.path("expect").isString();
+    String path =
+        rejected
+            ? "/v1/spaces/hr-acme/airlocks/acme-hr/chat"
+            : "/v1/spaces/none/airlocks/none/chat";
     String bearer = bearer(token);
     HttpRequest.Builder request =
-        HttpRequest.newBuilder(
-                URI.create("http://localhost:" + port + "/v1/spaces/none/airlocks/none/chat"))
+        HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString("{\"message\":\"hi\"}"));
@@ -132,7 +161,7 @@ class TokenConformanceTest {
         HttpClient.newHttpClient().send(request.build(), HttpResponse.BodyHandlers.ofString());
 
     // Assert
-    if (token.path("expect").isString()) {
+    if (!rejected) {
       assertThat(response.statusCode()).isNotEqualTo(401);
     } else {
       assertThat(response.statusCode()).isEqualTo(token.path("expect").asInt());
@@ -142,6 +171,7 @@ class TokenConformanceTest {
                   + PUBLIC_URL
                   + "/.well-known/oauth-protected-resource\"");
       assertThat(response.body()).isEqualTo("{\"status\":401,\"title\":\"Unauthorized\"}");
+      assertThat(model.prompts()).isEmpty();
     }
   }
 

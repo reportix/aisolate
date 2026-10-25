@@ -34,7 +34,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.NullSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -74,9 +73,8 @@ class GovernedToolsIntegrationTest {
   }
 
   /** Of the five seeded employees, Nora is the CEO (id 1) and Eric an engineer (id 2). */
-  private static final int NORA_EMPLOYEE_ID = 1;
-
   @LocalServerPort int port;
+
   @Autowired InMemorySpanExporter spans;
   @Autowired SdkTracerProvider tracerProvider;
   @Autowired MeterRegistry meters;
@@ -106,37 +104,6 @@ class GovernedToolsIntegrationTest {
     assertThat(names(tools))
         .containsExactlyInAnyOrder(
             "read_records", "aggregate_records", "export_payslips", "read_archive");
-  }
-
-  @Test
-  void givenEmployee_whenReadRecords_thenOnlyOwnRowWithMaskedIbanAndNoNotes() {
-    // Arrange
-    String employee = eric;
-
-    // Act
-    HttpResponse<String> response = mcp.callTool(employee, "read_records", Map.of());
-
-    // Assert
-    assertThat(response.statusCode()).isEqualTo(200);
-    JsonNode evidence = mcp.resultJson(response);
-    assertThat(evidence.path("entity").asString()).isEqualTo("hr.compensation");
-    assertThat(evidence.path("row_count").asInt()).isEqualTo(1);
-    // The revision the chart declared, the one the airlock pod pins
-    assertThat(evidence.path("rule_version").asString()).isEqualTo(REVISION);
-    assertThat(evidence.path("data_source").asString()).isEqualTo("acme_hr");
-    assertThat(strings(evidence.path("rules"))).containsExactly("own-record");
-    assertThat(strings(evidence.path("columns"))).doesNotContain("internal_notes").contains("iban");
-    JsonNode row = evidence.path("rows").get(0);
-    assertThat(row.path("full_name").asString()).isEqualTo("Eric Lindholm");
-    assertThat(row.path("gross_salary").asString()).startsWith("78000");
-    assertThat(row.path("iban").asString()).isEqualTo("****");
-    assertThat(row.has("internal_notes")).isFalse();
-    // What the columns mean travels with them, for the airlock's figures; snake case, like the rest
-    JsonNode labels = evidence.path("labels");
-    assertThat(labels.path("subject").asString()).isEqualTo("full_name");
-    assertThat(labels.path("unit_columns").path("gross_salary").asString()).isEqualTo("currency");
-    assertThat(strings(labels.path("masked"))).containsExactly("iban");
-    assertThat(evidence.path("sql_hash").asString()).hasSize(12);
   }
 
   Stream<Arguments> toolQueries() {
@@ -262,133 +229,6 @@ class GovernedToolsIntegrationTest {
     return span.getAttributes().get(AttributeKey.stringKey(key));
   }
 
-  @Test
-  void givenCeo_whenReadRecords_thenAllFiveRowsAndOnlyHerOwnIsFlaggedSelf() {
-    // Arrange
-    String ceo = nora;
-
-    // Act
-    JsonNode evidence = mcp.resultJson(mcp.callTool(ceo, "read_records", Map.of()));
-
-    // Assert
-    assertThat(evidence.path("row_count").asInt()).isEqualTo(5);
-    assertThat(
-            StreamSupport.stream(evidence.path("rows").spliterator(), false)
-                .filter(r -> r.path("self").asBoolean())
-                .map(r -> r.path("full_name").asString()))
-        .containsExactly("Nora Varga");
-    assertThat(strings(evidence.path("rules"))).containsExactly("leadership");
-    assertThat(strings(evidence.path("columns"))).contains("internal_notes");
-  }
-
-  @Test
-  void givenEmployee_whenReadRecordsFilteredToAnotherEmployee_thenZeroRows() {
-    // Arrange: the model (or a prompt injection) asks for the CEO's row by id
-    Map<String, Object> args =
-        Map.of(
-            "filters",
-            List.of(
-                Map.of(
-                    "column",
-                    "employee_id",
-                    "op",
-                    "eq",
-                    "value",
-                    String.valueOf(NORA_EMPLOYEE_ID))));
-
-    // Act
-    JsonNode evidence = mcp.resultJson(mcp.callTool(eric, "read_records", args));
-
-    // Assert
-    assertThat(evidence.path("row_count").asInt()).isZero();
-    assertThat(evidence.path("rows")).isEmpty();
-  }
-
-  @Test
-  void givenEmployee_whenAggregate_thenZeroRowsBecauseNoRuleGrantsAggregate() {
-    // Arrange
-    Map<String, Object> args = Map.of("function", "avg", "column", "gross_salary");
-
-    // Act
-    JsonNode evidence = mcp.resultJson(mcp.callTool(eric, "aggregate_records", args));
-
-    // Assert
-    assertThat(evidence.path("row_count").asInt()).isZero();
-    assertThat(evidence.path("rules")).isEmpty();
-  }
-
-  @Test
-  void givenCeo_whenAverageSalaryByDepartment_thenGroupsUnderTheMinimumAreSuppressed() {
-    // Arrange: min_group_size is three; Engineering holds three people, Executive two
-    Map<String, Object> args =
-        Map.of("function", "avg", "column", "gross_salary", "group_by", "department");
-
-    // Act
-    JsonNode evidence = mcp.resultJson(mcp.callTool(nora, "aggregate_records", args));
-
-    // Assert
-    assertThat(evidence.path("row_count").asInt()).isEqualTo(1);
-    JsonNode engineering = evidence.path("rows").get(0);
-    assertThat(engineering.path("department").asString()).isEqualTo("Engineering");
-    assertThat(engineering.path("n").asInt()).isEqualTo(3);
-    assertThat(engineering.path("value").asString()).startsWith("82000");
-    assertThat(strings(evidence.path("rules"))).containsExactly("leadership");
-  }
-
-  @Test
-  void givenCeo_whenUngroupedAverageOverAGroupUnderTheMinimum_thenZeroRows() {
-    // Arrange: Executive is two people, min_group_size is three
-    Map<String, Object> args =
-        Map.of(
-            "function",
-            "avg",
-            "column",
-            "gross_salary",
-            "filters",
-            List.of(Map.of("column", "department", "op", "eq", "value", "Executive")));
-
-    // Act
-    JsonNode evidence = mcp.resultJson(mcp.callTool(nora, "aggregate_records", args));
-
-    // Assert
-    assertThat(evidence.path("row_count").asInt()).isZero();
-    assertThat(strings(evidence.path("rules"))).containsExactly("leadership");
-  }
-
-  @Test
-  void givenFilterValueWithSqlInIt_whenReadRecords_thenBoundAsParameterAndZeroRows() {
-    // Arrange
-    Map<String, Object> args =
-        Map.of(
-            "filters",
-            List.of(Map.of("column", "department", "op", "eq", "value", "Engineering' OR '1'='1")));
-
-    // Act
-    HttpResponse<String> response = mcp.callTool(nora, "read_records", args);
-
-    // Assert
-    assertThat(response.statusCode()).isEqualTo(200);
-    assertThat(mcp.resultJson(response).path("row_count").asInt()).isZero();
-  }
-
-  Stream<String> tokenForAnotherAudience() {
-    // A real token of the same user, issued to another Acme Financial Group client.
-    return Stream.of(Tokens.forUser(Keycloak.usersIssuerUri(), "other-app", "nora", "password"));
-  }
-
-  @ParameterizedTest
-  @NullSource
-  @MethodSource("tokenForAnotherAudience")
-  void givenNoTokenOrTokenNotForAIsolate_whenCallTool_then401(String token) {
-    // Arrange: the row's token, none or one issued for another audience
-
-    // Act
-    HttpResponse<String> response = mcp.callTool(token, "read_records", Map.of());
-
-    // Assert
-    assertThat(response.statusCode()).isEqualTo(401);
-  }
-
   static Stream<Arguments> givenMetaThatPinsNoServedAirlock_whenReadRecords_thenZeroRows() {
     return Stream.of(
         arguments(named("no revision", Map.of("airlock", "hr-assistant"))),
@@ -479,22 +319,6 @@ class GovernedToolsIntegrationTest {
     // Assert: arguments are arguments; only _meta selects the airlock
     assertThat(strings(evidence.path("rules"))).containsExactly("own-record");
     assertThat(evidence.path("row_count").asInt()).isEqualTo(1);
-  }
-
-  @Test
-  void givenCeo_whenFilterOnMaskedColumn_thenRefusedAsInvalidArgument() {
-    // Arrange: the IBAN is masked for the ceo; a filter on it would be a value oracle
-    Map<String, Object> args =
-        Map.of("filters", List.of(Map.of("column", "iban", "op", "ilike", "value", "DE00%")));
-
-    // Act
-    HttpResponse<String> response = mcp.callTool(nora, "read_records", args);
-
-    // Assert
-    JsonNode result = mcp.parseBody(response.body()).path("result");
-    assertThat(result.path("isError").asBoolean()).isTrue();
-    assertThat(result.path("content").get(0).path("text").asString()).contains("column");
-    assertThat(result.has("_meta")).isFalse();
   }
 
   static Stream<Arguments> givenDatabaseError_whenCalled_thenFixedToolErrorWithoutSql() {

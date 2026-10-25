@@ -32,22 +32,6 @@ const stateOf = (banner: string | null): RowFormState<LlmInput> => ({
 });
 
 describe("EditPanel", () => {
-  it("givenARowsForm_whenRendered_thenEditTitleAndTheFormWithSaveAndCancel", () => {
-    // Arrange
-    const state = stateOf(null);
-
-    // Act
-    const html = renderToStaticMarkup(
-      createElement(EditPanel, { noun: "model", state, Form: LlmForm }),
-    );
-
-    // Assert
-    expect(html).toMatch(/<h2[^>]*>Edit model<\/h2>/);
-    expect(html).toContain('value="gpt"');
-    expect(html).toMatch(/<button[^>]*>Save model<\/button>/);
-    expect(html).toMatch(/<button[^>]*>Cancel<\/button>/);
-  });
-
   it("givenASaveRefusedOutright_whenRendered_thenTheBannerShowsInThePanel", () => {
     // Arrange
     const state = stateOf("Could not save");

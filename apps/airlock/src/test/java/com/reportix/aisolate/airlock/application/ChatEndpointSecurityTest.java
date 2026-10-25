@@ -11,7 +11,6 @@ import com.reportix.aisolate.airlock.support.AirlockTestConfig;
 import com.reportix.aisolate.airlock.support.AuditCapture;
 import com.reportix.aisolate.airlock.support.FakeToolClient;
 import com.reportix.aisolate.airlock.support.ScriptedChatModel;
-import com.reportix.aisolate.airlock.support.UnknownKeyJwt;
 import com.reportix.aisolate.identity.testing.Http;
 import com.reportix.aisolate.identity.testing.Keycloak;
 import com.reportix.aisolate.identity.testing.Tokens;
@@ -137,33 +136,6 @@ class ChatEndpointSecurityTest {
   void resetModel() {
     model.reset();
     spans.reset();
-  }
-
-  static Stream<Arguments> tokensNotForAIsolate() {
-    return Stream.of(
-        arguments(named("no token", null)),
-        // Every claim is right, only the signature is not the identity provider's.
-        arguments(
-            named("signed by an unknown key", UnknownKeyJwt.forged(Keycloak.usersIssuerUri()))),
-        // A real token of a real user, issued to another Acme Financial Group client.
-        arguments(
-            named(
-                "issued for another audience",
-                Tokens.forUser(Keycloak.usersIssuerUri(), "other-app", "nora", "password"))));
-  }
-
-  @ParameterizedTest
-  @MethodSource("tokensNotForAIsolate")
-  void givenTokenNotForAIsolate_whenChat_then401AndNoModelCall(String token) {
-    // Arrange
-    String message = "{\"message\":\"hi\"}";
-
-    // Act
-    HttpResponse<String> response = chat(token, "acme-hr", message);
-
-    // Assert
-    assertThat(response.statusCode()).isEqualTo(401);
-    assertThat(model.prompts()).isEmpty();
   }
 
   @Test

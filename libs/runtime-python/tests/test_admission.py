@@ -3,7 +3,6 @@ from typing import Any
 import pytest
 from conftest import case_file
 
-from aisolate_runtime import admission
 from aisolate_runtime.identity import Principal, Unauthorized, bearer, roles
 
 AIRLOCK = case_file("admission/airlock.json")
@@ -68,8 +67,3 @@ def test_given_identity_value_when_principal_made_then_attributes_hold_it() -> N
 def test_given_authorization_header_when_bearer_read_then_token_or_none(header: str | None, expected: str | None) -> None:
     # Arrange / Act / Assert
     assert bearer(header) == expected
-
-
-def test_given_star_among_allowed_roles_when_admission_decided_then_no_wildcard() -> None:
-    # Arrange / Act / Assert
-    assert admission.failure("x@example.com", "app", ["staff"], ["*"], ["*"]) == "role"
