@@ -6,7 +6,7 @@ The pods import the code and refuse to start when it does not match the manifest
 jar, read by `JarInspector` (moving Java to a manifest is a later step).
 
 Schema: [`python-artifact.schema.json`](python-artifact.schema.json) (JSON Schema 2020-12). Writer:
-`libs/sdk-python/src/aisolate/build.py` (`python -m aisolate build`). Runtime contract: [`runtime-contract.md`](runtime-contract.md).
+`libs/sdk-python/src/aisolate/build.py` (`python -m aisolate build`). The pods that load it: [The pods of an airlock](configuration.md#the-pods-of-an-airlock).
 
 ## Project layout
 
@@ -37,7 +37,7 @@ vendor/**                   the project's own dependencies, installed for Linux 
 - Entries sorted, timestamps fixed to 1980-01-01, deflate: the same source gives the same bytes, so the same digest.
 - Digest: `sha256:<hex>` of the zip's bytes, the same form as a jar's. It is the airlock's `spec.jar.digest`.
 - `vendor/` holds what `[project] dependencies` in `pyproject.toml` need **besides** the SDK and the runtime's own
-  pinned set (runtime-contract.md §12). The SDK ships that set as `aisolate/runtime-constraints.txt`, exported from
+  pinned set. The SDK ships that set as `aisolate/runtime-constraints.txt`, exported from
   the two images' `uv.lock` (the SDK's tests fail when they drift apart). The build resolves the dependencies
   against it (`uv pip compile -c runtime-constraints.txt --only-binary :all: --python-version 3.13
   --python-platform <arch>-manylinux_2_28`), then installs what the set does not hold with `uv pip install

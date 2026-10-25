@@ -113,7 +113,7 @@ public final class TraceTree {
         .toList();
   }
 
-  /** What a span is, read from the names and attributes docs/runtime-contract.md §8 gives it. */
+  /** What a span is, read from the names and attributes docs/observability.md gives it. */
   static String kind(String name, Map<String, Object> tags) {
     if (tags.containsKey("aisolate.verdict")) return "verifier";
     if (tags.containsKey("aisolate.handler")) return "handler";

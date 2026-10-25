@@ -234,37 +234,3 @@ Every runner also checks, on every case: `****` never appears in the rendered an
 and grounding the same input twice gives the same output. Numbers are exact decimals (Java
 `USE_BIG_DECIMAL_FOR_FLOATS`, Python `parse_float=Decimal`). `GoldenSetTest` additionally checks that every
 template covers every error class but `typed_text_fact`.
-
-## Layer 2: black-box HTTP scenarios (planned, not implemented)
-
-The same scenarios run against each image pair (`aisolate/airlock` + `aisolate/tool-server`, and
-`aisolate/airlock-python` + `aisolate/tool-server-python`), each pod pair started with Testcontainers next to a
-Keycloak with a test realm (users, roles, clients `acme-chat`, `partner-app`, `other-app`), a Postgres seeded
-from `cases/rules/compensation.json`'s table plus the identity join's table, a stub LLM that answers from a script
-(OpenAI/Ollama-compatible HTTP), a stub ingest that records what it receives and an OTLP receiver. The documents
-and the project artifact are mounted as the controller mounts them.
-
-1. An admitted question whose script calls `read_records` gets an answer with evidence: SSE `evidence`,
-   `answer_chunk`, `verification`, `done` in order, the evidence event without rows.
-2. The same with `Accept: application/json`: one document with exactly `answer`, `dont_know`, `segments`,
-   `figures`, `tables`, `quotes`, `provenance`, `evidence`, `verification`, `revision`, `trace_id`.
-3. No token, an unknown key, another audience: 401 with the `WWW-Authenticate` header; the model is never called.
-4. A token with no role either list holds, a client the airlock does not list: 403 `forbidden`; one `refusal` line
-   reaches the ingest with reason `role` / `client`; the model is never called.
-5. Unknown airlock: 404; a blank message or one over 4000 characters: 400.
-6. The ingest receives one `exchange` line per exchange, with the airlock's bearer token, valid against
-   `cases/audit/audit-event.schema.json`, `trace_id` equal to the exchange's trace; the same line on stdout.
-7. The ingest down and the buffer full: 503 `audit unavailable` before admission; the lines arrive in order once it
-   is back.
-8. `tools/list` offered to the model is the airlock's `tools` only; a scripted call to another tool is dropped
-   and the model told so.
-9. A tool call under a rule set that grants the user nothing: zero rows, the answer "I don't know", outcome
-   `dont_know`.
-10. A filter on a masked column: the tool error `Invalid arguments: column is not available: iban`, no SQL.
-11. The tool server called directly with a `_meta` pinning another revision: the empty result.
-12. No span (attributes, events, status) of either pod carries an e-mail, the question, the answer, SQL, a row
-    value, a role or an exception message; span names and attributes as `docs/observability.md`.
-13. Health (`/actuator/health/liveness`, `/actuator/health/readiness`) and metrics (`/actuator/prometheus`) only
-    on the management port 9464, without a token; the metric names and labels of `docs/observability.md` after
-    scenarios 1 and 4 (`aisolate.exchanges` by outcome, `aisolate.refusals` by reason, `aisolate.tool.queries` by
-    outcome).

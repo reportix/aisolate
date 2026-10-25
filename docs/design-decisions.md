@@ -72,20 +72,6 @@ for the UI and the CLI. Nowhere may `org.keycloak` be imported.
 **Consequence.** A compromised airlock pod cannot invent a user; it can only replay the tokens it holds for their
 remaining minutes. People live in the identity provider alone: AIsolate never creates, invites or deletes one.
 
-## Who may ask is a list of e-mails; roles only select rules
-
-**Superseded 2026-10-24** by [Who may ask is a set of roles](#who-may-ask-is-a-set-of-roles).
-
-**Question.** What admits a person to an airlock, and what decides what they see once in?
-
-**Decision.** Two separate things. Admission is a list: the space's users may ask every airlock of it, an
-airlock's own users may ask that airlock alone, and the calling client must be one the airlock lists (`azp`), or,
-for a token without an e-mail, one of its machine clients. The token's roles never admit anyone; they only select
-which rules apply.
-
-**Consequence.** A new role in the identity provider changes no one's reach; a developer sees exactly who may
-ask by reading two lists. A user the airlock admits whose roles match no rule gets zero rows and never an error.
-
 ## Who may ask is a set of roles
 
 **Question.** Who keeps the list of askers: AIsolate or the organisation's identity provider?

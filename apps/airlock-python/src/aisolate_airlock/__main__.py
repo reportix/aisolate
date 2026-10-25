@@ -1,4 +1,4 @@
-"""The airlock pod: read what the controller rendered (runtime-contract §1.2), load the airlock and its code,
+"""The airlock pod: read what the controller rendered (docs/configuration.md, "Airlock pod"), load the airlock and its code,
 serve 8080 and the management port 9464. Any problem at start is one log line and exit 1."""
 
 from __future__ import annotations

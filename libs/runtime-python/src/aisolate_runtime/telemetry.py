@@ -1,4 +1,4 @@
-"""Spans, metrics and the management app on 9464 (runtime-contract §8, §9, §1.1)."""
+"""Spans, metrics and the management app on 9464 (docs/observability.md)."""
 
 from __future__ import annotations
 

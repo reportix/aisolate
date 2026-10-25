@@ -94,8 +94,7 @@ The walk-through, the project layout and how to try it: [docs/develop.md](docs/d
 ## Documentation
 
 - [Concepts](docs/concepts.md): what an airlock is, who decides what, the vocabulary, where LLM and data sources are defined, the stages, the components.
-- [Architecture](docs/architecture.md): the repositories, the modules and what depends on what, the two runtimes under one contract, what runs in the cluster, how an airlock's code travels, one exchange in the code.
-- [Data model](docs/data-model.md): the three documents, the backend's tables, what the controller renders from them, the audit trail's shape.
+- [Architecture](docs/architecture.md): the repositories, the modules and what depends on what, the two runtimes under one contract, what runs in the cluster, how an airlock's code travels, one exchange in the code, what is stored where.
 - [Design decisions](docs/design-decisions.md): why it is built this way, one decision at a time.
 - [Install](docs/install.md): what the cluster, identity provider, databases and model server must provide.
 - [Develop](docs/develop.md): the CLI, the project of one airlock, tools, handlers, rules, the AIsolate UI, trying an airlock.
@@ -108,7 +107,6 @@ The walk-through, the project layout and how to try it: [docs/develop.md](docs/d
 - [Compliance](docs/compliance.md): the controls against OWASP's Top 10 for LLM applications, the EU AI Act, DORA and the NIST AI RMF, with what each leaves open.
 - [Verification](docs/verification.md): grounded answers, every figure written in from the evidence and checked; what that proves and what it does not.
 - [Documents](docs/documents.md): the three document kinds, the project file, rule sets, names and revision, validation.
-- [LLMs and data sources](docs/llms-and-data-sources.md): the model entry, the three levels, how the documents, the API, the controller, the runtimes and the UI carry them, API keys.
 - [Configuration](docs/configuration.md): environment variables per image, controller settings.
 - [Audit](docs/audit.md): the audit trail AIsolate keeps (append-only, hash-chained, read in the AIsolate UI and the API), the AIsolate Audit XBRL taxonomy, one exchange's export as PDF, JSON or XBRL, validating it with an XBRL processor.
 - [Chart](https://github.com/reportix/aisolate-charts/blob/main/chart/README.md): install steps and every parameter, in `aisolate-charts`.

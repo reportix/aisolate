@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "What both Python runtimes share: configuration, tokens and admission, the project artifact, data sources, telemetry."
 license = "AGPL-3.0-only"
 requires-python = ">=3.13,<3.14"
-# The runtime's pinned set (docs/runtime-contract.md §12): exact versions, permissive licenses only.
+# The runtime's pinned set: exact versions, permissive licenses only (docs/design-decisions.md).
 dependencies = [
     "aisolate",
     "anyio==4.15.1",

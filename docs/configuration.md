@@ -17,7 +17,7 @@ Every app answers actuator (health for the kubelet, `/actuator/prometheus` for a
 | `AISOLATE_ISSUER_URI` | `http://localhost:8180/realms/aisolate` | The operators' identity provider (demo realm `aisolate`: the AIsolate UI and the CLI sign in there); the chart sets it from `platform.identity.operators.issuerUri`, else `platform.identity.issuerUri`. The audience `aisolate` is fixed |
 | `AISOLATE_ROLES_CLAIM` | `realm_access.roles` | Dot path of the roles claim in the tokens: the AIsolate UI roles here, the roles the rules and handlers see in the pods; the chart sets the backend's from `platform.identity.operators.rolesClaim`, else `platform.identity.rolesClaim`, and the controller sets the pods' from `platform.identity.rolesClaim` |
 | `AISOLATE_PUBLIC_URL` | `http://localhost:8080` | Builds endpoint links and the 401 challenge; in the cluster the release host |
-| `AISOLATE_CORS_ALLOWED_ORIGINS` | `*` | Browser origins (the AIsolate UI's); the token decides, not the origin |
+| `AISOLATE_CORS_ALLOWED_ORIGINS` | `*` | Browser origins (the AIsolate UI's): a comma-separated list of origin patterns, unset meaning the default `*`; the token decides, not the origin |
 | `AISOLATE_CLUSTER_NAMESPACE` | empty | The namespace the backend applies the resources to and creates the Secrets in. Empty: no cluster, a deploy ends in the database and a data source that brings credentials is refused |
 | `AISOLATE_CLUSTER_RESYNC` | `PT5M` | How often the backend applies every space again, so a save the cluster did not take (an API server away) heals |
 | `AISOLATE_API_DOCS` | `false` | `true` serves the OpenAPI document of the AIsolate UI's API and its Swagger UI, to anyone who reaches the backend (the operations still need the token) |
@@ -48,7 +48,7 @@ The identity variables above (`AISOLATE_ISSUER_URI`, `AISOLATE_ROLES_CLAIM`, `AI
 | `AISOLATE_CONFIG_DISCOVERY_DIR` | empty | The `aisolate-discovery` mount, what discovery lists of every valid space, re-read when the kubelet swaps the files; set without `AISOLATE_CONFIG_DIR`, the pod is a discovery pod, which serves no airlock and answers every chat path 404; empty: discovery lists the pod's own documents |
 | `AISOLATE_AIRLOCK` | empty | The one airlock this pod serves; every other id is 404 at the chat endpoint; a name the documents do not define refuses the start; empty serves every airlock (tests only) |
 | `AISOLATE_TOOL_SERVER_URL` | `http://localhost:8081/mcp` | This airlock's MCP server; the controller sets `http://<space>-<airlock>-mcp-server:8081/mcp` and leaves it out when the airlock runs no MCP server |
-| `AISOLATE_CODE_URL`, `AISOLATE_CODE_DIGEST`, `AISOLATE_CODE_TOKEN_FILE` | empty | The airlock's code: the backend's `http://backend.<namespace>.svc:8085/v1/code/<space>/<airlock>/<digest>`, its `sha256:` digest (`jar.digest`) and the airlock's code token the controller mounted, `/var/run/aisolate/code/token`. Fetched at start, retried while the backend is away, refused on another status or other bytes ([runtime contract §1.4.1](runtime-contract.md)); all unset for an airlock without code |
+| `AISOLATE_CODE_URL`, `AISOLATE_CODE_DIGEST`, `AISOLATE_CODE_TOKEN_FILE` | empty | The airlock's code: the backend's `http://backend.<namespace>.svc:8085/v1/code/<space>/<airlock>/<digest>`, its `sha256:` digest (`jar.digest`) and the airlock's code token the controller mounted, `/var/run/aisolate/code/token`. Fetched at start, retried while the backend is away, refused on another status or other bytes ([The code](#the-code)); all unset for an airlock without code |
 | `AISOLATE_PLUGINS_DIR`, `AISOLATE_PLUGIN_DIGESTS` | empty | Local runs and tests only, without `AISOLATE_CODE_DIGEST`: a directory of code and the `sha256:` digests it must hold; nothing renders them in a cluster |
 | `AISOLATE_DATASOURCE_<i>_ID`, `_URL`, `_USERNAME`, `_PASSWORD` | unset | Every data source the airlock resolves, global ones included, `<i>` from 0 in the order of the ids: id and URL as values, user and password from that source's Secret. A handler reaches one through `aisolate.dataSource(id)`, a PostgreSQL connection with a 5 s connect and a 10 s socket timeout |
 | `AISOLATE_LLM` | required | The main LLM's id, the one that answers; always one of the `AISOLATE_LLM_<i>_ID`. Temperature 0.1, keep-alive unlimited, thinking off |
@@ -90,6 +90,127 @@ same code before it reached a pod:
   `rule set hr.compensation: rule own-record names column ibna no plugin declares`;
 - with a plugin whose data source the airlock does not resolve:
   `plugin hr-tools reads data source payroll, which this airlock does not define`.
+
+## The pods of an airlock
+
+What the controller renders for airlock `a` of space `s`, the same shape for both languages: only the images differ
+(`aisolate/airlock` and `aisolate/tool-server`, or `aisolate/airlock-python` and `aisolate/tool-server-python` for a
+Python project's `jar.language`), and the egress proxy's variables. An airlock without `llm` or `prompt` gets no pod;
+the MCP server exists only when the airlock has code and lists a tool in `tools`. What both runtimes do with these
+inputs is pinned, case by case, in [`conformance/cases`](../conformance/README.md).
+
+| Object | Name |
+|---|---|
+| The airlock pod's Deployment, Service, Ingress rule and NetworkPolicy | `s-a-airlock` |
+| The MCP server's Deployment, Service and NetworkPolicy | `s-a-mcp-server` |
+| The documents, a ConfigMap (`Global-aisolate.yaml`, `Space-s.yaml`, `Airlock-a.yaml`) | `s-a-config` |
+| The code token, a Secret with the key `token` | `s-a-code` |
+| The audit ingest token, a Secret with the key `token` | `s-a-audit` |
+
+| | Airlock pod | MCP server |
+|---|---|---|
+| Container | `airlock` | `tools` |
+| Ports | `http` 8080 (Service 8080), `management` 9464 | `http` 8081 (Service 8081), `management` 9464 |
+| Replicas, strategy | `platform.airlock.replicas`, `Recreate` | 1, `Recreate` |
+| Resources | `platform.airlock.resources` | `platform.toolServer.resources` |
+
+- **Probes and metrics**, on 9464 only and without a token: readiness `GET /actuator/health/readiness` (after 10 s,
+  every 5 s, 30 failures), liveness `GET /actuator/health/liveness` (after 60 s, every 10 s), answered 200
+  `{"status":"UP"}` or 503 `{"status":"DOWN"}`, and `GET /actuator/prometheus`. A pod labelled
+  `aisolate.dev/scraper: "true"`, in any namespace, may reach 9464; no Service exposes it.
+- **Security context**: no privilege escalation, a read-only root filesystem, every capability dropped;
+  `runAsNonRoot` (the images run as the numeric user `10001:10001`), seccomp `RuntimeDefault`, no service-account
+  token; `platform.airlock.runtimeClassName` and the `platform.scheduling` node selector and tolerations when set.
+  The only writable paths are emptyDirs: `/tmp` (2 GiB; 256 MiB on the discovery pods), which holds the fetched code,
+  and the audit buffer.
+- **Labels and annotations**: `aisolate.dev/role` (`airlock`, `tool-server`, `discovery`), `aisolate.dev/space`,
+  `aisolate.dev/airlock` and `aisolate.dev/managed-by: controller` on every object; the pod template's
+  annotation `aisolate.dev/revision: <revision>`, so a new revision rolls the pods and a sibling's change rolls none.
+  The Ingress rule (path prefix `/v1/spaces/s/airlocks/a/`) carries `nginx.ingress.kubernetes.io/proxy-read-timeout:
+  "600"` and `nginx.ingress.kubernetes.io/proxy-buffering: "off"`: an exchange streams for minutes.
+
+| Mount | Path | Pods |
+|---|---|---|
+| `config`, the ConfigMap `s-a-config`, read-only | `/etc/aisolate`, `AISOLATE_CONFIG_DIR` | both |
+| `code-token`, the Secret `s-a-code`, read-only | `/var/run/aisolate/code/token`, `AISOLATE_CODE_TOKEN_FILE` | both, when the airlock has code and the install a backend |
+| `tmp`, emptyDir | `/tmp` | both |
+| `audit-token`, the Secret `s-a-audit`, read-only | `/var/run/aisolate/audit/token`, `AISOLATE_AUDIT_TOKEN_FILE` | the airlock pod, with the audit ingest |
+| `audit-buffer`, emptyDir of 96 MiB | `/var/lib/aisolate/audit`, `AISOLATE_AUDIT_BUFFER_DIR` | the airlock pod, with the audit ingest |
+
+The controller derives both tokens from the install's ingest key (`AISOLATE_CONTROLLER_AUDIT_INGESTKEY`, the chart's
+Secret `audit-ingest`): the audit token is `base64url_nopad(HMAC-SHA256(key, "s/a"))`, the code token the same over
+`"code/s/a"`, so each admits one airlock's lines or one airlock's code and nothing else. A pod only reads the file. An
+`openai` LLM's API key and a data source's login reach the pods as variables from their own Secrets
+(`AISOLATE_LLM_<i>_API_KEY`, `AISOLATE_DATASOURCE_<i>_USERNAME`, `_PASSWORD`), never as files.
+
+### The code
+
+No code object reaches the cluster: the backend keeps an airlock's artifact (a jar, or a Python project's zip) and
+serves it on its cluster-internal port 8085, never on the API or the Ingress. A pod whose airlock has code, before it
+serves anything:
+
+1. sends `GET AISOLATE_CODE_URL` (`<backend>/v1/code/s/a/<digest>`) with the bearer read from
+   `AISOLATE_CODE_TOKEN_FILE`. A connection failure, a 429 or a 5xx is retried, six tries with 1, 2, 4, 8 and 16 s
+   between them; any other answer refuses at once: `fetching the code from <url> answered <status>` (401 no token,
+   403 another airlock's token, 404 the airlock holds other code now);
+2. streams the body under `/tmp` (a jar to `/tmp/aisolate/code/aisolate-code.jar`, a Python zip to
+   `/tmp/aisolate/fetched/aisolate-code.zip`) and hashes it on the way; other bytes than `AISOLATE_CODE_DIGEST` refuse
+   (`the code fetched from <url> has digest <d>, not AISOLATE_CODE_DIGEST <expected>`) and leave no file;
+3. loads it, the jar's classes or the zip's package ([The Python artifact](python-artifact.md#delivery-and-loading-the-pods)).
+
+Any refusal fails the start, and readiness never says UP before the code is loaded; Kubernetes restarts the pod. A
+digest without `AISOLATE_CODE_URL` refuses too: `the airlock has code (AISOLATE_CODE_DIGEST) but no AISOLATE_CODE_URL
+to fetch it from: code needs the backend (headless=false)`.
+
+### Start checks
+
+Both pods refuse to start, naming the problem, on: a data source variable left blank (`AISOLATE_DATASOURCE_<i>_ID is
+blank`, `…_URL is blank`) or an id twice (`data source <id> is defined twice`); in the airlock pod, an LLM catalog
+that does not hold together (`AISOLATE_LLM is blank`, `AISOLATE_LLM_<i>_ID is blank`, `…_URL is blank`, `…_MODEL is
+blank`, `model <id> is defined twice`, `model <id>: provider <p> is not one of [ollama, openai]`, `AISOLATE_LLM granite
+is none of the AISOLATE_LLM_<i>_ID`; a blank `_API_KEY` is none). Indexes run from 0 and are read until the first
+missing `_ID`. Data source URLs are JDBC URLs (`jdbc:postgresql://host:port/db`); the login comes from the variables,
+never from the URL. The documents must load whole, without an unknown key, a dangling reference or a revision
+mismatch: the revision is the first 12 hex digits of a SHA-256 over every document in (kind, name) order, each as
+`<kind>/<name>`, a zero byte and the file's bytes, and a pod whose files hash to another refuses with `revision
+mismatch: AISOLATE_CONFIG_REVISION says <x>, the documents hash to <y>`. No partial configuration is ever served.
+
+### Tokens
+
+Both pods validate every request's bearer themselves: the signature against the issuer's JWKS (the algorithm the key
+names; never `none` or an HMAC), `iss` exactly `AISOLATE_ISSUER_URI`, `aud` holding `aisolate`, `exp` and `nbf` with
+60 s of skew, a non-blank `sub`. `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI`, when the chart sets it, names
+the JWKS in the cluster instead of the issuer's discovery document. The airlock answers a missing or invalid token
+401 `{"status":401,"title":"Unauthorized"}` (`application/problem+json`) with `WWW-Authenticate: Bearer
+resource_metadata="<AISOLATE_PUBLIC_URL>/.well-known/oauth-protected-resource"`; only `/actuator/health/**`,
+`/actuator/prometheus` and `/.well-known/**` (the RFC 9728 document: `resource` the public URL,
+`authorization_servers` the issuer, `scopes_supported` `aisolate`) answer without one. CORS on `/v1/**` and
+`/.well-known/**`: the configured origins, methods GET, POST, PUT and OPTIONS, headers `Authorization`,
+`Content-Type`, `Accept` and `If-Match`, `AIsolate-Cluster` exposed, no credentials, max-age 3600; a preflight needs
+no token. The MCP server answers `POST /mcp` on 8081 (MCP streamable
+HTTP, stateless, JSON responses) to its own airlock pod alone; a request without a valid token is 401 with no body.
+
+### The chat endpoint
+
+A chat request is checked in this order: the token (401), the body (400: a blank message or one over 4,000
+characters), the audit buffer (503 `audit unavailable` while it is full and the pod fails closed), the airlock (404
+`unknown airlock`: not served by this pod, or another space in the path), admission (403 `forbidden`). Only the 403
+writes an audit line, a `refusal` with its reason (`role` or `client`); a 400, 401, 404 or the audit 503 writes none. The answers
+and their bodies: [API, Errors](api.md#errors).
+
+### Network and egress
+
+- The airlock pod admits the ingress controller on 8080 and the scrapers on 9464. It may reach DNS, the host of
+  every LLM it sees, of every data source it resolves and of the trace collector (the admin's peers,
+  `platform.egress.hosts`), its MCP server on 8081, the backend's pods on 8085 alone (audit, code), the identity
+  provider and, when enabled, the egress proxy (`aisolate.dev/role: egress-proxy`, port 3128).
+- The MCP server admits its own airlock pod on 8081 and the scrapers on 9464. It may reach DNS, the data source
+  hosts, the trace collector, the backend's pods on 8085 when the airlock has code, the identity provider and the
+  proxy.
+- With the proxy, the Java pods get `JDK_JAVA_OPTIONS` (`-Dhttps.proxyHost=egress -Dhttps.proxyPort=3128
+  -Dhttp.nonProxyHosts=…`); the Python pods get `HTTPS_PROXY=http://egress:3128` and the same exceptions as
+  `NO_PROXY`. The exceptions are the admin's mapped hosts, the identity provider's issuer and JWKS hosts (unless
+  proxied), `localhost`, `*.svc` and `*.cluster.local`.
 
 ## Controller
 

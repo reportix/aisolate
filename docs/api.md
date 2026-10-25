@@ -41,7 +41,7 @@ from your workflow](integrate.md).
 | `GET /.well-known/oauth-protected-resource` (no prefix) | the discovery pods and every airlock pod; the backend too (the operators' issuer) | anyone | RFC 9728 metadata naming the identity provider and the `aisolate` scope |
 | `GET /spaces` | backend | any valid token | The spaces the caller may open: every space for the admin, those they develop for a developer, none for anyone else (200, `[]`) |
 | `GET /llms`, `GET /llms/{id}` | backend | admin, developer of any space | The global LLMs, every space's unless a nearer level defines the same id: `[{id, provider, url, model, secret_ref, updated_at}]`, sorted by id, `secret_ref` naming the Secret of an OpenAI-compatible one's API key, null without; one, or 404 `no model named granite` |
-| `POST /llms`, `PUT /llms/{id}`, `DELETE /llms/{id}` | backend | admin | Create `{id, provider, url, model, api_key}` (409 `id: a model granite already exists`), `provider` `ollama` or `openai` and `api_key` optional and write-only (an admin may reveal it), an `openai` one's, which becomes the Secret `aisolate-llm-<id>-<6 chars>`; edit its `provider`, `url`, `model` and `api_key`, the id fixed, the stored key kept while the `url` stays; delete it (204, its Secret with it), 400 when an airlock would lose its main LLM ([LLMs and data sources](llms-and-data-sources.md#api)) |
+| `POST /llms`, `PUT /llms/{id}`, `DELETE /llms/{id}` | backend | admin | Create `{id, provider, url, model, api_key}` (409 `id: a model granite already exists`), `provider` `ollama` or `openai` and `api_key` optional and write-only (an admin may reveal it), an `openai` one's, which becomes the Secret `aisolate-llm-<id>-<6 chars>`; edit its `provider`, `url`, `model` and `api_key`, the id fixed, the stored key kept while the `url` stays; delete it (204, its Secret with it), 400 when an airlock would lose its main LLM |
 | `GET /data-sources`, `GET /data-sources/{id}` | backend | admin, developer of any space | The global data sources: `[{id, url, secret_ref, updated_at}]`, sorted by id; one, or 404 |
 | `POST /data-sources`, `PUT /data-sources/{id}`, `DELETE /data-sources/{id}` | backend | admin | Rows `{id, url, username, password}` as a space's data sources, the Secret `aisolate-ds-<id>-<6 chars>`; 409 `id: a data source hr already exists`; a delete is 400 when an airlock's code reads it and nothing nearer defines it |
 | `POST /credentials/{secretRef}/reveal` | backend | admin, signed in within five minutes | A stored API key or data source login in clear, `{values: {apiKey}}` or `{values: {username, password}}`, `Cache-Control: no-store`; every call is recorded ([below](#post-v1credentialssecretrefreveal)) |
@@ -497,7 +497,7 @@ holds the trace (Jaeger keeps traces for a while only) or its spans name another
 `unavailable` when the store did not answer. `steps` is `null` unless `held`.
 
 A step is a span: `kind` one of `exchange`, `admission`, `handler`, `verifier`, `embedding`, `model`, `tool`,
-`mcp`, `query`, `sql`, `http` or `other`, read from its name and attributes ([Runtime contract](runtime-contract.md) §8); `start_us` microseconds after the trace's first span, `duration_us` its own; `error` when its status is
+`mcp`, `query`, `sql`, `http` or `other`, read from its name and attributes ([Observability](observability.md#what-one-trace-shows)); `start_us` microseconds after the trace's first span, `duration_us` its own; `error` when its status is
 ERROR, `error_type` the exception's class. `attributes` are the span's, without the space and airlock every span repeats,
 the exporter's bookkeeping, a status description or an exception attribute. Children are ordered by start; a span
 whose parent the trace lacks is a root. A trace id that no line of the caller's spaces names, or that is not 32
@@ -535,7 +535,7 @@ minute where it is per second, each rate's window at least the step.
 
 `GET /v1/code/{space}/{airlock}/{digest}`, on the backend's ingest port 8085 alone (the API port answers
 404, and no Ingress routes to it): how an airlock's two pods get its artifact at start
-([runtime contract](runtime-contract.md)). `Authorization: Bearer <code token>`, the token the controller renders
+([The code](configuration.md#the-code)). `Authorization: Bearer <code token>`, the token the controller renders
 into the airlock's Secret: HMAC-SHA256 of `code/<space>/<airlock>` under the install's ingest key, so it
 admits that airlock's code alone and no audit line. `{digest}` is the `sha256:<hex>` of `spec.jar.digest`.
 

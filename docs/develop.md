@@ -148,7 +148,7 @@ source the airlock resolves. An id the airlock does not resolve throws `IllegalA
 (`hr-space/hr-contracts has no data source payroll`). The code reads no environment variable for a connection.
 
 A handler reaches an LLM through `AIsolateManager.llm(id)`, by its id in the catalog the airlock sees: its own
-LLMs, its space's and the global ones ([LLMs and data sources](llms-and-data-sources.md)). The same
+LLMs, its space's and the global ones ([Where LLMs and data sources are defined](concepts.md#where-llms-and-data-sources-are-defined)). The same
 LLM embeds (`embed(text)`, `embed(texts)`: one vector per text) and chats (`chat(prompt)`), as far as its model
 can: `aisolate.llm("nomic").embed(exchange.question())`. An unknown id, an embed on a model that cannot embed and a
 chat on one that cannot chat throw `LlmException`, an `IllegalArgumentException` with a plain message (`no model
@@ -171,7 +171,12 @@ company-hr, the hr-contracts airlock, has none. AIsolate's grounding writes ever
 evidence and flags every number the model typed itself, and every value of a fact column
 ([Verification](verification.md)). A verifier gets the grounded answer and each evidence as JSON text
 (`groundingJson()` and `contentJson()` in Java, `grounding_json` and `content_json` in Python); Java project code reads
-it with `com.reportix.aisolate.sdk.Json.parse`, Python with `json`. The platform ships no retriever, no document
+it with `com.reportix.aisolate.sdk.Json.parse`, Python with `json`. The grounded answer is the JSON answer's
+`{answer, segments, figures, tables, quotes, provenance}` ([API](api.md#the-chat-endpoint)); a tool's evidence is
+its result, `{entity, row_count, columns, rows, rule_version, rules, sql_hash, labels, data_source}`, the labels
+`{row_key, subject, period, units, unit_columns, decimals, masked, function, facts}` (`facts` only when a readable
+column is one), the values as the database gave them (exact numbers, text, booleans, null, `YYYY-MM-DD` dates);
+an empty result has `entity` `""`, `row_count` 0 and `labels` null. The platform ships no retriever, no document
 parser and no injection filter: the handler's predicates are the
 developer's invariant ([Context preparators](security.md#context-preparators)).
 
@@ -237,7 +242,7 @@ backend reads the manifest and never runs the project's code; the Python airlock
 The project's own dependencies (`[project] dependencies` beyond the SDK) travel in the zip's `vendor/`: uv installs
 them as Linux binary wheels for Python 3.13 on the cluster's CPU, by default this machine's (`aarch64` on Apple
 Silicon; `AISOLATE_ARCH=x86_64 aisolate deploy` for an x86_64 cluster). The runtime's own packages
-(runtime-contract.md §12) come from the pods, never the zip: the build refuses a dependency that needs one of them
+(`aisolate/runtime-constraints.txt`) come from the pods, never the zip: the build refuses a dependency that needs one of them
 at another version, naming the package and both versions, and a package without a Linux wheel, naming it
 ([python-artifact.md](python-artifact.md#the-zip)). Without uv, a project with dependencies of its own does not
 build: install uv. The templates depend on nothing else.

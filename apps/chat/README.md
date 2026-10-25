@@ -23,9 +23,3 @@ selected and for source markers, 12–16px radii and soft shadows, Geist from th
 and the HTTP and OIDC helpers).
 Gates, from the root: `npm run lint && npm run format && npm test && npm run build`. The image builds from the
 repository root: `docker build -f apps/chat/Dockerfile --build-arg NEXT_PUBLIC_AISOLATE_URL=... .`
-
-## License
-
-Free software under the GNU Affero General Public License, version 3 only ([`LICENSE`](../../LICENSE), SPDX
-`AGPL-3.0-only`), like the rest of AIsolate. You may run, study, change and redistribute it; if you offer a modified version to others
-over a network, you must offer them its source as well.

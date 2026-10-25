@@ -2,7 +2,8 @@
 
 An airlock is defined by two kinds of document in the API group `aisolate.dev/v1`: `Space` and `Airlock`,
 beside the install's one `Global`, which holds the LLMs and data sources every space inherits
-([LLMs and data sources](llms-and-data-sources.md)). An airlock names its space (`spec.space`).
+([Where LLMs and data sources are defined](concepts.md#where-llms-and-data-sources-are-defined)). An airlock names its
+space (`spec.space`).
 A project's `aisolate.yaml` writes one `Airlock`, which every deploy creates or updates; the space is defined
 in the AIsolate UI. The backend keeps all three and applies them to the cluster. The same loader validates them
 in every process. The documents below are a complete example of the three kinds.
@@ -135,7 +136,7 @@ spec:
 | `metadata.name` | Required: the airlock's id ([Airlock id](#names-ids-and-revision)), in the space `AISOLATE_SPACE` names. An id the space does not have creates the airlock; an existing one updates it in place. An id another space holds is refused (409). |
 | `spec.description` | Optional; shown with the airlock in the AIsolate UI and in discovery. |
 | `spec.llm` | The id of the LLM that answers, defined by the file's `llms`, the space or AIsolate (global), nearest first; an airlock without one runs nothing. One that resolves to nothing is refused, 400 `llm: no model named granite in this airlock's space or globally`. Ids that code names (`aisolate.llm("nomic")`) are not checked at deploy. |
-| `spec.llms` | Optional: `{id, provider, url, model}`, no type; the same id as an inherited LLM replaces it ([LLMs and data sources](llms-and-data-sources.md)). |
+| `spec.llms` | Optional: `{id, provider, url, model}`, no type; the same id as an inherited LLM replaces it. `provider` is `ollama` (`url` the server, `http://ollama.aisolate.svc:11434`) or `openai`, any OpenAI-compatible server with its API version in the `url` (`https://api.openai.com/v1`, Ollama's own `http://…:11434/v1`); `model` is the name the server knows. A project's entry takes no key and names no Secret: an `openai` model's API key is typed once in the AIsolate UI ([Credentials](security.md#credentials)). |
 | `spec.access` | Who may ask, beside the space's `access.roles`: the airlock's own `access.roles` and its `access.callers`, set here or in the AIsolate UI, and its machine clients, `access.clients`, set here or through the API. |
 | An airlock created in the AIsolate UI | It has a name, a description, its roles, callers, LLMs and data sources, and no `llm`, `prompt` or code, so it runs nothing. The deploy fills its code, stages, prompt, `llm`, `llms` and data sources from the project. |
 | Credentials | Each data source gives `username` and `password`, usually as variables, where the stored document has `secretRef`. The backend turns them into a Secret and sets its name. A `secretRef` in a project file is refused. |

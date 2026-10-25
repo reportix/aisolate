@@ -1,5 +1,5 @@
 """Fails when an installed distribution of the current environment is not under a permissive license
-(runtime-contract §12: Apache, MIT, BSD, PSF, ISC; never GPL, LGPL, AGPL, MPL). Run it with the
+(docs/design-decisions.md: Apache, MIT, BSD, PSF, ISC; never GPL, LGPL, AGPL, MPL). Run it with the
 module's own environment: ``uv run python <path>/check_licenses.py``."""
 
 import re

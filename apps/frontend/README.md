@@ -19,6 +19,6 @@ developers (its airlocks) and roles (who only ask), which the space's `caller_ro
 Demo operators: `jasmine` (a developer once an admin lists her e-mail as a developer of a space), `andrew` and `nora` (admins),
 `auditor` (reads the audit), `guest` (no role), password `password`.
 
-Shared look and helpers come from `../../libs/ui` (`@aisolate/ui`); the design system is `DESIGN.md`, and
-so are the words the UI keeps to: Roles and Developers (never Members or Users), Models (never LLMs), Data sources, Overview,
+Shared look and helpers come from `../../libs/ui` (`@aisolate/ui`): the design tokens are in its `theme.css`. The words
+the UI keeps to: Roles and Developers (never Members or Users), Models (never LLMs), Data sources, Overview,
 Details, Tools. Gates, from the repository root: `npm run lint && npm run format && npm test && npm run build`.

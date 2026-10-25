@@ -97,7 +97,8 @@ lists:
   ([Network policies](security.md#network-policies)); the JVM sends HTTPS through the proxy for every host but the directly mapped ones, the identity
   provider's unless it is proxied, and the cluster's own (`*.svc`, `*.cluster.local`).
 - Every container gets the requests and limits of `platform.airlock.resources` or
-  `platform.toolServer.resources`, and its `/tmp` is capped at 256 MiB.
+  `platform.toolServer.resources`, and its `/tmp` is capped at 2 GiB, which holds the fetched code (256 MiB on the
+  discovery pods).
 
 ## What the controller checks
 
