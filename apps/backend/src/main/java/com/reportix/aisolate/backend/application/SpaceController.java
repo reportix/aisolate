@@ -85,7 +85,9 @@ public class SpaceController {
 
   @Operation(
       summary = "Delete every space",
-      description = "The cluster's clean slate, for aisolate-reset. See docs/api.md.",
+      description =
+          "The cluster's clean slate: removes every space with its airlocks and the controller's"
+              + " objects. See docs/api.md.",
       security = @SecurityRequirement(name = SwaggerApiConfig.BEARER_SCHEME))
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Deleted; cluster is null without one"),

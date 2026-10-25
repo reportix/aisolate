@@ -42,7 +42,7 @@ import org.springframework.test.context.TestPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-/** DELETE /spaces, aisolate-reset's endpoint: the database emptied, then the cluster cleared. */
+/** DELETE /spaces, the clean-slate endpoint: the database emptied, then the cluster cleared. */
 // The mock extension first: it injects the client Spring's context (built per class) hands out.
 @EnableKubernetesMockClient(crud = true)
 @SpringBootTest(
