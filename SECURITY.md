@@ -19,10 +19,11 @@ around that is a vulnerability, whatever the component. Where each guarantee is 
 
 ## Reporting
 
-Do not open a public issue. Report privately through a confidential issue in this project's issue tracker
-(tick *Confidential*) or security@reportix.com. Include the commit or version, the airlock definition, the token claims and the request that show the
-problem; a failing test is the best report. We confirm receipt, keep you informed while we fix it, and
-credit you in the fix unless you prefer otherwise.
+Do not open a public issue. Report privately through GitHub's private vulnerability reporting on
+https://github.com/reportix/aisolate/security/advisories/new or by e-mail to security@reportix.com. Include the
+commit or version, the airlock definition, the token claims and the request that show the problem; a failing test
+is the best report. We confirm receipt, keep you informed while we fix it, and credit you in the fix unless you
+prefer otherwise.
 
 ## Supported versions
 

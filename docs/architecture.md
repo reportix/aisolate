@@ -10,10 +10,9 @@ way is [Design decisions](design-decisions.md).
 
 | Repository | Holds | Licence |
 |---|---|---|
-| `aisolate` (this one) | The airlock pod and the MCP server in Java and in Python, the controller, the backend, the AIsolate UI, the sample chat client (`apps/chat`), the `aisolate` CLI with its templates, the two SDKs, the shared libraries, the conformance cases and this documentation, the Helm chart in `chart/` (the CRDs, the controller, the policies, the egress proxy; with `headless=false` the UI, the backend and its database) and its tests | AGPL-3.0-only |
-| `integrations` | An n8n node and KNIME nodes that ask an airlock as a machine client | Apache-2.0 |
-| `aisolate-reset` | A CLI that gives an install with the AIsolate UI a clean slate | AGPL-3.0-only |
-| `website` | The public site; it renders this documentation | AGPL-3.0-only |
+| [`aisolate`](https://github.com/reportix/aisolate) (this one) | The airlock pod and the MCP server in Java and in Python, the controller, the backend, the AIsolate UI, the sample chat client (`apps/chat`), the `aisolate` CLI with its templates, the two SDKs, the shared libraries, the conformance cases, this documentation and the CRDs the controller generates (`crds/`) | AGPL-3.0-only |
+| [`aisolate-charts`](https://github.com/reportix/aisolate-charts) | The Helm chart (the CRDs copied from this repository's `crds/`, the controller, the policies, the egress proxy; with `headless=false` the UI, the backend and its database) and its tests | AGPL-3.0-only |
+| [`aisolate-integrations`](https://github.com/reportix/aisolate-integrations) | An n8n node and KNIME nodes that ask an airlock as a machine client | Apache-2.0 |
 
 ## The modules of this repository
 
@@ -51,7 +50,7 @@ flowchart BT
 |---|---|---|---|
 | `apps/airlock` | Spring Boot, Spring AI, the MCP Java SDK as client | 8080, management 9464 | One airlock's endpoint: token, admission, the handlers of its code, the agent loop, grounding, the audit line, the SSE stream. No database of its own. Also the `validate` command and the discovery pods. |
 | `apps/tool-server` | Spring Boot, the MCP Java SDK as server | 8081, management 9464 | The MCP server of one airlock: its tool plugins, the gates, the rules compiled into one SELECT per call on the plugin's data source. |
-| `apps/controller` | Spring Boot, Java Operator SDK, fabric8 | 8082 | Watches `Global`, `Space` and `Airlock`, validates, renders the pod pair and everything around it, reports status. Generates the CRDs (`syncCrds`). |
+| `apps/controller` | Spring Boot, Java Operator SDK, fabric8 | 8082 | Watches `Global`, `Space` and `Airlock`, validates, renders the pod pair and everything around it, reports status. Generates the CRDs into `crds/` (`syncCrds`). |
 | `apps/backend` | Spring Boot, JDBC, Flyway, fabric8 | 8080 for the API, 8085 for the ingest | The AIsolate UI's API and the CLI's deploy endpoint; owns the schema; applies every save to the cluster; keeps the audit trail and serves the code to the pods. Only with `headless=false`. |
 | `apps/cli` | picocli, GraalVM native image | — | `aisolate create`, `login`, `logout`, `build`, `deploy`; the four templates in Java and in Python. |
 | `apps/frontend` | Next.js, React, Tailwind | 3000 (3001 in development) | The AIsolate UI. Signs in with PKCE in the browser and calls the backend with the token. |
@@ -244,8 +243,8 @@ and `ClusterSyncService`, which turns the rows into documents (`Documents`) and 
 | Java | `./gradlew check` | Spotless; every module's tests, the integration ones against real Keycloak and PostgreSQL containers (Testcontainers); the templates' code compiled and tested against the SDK (`templateTest`); `pythonTest` |
 | Python | `./gradlew pythonTest` (part of `check`) | each Python module's tests and the Python templates', with uv; the conformance runners among them |
 | Web | `npm run lint && npm run format && npm test && npm run build` | the workspace: ESLint, Prettier, Vitest, the Next.js build |
-| Chart | `tests/chart/test.sh` | the chart rendered and checked; `helm test` proves from inside a cluster that the pods are unreachable except through the ingress |
-| CI | `.gitlab-ci.yml` | `check`, `test` (Docker-in-Docker for Testcontainers; `chart-test` runs the chart's tests), `scan` (Trivy on dependencies and secrets), `package` (`cli-windows-installer`, the Windows CLI's installer, run by hand) |
+| CRDs | `./gradlew :apps:controller:syncCrds` | the three CRDs written into `crds/` from the controller's resource classes; the chart, its tests and its pin script, which copies them, are in `aisolate-charts` |
+| CI | `.gitlab-ci.yml` | `check`, `test` (Docker-in-Docker for Testcontainers) and a version gate (every merge request bumps `version=` in `gradle.properties`) on every pipeline, `package` (`cli-windows-installer`, the Windows CLI's installer) by hand; every merge to `main` publishes the images as `<version>-<sha10>` to the internal registry through the fleet's release component, and the fleet's vulnerability scan runs on `main`; a tag `X.Y.Z` publishes the public images ([Release](release.md#how-aisolate-itself-is-released)) |
 
 Images: the Java apps on a distroless Java 25 base and the Python apps on a distroless Python 3.13 base, both
 pinned by digest, neither with a shell or a package manager (the Python dependencies come from a

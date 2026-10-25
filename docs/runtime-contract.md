@@ -21,9 +21,9 @@ Contents: 1 pod inputs · 2 configuration loading · 3 the tool server · 3b how
 
 Both pods of one airlock are rendered by `apps/controller/.../render/Renderer.java` (`render()`); the
 settings it renders with are `ControllerProperties` (bound from the chart's `/etc/aisolate/settings.yaml`,
-template `chart/templates/platform/controller/_settings.tpl`). A Python runtime reads **the same env
-names and the same paths**: the controller renders one pod shape for both languages, only the image differs
-(exception: the egress proxy, §1.6).
+template `chart/templates/platform/controller/_settings.tpl` in `aisolate-charts`). A Python runtime reads
+**the same env names and the same paths**: the controller renders one pod shape for both languages, only the
+image differs (exception: the egress proxy, §1.6).
 
 Names, for space `s`, airlock `a`:
 

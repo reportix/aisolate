@@ -1,8 +1,8 @@
 # Install AIsolate
 
-AIsolate runs in a namespace of the organisation's Kubernetes cluster, from one Helm chart
-(the chart in `chart/`). What the cluster, the identity provider, the databases and the model
-server must provide comes first.
+AIsolate runs in a namespace of the organisation's Kubernetes cluster, from one Helm chart (the chart in
+[`aisolate-charts`](https://github.com/reportix/aisolate-charts)). What the cluster, the identity provider, the
+databases and the model server must provide comes first.
 
 ## Cluster requirements
 
@@ -71,14 +71,18 @@ has no authentication: run it where it has no egress of its own.
 ```bash
 kubectl create namespace aisolate
 kubectl label namespace aisolate pod-security.kubernetes.io/enforce=restricted
-helm install aisolate ./chart --namespace aisolate --values values.yaml
+helm repo add aisolate https://sonatype.reportix.com/repository/helm-public
+helm install aisolate aisolate/aisolate --namespace aisolate --values values.yaml
 ```
 
-The values file carries every AIsolate image by digest, `headless` (the default `true` installs no
-AIsolate UI; `false` adds the UI, its backend and the backend's database), the identity provider under
-`platform.identity`, and under `platform.egress` the cluster's DNS and ingress peers and the hosts of the LLM
-and of every data source a space or an airlock names. The steps and every parameter are in the
-chart README (`chart/README.md`).
+The chart pins the AIsolate images of its release by digest, all but the AIsolate UI's and the chat's: they
+carry their deployment's URLs from the build, so with `headless: false` build `apps/frontend/Dockerfile` and name
+the image by digest under `platform.frontend.image` (the chat's, from `apps/chat/Dockerfile`, under
+`platform.chat.image`). The values file carries `headless` (the default `true` installs no AIsolate UI; `false` adds
+the UI, its backend and the backend's database), the identity provider under `platform.identity`, and under
+`platform.egress` the cluster's DNS and ingress peers and the hosts of the LLM and of every data source a space or
+an airlock names. The steps and every parameter are in the
+[chart README](https://github.com/reportix/aisolate-charts/blob/main/chart/README.md).
 
 The backend's database keeps the spaces, the airlocks and the audit trail on the PersistentVolumeClaim `db`
 (`persistence.postgres.storage.size`, default `8Gi`; `.storageClass`, empty for the cluster's default), so it

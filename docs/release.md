@@ -3,7 +3,8 @@
 A headless install runs no AIsolate UI and no backend. Its documents are the release: the admin writes them,
 creates the Secrets they name, maps their hosts, validates them and applies them through the organisation's own review. The merge
 request is the review, the apply is the release, the git history is the record. AIsolate stores no approval
-state. The same controller renders the same pods as in an install with the AIsolate UI.
+state. The same controller renders the same pods as in an install with the AIsolate UI. The last section, for
+maintainers, is [how AIsolate itself is released](#how-aisolate-itself-is-released).
 
 ## Write the documents
 
@@ -30,12 +31,12 @@ kubectl create secret generic <secretRef> --namespace aisolate \
 
 The host of every LLM URL and data source URL the `Global`, a space or an airlock names is in
 `platform.egress.hosts` with its NetworkPolicy peer, or on `platform.egress.proxy.domains`. See the
-chart README (`chart/README.md`).
+[chart README](https://github.com/reportix/aisolate-charts/blob/main/chart/README.md).
 
 ## Validate the documents
 
 ```bash
-docker run --rm -v "$PWD:/release:ro" aisolate/airlock validate /release
+docker run --rm -v "$PWD:/release:ro" docker-public.sonatype.reportix.com/aisolate/airlock:X.Y.Z validate /release
 ```
 
 The command parses the directory, prints every problem and exits 1 or 0 before the application starts. It
@@ -141,3 +142,19 @@ Every airlock pod logs each exchange: `exchange_start`, `handlers_resolved`, `ha
 per exchange and per refused request on its own logger `aisolate.audit` to stdout
 ([Audit trail](security.md#audit-trail), [Audit](audit.md)). Logs name handlers and count rows; they carry no
 rows, no passages and no token.
+
+## How AIsolate itself is released
+
+AIsolate's version is `version=` in `gradle.properties`; every merge request raises it. Every merge to `main`
+publishes the images to Reportix's internal registry as `<version>-<sha10>`, the version and the commit's first
+ten hex digits. A Maintainer releases a merged commit by tagging it with the bare version, `X.Y.Z`, equal to
+`version=`: the tag publishes the images as `docker-public.sonatype.reportix.com/aisolate/<app>:X.Y.Z`, `<app>`
+being `backend`, `controller`, `airlock`, `tool-server`, `airlock-python`, `tool-server-python` or `keycloak`
+(Keycloak with AIsolate's login themes). The UI and the chat are not published yet: they bake their deployment's
+URLs in at build time, so a deployment builds them from `apps/frontend/Dockerfile` and `apps/chat/Dockerfile`.
+Tags with a `v`, such as `v0.1.0`, are history; a release tag has none.
+
+`./gradlew :apps:controller:syncCrds` writes the CRDs into `crds/` from the controller's resource classes; a
+change to those classes commits the regenerated files with it. The chart is released on its own, with a version
+of its own, in [`aisolate-charts`](https://github.com/reportix/aisolate-charts): its pin script sets the chart's
+`appVersion` and the image digests of a release `X.Y.Z` and copies `crds/` from that tag.

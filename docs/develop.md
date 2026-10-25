@@ -352,7 +352,6 @@ preparators read, and give someone who may see one airlock's only that airlock's
 
 ## Start over
 
-`aisolate-reset` removes every space with its airlocks, their code, resources, Secrets and pods,
-through the backend and the session it shares with `aisolate`; it needs the `aisolate-admin` role, since it
-wipes every team's spaces. Create a space and its airlocks in the AIsolate UI before the next deploy. See the
-`aisolate-reset` repository.
+An admin calls `DELETE /spaces` ([API](api.md#endpoints)), which removes every space with its airlocks, their
+code, resources, Secrets and pods; it needs the `aisolate-admin` role, since it wipes every team's spaces. Create a
+space and its airlocks in the AIsolate UI before the next deploy.

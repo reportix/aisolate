@@ -19,4 +19,3 @@ __pycache__/
 .gradle-home/
 .uv-cache/
 .vscode/
-tests/chart/actual-results/

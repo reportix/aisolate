@@ -4,7 +4,7 @@
 
 Read `README.md`, then [docs/concepts.md](docs/concepts.md), [docs/architecture.md](docs/architecture.md) and
 [docs/security.md](docs/security.md). A
-change to behaviour updates the page in `docs/` that describes it, in the same merge request.
+change to behaviour updates the page in `docs/` that describes it, in the same pull request.
 
 ## Run it locally
 
@@ -55,7 +55,7 @@ Both pods take `AISOLATE_PLUGINS_DIR` and `AISOLATE_PLUGIN_DIGESTS` for an airlo
 |---|---|
 | `apps/airlock/` | The airlock core, one airlock per pod: the chat and discovery controllers, the exchange and the agent loop, admission (the roles of the space and of the airlock, and the airlock's callers; the roles also select the rules), the model and MCP clients, the airlock's handlers from its code, fetched from the backend at start, with a `javax.sql.DataSource` per data source, SSE, `validate`. No database of its own. |
 | `apps/tool-server/` | The MCP server: publishes the airlock's tools, runs each call through the gates and hands the tool a governed query on its plugin's data source (token, admission, tool gate, identity join, rules, SQL, evidence). Holds no customer code and no tool of its own. |
-| `apps/controller/` | The controller: the resources and their status, CRD generation (`./gradlew :apps:controller:syncCrds` writes them to `chart/crds`), the renderer, release validation, one reconciler per kind. |
+| `apps/controller/` | The controller: the resources and their status, CRD generation (`./gradlew :apps:controller:syncCrds` writes them to `crds/`), the renderer, release validation, one reconciler per kind. |
 | `apps/backend/` | The AIsolate UI's API, with `headless=false`: spaces (developers, roles, LLM, data sources), airlocks (roles, callers, LLM, data sources) with their code (`JarInspector`: the tools with their plugin and data source, the handlers, the rule sets), the deploy call (one `Airlock` checked against its code and its space), cluster sync and the data sources' Secrets, and the audit trail: the ingest on its own port, the append-only table chained per airlock, its reading and verify ([docs/audit.md](docs/audit.md)). Owns the schema (Flyway). |
 | `apps/cli/` | The `aisolate` CLI (picocli, GraalVM native image, macOS and Windows installers). `src/main/templates/` holds the four templates, `company-hr`, `company-sales`, `auditor` and `hospital`, each one airlock with its code and its `aisolate.yaml` ([docs/develop.md](docs/develop.md)). |
 | `apps/frontend/` | The AIsolate UI (Next.js). |
@@ -66,8 +66,7 @@ Both pods take `AISOLATE_PLUGINS_DIR` and `AISOLATE_PLUGIN_DIGESTS` for an airlo
 | `libs/plugins/` | Reading an airlock's code: `JarScan` finds the tool plugins and handlers by scanning the classes, in any package; the code fetch and digest pin every pod applies at start (`CodeFetch`, `JarDigests`). |
 | `libs/audit-report/` | The AIsolate Audit report as one xBRL-XML instance (`AuditReport`, `AuditLine`), which the backend's audit export writes ([docs/audit.md](docs/audit.md#export)). |
 | `libs/ui/` | `@aisolate/ui`: design tokens, primitives and the HTTP, OIDC and env helpers of the AIsolate UI. One npm workspace with `apps/frontend` and `apps/chat`, rooted at `package.json`. |
-| `chart/` | The Helm chart: CRDs, templates, values and its README. |
-| `tests/chart/` | The chart's tests. |
+| `crds/` | The three CRDs, generated from the controller's resource classes by `./gradlew :apps:controller:syncCrds`; never edited by hand. The chart's pin script in `aisolate-charts` copies them. |
 | `docker/` | The compose stack for the laptop. |
 | `docs/` | The documentation, indexed in `README.md`. |
 
@@ -82,11 +81,13 @@ Tests run against real Keycloak and PostgreSQL containers and cover the flow end
 compiles the templates' code and runs their tests against `libs/sdk` (`templateTest`). `./gradlew pythonTest`,
 part of `check` and `build`, runs the Python modules' tests and the Python templates' with
 [uv](https://docs.astral.sh/uv/), which must be on the PATH. A security property
-gets a test that fails when it breaks; a fix without such a test is not finished. The chart is tested by
-`tests/chart/test.sh`. CI (`.gitlab-ci.yml`) runs `check` (Spotless; lint, format, unit tests, build
-and `npm audit` of the web workspace), `test` (`./gradlew test` with Docker-in-Docker; `./gradlew pythonTest` with uv;
-`chart-test`, `tests/chart/test.sh`), `scan` (Trivy on dependencies and secrets) and `package` (`cli-windows-installer`,
-the Windows CLI's installer, run by hand).
+gets a test that fails when it breaks; a fix without such a test is not finished. CI (`.gitlab-ci.yml`) runs
+`check` (Spotless; lint, format, unit tests, build and `npm audit` of the web workspace), `test`
+(`./gradlew test` with Docker-in-Docker; `./gradlew pythonTest` with uv) and a version gate (every merge request
+bumps `version=` in `gradle.properties`) on every pipeline, and `package` (`cli-windows-installer`, the Windows
+CLI's installer) by hand. Every merge to `main` publishes the images as `<version>-<sha10>` to the internal
+registry through the fleet's release component, and the fleet's vulnerability scan runs on `main`; a tag `X.Y.Z`
+publishes the public images ([Release](docs/release.md#how-aisolate-itself-is-released)).
 
 ## Conventions
 
@@ -94,7 +95,7 @@ the Windows CLI's installer, run by hand).
   `// Assert`. The same logic over several inputs is one `@ParameterizedTest`.
 - Comments say why, not what.
 - Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`), one concern
-  each. A merge request names the guarantee it touches.
+  each. A pull request names the guarantee it touches.
 - Vocabulary: **airlock** (`hr-space/hr-contracts` in messages), **space**, **roles** (what admits: those a space lists may ask every airlock of it, those an airlock lists, that airlock alone), **developers** (the e-mails a space lists, who edit it in the AIsolate UI), **callers** (the OAuth clients an airlock admits), **data source** (a database the airlock's code reads, by
   id), **exchange** (one request and its answer), **AIsolate UI**. Not application, app or turn.
 - No new dependency for what a few lines do. Versions are pinned (`gradle.lockfile`,
@@ -102,17 +103,17 @@ the Windows CLI's installer, run by hand).
 
 ## Chart
 
-The Helm chart is in `chart/`; `chart/README.md` has the install steps and every parameter.
+The Helm chart is in [`aisolate-charts`](https://github.com/reportix/aisolate-charts), with its install steps,
+every parameter, its conventions and its tests. It takes the CRDs from this repository's `crds/`: its pin
+script copies them from the tag it pins, so a change to a resource class commits the output of
+`./gradlew :apps:controller:syncCrds` with it.
 
-- `headless` decides only whether the AIsolate UI is installed. It gates templates and never names a folder.
-- One folder per component, its NetworkPolicy included; values mirror the folders (`platform.backend` is
-  `templates/platform/backend/`).
-- Every value a template reads has a `## @param` line, and every `@param` is read.
-- Images use the common image block; without `allowTags` a tag-only image fails the render.
-- Object names, labels and selectors are API: the controller's peers and settings depend on them. The settings
-  and the proxy's `envoy.yaml` live in pod templates, never in a ConfigMap.
-- The chart holds no credentials, names no demo and installs no stand-in: the identity provider, the
-  databases and the chat are the organisation's.
+## Where work happens
+
+Issues and pull requests are on GitHub (https://github.com/reportix/aisolate). CI and merges run on Reportix's
+GitLab: a maintainer imports a pull request there as a merge request, keeping the author and the sign-off, and the
+result reaches GitHub's `main` through the mirror. So a merged pull request is closed with a link to its commit
+rather than marked merged.
 
 ## License of contributions
 

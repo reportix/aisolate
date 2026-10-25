@@ -2,8 +2,8 @@
 
 In a cluster the controller sets each pod's variables from the airlock's documents, the Secrets and the
 installation settings the chart renders; nothing is typed per pod. The chart's values are in the
-chart README (`chart/README.md`). The defaults below are those of the compose stack a developer
-runs on a laptop.
+[chart README](https://github.com/reportix/aisolate-charts/blob/main/chart/README.md). The defaults below are
+those of the compose stack a developer runs on a laptop.
 
 Every app answers actuator (health for the kubelet, `/actuator/prometheus` for a scraper) on the management port
 9464, `MANAGEMENT_SERVER_PORT`, which no Service exposes; the backend also answers `/readyz` on its API port

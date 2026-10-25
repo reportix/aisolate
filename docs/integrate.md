@@ -2,9 +2,9 @@
 
 A workflow tool such as n8n or KNIME, or a script, asks an airlock the way a chat does: it signs in, posts one
 question and reads the answer. Nothing else is installed on either side. This page is the contract the ready-made
-integrations in the `integrations` repository rely on: an n8n community node (also an AI Agent tool) and an n8n
-workflow, a KNIME workflow and a KNIME extension whose AIsolate Connector, Airlock Selector and Airlock Prompter
-nodes list the airlocks a client may ask.
+integrations in the [`aisolate-integrations`](https://github.com/reportix/aisolate-integrations) repository rely
+on: an n8n community node (also an AI Agent tool) and an n8n workflow, a KNIME workflow and a KNIME extension whose
+AIsolate Connector, Airlock Selector and Airlock Prompter nodes list the airlocks a client may ask.
 
 ## The JSON answer
 
@@ -91,7 +91,7 @@ Both do the same four steps: take the parameters, sign in, ask, and lay the evid
 
 | | n8n | KNIME |
 |---|---|---|
-| In the `integrations` repository | `n8n/aisolate-ask.json` | `knime/aisolate-ask.knwf` |
+| In the `aisolate-integrations` repository | `n8n/aisolate-ask.json` | `knime/aisolate-ask.knwf` |
 | Form | A workflow file, imported in the editor or with `n8n import:workflow` | A workflow file for KNIME Analytics Platform 5.12, imported into a space |
 | Parameters | One Set node, `Parameters` | Two Credentials Configuration nodes (client, user), the token endpoint in OAuth2 Authenticator, the URL and question in POST Request |
 | Output | One item per evidence entry, each carrying the answer and its provenance | One row: the answer, its provenance and the evidence as a list |
@@ -99,7 +99,7 @@ Both do the same four steps: take the parameters, sign in, ask, and lay the evid
 The parameters are the host of AIsolate, the host of the application users' identity provider and its realm, the client id and
 secret, the user and password, the space, the airlock and the question. The hosts default to a local
 cluster and the client secret and password to `change-me`; replace every default for your installation.
-The `integrations` repository's README has the steps for each tool.
+The `aisolate-integrations` repository's README has the steps for each tool.
 
 ## What the workflow sees
 

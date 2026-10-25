@@ -56,18 +56,21 @@ documents through the organisation's own pipeline. See [docs/concepts.md](docs/c
 
 | Repository | Holds |
 |---|---|
-| `aisolate` (this one; the others are published beside it) | The airlock core, the MCP server, the controller, the backend, the AIsolate UI, the CLI with its `company-hr`, `company-sales`, `auditor` and `hospital` templates, the SDK and the shared libraries, the sample chat client of the airlock endpoint (`apps/chat`), the Helm chart (`chart/`) and its tests |
-| `aisolate-reset` | A CLI that gives an install with the AIsolate UI a clean slate |
-| `website` | The public site |
+| [`aisolate`](https://github.com/reportix/aisolate) (this one) | The airlock core, the MCP server, the controller, the backend, the AIsolate UI, the CLI with its `company-hr`, `company-sales`, `auditor` and `hospital` templates, the SDK and the shared libraries, the sample chat client of the airlock endpoint (`apps/chat`) and the CRDs the controller generates (`crds/`) |
+| [`aisolate-charts`](https://github.com/reportix/aisolate-charts) | The Helm chart: its install steps, every parameter and its tests |
+| [`aisolate-integrations`](https://github.com/reportix/aisolate-integrations) | An n8n node and a KNIME extension that ask an airlock as a machine client (Apache-2.0) |
 
-This repository's layout, directory by directory: [CONTRIBUTING.md](CONTRIBUTING.md#repository-layout).
+This repository's layout, directory by directory: [CONTRIBUTING.md](CONTRIBUTING.md#repository-layout). The website:
+[aisolate.ai](https://aisolate.ai).
 
 ## Quickstart
 
-Install the chart, with `headless: false` in `values.yaml` for the AIsolate UI ([docs/install.md](docs/install.md)):
+Install the chart, with `headless: false` in `values.yaml` for the AIsolate UI, whose image you build yourself
+([docs/install.md](docs/install.md#install-the-chart)):
 
 ```bash
-helm install aisolate ./chart --namespace aisolate --values values.yaml
+helm repo add aisolate https://sonatype.reportix.com/repository/helm-public
+helm install aisolate aisolate/aisolate --namespace aisolate --values values.yaml
 ```
 
 In the AIsolate UI an admin defines the LLMs `granite` and `nomic` and the data sources `hr` and `clients` for
@@ -97,10 +100,10 @@ The walk-through, the project layout and how to try it: [docs/develop.md](docs/d
 - [Install](docs/install.md): what the cluster, identity provider, databases and model server must provide.
 - [Develop](docs/develop.md): the CLI, the project of one airlock, tools, handlers, rules, the AIsolate UI, trying an airlock.
 - [Command-line interface](docs/cli.md): install the `aisolate` CLI on macOS or Windows, its commands, where it keeps the session, building it.
-- [Release](docs/release.md): a headless install: documents, Secrets, hosts, validate, apply, status, roll back.
+- [Release](docs/release.md): a headless install: documents, Secrets, hosts, validate, apply, status, roll back; how AIsolate itself is released: version, tags, images, CRDs.
 - [API](docs/api.md): connecting a client, every endpoint, the chat endpoint, SSE events, errors.
 - [Observability](docs/observability.md): OTLP traces and Prometheus metrics for any backend (we recommend the OpenTelemetry Collector, Jaeger and Prometheus); one trace per exchange, what its spans hold and never hold; the metrics, the scraper's label, the example dashboard.
-- [Integrate](docs/integrate.md): call an airlock from a workflow tool (n8n, KNIME): the JSON answer, the sign-in, the templates and the KNIME nodes in the `integrations` repository.
+- [Integrate](docs/integrate.md): call an airlock from a workflow tool (n8n, KNIME): the JSON answer, the sign-in, the templates and the KNIME nodes in the `aisolate-integrations` repository.
 - [Security](docs/security.md): one request end to end, the gates, identity, rules to SQL, pod isolation.
 - [Compliance](docs/compliance.md): the controls against OWASP's Top 10 for LLM applications, the EU AI Act, DORA and the NIST AI RMF, with what each leaves open.
 - [Verification](docs/verification.md): grounded answers, every figure written in from the evidence and checked; what that proves and what it does not.
@@ -108,7 +111,7 @@ The walk-through, the project layout and how to try it: [docs/develop.md](docs/d
 - [LLMs and data sources](docs/llms-and-data-sources.md): the model entry, the three levels, how the documents, the API, the controller, the runtimes and the UI carry them, API keys.
 - [Configuration](docs/configuration.md): environment variables per image, controller settings.
 - [Audit](docs/audit.md): the audit trail AIsolate keeps (append-only, hash-chained, read in the AIsolate UI and the API), the AIsolate Audit XBRL taxonomy, one exchange's export as PDF, JSON or XBRL, validating it with an XBRL processor.
-- [Chart](chart/README.md): install steps and every parameter.
+- [Chart](https://github.com/reportix/aisolate-charts/blob/main/chart/README.md): install steps and every parameter, in `aisolate-charts`.
 - [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md).
 - [AUTHORS.md](AUTHORS.md): the team behind AIsolate.
 
