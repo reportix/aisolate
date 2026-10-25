@@ -16,9 +16,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation(libs.springdoc.openapi)
     implementation(libs.fabric8.client)
     // A Python artifact's manifest, checked against docs/python-artifact.schema.json
     implementation(libs.json.schema.validator)

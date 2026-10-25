@@ -19,11 +19,10 @@ dependencies {
     implementation("org.springframework.ai:spring-ai-starter-model-ollama")
     // OpenAI-compatible models: the model alone, no autoconfiguration (one client per catalog entry)
     implementation("org.springframework.ai:spring-ai-openai") {
-        // The OpenAI SDK's older copy of the classes springdoc's swagger-annotations-jakarta holds
+        // The OpenAI SDK's swagger annotations: nothing here reads them
         exclude(group = "io.swagger.core.v3", module = "swagger-annotations")
     }
     implementation(libs.mcp.sdk)
-    implementation(libs.springdoc.openapi)
     // Traces over OTLP/HTTP; spans leave the pod only when the controller rendered the endpoint.
     implementation("org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry")
     implementation("io.micrometer:micrometer-tracing-bridge-otel")

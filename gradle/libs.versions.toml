@@ -13,7 +13,6 @@ picocli = "4.7.7"
 graalvm-native = "1.1.17"
 fabric8 = "7.9.0"
 josdk = "5.6.2"
-springdoc = "3.1.1"
 json-schema-validator = "3.0.8"
 pdfbox = "3.0.8"
 
@@ -22,7 +21,6 @@ spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies"
 spring-ai-bom = { module = "org.springframework.ai:spring-ai-bom", version.ref = "spring-ai" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 mcp-sdk = { module = "io.modelcontextprotocol.sdk:mcp", version.ref = "mcp" }
-springdoc-openapi = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
 picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
 fabric8-client = { module = "io.fabric8:kubernetes-client", version.ref = "fabric8" }

@@ -220,7 +220,7 @@ there.
 | The evidence | `ToolEvidence`; `Result`, `Evidence` of the SDK | `aisolate_airlock.evidence` |
 | Gate 6, grounding | `AnswerFormat`, `Grounding`, `GroundedAnswer` | `aisolate_airlock.answer_format`, `grounding` |
 | Gate 7, the verifiers | `HandlerChain` over the `AnswerVerifier` handlers | `aisolate_airlock.exchange` |
-| The stream | `SseStream`, `ChatEvent` | sse-starlette in `aisolate_airlock.app` |
+| The stream | `SseStream`, `ChatEvent` | a Starlette `StreamingResponse` in `aisolate_airlock.app` |
 | The audit line | `ExchangeAudit`, `AuditEvent`, `AuditLog`, `AuditSink` | `aisolate_airlock.audit` |
 | The trace | `ExchangeTracing`, `OwnTraceFilter`; `TracingConfig` of `libs/identity` | `aisolate_airlock.tracing`; `aisolate_runtime.telemetry` |
 | The documents and the revision | `ConfigurationLoader`, `Configuration`, `Names`, `Urls` of `libs/config` | `aisolate_runtime.config` |
