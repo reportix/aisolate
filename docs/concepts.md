@@ -105,50 +105,6 @@ see all of what every airlock's context preparators read, and on an airlock only
 
 ## Components
 
-```mermaid
-flowchart LR
-    subgraph Customer["The organisation"]
-        User(["Application user"])
-        Chat["Chat, agent or app"]
-        IdP["Identity provider"]
-        DB[("Databases")]
-    end
-    subgraph UI["With the AIsolate UI (headless=false)"]
-        Dev(["Developer"])
-        CLI["aisolate CLI"]
-        Frontend["AIsolate UI"]
-        Backend["Backend"]
-    end
-    subgraph Plane["Namespace aisolate"]
-        K8s["Space, Airlock"]
-        Controller["Controller"]
-        subgraph Pair["per airlock"]
-            Airlock["Airlock pod"]
-            MCP["MCP server"]
-        end
-    end
-    Model["Model"]
-
-    User --> Chat
-    Chat -->|"sign-in (PKCE)"| IdP
-    Chat -->|"discovery, chat + token"| Airlock
-    Airlock -->|"MCP + token"| MCP
-    MCP -->|"one SELECT, read-only role"| DB
-    Airlock -->|"ContextPreparator"| DB
-    Airlock -->|"text only, no identity"| Model
-    Dev --> CLI
-    Dev --> Frontend
-    CLI -->|"deploy + token"| Backend
-    Frontend -->|"API + token"| Backend
-    Backend -->|"documents, Secrets"| K8s
-    Controller -->|"watches, renders"| K8s
-    Controller -.-> Pair
-    Pair -->|"fetch the airlock's code by digest, code token"| Backend
-    Airlock -.->|"JWKS"| IdP
-    MCP -.->|"JWKS"| IdP
-    Backend -.->|"JWKS"| IdP
-```
-
 | Component | Runs as | Does |
 |---|---|---|
 | Customer's chat | The organisation's app; `apps/chat` is the sample | Signs the user in with PKCE, discovers the airlocks, posts questions with the user's token, renders the answer and its evidence. |
