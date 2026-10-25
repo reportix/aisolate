@@ -153,15 +153,6 @@ export const api = {
       call<AuditPage>(t, "GET", `/audit/events${eventsQuery(filters, now, cursor)}`),
     event: (t: string, id: string) =>
       call<AuditDetail>(t, "GET", `/audit/events/${encodeURIComponent(id)}`),
-    /** Every line the list finds for the filters, as one file named by the backend. */
-    export: async (t: string, format: ExportFormat, filters: AuditFilters, now: number) => {
-      const query = new URLSearchParams(eventsQuery(filters, now));
-      query.set("format", format);
-      return file(
-        await send(t, "GET", `/audit/export?${query}`, undefined, { Accept: "*/*" }),
-        format,
-      );
-    },
     /** One event alone, as one file named by the backend. */
     exportEvent: async (t: string, id: string, format: ExportFormat) =>
       file(

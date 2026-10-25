@@ -131,8 +131,6 @@ spec:
           value: "http://aisolate.localtest.me"
         - name: "AISOLATE_CORS_ALLOWED_ORIGINS"
           value: "http://chat.localtest.me"
-        - name: "AISOLATE_API_DOCS"
-          value: "false"
         - name: "AISOLATE_ISSUER_URI"
           value: "http://keycloak.localtest.me/realms/acme"
         - name: "SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI"

@@ -1,4 +1,4 @@
-import { cx } from "../cx";
+import { cx } from "@aisolate/ui";
 
 /** The user's initial on a lavender circle: "N" for Nora. */
 export function Avatar({ name, className }: { name: string; className?: string }) {

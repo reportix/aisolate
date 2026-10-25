@@ -73,8 +73,7 @@ class CreateCommandTest {
     assertThat(project.resolve(".gitignore")).exists();
     assertThat(project.resolve("_gitignore")).doesNotExist();
     assertThat(project.resolve("gradle/wrapper/gradle-wrapper.jar"))
-        .hasSameBinaryContentAs(
-            Path.of("src/main/templates/company-hr/gradle/wrapper/gradle-wrapper.jar"));
+        .hasSameBinaryContentAs(Path.of("../../gradle/wrapper/gradle-wrapper.jar"));
     assertThat(project.resolve("libs/aisolate-sdk.jar")).exists();
     assertThat(Files.isExecutable(project.resolve("gradlew"))).isTrue();
     assertThat(console.lines)

@@ -642,32 +642,6 @@ class ChatEndpointSecurityTest {
   }
 
   @Test
-  void givenAnonymousClient_whenOpenApiDocs_thenChatEndpointDocumentedWithBearerScheme()
-      throws Exception {
-    // Arrange
-    HttpRequest request =
-        HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/v3/api-docs"))
-            .GET()
-            .build();
-
-    // Act
-    HttpResponse<String> response = Http.send(request);
-
-    // Assert
-    assertThat(response.statusCode()).isEqualTo(200);
-    JsonNode doc = JSON.readTree(response.body());
-    JsonNode chat =
-        doc.path("paths").path("/v1/spaces/{spaceId}/airlocks/{airlockId}/chat").path("post");
-    assertThat(chat.path("tags").get(0).asString()).isEqualTo("Chat");
-    assertThat(chat.path("responses").has("200")).isTrue();
-    assertThat(chat.path("responses").has("403")).isTrue();
-    assertThat(chat.path("security").get(0).has("bearer")).isTrue();
-    assertThat(
-            doc.path("components").path("securitySchemes").path("bearer").path("scheme").asString())
-        .isEqualTo("bearer");
-  }
-
-  @Test
   void givenPreflightFromTheCustomerChat_whenOptions_thenAllowedWithoutToken() {
     // Arrange
     HttpRequest request =

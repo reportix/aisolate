@@ -17,9 +17,9 @@ bound to the airlock it was started in. The last airlock, each user's own chats 
 registration live in the browser's localStorage; the registration keeps its RFC 7592 management
 token, which can read or drop only this browser's client. Access tokens stay in memory.
 
-`src/ui/` holds the chat's look and helpers: a neutral gray sidebar, answers on white, purple for what is
-selected and for source markers, 12–16px radii and soft shadows, Geist from the `geist` package (design tokens in
-`theme.css`, every text/background pair checked for WCAG AA by a test; Banner, Button, UserMenu, Muted, Avatar,
-and the HTTP and OIDC helpers).
+`src/ui/` holds the chat's look: a neutral gray sidebar, answers on white, purple for what is selected and for
+source markers, 12–16px radii and soft shadows, Geist from the `geist` package (design tokens in `theme.css`, every
+text/background pair checked for WCAG AA by a test; Banner, Button, UserMenu, Avatar). The HTTP and OIDC helpers
+come from `../../libs/ui` (`@aisolate/ui`), shared with the AIsolate UI.
 Gates, from the root: `npm run lint && npm run format && npm test && npm run build`. The image builds from the
 repository root: `docker build -f apps/chat/Dockerfile --build-arg NEXT_PUBLIC_AISOLATE_URL=... .`

@@ -5,7 +5,6 @@ import com.reportix.aisolate.backend.domain.audit.AuditLine;
 import com.reportix.aisolate.backend.domain.trace.TraceService;
 import com.reportix.aisolate.backend.domain.trace.TraceTree;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,6 @@ import tools.jackson.databind.annotation.JsonNaming;
  * Monitoring's traces (docs/api.md): the admin reads every space's, a developer their spaces'; the
  * auditor and those who only ask none. 404 throughout without a trace store.
  */
-@Tag(name = "Traces", description = "Each exchange's trace: its audit line and its steps.")
 @RestController
 @RequestMapping("/v1/traces")
 @RequiredArgsConstructor

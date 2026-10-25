@@ -6,14 +6,7 @@ import com.reportix.aisolate.backend.domain.space.SpaceFormDTO;
 import com.reportix.aisolate.backend.domain.space.SpaceService;
 import com.reportix.aisolate.backend.domain.space.SpacesDeletedDTO;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
-import com.reportix.aisolate.backend.infrastructure.config.SwaggerApiConfig;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -38,11 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
  * never see. A developer sees the spaces they develop, each read-only here. Every write is applied
  * to the cluster before it answers ({@link ClusterHeader}).
  */
-@Tag(
-    name = "Spaces",
-    description =
-        "Spaces for the AIsolate UI: the developers, roles, LLM, data sources and airlocks of one"
-            + " team or product.")
 @RestController
 @RequestMapping("/v1")
 @RequiredArgsConstructor
@@ -83,16 +71,6 @@ public class SpaceController {
     return ClusterHeader.synced(clusterSync, HttpStatus.OK, spaceId, updated);
   }
 
-  @Operation(
-      summary = "Delete every space",
-      description =
-          "The cluster's clean slate: removes every space with its airlocks and the controller's"
-              + " objects. See docs/api.md.",
-      security = @SecurityRequirement(name = SwaggerApiConfig.BEARER_SCHEME))
-  @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Deleted; cluster is null without one"),
-    @ApiResponse(responseCode = "403", description = "No admin role", content = @Content)
-  })
   @DeleteMapping("/spaces")
   @PreAuthorize(Access.ADMIN)
   public SpacesDeletedDTO deleteAll() {

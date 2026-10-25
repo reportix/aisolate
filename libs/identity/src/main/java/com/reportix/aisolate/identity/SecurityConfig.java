@@ -86,10 +86,7 @@ public class SecurityConfig {
                         "/actuator/prometheus",
                         // the backend's readiness on its own port, which the AIsolate UI probes
                         "/readyz",
-                        "/.well-known/**",
-                        "/v3/api-docs/**",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html")
+                        "/.well-known/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

@@ -2,9 +2,16 @@ export { Banner } from "./components/Banner";
 export { Button } from "./components/Button";
 export { cardClass } from "./components/Card";
 export { ChevronIcon } from "./components/ChevronIcon";
-export { Muted } from "./components/Muted";
 export { UserMenu } from "./components/UserMenu";
-export { cx } from "./cx";
-export { ApiError, Unauthorized, authHeaders, expectOk } from "./lib/http";
-export { displayName, userManagerSettings } from "./lib/oidc";
-export { trimSlash } from "./lib/url";
+// The helpers and the one plain component the chat shares with the AIsolate UI.
+export {
+  ApiError,
+  Muted,
+  Unauthorized,
+  authHeaders,
+  cx,
+  displayName,
+  expectOk,
+  trimSlash,
+  userManagerSettings,
+} from "@aisolate/ui";

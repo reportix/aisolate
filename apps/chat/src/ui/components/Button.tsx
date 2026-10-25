@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from "react";
-import { cx } from "../cx";
+import { cx } from "@aisolate/ui";
 
 /** The one primary action, lavender with purple text; `type` defaults to button so forms do not submit by accident. */
 export function Button({

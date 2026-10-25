@@ -76,26 +76,6 @@ function stalledAfter(watchdog: AbortSignal, userStop: AbortSignal): Promise<nev
   );
 }
 
-/** Uploads one file as the asking user's own document to the airlock behind this chat endpoint. */
-export async function uploadDocument(
-  file: File,
-  token: string,
-  target: { endpoint: string },
-): Promise<{ title: string }> {
-  const form = new FormData();
-  form.append("file", file);
-  // No Content-Type: the browser sets multipart/form-data with its own boundary. The owner is the
-  // token's verified e-mail, decided server-side, never anything sent here.
-  const res = await expectOk(
-    await fetch(target.endpoint.replace("/chat", "/documents"), {
-      method: "POST",
-      headers: authHeaders(token),
-      body: form,
-    }),
-  );
-  return res.json() as Promise<{ title: string }>;
-}
-
 /** Deployed airlocks this user may use: every one AIsolate admits for the token, in its order. */
 export async function listAirlocks(token: string, aisolateUrl: string): Promise<AirlockListing[]> {
   return json<AirlockListing[]>(

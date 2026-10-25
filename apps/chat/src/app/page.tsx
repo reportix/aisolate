@@ -9,7 +9,7 @@ import { MessageList } from "@/components/MessageList";
 import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog, settingsDialog } from "@/components/SettingsDialog";
 import { AirlockPicker, type PickerState } from "@/components/AirlockPicker";
-import { listAirlocks, streamChat, uploadDocument, type AirlockListing } from "@/lib/api";
+import { listAirlocks, streamChat, type AirlockListing } from "@/lib/api";
 import {
   activeChatStore,
   chatFor,
@@ -73,10 +73,6 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
   });
   const [streaming, setStreaming] = useState(false);
   const [banner, setBanner] = useState<{ message: string; retry?: () => void } | null>(null);
-  const [upload, setUpload] = useState<{
-    state: "uploading" | "added" | "error";
-    text: string;
-  } | null>(null);
   const [listing, setListing] = useState<AirlockListing[] | null>(null);
   const [reloads, setReloads] = useState(0);
   const abort = useRef<AbortController | null>(null);
@@ -174,31 +170,18 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
     };
 
     const id = crypto.randomUUID();
-    setMessages((ms) => {
-      // A document added just before the question belongs to it: one bubble, the chip under it.
-      const pending = ms.at(-1);
-      const attached = pending?.role === "user" && pending.attachment && !pending.content;
-      return [
-        ...(attached ? ms.slice(0, -1) : ms),
-        {
-          id: `u-${id}`,
-          role: "user",
-          content: text,
-          toolCalls: [],
-          evidence: [],
-          status: "done",
-          ...(attached && { attachment: pending.attachment }),
-        },
-        {
-          id: `a-${id}`,
-          role: "assistant",
-          content: "",
-          toolCalls: [],
-          evidence: [],
-          status: "streaming",
-        },
-      ];
-    });
+    setMessages((ms) => [
+      ...ms,
+      { id: `u-${id}`, role: "user", content: text, toolCalls: [], evidence: [], status: "done" },
+      {
+        id: `a-${id}`,
+        role: "assistant",
+        content: "",
+        toolCalls: [],
+        evidence: [],
+        status: "streaming",
+      },
+    ]);
     setStreaming(true);
     const controller = new AbortController();
     abort.current = controller;
@@ -239,47 +222,9 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
     }
   };
 
-  // Adds a file to the current airlock as the user's own document; it is embedded on their next
-  // question. Mirrors send(): fresh token, one call, errors shown in place.
-  const onUpload = async (fileToAdd: File) => {
-    if (!current) return;
-    setUpload({ state: "uploading", text: `Adding ${fileToAdd.name}…` });
-    try {
-      const token = await accessToken(settings.aisolateUrl);
-      await uploadDocument(fileToAdd, token, { endpoint: current.endpoint });
-      // The document now lives in the thread as the user's own attachment chip, not a passing status.
-      setMessages((ms) => [
-        ...ms,
-        {
-          id: `up-${crypto.randomUUID()}`,
-          role: "user",
-          content: "",
-          toolCalls: [],
-          evidence: [],
-          status: "done",
-          attachment: fileToAdd.name,
-        },
-      ]);
-      setUpload(null);
-    } catch (e) {
-      if (e instanceof NotConnected || e instanceof Unauthorized) {
-        await signOut(settings.aisolateUrl);
-        return;
-      }
-      const message =
-        e instanceof ApiError && e.status === 403
-          ? "You are not allowed to add documents to this airlock."
-          : e instanceof Error
-            ? e.message
-            : "Upload failed";
-      setUpload({ state: "error", text: message });
-    }
-  };
-
   const onNewChat = () => {
     abort.current?.abort();
     setBanner(null);
-    setUpload(null);
     activeChatStore.set(null);
     setMessages([]);
   };
@@ -288,7 +233,6 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
     if (id === activeChatId) return;
     abort.current?.abort();
     setBanner(null);
-    setUpload(null);
     activeChatStore.set(id);
     setMessages(messagesOf(chatsStore.getSnapshot()[id]));
   };
@@ -308,7 +252,6 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
             compact={compact}
             name={displayName(user)}
             email={user.profile.email}
-            hat={hatOf(current?.id, user.profile.email)}
             onOpenSettings={() => settingsDialog.set(true)}
             onSignOut={() => void signOut(settings.aisolateUrl)}
           />
@@ -331,10 +274,8 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
             {messages.length === 0 && listing && !banner && (
               <Home
                 airlockName={current?.name}
-                questions={questionsFor(current?.id, user.profile.email)}
+                description={current?.description}
                 none={!listing.length}
-                disabled={!ready || streaming}
-                onAsk={(question) => void send(question)}
               />
             )}
             <MessageList messages={messages} userName={displayName(user)} />
@@ -342,14 +283,6 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
         </main>
         <footer>
           <div className="mx-auto w-full max-w-3xl px-6 pb-6 pt-2">
-            {upload && (
-              <p
-                className={`mb-2 px-1 text-xs ${upload.state === "error" ? "text-error" : "text-ink-secondary"}`}
-                role={upload.state === "error" ? "alert" : "status"}
-              >
-                {upload.text}
-              </p>
-            )}
             <Composer
               streaming={streaming}
               disabled={!ready}
@@ -363,7 +296,6 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
               }
               onSend={(t) => void send(t)}
               onStop={() => abort.current?.abort()}
-              onUpload={ready ? (f) => void onUpload(f) : undefined}
             />
           </div>
         </footer>
@@ -372,59 +304,15 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
   );
 }
 
-/** Questions each demo airlock answers well, one click away on a chat's home, by airlock id. */
-const EASY_QUESTIONS: Record<string, string[]> = {
-  "hr-contracts": [
-    "What is my gross salary?",
-    "How many vacation days do I get?",
-    "What does my contract say about the notice period?",
-  ],
-  northwind: [
-    "Which payments to related parties are above 10,000 EUR?",
-    "Which invoices have no matching contract?",
-    "List the figures the company reported for FY2025.",
-  ],
-};
-/** The cast's own questions, by airlock id then e-mail, over the airlock's defaults above. */
-const QUESTIONS_BY_USER: Record<string, Record<string, string[]>> = {
-  "hr-contracts": {
-    "jane@acme.example": [
-      "What is my gross salary?",
-      "What is John Doe's gross salary?",
-      "What is John Doe's notice period?",
-    ],
-  },
-};
-function questionsFor(airlockId?: string, email?: string): string[] {
-  const id = airlockId ?? "";
-  return QUESTIONS_BY_USER[id]?.[email?.toLowerCase() ?? ""] ?? EASY_QUESTIONS[id] ?? [];
-}
-
-/**
- * The hat the demo's cast wears at each airlock, by airlock id then e-mail.
- * ponytail: a chat-side map for the demo; drop it once the airlock reports who its caller is.
- */
-const DEMO_HATS: Record<string, Record<string, string>> = {
-  "hr-contracts": { "jane@acme.example": "CEO", "john@acme.example": "Employee" },
-  northwind: { "auditor@acme.example": "Auditor" },
-};
-function hatOf(airlockId?: string, email?: string): string | undefined {
-  return DEMO_HATS[airlockId ?? ""]?.[email?.toLowerCase() ?? ""];
-}
-
-/** A chat before its first message: who answers it, and a few questions to start with. */
+/** A chat before its first message: who answers it, in the airlock's own words. */
 function Home({
   airlockName,
-  questions,
+  description,
   none,
-  disabled,
-  onAsk,
 }: {
   airlockName?: string;
-  questions: string[];
+  description?: string;
   none: boolean;
-  disabled: boolean;
-  onAsk: (question: string) => void;
 }) {
   if (none) {
     return (
@@ -445,20 +333,7 @@ function Home({
   return (
     <section className="grid gap-3 py-12">
       <h1 className="text-[1.75rem] font-semibold tracking-tight">Ask {airlockName}</h1>
-      <ul className="mt-5 grid gap-2.5 sm:grid-cols-3">
-        {questions.map((question) => (
-          <li key={question}>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => onAsk(question)}
-              className="h-full w-full rounded-2xl border border-hairline bg-paper px-4 py-3.5 text-left text-sm leading-5 text-ink-secondary shadow-[var(--shadow-soft)] transition hover:border-mark-border hover:bg-mark-wash hover:text-mark disabled:opacity-50"
-            >
-              {question}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {description && <p className="text-sm text-ink-secondary">{description}</p>}
     </section>
   );
 }

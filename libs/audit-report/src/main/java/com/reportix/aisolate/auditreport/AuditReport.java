@@ -136,9 +136,6 @@ public final class AuditReport {
   private final Period period;
   private final Entity entity;
   private final Map<Table, List<Map<String, String>>> rows = new LinkedHashMap<>();
-  private int exchanges;
-  private int repeated;
-  private int conflicting;
 
   private AuditReport(Period period, Entity entity) {
     this.period = period;
@@ -160,12 +157,7 @@ public final class AuditReport {
       if (!period.contains(line.ts())) {
         continue;
       }
-      AuditLine first = firstLines.putIfAbsent(exchangeKey(line), line);
-      if (first != null && first.equals(line)) {
-        report.repeated++;
-      } else if (first != null) {
-        report.conflicting++;
-      }
+      firstLines.putIfAbsent(exchangeKey(line), line);
     }
     firstLines.values().stream()
         .map(AuditReport::asReported)
@@ -196,7 +188,6 @@ public final class AuditReport {
   }
 
   private void add(AuditLine line) {
-    exchanges++;
     String exchange = exchangeKey(line);
     rows.get(EXCHANGES)
         .add(
@@ -234,37 +225,9 @@ public final class AuditReport {
   }
 
   // Limit: without a trace id the start time names the exchange, so two in one millisecond
-  // collide (the second is left out and counted). The airlock's tracing fills trace_id.
+  // collide (the second is left out). The airlock's tracing fills trace_id.
   private static String exchangeKey(AuditLine line) {
     return line.traceId() != null ? line.traceId() : line.ts().toString();
-  }
-
-  public int exchanges() {
-    return exchanges;
-  }
-
-  /** Lines that repeat an exchange's first line exactly: dropped, the exchange is reported. */
-  public int repeated() {
-    return repeated;
-  }
-
-  /** Lines that repeat an exchange with other facts: left out, its first line is reported. */
-  public int conflicting() {
-    return conflicting;
-  }
-
-  public int facts() {
-    return (int)
-        rows.entrySet().stream()
-            .flatMap(
-                table ->
-                    table.getValue().stream()
-                        .flatMap(
-                            row ->
-                                table.getKey().columns().stream()
-                                    .filter(
-                                        c -> c.dimension() == null && row.containsKey(c.name()))))
-            .count();
   }
 
   /**

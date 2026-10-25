@@ -1,4 +1,4 @@
-import { cx } from "../cx";
+import { cx } from "@aisolate/ui";
 
 /** Any bordered panel; padding is the caller's. */
 export function cardClass(extra?: string) {

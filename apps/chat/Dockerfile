@@ -3,8 +3,10 @@
 FROM node:24-alpine AS build
 WORKDIR /src
 COPY package.json package-lock.json tsconfig.base.json ./
+COPY libs/ui/package.json libs/ui/
 COPY apps/chat/package.json apps/chat/
 RUN npm ci
+COPY libs/ui libs/ui
 COPY apps/chat apps/chat
 ARG NEXT_PUBLIC_AISOLATE_URL
 ARG NEXT_PUBLIC_AISOLATE_AIRLOCK_ID=

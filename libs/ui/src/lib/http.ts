@@ -71,5 +71,8 @@ export async function problem(res: Response): Promise<ApiError> {
   }
 }
 
+/** A base URL without its trailing slashes, so a path joins it once. */
+export const trimSlash = (url: string) => url.replace(/\/+$/, "");
+
 export const errorMessage = (e: unknown, fallback: string) =>
   e instanceof Error ? e.message : fallback;

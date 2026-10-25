@@ -6,8 +6,6 @@ import { Avatar } from "./Avatar";
 type Props = {
   name: string;
   email?: string | null;
-  /** What the user is at the open chat's airlock ("CEO", "Cardiologist"); a second line under the name. */
-  hat?: string;
   onOpenSettings: () => void;
   onSignOut: () => void;
   /** Avatar only, for the collapsed sidebar rail. */
@@ -18,7 +16,7 @@ type Props = {
  * The signed-in user at the foot of the sidebar: opens a native popover upward (light dismiss,
  * Escape and the top layer come from the browser) with name, email, Settings and Sign out.
  */
-export function UserMenu({ name, email, hat, onOpenSettings, onSignOut, compact = false }: Props) {
+export function UserMenu({ name, email, onOpenSettings, onSignOut, compact = false }: Props) {
   const panelId = useId();
   return (
     <>
@@ -29,12 +27,7 @@ export function UserMenu({ name, email, hat, onOpenSettings, onSignOut, compact 
         className="flex w-full min-w-0 items-center gap-2.5 rounded-xl px-2 py-2 text-left text-sm text-ink transition-colors hover:bg-sidebar-hover"
       >
         <Avatar name={name} />
-        {!compact && (
-          <span className="grid min-w-0 leading-tight">
-            <span className="truncate">{name}</span>
-            {hat && <span className="truncate text-xs text-ink-tertiary">{hat}</span>}
-          </span>
-        )}
+        {!compact && <span className="min-w-0 truncate leading-tight">{name}</span>}
       </button>
       <div
         id={panelId}
@@ -43,7 +36,6 @@ export function UserMenu({ name, email, hat, onOpenSettings, onSignOut, compact 
       >
         <div className="px-4 py-3">
           <p className="truncate text-sm font-semibold">{name}</p>
-          {hat && <p className="truncate text-xs text-ink-secondary">{hat}</p>}
           {email && <p className="truncate text-xs text-ink-tertiary">{email}</p>}
         </div>
         <div className="grid gap-0.5 border-t border-hairline p-1">

@@ -31,9 +31,10 @@ dependencies {
 // The templates' Java is the sample code customers start from: compiled and tested against this
 // SDK in every build, offline, so an SDK change that breaks it fails here and not in a new project.
 // Their packages differ, so all templates share one source set.
+val javaTemplates = listOf("company-hr", "company-sales", "auditor", "hospital")
 val templates: SourceSet = sourceSets.create("templates") {
     java.srcDirs(
-        listOf("company-hr", "company-sales", "auditor", "hospital").flatMap { template ->
+        javaTemplates.flatMap { template ->
             listOf("main", "test").map { "src/main/templates/$template/src/$it/java" }
         },
     )
@@ -102,6 +103,13 @@ val generatedResources = layout.buildDirectory.dir("generated-resources")
 sourceSets["main"].resources.srcDir(generatedResources)
 tasks.register<Zip>("createTemplateZip") {
     from(layout.projectDirectory.dir("src/main/templates"))
+    // Each Java template gets this build's own Gradle wrapper, so a created project builds alone.
+    javaTemplates.forEach { template ->
+        from(rootProject.layout.projectDirectory) {
+            include("gradlew", "gradlew.bat", "gradle/wrapper/**")
+            into(template)
+        }
+    }
     includeEmptyDirs = true
     destinationDirectory.set(generatedResources)
     archiveFileName.set("templates.zip")
@@ -174,7 +182,7 @@ tasks.register("createMacosInstaller") {
         payloadDir.resolve("aisolate").setExecutable(true, false)
         val resourcesDir = layout.buildDirectory.dir("installer-resources").get().asFile
         resourcesDir.mkdirs()
-        copy { from("$projectDir/installer") { include("LICENSE") }; into(resourcesDir) }
+        copy { from(rootProject.file("LICENSE")); into(resourcesDir) }
         copy { from("$projectDir/installer/macos") { include("welcome.html", "conclusion.html") }; into(resourcesDir) }
         installerExecOps.execOps.exec {
             commandLine(
@@ -218,7 +226,7 @@ tasks.register("createWindowsInstaller") {
     doLast {
         val workDir = layout.buildDirectory.dir("win-installer").get().asFile
         workDir.mkdirs()
-        copy { from("$projectDir/installer/windows") { include("aisolate-cli-installer.nsi") }; from("$projectDir/installer") { include("LICENSE") }; into(workDir) }
+        copy { from("$projectDir/installer/windows") { include("aisolate-cli-installer.nsi") }; from(rootProject.file("LICENSE")); into(workDir) }
         installerExecOps.execOps.exec {
             workingDir = workDir
             commandLine("makensis", "-DAISOLATE_EXE_PATH=$exe", "aisolate-cli-installer.nsi")

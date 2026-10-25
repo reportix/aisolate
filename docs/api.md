@@ -57,7 +57,6 @@ from your workflow](integrate.md).
 | `GET /traces`, `GET /traces/{trace_id}` | backend, with a trace store configured (404 otherwise) | admin; a developer for the spaces they develop | Monitoring's traces: the exchanges, newest first; one exchange's audit line and its steps from the trace store ([The trace endpoints](#the-trace-endpoints)) |
 | `POST /audit/events` | backend, its ingest port 8085 only | an airlock pod, with its airlock's ingest token | One audit line in, appended to its airlock's chain ([The audit endpoints](#the-audit-endpoints)) |
 | `GET /code/{space}/{airlock}/{digest}` | backend, its ingest port 8085 only | the airlock's two pods, with its code token | The airlock's artifact at start ([The code fetch](#the-code-fetch)) |
-| `GET /swagger-ui.html`, `GET /v3/api-docs` | backend | anyone, when `AISOLATE_API_DOCS=true` (off by default) | The OpenAPI documentation; operations need the token |
 
 A space's and an airlock's `name` is its label, optional: a blank or missing one, on create or on a `PUT`, is
 stored as the id, so every list, header and discovery answer shows the id instead.

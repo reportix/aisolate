@@ -10,14 +10,11 @@ type Props = {
   picker: ReactNode;
   onSend: (text: string) => void;
   onStop: () => void;
-  /** Add a document to the current airlock. Absent: no attach button (no airlock to add to). */
-  onUpload?: (file: File) => void;
 };
 
-export function Composer({ streaming, disabled = false, picker, onSend, onStop, onUpload }: Props) {
+export function Composer({ streaming, disabled = false, picker, onSend, onStop }: Props) {
   const [text, setText] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
-  const file = useRef<HTMLInputElement>(null);
   const canSend = text.trim().length > 0 && !streaming && !disabled;
 
   const submit = () => {
@@ -59,36 +56,6 @@ export function Composer({ streaming, disabled = false, picker, onSend, onStop, 
       <div className="flex items-center justify-between gap-3 pt-1">
         <div className="min-w-0">{picker}</div>
         <div className="flex shrink-0 items-center gap-2">
-          {onUpload && (
-            <>
-              <input
-                ref={file}
-                type="file"
-                accept=".pdf,.html,.txt"
-                className="hidden"
-                onChange={(e) => {
-                  const chosen = e.target.files?.[0];
-                  if (chosen) onUpload(chosen);
-                  e.target.value = ""; // so the same file can be chosen again
-                }}
-              />
-              <IconButton
-                label="Add a document"
-                tone="attach"
-                disabled={streaming || disabled}
-                onClick={() => file.current?.click()}
-              >
-                <path
-                  d="M21 11.5l-8.5 8.5a5 5 0 01-7-7l8.5-8.5a3 3 0 014 4L9 17a1 1 0 01-1.5-1.5l7.5-7.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </IconButton>
-            </>
-          )}
           {streaming ? (
             <IconButton label="Stop" tone="stop" onClick={onStop}>
               <rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" />
@@ -120,7 +87,7 @@ function IconButton({
   children,
 }: {
   label: string;
-  tone: "send" | "stop" | "attach";
+  tone: "send" | "stop";
   type?: "button" | "submit";
   disabled?: boolean;
   onClick?: () => void;
@@ -129,7 +96,6 @@ function IconButton({
   const enabled = {
     send: "bg-sky text-ink-inverse shadow-[var(--shadow-soft)] hover:bg-sky-hover",
     stop: "bg-mark-wash text-mark hover:bg-mark-wash-strong",
-    attach: "text-ink-secondary hover:bg-panel hover:text-ink",
   }[tone];
   return (
     <button

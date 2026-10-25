@@ -2,6 +2,8 @@ import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The shared UI package ships TypeScript source; Next compiles it with the app.
+  transpilePackages: ["@aisolate/ui"],
   // The image runs `node server.js` from the standalone output; the workspace root is two levels up.
   output: "standalone",
   // No image optimisation: the apps serve no remote images, and sharp (libvips, LGPL) stays out of the image.

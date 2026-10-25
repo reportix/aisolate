@@ -7,13 +7,6 @@ export function leadOf(text: string): { lead: string; more: boolean } {
   return { lead, more: rest.some(Boolean) };
 }
 
-/** The names a field holds, one per line or comma-separated, trimmed, blanks dropped. */
-export const listOf = (text: string) =>
-  text
-    .split(/[\n,]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-
 /** Backend messages without their "field: " prefix, for a page with no field to show them under. */
 export const plainErrors = (errors: string[]) =>
   errors.map((e) => e.slice(e.indexOf(":") + 1).trim()).join(" ");

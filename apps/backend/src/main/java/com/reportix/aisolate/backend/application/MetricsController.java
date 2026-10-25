@@ -2,7 +2,6 @@ package com.reportix.aisolate.backend.application;
 
 import com.reportix.aisolate.backend.domain.metrics.MetricsService;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
  * Monitoring's charts (docs/api.md): the admin's over every space, a developer's over their spaces;
  * the auditor and those who only ask none. 404 without a metrics store.
  */
-@Tag(name = "Metrics", description = "The example dashboard's panels, from fixed queries.")
 @RestController
 @RequiredArgsConstructor
 public class MetricsController {

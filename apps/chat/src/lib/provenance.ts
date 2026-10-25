@@ -281,10 +281,10 @@ const TOOL_ERRORS: Record<ToolError, string> = {
  */
 /** The suffix the airlock gives a passage's title when it is the asking user's own document. */
 const OWN = " (the asking user's own)";
-/** A filter column that names a person: its value owns the rows ("Jane Doe's contract terms"). */
+/** A filter column that names a person: its value owns the rows ("Pat Smith's contract terms"). */
 const PERSON = /(^|_)(employee|name|person|user|owner|client|customer)$/;
 
-/** "Employment Contract John Doe (the asking user's own)" → "Your employment contract". */
+/** "Employment Contract Pat Smith (the asking user's own)" → "Your employment contract". */
 export function ownTitle(title: string, userName?: string): string {
   if (!title.endsWith(OWN)) return title;
   const bare = title.slice(0, -OWN.length).trim();
@@ -294,7 +294,7 @@ export function ownTitle(title: string, userName?: string): string {
   return rest ? `Your ${userName ? rest.toLowerCase() : lower(rest)}` : "Your document";
 }
 
-/** One filter on a person's name: "Jane Doe's contract terms"; nothing for any other call. */
+/** One filter on a person's name: "Pat Smith's contract terms"; nothing for any other call. */
 function personLabel({ args = {} }: Call, entity?: string): string | null {
   const filters = Array.isArray(args.filters) ? args.filters : [];
   if (filters.length !== 1 || !entity || isAggregate({ tool: "", args })) return null;

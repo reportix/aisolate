@@ -2,7 +2,6 @@ package com.reportix.aisolate.backend.application;
 
 import com.reportix.aisolate.backend.domain.credential.CredentialService;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
  * attempt, allowed or refused, is a line in the credential's events with the admin's e-mail and
  * never the value.
  */
-@Tag(
-    name = "Credentials",
-    description = "Reads back a stored API key or login, for an admin who just signed in.")
 @RestController
 @RequestMapping("/v1")
 @RequiredArgsConstructor

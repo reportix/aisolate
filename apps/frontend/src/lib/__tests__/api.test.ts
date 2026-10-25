@@ -268,28 +268,13 @@ describe("a space's models", () => {
 });
 
 describe("audit export", () => {
-  const NOW = Date.parse("2026-10-19T12:00:00Z");
-
   it.each<[ExportFormat, string | null, string]>([
-    [
-      "pdf",
-      'attachment; filename="aisolate-audit-2026-10-19.pdf"',
-      "aisolate-audit-2026-10-19.pdf",
-    ],
-    [
-      "json",
-      'attachment; filename="aisolate-audit-2026-10-19.json"',
-      "aisolate-audit-2026-10-19.json",
-    ],
-    [
-      "xbrl",
-      'attachment; filename="aisolate-audit-2026-10-19.xbrl"',
-      "aisolate-audit-2026-10-19.xbrl",
-    ],
+    ["xbrl", 'attachment; filename="aisolate-audit-event-15.xbrl"', "aisolate-audit-event-15.xbrl"],
+    ["pdf", 'attachment; filename="aisolate-audit-event-15.pdf"', "aisolate-audit-event-15.pdf"],
     // A backend on another origin that does not expose the header
-    ["xbrl", null, "aisolate-audit.xbrl"],
+    ["json", null, "aisolate-audit.json"],
   ])(
-    "given%s_whenExported_thenTheListsQueryItsFormatAndTheFileTheBackendNames",
+    "given%s_whenAnEventIsExported_thenItsOwnAddressAndTheFileTheBackendNames",
     async (format, disposition, filename) => {
       // Arrange
       const call = stubFetch(
@@ -300,35 +285,15 @@ describe("audit export", () => {
       );
 
       // Act
-      const file = await api.audit.export("token", format, { q: "elena", period: "24h" }, NOW);
+      const file = await api.audit.exportEvent("token", "15", format);
 
-      // Assert: the list's own query, then the format
+      // Assert
       const [sent] = call();
-      expect(sent).toBe(
-        `http://backend.test/v1/audit/export?q=elena&from=2026-10-18T12%3A00%3A00.000Z&format=${format}`,
-      );
+      expect(sent).toBe(`http://backend.test/v1/audit/events/15/export?format=${format}`);
       expect(file.filename).toBe(filename);
       expect(await file.blob.text()).toBe("file");
     },
   );
-
-  it("givenAnEvent_whenExported_thenItsOwnAddressAndTheFileTheBackendNames", async () => {
-    // Arrange
-    const call = stubFetch(
-      () =>
-        new Response("file", {
-          headers: { "Content-Disposition": 'attachment; filename="aisolate-audit-event-15.xbrl"' },
-        }),
-    );
-
-    // Act
-    const file = await api.audit.exportEvent("token", "15", "xbrl");
-
-    // Assert
-    const [sent] = call();
-    expect(sent).toBe("http://backend.test/v1/audit/events/15/export?format=xbrl");
-    expect(file.filename).toBe("aisolate-audit-event-15.xbrl");
-  });
 });
 
 describe("onApiError", () => {

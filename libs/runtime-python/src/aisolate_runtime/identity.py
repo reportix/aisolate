@@ -59,12 +59,6 @@ class Principal:
             attributes[identity_attribute] = identity_value
         return cls(sub, email, azp, frozenset(roles(claims, roles_claim)), attributes)
 
-    def with_attribute(self, name: str | None, value: Any) -> Principal:
-        """The same principal with the identity join's value; unchanged when either is None."""
-        if name is None or value is None:
-            return self
-        return Principal(self.sub, self.email, self.azp, self.roles, {**self.attributes, name: value})
-
     def admission_failure(
         self, allowed_roles: Collection[str], callers: Collection[str], clients: Collection[str] = ()
     ) -> admission.Failure | None:

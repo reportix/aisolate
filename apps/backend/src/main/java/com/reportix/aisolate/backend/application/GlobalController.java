@@ -8,7 +8,6 @@ import com.reportix.aisolate.backend.domain.global.GlobalLlm;
 import com.reportix.aisolate.backend.domain.global.GlobalService;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -32,9 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
  * developer of any space reads them, to name them from an airlock's code. Every write is applied to
  * the cluster as the Global before it answers ({@link ClusterHeader}).
  */
-@Tag(
-    name = "Global",
-    description = "The models and data sources every space inherits, defined by the admin.")
 @RestController
 @RequestMapping("/v1")
 @RequiredArgsConstructor

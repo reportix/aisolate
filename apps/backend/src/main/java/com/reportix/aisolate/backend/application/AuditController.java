@@ -8,7 +8,6 @@ import com.reportix.aisolate.backend.domain.audit.AuditLine;
 import com.reportix.aisolate.backend.domain.audit.AuditRepository;
 import com.reportix.aisolate.backend.domain.audit.AuditService;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -34,7 +33,6 @@ import tools.jackson.databind.annotation.JsonNaming;
  * The audit trail as the AIsolate UI, the CLI and an auditor read it (docs/api.md): the admin and
  * the auditor all of it, a developer the events of the spaces they develop.
  */
-@Tag(name = "Audit", description = "The audit trail: exchanges and refusals, and its chain.")
 @RestController
 @RequestMapping("/v1/audit")
 @RequiredArgsConstructor

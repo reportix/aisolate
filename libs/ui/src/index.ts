@@ -22,6 +22,7 @@ export {
   authHeaders,
   errorMessage,
   expectOk,
+  trimSlash,
 } from "./lib/http";
 export { displayName, rolesFromClaims, userManagerSettings } from "./lib/oidc";
 export * from "./lib/provenance";

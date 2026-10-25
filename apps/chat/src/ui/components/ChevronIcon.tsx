@@ -1,4 +1,4 @@
-import { cx } from "../cx";
+import { cx } from "@aisolate/ui";
 
 /** The AIsolate UI sidebar's chevron (Lucide chevron-right), turned down while open. */
 export function ChevronIcon({ open, size = 14 }: { open: boolean; size?: number }) {

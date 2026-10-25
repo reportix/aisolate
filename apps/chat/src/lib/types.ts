@@ -149,6 +149,4 @@ export type Message = {
   grounded?: boolean;
   verdicts?: Verdict[];
   error?: string;
-  /** A document the user attached in this chat; shown as a chip in the thread. */
-  attachment?: string;
 } & Partial<Grounding>;

@@ -20,7 +20,6 @@ Every app answers actuator (health for the kubelet, `/actuator/prometheus` for a
 | `AISOLATE_CORS_ALLOWED_ORIGINS` | `*` | Browser origins (the AIsolate UI's): a comma-separated list of origin patterns, unset meaning the default `*`; the token decides, not the origin |
 | `AISOLATE_CLUSTER_NAMESPACE` | empty | The namespace the backend applies the resources to and creates the Secrets in. Empty: no cluster, a deploy ends in the database and a data source that brings credentials is refused |
 | `AISOLATE_CLUSTER_RESYNC` | `PT5M` | How often the backend applies every space again, so a save the cluster did not take (an API server away) heals |
-| `AISOLATE_API_DOCS` | `false` | `true` serves the OpenAPI document of the AIsolate UI's API and its Swagger UI, to anyone who reaches the backend (the operations still need the token) |
 | `AISOLATE_AUDIT_INGEST_KEY` | empty | The install's key every airlock's audit ingest token is derived from (HMAC-SHA256 of `<space>/<airlock>`), the chart's Secret `audit-ingest`, shared with the controller alone. Empty: the ingest takes no line ([Audit](audit.md)) |
 | `AISOLATE_CREDENTIALS_KEY` | empty | The key the backend seals model API keys and data source logins with in its `credentials` table: 32 or more characters, from which the AES-256 key is derived. The chart's Secret `credentials-key` (64 generated characters, kept on upgrades; `platform.credentials.existingSecret` names yours), read by the backend pod alone. Required with `AISOLATE_CLUSTER_NAMESPACE`; an empty key then, or any key under 32 characters, stops the backend at start. Lose it and every stored credential reads as 409 `stored under another key` ([Security](security.md#credentials)) |
 | `AISOLATE_CREDENTIALS_REVEAL_CLIENTS` | `aisolate-ui` | The OIDC clients (`azp`) whose tokens may reveal a credential, comma-separated; any other client, the CLI included, is 403 `not from the AIsolate UI` |
@@ -56,7 +55,6 @@ The identity variables above (`AISOLATE_ISSUER_URI`, `AISOLATE_ROLES_CLAIM`, `AI
 | `AISOLATE_LLM_<i>_API_KEY` | unset | An `openai` LLM's API key, from its Secret: the bearer of its requests, none without one |
 | `AISOLATE_MODEL_READ_TIMEOUT` | `90s` | A stuck model becomes an `error` event |
 | `AISOLATE_EXCHANGE_MAX_DURATION` | `8m` | The budget of one exchange, checked before each model round and after each tool call |
-| `AISOLATE_API_DOCS` | `true` | The OpenAPI document; the controller sets `false` |
 | `MANAGEMENT_OTLP_TRACING_ENDPOINT` | unset | The trace collector's OTLP/HTTP base URL; the pod appends `/v1/traces`. Unset or blank: no span leaves the pod ([Observability](observability.md#traces)) |
 | `AISOLATE_AUDIT_URL`, `AISOLATE_AUDIT_TOKEN_FILE` | empty | The backend's audit ingest, `http://backend.<namespace>.svc:8085/v1/audit/events`, and the airlock's ingest token the controller mounted, `/var/run/aisolate/audit/token`, read for every send. Empty URL (headless): the lines go to stdout alone ([Audit](audit.md)) |
 | `AISOLATE_AUDIT_BUFFER_DIR` | `/var/lib/aisolate/audit` | The lines not yet handed over, one file each, on the pod's `emptyDir`; at most 64 MB (`aisolate.audit.buffer-max`) |

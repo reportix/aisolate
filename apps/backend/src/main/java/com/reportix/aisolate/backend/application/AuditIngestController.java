@@ -2,7 +2,6 @@ package com.reportix.aisolate.backend.application;
 
 import com.reportix.aisolate.backend.domain.audit.AuditService;
 import com.reportix.aisolate.backend.infrastructure.audit.AuditIngestPort;
-import io.swagger.v3.oas.annotations.Hidden;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
  * over its audit lines with its ingest token, which {@link AuditService#ingest} checks against the
  * airlock each line names. Served on the ingest port alone ({@link AuditIngestPort}).
  */
-@Hidden
 @RestController
 @RequiredArgsConstructor
 public class AuditIngestController {

@@ -223,7 +223,6 @@ public final class Renderer {
     env.add(buildEnv("AISOLATE_CONFIG_DISCOVERY_DIR", DISCOVERY_DIR));
     env.add(buildEnv("AISOLATE_PUBLIC_URL", settings.ingress().publicUrl()));
     env.add(buildEnv("AISOLATE_CORS_ALLOWED_ORIGINS", settings.corsAllowedOrigins()));
-    env.add(buildEnv("AISOLATE_API_DOCS", "false"));
     env.addAll(buildIdentityEnv());
     env.addAll(buildProxyEnv(false));
     env.addAll(buildTracingEnv());
@@ -415,7 +414,6 @@ public final class Renderer {
     }
     env.add(buildEnv("AISOLATE_PUBLIC_URL", settings.ingress().publicUrl()));
     env.add(buildEnv("AISOLATE_CORS_ALLOWED_ORIGINS", settings.corsAllowedOrigins()));
-    env.add(buildEnv("AISOLATE_API_DOCS", "false"));
     env.addAll(buildLlmEnv(t));
     env.addAll(buildDataSourceEnv(t));
     env.addAll(buildIdentityEnv());

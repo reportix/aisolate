@@ -2,7 +2,6 @@ package com.reportix.aisolate.airlock.application;
 
 import com.reportix.aisolate.airlock.domain.airlock.AirlockAdmissionService;
 import com.reportix.aisolate.airlock.domain.airlock.AirlockSummaryDTO;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
  * Airlocks as end users' chat clients discover them under {@code /v1/airlocks}, across spaces, next
  * to the chat endpoints themselves ({@link ChatController}): the airlocks their token admits.
  */
-@Tag(name = "Airlocks")
 @RestController
 @RequestMapping("/v1")
 @RequiredArgsConstructor

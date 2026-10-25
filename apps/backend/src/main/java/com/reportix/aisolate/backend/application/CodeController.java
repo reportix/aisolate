@@ -5,7 +5,6 @@ import com.reportix.aisolate.backend.domain.airlock.AirlockRepository;
 import com.reportix.aisolate.backend.infrastructure.audit.AuditIngestPort;
 import com.reportix.aisolate.backend.infrastructure.audit.AuditProperties;
 import com.reportix.aisolate.config.AuditIngestToken;
-import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Objects;
@@ -26,7 +25,6 @@ import tools.jackson.databind.json.JsonMapper;
  * served on the ingest port alone ({@link AuditIngestPort}). The pod checks the digest of what it
  * got.
  */
-@Hidden
 @RestController
 @RequiredArgsConstructor
 public class CodeController {

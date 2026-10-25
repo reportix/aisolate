@@ -81,19 +81,6 @@ class TokenIntegrationTest {
     assertThat(response.statusCode()).isEqualTo(401);
   }
 
-  @Test
-  void givenDefaultSettings_whenTheOpenApiDocumentIsAskedWithoutAToken_thenNotServed() {
-    // Arrange
-    HttpRequest request = HttpRequest.newBuilder(uri("/v3/api-docs")).GET().build();
-
-    // Act
-    HttpResponse<String> response = Http.send(request);
-
-    // Assert: the unknown path falls through to the token check
-    assertThat(response.statusCode()).isEqualTo(401);
-    assertThat(response.body()).doesNotContain("openapi");
-  }
-
   private URI uri(String path) {
     return URI.create("http://localhost:" + port + path);
   }
