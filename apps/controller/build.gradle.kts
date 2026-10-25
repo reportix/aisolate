@@ -26,11 +26,16 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("controller.jar")
 }
 
-// The CRDs of chart/crds are generated from the resource classes, never hand-edited.
+// crds/ is generated from the resource classes, never hand-edited; aisolate-charts' pin script copies it.
 tasks.register<JavaExec>("syncCrds") {
     group = "build"
-    description = "Generates the CRDs into chart/crds"
+    description = "Generates the CRDs into crds/"
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("com.reportix.aisolate.controller.crd.CrdGeneration")
-    args(rootProject.file("chart/crds").absolutePath)
+    args(rootProject.file("crds").absolutePath)
+}
+
+// CrdGenerationTest compares crds/ with the generated CRDs; an input, so a hand edit reruns it too.
+tasks.named<Test>("test") {
+    inputs.dir(rootProject.file("crds")).withPropertyName("crds").withPathSensitivity(PathSensitivity.RELATIVE)
 }

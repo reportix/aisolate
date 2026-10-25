@@ -133,6 +133,25 @@ class CrdGenerationTest {
     }
   }
 
+  @Test
+  void givenCommittedCrds_whenGenerated_thenIdentical(@TempDir Path dir) throws IOException {
+    // Arrange: the repository's crds/, which the chart's pin script copies
+    Path committed = Path.of("../../crds");
+
+    // Act
+    CrdGeneration.generate(dir);
+
+    // Assert: a resource class changed without syncCrds fails here
+    assertThat(fileNames(committed))
+        .as("crds/: run ./gradlew :apps:controller:syncCrds")
+        .isEqualTo(fileNames(dir));
+    for (String name : fileNames(dir)) {
+      assertThat(committed.resolve(name))
+          .as("crds/%s: run ./gradlew :apps:controller:syncCrds", name)
+          .hasSameTextualContentAs(dir.resolve(name));
+    }
+  }
+
   /** Every property of the spec schema by its dotted path, a list's item fields under its name. */
   private static Set<String> listSpecFields(String crd) {
     JSONSchemaProps spec =
@@ -161,5 +180,11 @@ class CrdGenerationTest {
               fields.add(prefix + name);
               collectFields(child, prefix + name + ".", fields);
             });
+  }
+
+  private static List<String> fileNames(Path dir) throws IOException {
+    try (Stream<Path> files = Files.list(dir)) {
+      return files.map(f -> f.getFileName().toString()).sorted().toList();
+    }
   }
 }
