@@ -66,7 +66,7 @@ Both pods take `AISOLATE_PLUGINS_DIR` and `AISOLATE_PLUGIN_DIGESTS` for an airlo
 | `libs/plugins/` | Reading an airlock's code: `JarScan` finds the tool plugins and handlers by scanning the classes, in any package; the code fetch and digest pin every pod applies at start (`CodeFetch`, `JarDigests`). |
 | `libs/audit-report/` | The AIsolate Audit report as one xBRL-XML instance (`AuditReport`, `AuditLine`), which the backend's audit export writes ([docs/audit.md](docs/audit.md#export)). |
 | `libs/ui/` | `@aisolate/ui`: design tokens, primitives and the HTTP, OIDC and env helpers of the AIsolate UI. One npm workspace with `apps/frontend` and `apps/chat`, rooted at `package.json`. |
-| `crds/` | The three CRDs, generated from the controller's resource classes by `./gradlew :apps:controller:syncCrds`; never edited by hand. The chart's pin script in `aisolate-charts` copies them. |
+| `crds/` | The three CRDs, generated from the controller's resource classes by `./gradlew :apps:controller:syncCrds`; never edited by hand. The chart's pin script in `aisolate-chart` copies them. |
 | `docker/` | The compose stack for the laptop. |
 | `docs/` | The documentation, indexed in `README.md`. |
 
@@ -103,7 +103,7 @@ publishes the public images ([Release](docs/release.md#how-aisolate-itself-is-re
 
 ## Chart
 
-The Helm chart is in [`aisolate-charts`](https://github.com/reportix/aisolate-charts), with its install steps,
+The Helm chart is in [`aisolate-chart`](https://github.com/reportix/aisolate-chart), with its install steps,
 every parameter, its conventions and its tests. It takes the CRDs from this repository's `crds/`: its pin
 script copies them from the tag it pins, so a change to a resource class commits the output of
 `./gradlew :apps:controller:syncCrds` with it.

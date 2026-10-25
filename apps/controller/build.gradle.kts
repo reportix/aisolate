@@ -26,7 +26,7 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("controller.jar")
 }
 
-// crds/ is generated from the resource classes, never hand-edited; aisolate-charts' pin script copies it.
+// crds/ is generated from the resource classes, never hand-edited; aisolate-chart's pin script copies it.
 tasks.register<JavaExec>("syncCrds") {
     group = "build"
     description = "Generates the CRDs into crds/"

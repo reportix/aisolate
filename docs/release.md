@@ -31,7 +31,7 @@ kubectl create secret generic <secretRef> --namespace aisolate \
 
 The host of every LLM URL and data source URL the `Global`, a space or an airlock names is in
 `platform.egress.hosts` with its NetworkPolicy peer, or on `platform.egress.proxy.domains`. See the
-[chart README](https://github.com/reportix/aisolate-charts/blob/main/chart/README.md).
+[chart README](https://github.com/reportix/aisolate-chart/blob/main/chart/README.md).
 
 ## Validate the documents
 
@@ -157,5 +157,5 @@ Tags with a `v`, such as `v0.1.0`, are history; a release tag has none.
 
 `./gradlew :apps:controller:syncCrds` writes the CRDs into `crds/` from the controller's resource classes; a
 change to those classes commits the regenerated files with it. The chart is released on its own, with a version
-of its own, in [`aisolate-charts`](https://github.com/reportix/aisolate-charts): its pin script sets the chart's
+of its own, in [`aisolate-chart`](https://github.com/reportix/aisolate-chart): its pin script sets the chart's
 `appVersion` and the image digests of a release `X.Y.Z` and copies `crds/` from that tag.

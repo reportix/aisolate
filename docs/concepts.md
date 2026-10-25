@@ -158,7 +158,7 @@ flowchart LR
 | Backend | `aisolate/backend`, with the AIsolate UI only | The UI's API and the CLI's endpoint. Keeps spaces, airlocks and their code in its own PostgreSQL, applies them to the cluster after every write, keeps credentials in Secrets. |
 | AIsolate UI | Next.js, with `headless=false` only | Where admins define the global LLMs and data sources, and developers and admins spaces with their developers and roles, LLMs and data sources, and airlocks with LLMs and data sources of their own, and see each airlock's code. |
 | CLI and SDK | the `aisolate` binary; `libs/sdk` | `create`, `login`, `logout`, `build` and `deploy`. The SDK is what a project compiles against. |
-| Chart | Helm, the chart in [`aisolate-charts`](https://github.com/reportix/aisolate-charts) | Installs the CRDs, the controller, the policies, the release Service and routes and the egress proxy; with `headless=false` the UI, the backend and its database. |
+| Chart | Helm, the chart in [`aisolate-chart`](https://github.com/reportix/aisolate-chart) | Installs the CRDs, the controller, the policies, the release Service and routes and the egress proxy; with `headless=false` the UI, the backend and its database. |
 | Identity provider | The organisation's, or two: the operators' and the application users'; Keycloak realms `aisolate` and `acme` in the demo | Authenticates the users, issues tokens for the audience `aisolate`, publishes JWKS. |
 | Customer databases | The organisation's PostgreSQL | The data sources: the tables the MCP server reads for the tools, the documents the context preparators search. |
 | Model | Ollama | Receives text, tool schemas and the rows the user may see. Never a token, a name or a role. |

@@ -11,7 +11,7 @@ way is [Design decisions](design-decisions.md).
 | Repository | Holds | Licence |
 |---|---|---|
 | [`aisolate`](https://github.com/reportix/aisolate) (this one) | The airlock pod and the MCP server in Java and in Python, the controller, the backend, the AIsolate UI, the sample chat client (`apps/chat`), the `aisolate` CLI with its templates, the two SDKs, the shared libraries, the conformance cases, this documentation and the CRDs the controller generates (`crds/`) | AGPL-3.0-only |
-| [`aisolate-charts`](https://github.com/reportix/aisolate-charts) | The Helm chart (the CRDs copied from this repository's `crds/`, the controller, the policies, the egress proxy; with `headless=false` the UI, the backend and its database) and its tests | AGPL-3.0-only |
+| [`aisolate-chart`](https://github.com/reportix/aisolate-chart) | The Helm chart (the CRDs copied from this repository's `crds/`, the controller, the policies, the egress proxy; with `headless=false` the UI, the backend and its database) and its tests | AGPL-3.0-only |
 | [`aisolate-integrations`](https://github.com/reportix/aisolate-integrations) | An n8n node and KNIME nodes that ask an airlock as a machine client | Apache-2.0 |
 
 ## The modules of this repository
@@ -242,7 +242,7 @@ and `ClusterSyncService`, which turns the rows into documents (`Documents`) and 
 | Java | `./gradlew check` | Spotless; every module's tests, the integration ones against real Keycloak and PostgreSQL containers (Testcontainers); the templates' code compiled and tested against the SDK (`templateTest`); `pythonTest` |
 | Python | `./gradlew pythonTest` (part of `check`) | each Python module's tests and the Python templates', with uv; the conformance runners among them |
 | Web | `npm run lint && npm run format && npm test && npm run build` | the workspace: ESLint, Prettier, Vitest, the Next.js build |
-| CRDs | `./gradlew :apps:controller:syncCrds` | the three CRDs written into `crds/` from the controller's resource classes; the chart, its tests and its pin script, which copies them, are in `aisolate-charts` |
+| CRDs | `./gradlew :apps:controller:syncCrds` | the three CRDs written into `crds/` from the controller's resource classes; the chart, its tests and its pin script, which copies them, are in `aisolate-chart` |
 | CI | `.gitlab-ci.yml` | `check`, `test` (Docker-in-Docker for Testcontainers) and a version gate (every merge request bumps `version=` in `gradle.properties`) on every pipeline, `package` (`cli-windows-installer`, the Windows CLI's installer) by hand; every merge to `main` publishes the images as `<version>-<sha10>` to the internal registry through the fleet's release component, and the fleet's vulnerability scan runs on `main`; a tag `X.Y.Z` publishes the public images ([Release](release.md#how-aisolate-itself-is-released)) |
 
 Images: the Java apps on a distroless Java 25 base and the Python apps on a distroless Python 3.13 base, both

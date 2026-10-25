@@ -1,7 +1,7 @@
 # Install AIsolate
 
 AIsolate runs in a namespace of the organisation's Kubernetes cluster, from one Helm chart (the chart in
-[`aisolate-charts`](https://github.com/reportix/aisolate-charts)). What the cluster, the identity provider, the
+[`aisolate-chart`](https://github.com/reportix/aisolate-chart)). What the cluster, the identity provider, the
 databases and the model server must provide comes first.
 
 ## Cluster requirements
@@ -82,7 +82,7 @@ the image by digest under `platform.frontend.image` (the chat's, from `apps/chat
 the UI, its backend and the backend's database), the identity provider under `platform.identity`, and under
 `platform.egress` the cluster's DNS and ingress peers and the hosts of the LLM and of every data source a space or
 an airlock names. The steps and every parameter are in the
-[chart README](https://github.com/reportix/aisolate-charts/blob/main/chart/README.md).
+[chart README](https://github.com/reportix/aisolate-chart/blob/main/chart/README.md).
 
 The backend's database keeps the spaces, the airlocks and the audit trail on the PersistentVolumeClaim `db`
 (`persistence.postgres.storage.size`, default `8Gi`; `.storageClass`, empty for the cluster's default), so it
