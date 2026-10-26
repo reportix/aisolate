@@ -1,6 +1,7 @@
 # Reportix's release component scans main for vulnerabilities and publishes the runtime images: to docker-internal
 # on every merge, to docker-public, which anyone can pull, on a tag X.Y.Z. Every merge request bumps `version` in
-# gradle.properties. The UI and the chat bake their deployment's URLs at build time, so deployments build them.
+# gradle.properties. After every merge, release-deploy pins the seven published images in the chart
+# (aisolate/charts/aisolate, its bot branch next, auto-merged to main); a release is promoted there by hand. The UI and the chat bake their deployment's URLs at build time, so deployments build them.
 include:
   - component: $CI_SERVER_FQDN/reportix/ci-templates/release@1
     inputs:
@@ -17,6 +18,12 @@ include:
         docker-${PUBLISH_CHANNEL}.sonatype.reportix.com/aisolate/tool-server-python
         docker-${PUBLISH_CHANNEL}.sonatype.reportix.com/aisolate/keycloak
       version_gate: increase
+      # Opt-in deploys: release-deploy (automatic, main, after publish-internal) pins every image
+      # listed in image_names, so that list must name exactly the images the chart should pin.
+      # Chart deploy/release flow: the image bump lands on the chart repo's ephemeral bot branch
+      # `next`, and an auto-merged MR carries it to main once the chart pipeline is green (the CLI
+      # bootstraps/deletes `next` and self-heals it against main). No direct pushes to chart main.
+      deploy_chart: https://gitlab.reportix.com/aisolate/charts/aisolate.git
 
 stages: [check, test, package, publish-internal, publish-release]
 
