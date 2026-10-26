@@ -31,13 +31,13 @@ default:
 
 spotless:
   stage: check
-  image: eclipse-temurin:25-jdk
+  image: docker-internal.sonatype.reportix.com/reportix/ci-images/java:latest
   script: ./gradlew spotlessCheck --console=plain
 
 # One npm workspace: the shared UI package, the AIsolate UI and the sample chat, installed once from the root.
 web-check:
   stage: check
-  image: node:24
+  image: docker-internal.sonatype.reportix.com/reportix/ci-images/node-24:latest
   script:
     - npm ci
     - npm run lint
@@ -46,44 +46,35 @@ web-check:
     - npm run build
     - npm audit --audit-level=high
 
-# Integration tests start Keycloak and PostgreSQL through Testcontainers (Docker socket needed).
+# Integration tests start Keycloak and PostgreSQL through Testcontainers on the runner's own dind sidecar
+# (DOCKER_HOST and its TLS come with the job; the runner sizes the sidecar per job class).
 gradle-test:
   stage: test
-  image: eclipse-temurin:25-jdk
-  services:
-    - name: docker:29-dind
-      alias: docker
+  image: docker-internal.sonatype.reportix.com/reportix/ci-images/java:latest
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-    # The runner sets DOCKER_TLS_VERIFY=1; dind here listens without TLS.
-    DOCKER_TLS_VERIFY: "0"
     TESTCONTAINERS_HOST_OVERRIDE: docker
     # OOM-killed at the runner's 4Gi default: the 2g-heap Gradle JVM needs ~3 GiB and each
-    # parallel test task forks another JVM, so 8Gi with two workers; dind hosts Postgres 18 and Keycloak 26.
+    # parallel test task forks another JVM, so 8Gi with two workers.
     KUBERNETES_MEMORY_REQUEST: 6Gi
     KUBERNETES_MEMORY_LIMIT: 8Gi
-    KUBERNETES_SERVICE_MEMORY_REQUEST: 2Gi
-    KUBERNETES_SERVICE_MEMORY_LIMIT: 4Gi
   script: ./gradlew test --console=plain --max-workers=2
   artifacts:
     when: always
     reports:
       junit: "**/build/test-results/*/TEST-*.xml"
 
-# The Python modules' and templates' tests (./gradlew pythonTest); uv brings Python 3.13.
+# The Python modules' and templates' tests (./gradlew pythonTest); the generic image ships the JDK, uv and
+# every Python, with 3.14 active: activate 3.13, the modules' interpreter, or uv trips over the inactive shim.
 python-test:
   stage: test
-  image: eclipse-temurin:25-jdk
+  image: docker-internal.sonatype.reportix.com/reportix/ci-images/generic:latest
   variables:
     UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
   cache:
     key: uv-$CI_COMMIT_REF_SLUG
     paths: [.uv-cache, .gradle-home/caches, .gradle-home/wrapper]
   before_script:
-    - apt-get update && apt-get install -y --no-install-recommends ca-certificates curl
-    - curl -LsSf https://astral.sh/uv/0.13.5/install.sh | sh
-    - export PATH="$HOME/.local/bin:$PATH"
+    - mise use -g python@3.13
   script: ./gradlew pythonTest --console=plain
 
 # The Windows CLI's installer. A native image is built on the system it runs on, so aisolate.exe is built on a
