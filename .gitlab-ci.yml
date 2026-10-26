@@ -63,7 +63,8 @@ gradle-test:
     reports:
       junit: "**/build/test-results/*/TEST-*.xml"
 
-# The Python modules' and templates' tests (./gradlew pythonTest); the generic image ships the JDK and uv.
+# The Python modules' and templates' tests (./gradlew pythonTest); the generic image ships the JDK, uv and
+# every Python, with 3.14 active: activate 3.13, the modules' interpreter, or uv trips over the inactive shim.
 python-test:
   stage: test
   image: docker-internal.sonatype.reportix.com/reportix/ci-images/generic:latest
@@ -72,6 +73,8 @@ python-test:
   cache:
     key: uv-$CI_COMMIT_REF_SLUG
     paths: [.uv-cache, .gradle-home/caches, .gradle-home/wrapper]
+  before_script:
+    - mise use -g python@3.13
   script: ./gradlew pythonTest --console=plain
 
 # The Windows CLI's installer. A native image is built on the system it runs on, so aisolate.exe is built on a
