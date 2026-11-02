@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["local>reportix/maintenance/renovate"],
+  "description": "aisolate on top of the fleet preset. Every allowedVersions must parse under its package's versioning: one that does not makes Renovate reject the WHOLE repository config and stop all updates here.",
+  "packageRules": [
+    {
+      "description": "PYTHON 3.13 HOLD for the python:3.13-slim build stages of apps/airlock-python/Dockerfile and apps/tool-server-python/Dockerfile. The Python images run on gcr.io/distroless/python3-debian13, whose interpreter is Debian 13's Python 3.13, with PYTHONPATH=/app/.venv/lib/python3.13/site-packages: a venv built on python:3.15-slim installs into lib/python3.15 and its compiled wheels target cp315, so the published image would not start. Merge request pipelines do not build the images (publish-internal runs on main only), so no MR job would catch it. Renovate proposed python 3.13-slim -> 3.15-slim in the grouped https://gitlab.reportix.com/aisolate/aisolate/-/merge_requests/16 (2026-11-02). Lift when the Python images move to a runtime that ships the newer Python, in one change together with the PYTHONPATH lines, the pep621 rule below, the SDK's vendoring target (--python-version 3.13 in libs/sdk-python/src/aisolate/build.py), python-test's `mise use -g python@3.13` in .gitlab-ci.yml, the templates and the docs; then delete this rule.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["python"],
+      "allowedVersions": "<3.14"
+    },
+    {
+      "description": "PYTHON 3.13 HOLD for project.requires-python (pep621, depName python) in apps/airlock-python, apps/tool-server-python, libs/runtime-python, libs/sdk-python and the four apps/cli/src/main/templates-python projects. The runtime they all target is the distroless Python images' Python 3.13 (see the rule above), and python-test activates 3.13 on the generic CI image, so requires-python >=3.15,<3.16 stops uv before any test runs: `Failed to inspect Python interpreter from search path at /root/.local/share/mise/shims/python3.15 ... mise ERROR python3.15 is not provided by the active python@3.13.18` (python-test job https://gitlab.reportix.com/aisolate/aisolate/-/jobs/258386 on https://gitlab.reportix.com/aisolate/aisolate/-/merge_requests/16, 2026-11-02). Lift together with the docker rule above, by hand, in one product migration to the newer Python; then delete this rule.",
+      "matchManagers": ["pep621"],
+      "matchDepTypes": ["requires-python"],
+      "matchPackageNames": ["python"],
+      "allowedVersions": "<3.14"
+    }
+  ]
+}
