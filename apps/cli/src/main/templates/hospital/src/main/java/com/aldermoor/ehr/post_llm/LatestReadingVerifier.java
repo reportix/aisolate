@@ -124,11 +124,10 @@ public final class LatestReadingVerifier implements AnswerVerifier {
     String rowKey = text(labels.get("row_key"));
     Map<String, Object> cited =
         rows.stream()
-            .filter(
-                row ->
-                    rowKey != null
-                        && row.containsKey(rowKey)
-                        && String.valueOf(row.get(rowKey)).equals(source.get("row_key")))
+            .filter(row ->
+                rowKey != null
+                    && row.containsKey(rowKey)
+                    && String.valueOf(row.get(rowKey)).equals(source.get("row_key")))
             .findFirst()
             .orElse(null);
     if (cited == null || !(cited.get(periodColumn) instanceof String period)) {

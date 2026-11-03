@@ -195,20 +195,19 @@ class McpSyncToolClientTest {
       String token = "token-of-user-" + exchange;
       threads.add(
           Thread.ofVirtual()
-              .start(
-                  () -> {
-                    jwtOnThisThread(token);
-                    awaitLatch(start);
-                    try {
-                      String echoed = client.callTool("read_records", Map.of(), AIRLOCK);
-                      echoes.add(echoed);
-                      if (!("Bearer " + token).equals(echoed)) {
-                        mismatches.add(token + " saw " + echoed);
-                      }
-                    } catch (Throwable t) {
-                      mismatches.add(token + " threw " + t);
-                    }
-                  }));
+              .start(() -> {
+                jwtOnThisThread(token);
+                awaitLatch(start);
+                try {
+                  String echoed = client.callTool("read_records", Map.of(), AIRLOCK);
+                  echoes.add(echoed);
+                  if (!("Bearer " + token).equals(echoed)) {
+                    mismatches.add(token + " saw " + echoed);
+                  }
+                } catch (Throwable t) {
+                  mismatches.add(token + " threw " + t);
+                }
+              }));
     }
     start.countDown();
     for (Thread thread : threads) {

@@ -48,23 +48,21 @@ class CodeFetchTest {
     // Arrange
     AtomicInteger calls = new AtomicInteger();
     HttpServer server =
-        serve(
-            () -> {
-              calls.incrementAndGet();
-              return 500;
-            });
+        serve(() -> {
+          calls.incrementAndGet();
+          return 500;
+        });
     Path tokenFile = Files.writeString(dir.resolve("token"), "t");
 
     // Act
     Throwable thrown =
-        catchThrowable(
-            () ->
-                CodeFetch.fetch(
-                    url(server),
-                    JarDigests.of(JAR),
-                    tokenFile,
-                    dir.resolve("code"),
-                    Duration.ofMillis(1)));
+        catchThrowable(() ->
+            CodeFetch.fetch(
+                url(server),
+                JarDigests.of(JAR),
+                tokenFile,
+                dir.resolve("code"),
+                Duration.ofMillis(1)));
     server.stop(0);
 
     // Assert

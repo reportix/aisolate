@@ -21,11 +21,10 @@ class ColumnTest {
 
     // Assert: every typed number is checked anyway
     assertThat(List.of(built, marked))
-        .allSatisfy(
-            refused ->
-                assertThat(refused)
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("column salary is a number: only a text column can be a fact"));
+        .allSatisfy(refused ->
+            assertThat(refused)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("column salary is a number: only a text column can be a fact"));
   }
 
   @Test

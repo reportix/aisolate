@@ -96,20 +96,19 @@ public final class TraceTree {
   private static List<Step> steps(List<Span> spans, Map<String, List<Span>> children, long start) {
     return spans.stream()
         .sorted(Comparator.comparingLong(Span::startUs))
-        .map(
-            s ->
-                new Step(
-                    s.id(),
-                    s.name(),
-                    kind(s.name(), s.tags()),
-                    s.service(),
-                    s.startUs() - start,
-                    s.durationUs(),
-                    Boolean.TRUE.equals(s.tags().get("error"))
-                        || "ERROR".equals(s.tags().get("otel.status_code")),
-                    s.tags().get("error.type") instanceof String t ? t : null,
-                    attributes(s.tags()),
-                    steps(children.getOrDefault(s.id(), List.of()), children, start)))
+        .map(s ->
+            new Step(
+                s.id(),
+                s.name(),
+                kind(s.name(), s.tags()),
+                s.service(),
+                s.startUs() - start,
+                s.durationUs(),
+                Boolean.TRUE.equals(s.tags().get("error"))
+                    || "ERROR".equals(s.tags().get("otel.status_code")),
+                s.tags().get("error.type") instanceof String t ? t : null,
+                attributes(s.tags()),
+                steps(children.getOrDefault(s.id(), List.of()), children, start)))
         .toList();
   }
 
@@ -132,10 +131,9 @@ public final class TraceTree {
   /** Sorted by name, so the page lists them alike for every span. */
   private static Map<String, Object> attributes(Map<String, Object> tags) {
     Map<String, Object> shown = new TreeMap<>();
-    tags.forEach(
-        (key, value) -> {
-          if (!NOT_SHOWN.contains(key) && !key.startsWith("exception.")) shown.put(key, value);
-        });
+    tags.forEach((key, value) -> {
+      if (!NOT_SHOWN.contains(key) && !key.startsWith("exception.")) shown.put(key, value);
+    });
     return shown;
   }
 }

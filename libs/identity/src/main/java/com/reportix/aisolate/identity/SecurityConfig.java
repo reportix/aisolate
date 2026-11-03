@@ -77,38 +77,32 @@ public class SecurityConfig {
     return http.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .csrf(csrf -> csrf.disable())
         .cors(Customizer.withDefaults())
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers(
-                        // the management port's: the kubelet's and the scraper's, names and counts
-                        // only
-                        "/actuator/health/**",
-                        "/actuator/prometheus",
-                        // the backend's readiness on its own port, which the AIsolate UI probes
-                        "/readyz",
-                        "/.well-known/**")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .oauth2ResourceServer(
-            oauth2 ->
-                oauth2
-                    .jwt(
-                        jwt ->
-                            jwt.jwtAuthenticationConverter(
-                                rolesFromClaimPath(properties.rolesClaim())))
-                    // The document names AIsolate (its public URL) and the customer's IdP: a
-                    // generic client learns where to send the user from here.
-                    .protectedResourceMetadata(
-                        metadata ->
-                            metadata.protectedResourceMetadataCustomizer(
-                                doc ->
-                                    doc.resource(publicUrl)
-                                        .authorizationServer(issuer)
-                                        .tlsClientCertificateBoundAccessTokens(false)
-                                        .scope("aisolate")
-                                        .resourceName("AIsolate")))
-                    .authenticationEntryPoint(unauthorized))
+        .authorizeHttpRequests(auth ->
+            auth.requestMatchers(
+                    // the management port's: the kubelet's and the scraper's, names and counts
+                    // only
+                    "/actuator/health/**",
+                    "/actuator/prometheus",
+                    // the backend's readiness on its own port, which the AIsolate UI probes
+                    "/readyz",
+                    "/.well-known/**")
+                .permitAll()
+                .anyRequest()
+                .authenticated())
+        .oauth2ResourceServer(oauth2 ->
+            oauth2
+                .jwt(jwt ->
+                    jwt.jwtAuthenticationConverter(rolesFromClaimPath(properties.rolesClaim())))
+                // The document names AIsolate (its public URL) and the customer's IdP: a
+                // generic client learns where to send the user from here.
+                .protectedResourceMetadata(metadata ->
+                    metadata.protectedResourceMetadataCustomizer(doc ->
+                        doc.resource(publicUrl)
+                            .authorizationServer(issuer)
+                            .tlsClientCertificateBoundAccessTokens(false)
+                            .scope("aisolate")
+                            .resourceName("AIsolate")))
+                .authenticationEntryPoint(unauthorized))
         .build();
   }
 
@@ -143,14 +137,13 @@ public class SecurityConfig {
    */
   static Converter<Jwt, AbstractAuthenticationToken> rolesFromClaimPath(String rolesClaim) {
     JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-    converter.setJwtGrantedAuthoritiesConverter(
-        jwt ->
-            Principal.roles(jwt.getClaims(), rolesClaim).stream()
-                .map(AUTHORITIES::get)
-                .filter(Objects::nonNull)
-                .distinct()
-                .<GrantedAuthority>map(SimpleGrantedAuthority::new)
-                .toList());
+    converter.setJwtGrantedAuthoritiesConverter(jwt ->
+        Principal.roles(jwt.getClaims(), rolesClaim).stream()
+            .map(AUTHORITIES::get)
+            .filter(Objects::nonNull)
+            .distinct()
+            .<GrantedAuthority>map(SimpleGrantedAuthority::new)
+            .toList());
     return converter;
   }
 

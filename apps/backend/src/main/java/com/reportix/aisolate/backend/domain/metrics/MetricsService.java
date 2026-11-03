@@ -161,13 +161,12 @@ public class MetricsService {
   private static List<Bar> bars(List<PrometheusClient.Series> series, String by) {
     return series.stream()
         .filter(s -> !s.points().isEmpty())
-        .map(
-            s ->
-                new Bar(
-                    s.labels().get("space"),
-                    s.labels().get("airlock"),
-                    s.labels().get(by),
-                    Math.round(s.points().getFirst()[1])))
+        .map(s ->
+            new Bar(
+                s.labels().get("space"),
+                s.labels().get("airlock"),
+                s.labels().get(by),
+                Math.round(s.points().getFirst()[1])))
         .sorted(Comparator.comparingDouble(Bar::count).reversed())
         .toList();
   }

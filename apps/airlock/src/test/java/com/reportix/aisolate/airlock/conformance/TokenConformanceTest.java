@@ -190,21 +190,19 @@ class TokenConformanceTest {
     token
         .path("claims")
         .properties()
-        .forEach(
-            claim -> {
-              if (claim.getValue().isNull()) {
-                claims.remove(claim.getKey());
-              } else {
-                claims.put(claim.getKey(), JSON.treeToValue(claim.getValue(), Object.class));
-              }
-            });
-    long now = Instant.now().getEpochSecond();
-    TIMES.forEach(
-        name -> {
-          if (claims.get(name) instanceof Number relative) {
-            claims.put(name, now + relative.longValue());
+        .forEach(claim -> {
+          if (claim.getValue().isNull()) {
+            claims.remove(claim.getKey());
+          } else {
+            claims.put(claim.getKey(), JSON.treeToValue(claim.getValue(), Object.class));
           }
         });
+    long now = Instant.now().getEpochSecond();
+    TIMES.forEach(name -> {
+      if (claims.get(name) instanceof Number relative) {
+        claims.put(name, now + relative.longValue());
+      }
+    });
     Payload payload = new Payload(claims);
     return switch (signedBy) {
       case "issuer_key" -> rs256(payload, new RSASSASigner(ISSUER_KEY));

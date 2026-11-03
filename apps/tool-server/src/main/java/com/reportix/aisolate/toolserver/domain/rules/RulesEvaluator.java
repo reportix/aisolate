@@ -48,14 +48,13 @@ public class RulesEvaluator {
         rows.add(new RowPredicate(filter.column(), value));
       }
       rule.columns()
-          .forEach(
-              (column, act) -> {
-                if (act == Rule.ColumnAction.HIDE) {
-                  hidden.add(column);
-                } else {
-                  masked.add(column);
-                }
-              });
+          .forEach((column, act) -> {
+            if (act == Rule.ColumnAction.HIDE) {
+              hidden.add(column);
+            } else {
+              masked.add(column);
+            }
+          });
       if (rule.aggregation() != null && rule.aggregation().minGroupSize() != null) {
         int size = rule.aggregation().minGroupSize();
         minGroupSize = minGroupSize == null ? size : Math.max(minGroupSize, size);

@@ -79,11 +79,8 @@ class CredentialRevealIntegrationTest {
 
   private static RequestPostProcessor caller(String azp, long authTime, String... authorities) {
     return jwt()
-        .jwt(
-            j ->
-                j.claim("email", "andrew@example.com")
-                    .claim("azp", azp)
-                    .claim("auth_time", authTime))
+        .jwt(j ->
+            j.claim("email", "andrew@example.com").claim("azp", azp).claim("auth_time", authTime))
         .authorities(
             java.util.Arrays.stream(authorities)
                 .<org.springframework.security.core.GrantedAuthority>map(

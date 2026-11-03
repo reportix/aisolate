@@ -77,14 +77,13 @@ class CredentialsTest {
     assertThat(decode(secret.getData().get("password"))).isEqualTo("p#ss: 'x'");
     assertThat(secret.getMetadata().getOwnerReferences())
         .singleElement()
-        .satisfies(
-            reference -> {
-              assertThat(reference.getApiVersion()).isEqualTo("aisolate.dev/v1");
-              assertThat(reference.getKind()).isEqualTo(kind.getKind());
-              assertThat(reference.getName()).isEqualTo(ownerName);
-              assertThat(reference.getUid()).isEqualTo(owner.getMetadata().getUid()).isNotBlank();
-              assertThat(reference.getBlockOwnerDeletion()).isNull();
-            });
+        .satisfies(reference -> {
+          assertThat(reference.getApiVersion()).isEqualTo("aisolate.dev/v1");
+          assertThat(reference.getKind()).isEqualTo(kind.getKind());
+          assertThat(reference.getName()).isEqualTo(ownerName);
+          assertThat(reference.getUid()).isEqualTo(owner.getMetadata().getUid()).isNotBlank();
+          assertThat(reference.getBlockOwnerDeletion()).isNull();
+        });
   }
 
   @Test

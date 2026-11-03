@@ -105,20 +105,17 @@ class LlmErrorsConformanceTest {
         request
             .path("body")
             .properties()
-            .forEach(
-                field ->
-                    assertThat(body.path(field.getKey()))
-                        .as(field.getKey())
-                        .isEqualTo(field.getValue()));
+            .forEach(field ->
+                assertThat(body.path(field.getKey()))
+                    .as(field.getKey())
+                    .isEqualTo(field.getValue()));
         request
             .path("headers")
             .properties()
-            .forEach(
-                header ->
-                    assertThat(sent.headers().get(header.getKey()))
-                        .as(header.getKey())
-                        .isEqualTo(
-                            header.getValue().isNull() ? null : header.getValue().asString()));
+            .forEach(header ->
+                assertThat(sent.headers().get(header.getKey()))
+                    .as(header.getKey())
+                    .isEqualTo(header.getValue().isNull() ? null : header.getValue().asString()));
       }
       if (expect.has("error")) {
         assertThat(thrown)
@@ -205,18 +202,16 @@ class LlmErrorsConformanceTest {
     FILE.path("env").properties().forEach(e -> env.put(e.getKey(), e.getValue().asString()));
     c.path("env")
         .properties()
-        .forEach(
-            e -> {
-              if (e.getValue().isNull()) {
-                env.remove(e.getKey());
-              } else {
-                env.put(e.getKey(), e.getValue().asString());
-              }
-            });
+        .forEach(e -> {
+          if (e.getValue().isNull()) {
+            env.remove(e.getKey());
+          } else {
+            env.put(e.getKey(), e.getValue().asString());
+          }
+        });
     if (stub != null) {
-      env.replaceAll(
-          (name, value) ->
-              name.endsWith("_URL") ? value.replaceFirst("^https?://[^/]+", stub) : value);
+      env.replaceAll((name, value) ->
+          name.endsWith("_URL") ? value.replaceFirst("^https?://[^/]+", stub) : value);
     }
     return env;
   }
@@ -224,12 +219,11 @@ class LlmErrorsConformanceTest {
   private static Stream<Arguments> cases(boolean calls) {
     List<Arguments> cases = new ArrayList<>();
     FILE.path("cases")
-        .forEach(
-            c -> {
-              if (c.has("call") == calls) {
-                cases.add(arguments(named(c.path("id").asString(), c)));
-              }
-            });
+        .forEach(c -> {
+          if (c.has("call") == calls) {
+            cases.add(arguments(named(c.path("id").asString(), c)));
+          }
+        });
     return cases.stream();
   }
 

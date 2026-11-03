@@ -287,13 +287,12 @@ public class AuditExport {
       value
           .replace("\r\n", "\n")
           .codePoints()
-          .forEach(
-              cp -> {
-                if (cp == '\n') out.append('\n');
-                else if (Character.isISOControl(cp) || Character.isWhitespace(cp)) out.append(' ');
-                else if (glyphs.computeIfAbsent(cp, this::drawable)) out.appendCodePoint(cp);
-                else out.append(Character.getType(cp) == Character.DASH_PUNCTUATION ? '-' : '?');
-              });
+          .forEach(cp -> {
+            if (cp == '\n') out.append('\n');
+            else if (Character.isISOControl(cp) || Character.isWhitespace(cp)) out.append(' ');
+            else if (glyphs.computeIfAbsent(cp, this::drawable)) out.appendCodePoint(cp);
+            else out.append(Character.getType(cp) == Character.DASH_PUNCTUATION ? '-' : '?');
+          });
       return out.toString();
     }
 

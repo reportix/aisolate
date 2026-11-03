@@ -74,13 +74,12 @@ class ChatStreamingIntegrationTest {
     // Arrange: the model is held inside its second call, after the tool has already run
     CountDownLatch answerAsked = new CountDownLatch(1);
     model.toolCall("read_records", "{}").answerCiting("{f1}", "ev-1", "r1", "gross_salary");
-    model.onCall(
-        () -> {
-          if (model.prompts().size() == 2) {
-            answerAsked.countDown();
-            awaitLatch(releaseHeldExchange);
-          }
-        });
+    model.onCall(() -> {
+      if (model.prompts().size() == 2) {
+        answerAsked.countDown();
+        awaitLatch(releaseHeldExchange);
+      }
+    });
 
     // Act
     Iterator<String> lines = chatLines("eric");
@@ -112,12 +111,11 @@ class ChatStreamingIntegrationTest {
     assertThat(remainingDataLines(lines)).anyMatch(line -> line.contains("\"type\":\"done\""));
     assertThat(((FakeToolClient) toolServer).callerAuthentications())
         .isNotEmpty()
-        .allSatisfy(
-            authentication ->
-                assertThat(authentication)
-                    .isNotNull()
-                    .extracting(Authentication::getPrincipal)
-                    .isInstanceOf(Jwt.class));
+        .allSatisfy(authentication ->
+            assertThat(authentication)
+                .isNotNull()
+                .extracting(Authentication::getPrincipal)
+                .isInstanceOf(Jwt.class));
   }
 
   @Test

@@ -111,21 +111,20 @@ class ToolServerAdmissionConformanceTest {
     Map<String, List<Tool>> byDataSource = new LinkedHashMap<>();
     FILE.path("published_tools")
         .properties()
-        .forEach(
-            e -> {
-              String name = e.getKey();
-              byDataSource
-                  .computeIfAbsent(e.getValue().asString(), ds -> new ArrayList<>())
-                  .add(
-                      new Tool(
-                          name,
-                          name,
-                          Map.of(),
-                          (query, args) -> {
-                            reached.add(name);
-                            return Result.empty(name, "");
-                          }));
-            });
+        .forEach(e -> {
+          String name = e.getKey();
+          byDataSource
+              .computeIfAbsent(e.getValue().asString(), ds -> new ArrayList<>())
+              .add(
+                  new Tool(
+                      name,
+                      name,
+                      Map.of(),
+                      (query, args) -> {
+                        reached.add(name);
+                        return Result.empty(name, "");
+                      }));
+        });
     return byDataSource.entrySet().stream()
         .map(e -> (ToolPlugin) new Published(e.getKey(), e.getValue()))
         .toList();

@@ -289,14 +289,13 @@ public final class EhrTools implements ToolPlugin {
   // The care-team columns are the rules' business, hidden from every role: never offered.
   private static String catalog(List<Entity> entities) {
     return entities.stream()
-        .map(
-            e ->
-                e.name()
-                    + " ("
-                    + e.columns().keySet().stream()
-                        .filter(column -> !column.endsWith("_clinician"))
-                        .collect(Collectors.joining(", "))
-                    + ")")
+        .map(e ->
+            e.name()
+                + " ("
+                + e.columns().keySet().stream()
+                    .filter(column -> !column.endsWith("_clinician"))
+                    .collect(Collectors.joining(", "))
+                + ")")
         .collect(Collectors.joining("; "));
   }
 

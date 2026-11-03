@@ -120,12 +120,11 @@ public final class ScriptedChatModel implements ChatModel {
         ChatModelObservationContext.builder().prompt(prompt).provider("scripted").build();
     return ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
         .observation(null, new DefaultChatModelObservationConvention(), () -> context, observations)
-        .observe(
-            () -> {
-              ChatResponse response = answer(prompt);
-              context.setResponse(response);
-              return response;
-            });
+        .observe(() -> {
+          ChatResponse response = answer(prompt);
+          context.setResponse(response);
+          return response;
+        });
   }
 
   private ChatResponse answer(Prompt prompt) {

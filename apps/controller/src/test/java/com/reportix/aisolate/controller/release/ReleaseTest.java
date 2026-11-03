@@ -71,11 +71,10 @@ class ReleaseTest {
   void givenSpaceDataSourceWithoutSecret_whenLoaded_thenEachAirlockResolvingItNamesIt() {
     // Arrange: founders-finance replaces acme_hr with its own; hr-assistant reads the space's
     List<Space> spaces =
-        replaceSpace(
-            s -> {
-              DataSource ds = s.dataSources().getFirst();
-              return withSpaceDataSources(s, List.of(new DataSource(ds.id(), ds.url(), null)));
-            });
+        replaceSpace(s -> {
+          DataSource ds = s.dataSources().getFirst();
+          return withSpaceDataSources(s, List.of(new DataSource(ds.id(), ds.url(), null)));
+        });
 
     // Act
     Release release = Release.of("hr-acme", GLOBAL, spaces, airlocks(), EGRESS, OTLP);
@@ -136,13 +135,12 @@ class ReleaseTest {
     // Assert: the field and the host, never the URL
     assertThat(release.problemsOf("Airlock", HR))
         .singleElement()
-        .satisfies(
-            p ->
-                assertThat(p)
-                    .contains(field)
-                    .contains("elsewhere.example")
-                    .contains("platform.egress.hosts")
-                    .doesNotContain(url));
+        .satisfies(p ->
+            assertThat(p)
+                .contains(field)
+                .contains("elsewhere.example")
+                .contains("platform.egress.hosts")
+                .doesNotContain(url));
   }
 
   @ParameterizedTest
@@ -174,11 +172,10 @@ class ReleaseTest {
     // Assert: the Global is told; no catalog holds the entry; the other airlock serves
     assertThat(served.problems())
         .singleElement()
-        .satisfies(
-            p ->
-                assertThat(p)
-                    .startsWith("llms[granite].url: the host ollama.elsewhere.example")
-                    .doesNotContain("11434"));
+        .satisfies(p ->
+            assertThat(p)
+                .startsWith("llms[granite].url: the host ollama.elsewhere.example")
+                .doesNotContain("11434"));
     assertThat(release.configuration().llmsOf(FF)).extracting(Llm::id).doesNotContain("granite");
     assertThat(release.serves("Airlock", HR)).isEqualTo(serves);
     assertThat(release.problemsOf("Airlock", HR))
@@ -318,9 +315,8 @@ class ReleaseTest {
     // Assert: it is told why; the other airlock serves
     assertThat(release.problemsOf("Airlock", FF))
         .singleElement()
-        .satisfies(
-            p ->
-                assertThat(p).contains("spec.llms[0].provider gpt is not one of [ollama, openai]"));
+        .satisfies(p ->
+            assertThat(p).contains("spec.llms[0].provider gpt is not one of [ollama, openai]"));
     assertThat(release.serves("Airlock", FF)).isFalse();
     assertThat(release.serves("Airlock", HR)).isTrue();
     assertThat(release.problemsOf("Airlock", HR)).isEmpty();
@@ -382,11 +378,8 @@ class ReleaseTest {
 
   private static List<Airlock> replace(String name, UnaryOperator<Spec> change) {
     return airlocks().stream()
-        .map(
-            a ->
-                a.getMetadata().getName().equals(name)
-                    ? airlock(name, change.apply(a.getSpec()))
-                    : a)
+        .map(a ->
+            a.getMetadata().getName().equals(name) ? airlock(name, change.apply(a.getSpec())) : a)
         .toList();
   }
 

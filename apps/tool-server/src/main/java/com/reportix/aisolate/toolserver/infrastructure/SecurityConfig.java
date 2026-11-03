@@ -35,12 +35,11 @@ public class SecurityConfig {
     com.reportix.aisolate.identity.SecurityConfig.requireAudience(resourceServer);
     return http.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .csrf(csrf -> csrf.disable())
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers("/actuator/health/**", "/actuator/prometheus")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
+        .authorizeHttpRequests(auth ->
+            auth.requestMatchers("/actuator/health/**", "/actuator/prometheus")
+                .permitAll()
+                .anyRequest()
+                .authenticated())
         .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
         .build();
   }

@@ -180,12 +180,11 @@ class RendererTest {
     assertThat(findEnv(deployment, "AISOLATE_CODE_TOKEN_FILE"))
         .isEqualTo("/var/run/aisolate/code/token");
     assertThat(spec.getContainers().getFirst().getVolumeMounts())
-        .anySatisfy(
-            m -> {
-              assertThat(m.getName()).isEqualTo("code-token");
-              assertThat(m.getMountPath()).isEqualTo("/var/run/aisolate/code");
-              assertThat(m.getReadOnly()).isTrue();
-            });
+        .anySatisfy(m -> {
+          assertThat(m.getName()).isEqualTo("code-token");
+          assertThat(m.getMountPath()).isEqualTo("/var/run/aisolate/code");
+          assertThat(m.getReadOnly()).isTrue();
+        });
     assertThat(secretVolumes(deployment)).contains("hr-acme-hr-assistant-code");
     assertThat(spec.getVolumes())
         .noneMatch(v -> v.getConfigMap() != null && v.getName().equals("plugins"));
@@ -212,13 +211,12 @@ class RendererTest {
     // Assert: the pod refuses to start, naming the missing backend
     assertThat(of(objects, Secret.class)).isEmpty();
     assertThat(of(objects, Deployment.class))
-        .allSatisfy(
-            d -> {
-              assertThat(findEnv(d, "AISOLATE_CODE_DIGEST")).startsWith("sha256:");
-              assertThat(listEnvNames(d))
-                  .doesNotContain("AISOLATE_CODE_URL", "AISOLATE_CODE_TOKEN_FILE");
-              assertThat(secretVolumes(d)).isEmpty();
-            });
+        .allSatisfy(d -> {
+          assertThat(findEnv(d, "AISOLATE_CODE_DIGEST")).startsWith("sha256:");
+          assertThat(listEnvNames(d))
+              .doesNotContain("AISOLATE_CODE_URL", "AISOLATE_CODE_TOKEN_FILE");
+          assertThat(secretVolumes(d)).isEmpty();
+        });
     assertThat(
             egressPeers(findPolicy(objects, HR_MCP))
                 .contains("app=backend:" + Renderer.AUDIT_INGEST_PORT))
@@ -252,19 +250,18 @@ class RendererTest {
     assertThat(tools.getSpec().getTemplate().getSpec().getContainers().getFirst().getImage())
         .isEqualTo(toolServerImage);
     assertThat(List.of(airlock, tools))
-        .allSatisfy(
-            d -> {
-              assertThat(findEnv(d, "AISOLATE_CODE_DIGEST")).startsWith("sha256:784c");
-              assertThat(findEnv(d, "JDK_JAVA_OPTIONS")).isNotNull();
-              assertThat(findEnv(d, "HTTPS_PROXY")).isEqualTo(python ? "http://egress:3128" : null);
-              if (python) {
-                assertThat(List.of(findEnv(d, "NO_PROXY").split(",")))
-                    .contains("keycloak.localtest.me", "localhost", ".svc", ".cluster.local")
-                    .doesNotContain(TestSettings.PROXIED_HOST, "*.svc");
-              } else {
-                assertThat(findEnv(d, "NO_PROXY")).isNull();
-              }
-            });
+        .allSatisfy(d -> {
+          assertThat(findEnv(d, "AISOLATE_CODE_DIGEST")).startsWith("sha256:784c");
+          assertThat(findEnv(d, "JDK_JAVA_OPTIONS")).isNotNull();
+          assertThat(findEnv(d, "HTTPS_PROXY")).isEqualTo(python ? "http://egress:3128" : null);
+          if (python) {
+            assertThat(List.of(findEnv(d, "NO_PROXY").split(",")))
+                .contains("keycloak.localtest.me", "localhost", ".svc", ".cluster.local")
+                .doesNotContain(TestSettings.PROXIED_HOST, "*.svc");
+          } else {
+            assertThat(findEnv(d, "NO_PROXY")).isNull();
+          }
+        });
   }
 
   @Test
@@ -300,12 +297,11 @@ class RendererTest {
     // Assert: a policy route to the proxy is useless unless the JVM is told to use it
     assertThat(deployments)
         .hasSize(2)
-        .allSatisfy(
-            d ->
-                assertThat(
-                        String.valueOf(findEnv(d, "JDK_JAVA_OPTIONS"))
-                            .startsWith("-Dhttps.proxyHost=egress -Dhttps.proxyPort=3128 "))
-                    .isEqualTo(enabled));
+        .allSatisfy(d ->
+            assertThat(
+                    String.valueOf(findEnv(d, "JDK_JAVA_OPTIONS"))
+                        .startsWith("-Dhttps.proxyHost=egress -Dhttps.proxyPort=3128 "))
+                .isEqualTo(enabled));
   }
 
   // Survives beside the golden as a regeneration guard: limits and the tmp cap stay in force.
@@ -317,22 +313,19 @@ class RendererTest {
     // Assert: one airlock's code or load must not starve the node or fill its disk
     assertThat(deployments)
         .hasSize(2)
-        .allSatisfy(
-            d -> {
-              var pod = d.getSpec().getTemplate().getSpec();
-              assertThat(pod.getContainers())
-                  .allSatisfy(
-                      c ->
-                          assertThat(c.getResources().getLimits())
-                              .containsKeys("cpu", "memory", "ephemeral-storage"));
-              assertThat(pod.getVolumes())
-                  .filteredOn(v -> v.getName().equals("tmp"))
-                  .singleElement()
-                  .satisfies(
-                      v ->
-                          assertThat(v.getEmptyDir().getSizeLimit())
-                              .isEqualTo(new Quantity(Renderer.CODE_TMP_SIZE_LIMIT)));
-            });
+        .allSatisfy(d -> {
+          var pod = d.getSpec().getTemplate().getSpec();
+          assertThat(pod.getContainers())
+              .allSatisfy(c ->
+                  assertThat(c.getResources().getLimits())
+                      .containsKeys("cpu", "memory", "ephemeral-storage"));
+          assertThat(pod.getVolumes())
+              .filteredOn(v -> v.getName().equals("tmp"))
+              .singleElement()
+              .satisfies(v ->
+                  assertThat(v.getEmptyDir().getSizeLimit())
+                      .isEqualTo(new Quantity(Renderer.CODE_TMP_SIZE_LIMIT)));
+        });
   }
 
   @ParameterizedTest
@@ -349,10 +342,9 @@ class RendererTest {
     // Assert: the endpoint as it is (the pod adds /v1/traces), and a route to its host
     assertThat(of(objects, Deployment.class))
         .hasSize(2)
-        .allSatisfy(
-            d ->
-                assertThat(findEnv(d, "MANAGEMENT_OTLP_TRACING_ENDPOINT"))
-                    .isEqualTo(set ? endpoint : null));
+        .allSatisfy(d ->
+            assertThat(findEnv(d, "MANAGEMENT_OTLP_TRACING_ENDPOINT"))
+                .isEqualTo(set ? endpoint : null));
     assertThat(of(objects, NetworkPolicy.class))
         .hasSize(2)
         .allSatisfy(p -> assertThat(egressPeers(p).contains(collector)).isEqualTo(set));
@@ -375,10 +367,9 @@ class RendererTest {
             Stream.concat(
                 of(airlock, Deployment.class).stream(), of(discovery, Deployment.class).stream()))
         .hasSize(3)
-        .allSatisfy(
-            d ->
-                assertThat(d.getSpec().getTemplate().getSpec().getRuntimeClassName())
-                    .isEqualTo(expected));
+        .allSatisfy(d ->
+            assertThat(d.getSpec().getTemplate().getSpec().getRuntimeClassName())
+                .isEqualTo(expected));
   }
 
   @ParameterizedTest
@@ -409,24 +400,23 @@ class RendererTest {
             Stream.concat(
                 of(airlock, Deployment.class).stream(), of(discovery, Deployment.class).stream()))
         .hasSize(3)
-        .allSatisfy(
-            d -> {
-              var pod = d.getSpec().getTemplate().getSpec();
-              if (set) {
-                assertThat(pod.getNodeSelector()).isEqualTo(nodeSelector);
-                assertThat(pod.getTolerations())
-                    .containsExactly(
-                        new TolerationBuilder()
-                            .withKey("pool")
-                            .withOperator("Equal")
-                            .withValue("robot")
-                            .withEffect("NoSchedule")
-                            .build());
-              } else {
-                assertThat(pod.getNodeSelector()).isNullOrEmpty();
-                assertThat(pod.getTolerations()).isNullOrEmpty();
-              }
-            });
+        .allSatisfy(d -> {
+          var pod = d.getSpec().getTemplate().getSpec();
+          if (set) {
+            assertThat(pod.getNodeSelector()).isEqualTo(nodeSelector);
+            assertThat(pod.getTolerations())
+                .containsExactly(
+                    new TolerationBuilder()
+                        .withKey("pool")
+                        .withOperator("Equal")
+                        .withValue("robot")
+                        .withEffect("NoSchedule")
+                        .build());
+          } else {
+            assertThat(pod.getNodeSelector()).isNullOrEmpty();
+            assertThat(pod.getTolerations()).isNullOrEmpty();
+          }
+        });
   }
 
   @ParameterizedTest
@@ -570,14 +560,13 @@ class RendererTest {
         .isEqualTo(TestSettings.SETTINGS.images().airlock());
     assertThat(findEnv(pods, "AISOLATE_CONFIG_DISCOVERY_DIR")).isEqualTo("/etc/aisolate-discovery");
     assertThat(listEnvNames(pods))
-        .noneMatch(
-            name ->
-                name.equals("AISOLATE_CONFIG_DIR")
-                    || name.equals("AISOLATE_AIRLOCK")
-                    || name.startsWith("AISOLATE_PLUGIN")
-                    || name.startsWith("AISOLATE_DATASOURCE_")
-                    || name.startsWith("AISOLATE_LLM")
-                    || name.equals("AISOLATE_TOOL_SERVER_URL"));
+        .noneMatch(name ->
+            name.equals("AISOLATE_CONFIG_DIR")
+                || name.equals("AISOLATE_AIRLOCK")
+                || name.startsWith("AISOLATE_PLUGIN")
+                || name.startsWith("AISOLATE_DATASOURCE_")
+                || name.startsWith("AISOLATE_LLM")
+                || name.equals("AISOLATE_TOOL_SERVER_URL"));
     assertThat(pods.getMetadata().getOwnerReferences()).containsExactly(space);
     NetworkPolicy policy = findPolicy(objects, Renderer.DISCOVERY);
     assertThat(policy.getSpec().getPodSelector().getMatchLabels())
@@ -638,22 +627,20 @@ class RendererTest {
   /** Each egress peer as {@code cidr:port} or {@code label=value,...:port}. */
   private static List<String> egressPeers(NetworkPolicy policy) {
     return policy.getSpec().getEgress().stream()
-        .flatMap(
-            (NetworkPolicyEgressRule rule) ->
-                rule.getTo().stream()
-                    .map(
-                        peer ->
-                            (peer.getIpBlock() != null
-                                    ? peer.getIpBlock().getCidr()
-                                    : peer.getPodSelector() == null
-                                        ? "*"
-                                        : peer.getPodSelector().getMatchLabels().entrySet().stream()
-                                            .map(e -> e.getKey() + "=" + e.getValue())
-                                            .collect(Collectors.joining(",")))
-                                + ":"
-                                + (rule.getPorts().isEmpty()
-                                    ? "*"
-                                    : rule.getPorts().getFirst().getPort().getIntVal())))
+        .flatMap((NetworkPolicyEgressRule rule) ->
+            rule.getTo().stream()
+                .map(peer ->
+                    (peer.getIpBlock() != null
+                            ? peer.getIpBlock().getCidr()
+                            : peer.getPodSelector() == null
+                                ? "*"
+                                : peer.getPodSelector().getMatchLabels().entrySet().stream()
+                                    .map(e -> e.getKey() + "=" + e.getValue())
+                                    .collect(Collectors.joining(",")))
+                        + ":"
+                        + (rule.getPorts().isEmpty()
+                            ? "*"
+                            : rule.getPorts().getFirst().getPort().getIntVal())))
         .toList();
   }
 

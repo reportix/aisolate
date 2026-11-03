@@ -196,11 +196,10 @@ final class ChatExchange implements Exchange {
     if (!airlock.tools().isEmpty()) {
       toolServer.listTools(airlock).stream()
           .filter(toolSpec -> airlock.tools().contains(toolSpec.name()))
-          .forEach(
-              toolSpec -> {
-                toolCallbacks.add(new GovernedToolCallback(toolSpec, this));
-                declaredArguments.put(toolSpec.name(), declared(toolSpec.inputSchema()));
-              });
+          .forEach(toolSpec -> {
+            toolCallbacks.add(new GovernedToolCallback(toolSpec, this));
+            declaredArguments.put(toolSpec.name(), declared(toolSpec.inputSchema()));
+          });
     }
     prepareContext(handlers, manager);
     // The model is about to be told the context: whatever comes later would never reach it.
@@ -722,19 +721,18 @@ final class ChatExchange implements Exchange {
    */
   static Map<String, Object> applied(Map<String, Object> sent, Set<String> declared, int rows) {
     Map<String, Object> applied = new LinkedHashMap<>();
-    sent.forEach(
-        (name, value) -> {
-          boolean empty =
-              value == null
-                  || value instanceof String text && text.isBlank()
-                  || value instanceof Collection<?> list && list.isEmpty()
-                  || value instanceof Map<?, ?> map && map.isEmpty();
-          boolean unreached =
-              name.equals("limit") && value instanceof Number limit && limit.longValue() > rows;
-          if (declared.contains(name) && !empty && !unreached) {
-            applied.put(name, value);
-          }
-        });
+    sent.forEach((name, value) -> {
+      boolean empty =
+          value == null
+              || value instanceof String text && text.isBlank()
+              || value instanceof Collection<?> list && list.isEmpty()
+              || value instanceof Map<?, ?> map && map.isEmpty();
+      boolean unreached =
+          name.equals("limit") && value instanceof Number limit && limit.longValue() > rows;
+      if (declared.contains(name) && !empty && !unreached) {
+        applied.put(name, value);
+      }
+    });
     return applied;
   }
 
@@ -746,11 +744,9 @@ final class ChatExchange implements Exchange {
     List<Map<String, Object>> canonical = new ArrayList<>();
     for (Map<String, Object> row : rows) {
       Map<String, Object> sorted = new TreeMap<>();
-      row.forEach(
-          (column, value) ->
-              sorted.put(
-                  column,
-                  value instanceof Number ? Grounding.plain(Grounding.number(value)) : value));
+      row.forEach((column, value) ->
+          sorted.put(
+              column, value instanceof Number ? Grounding.plain(Grounding.number(value)) : value));
       canonical.add(sorted);
     }
     try {

@@ -46,17 +46,14 @@ class RulesConformanceTest {
 
   static Stream<Arguments> cases() {
     return FILES.stream()
-        .flatMap(
-            name -> {
-              JsonNode file = ConformanceCases.file("rules", name);
-              return ConformanceCases.cases(file)
-                  .map(
-                      c -> {
-                        var named = (org.junit.jupiter.api.Named<?>) c.get()[0];
-                        return arguments(
-                            named(name + " " + named.getName(), named.getPayload()), file);
-                      });
-            });
+        .flatMap(name -> {
+          JsonNode file = ConformanceCases.file("rules", name);
+          return ConformanceCases.cases(file)
+              .map(c -> {
+                var named = (org.junit.jupiter.api.Named<?>) c.get()[0];
+                return arguments(named(name + " " + named.getName(), named.getPayload()), file);
+              });
+        });
   }
 
   @ParameterizedTest(name = "{0}")

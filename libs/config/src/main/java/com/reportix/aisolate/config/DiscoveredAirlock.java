@@ -38,19 +38,18 @@ public record DiscoveredAirlock(
   /** Every airlock of a release. */
   public static List<DiscoveredAirlock> of(Configuration release) {
     return release.airlocks().values().stream()
-        .map(
-            airlock -> {
-              AirlockDocument.Access access = release.accessOf(airlock.name());
-              return new DiscoveredAirlock(
-                  airlock.name(),
-                  release.spaceOf(airlock.name()).name(),
-                  airlock.displayName(),
-                  Objects.requireNonNullElse(airlock.spec().description(), ""),
-                  access.roles(),
-                  access.callers(),
-                  access.clients(),
-                  airlock.tools());
-            })
+        .map(airlock -> {
+          AirlockDocument.Access access = release.accessOf(airlock.name());
+          return new DiscoveredAirlock(
+              airlock.name(),
+              release.spaceOf(airlock.name()).name(),
+              airlock.displayName(),
+              Objects.requireNonNullElse(airlock.spec().description(), ""),
+              access.roles(),
+              access.callers(),
+              access.clients(),
+              airlock.tools());
+        })
         .toList();
   }
 

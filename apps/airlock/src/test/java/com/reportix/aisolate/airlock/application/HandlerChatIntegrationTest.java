@@ -181,12 +181,11 @@ class HandlerChatIntegrationTest {
         .doesNotContain("three years of parental leave");
     assertThat(first).anySatisfy(frame -> assertThat(frame).contains("\"type\":\"answer_chunk\""));
     assertThat(first)
-        .anySatisfy(
-            frame ->
-                assertThat(frame)
-                    .contains("\"type\":\"verification\"")
-                    .contains("\"handler\":\"CitationVerifier\"")
-                    .contains("\"status\":\"PASS\""));
+        .anySatisfy(frame ->
+            assertThat(frame)
+                .contains("\"type\":\"verification\"")
+                .contains("\"handler\":\"CitationVerifier\"")
+                .contains("\"status\":\"PASS\""));
     assertThat(first.getLast()).contains("\"type\":\"done\"");
     assertThat(model.prompts().get(1).getContents())
         .contains("The user's previous question was: How long is parental leave?");
@@ -266,19 +265,17 @@ class HandlerChatIntegrationTest {
 
     // Assert: each airlock heard its own jar's verifier, never the other's
     assertThat(exchange)
-        .anySatisfy(
-            frame ->
-                assertThat(frame)
-                    .contains("\"type\":\"verification\"")
-                    .contains("\"status\":\"PASS\"")
-                    .doesNotContain("the other airlock's code"));
+        .anySatisfy(frame ->
+            assertThat(frame)
+                .contains("\"type\":\"verification\"")
+                .contains("\"status\":\"PASS\"")
+                .doesNotContain("the other airlock's code"));
     assertThat(other)
-        .anySatisfy(
-            frame ->
-                assertThat(frame)
-                    .contains("\"type\":\"verification\"")
-                    .contains("\"status\":\"FAIL\"")
-                    .contains("the other airlock's code"));
+        .anySatisfy(frame ->
+            assertThat(frame)
+                .contains("\"type\":\"verification\"")
+                .contains("\"status\":\"FAIL\"")
+                .contains("the other airlock's code"));
   }
 
   private static String sha256(byte[] bytes) {

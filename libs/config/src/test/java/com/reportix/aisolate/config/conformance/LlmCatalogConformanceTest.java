@@ -54,14 +54,13 @@ class LlmCatalogConformanceTest {
     FILE.path("base").properties().forEach(f -> files.put(f.getKey(), f.getValue()));
     c.path("files")
         .properties()
-        .forEach(
-            f -> {
-              if (f.getValue().isNull()) {
-                files.remove(f.getKey());
-              } else {
-                files.put(f.getKey(), f.getValue());
-              }
-            });
+        .forEach(f -> {
+          if (f.getValue().isNull()) {
+            files.remove(f.getKey());
+          } else {
+            files.put(f.getKey(), f.getValue());
+          }
+        });
     for (Map.Entry<String, JsonNode> file : files.entrySet()) {
       Files.writeString(documents.resolve(file.getKey()), JSON.writeValueAsString(file.getValue()));
     }

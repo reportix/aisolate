@@ -43,10 +43,8 @@ class TemplatesTest {
 
     // Act
     Throwable thrown =
-        catchThrowable(
-            () ->
-                Templates.extract(
-                    templates, "hr", Map.of("SPACE", "hr-lab", "AIRLOCK", "hr"), target));
+        catchThrowable(() ->
+            Templates.extract(templates, "hr", Map.of("SPACE", "hr-lab", "AIRLOCK", "hr"), target));
 
     // Assert
     assertThat(thrown).isInstanceOf(IOException.class).hasMessage("bad entry hr/../x");

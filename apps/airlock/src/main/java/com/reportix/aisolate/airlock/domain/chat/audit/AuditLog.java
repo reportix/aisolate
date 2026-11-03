@@ -93,11 +93,10 @@ public class AuditLog {
     }
     event
         .tools()
-        .forEach(
-            tool ->
-                meters
-                    .counter("aisolate.tool.calls", "airlock", airlock, "tool", tool.name())
-                    .increment());
+        .forEach(tool ->
+            meters
+                .counter("aisolate.tool.calls", "airlock", airlock, "tool", tool.name())
+                .increment());
     Timer.builder("aisolate.exchange.duration")
         .tags("airlock", airlock)
         .publishPercentileHistogram()

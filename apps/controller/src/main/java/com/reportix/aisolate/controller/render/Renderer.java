@@ -195,11 +195,10 @@ public final class Renderer {
   public List<HasMetadata> renderDiscovery(
       List<Configuration> releases, List<OwnerReference> spaces) {
     Map<String, String> files = new TreeMap<>();
-    releases.forEach(
-        release ->
-            files.put(
-                release.spaces().keySet().iterator().next() + ".json",
-                DiscoveredAirlock.toJson(DiscoveredAirlock.of(release))));
+    releases.forEach(release ->
+        files.put(
+            release.spaces().keySet().iterator().next() + ".json",
+            DiscoveredAirlock.toJson(DiscoveredAirlock.of(release))));
     HasMetadata list =
         new ConfigMapBuilder()
             .withMetadata(buildDiscoveryMeta(Map.of(), spaces))

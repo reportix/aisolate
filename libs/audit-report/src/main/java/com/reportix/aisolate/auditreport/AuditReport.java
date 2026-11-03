@@ -298,25 +298,24 @@ public final class AuditReport {
   private static String escape(String text) {
     StringBuilder out = new StringBuilder(text.length());
     text.codePoints()
-        .forEach(
-            c -> {
-              switch (c) {
-                case '&' -> out.append("&amp;");
-                case '<' -> out.append("&lt;");
-                case '>' -> out.append("&gt;");
-                case '"' -> out.append("&quot;");
-                case '\r' -> out.append("&#13;");
-                default ->
-                    out.appendCodePoint(
-                        c == '\t'
-                                || c == '\n'
-                                || (c >= 0x20 && c <= 0xD7FF)
-                                || (c >= 0xE000 && c <= 0xFFFD)
-                                || c >= 0x10000
-                            ? c
-                            : 0xFFFD);
-              }
-            });
+        .forEach(c -> {
+          switch (c) {
+            case '&' -> out.append("&amp;");
+            case '<' -> out.append("&lt;");
+            case '>' -> out.append("&gt;");
+            case '"' -> out.append("&quot;");
+            case '\r' -> out.append("&#13;");
+            default ->
+                out.appendCodePoint(
+                    c == '\t'
+                            || c == '\n'
+                            || (c >= 0x20 && c <= 0xD7FF)
+                            || (c >= 0xE000 && c <= 0xFFFD)
+                            || c >= 0x10000
+                        ? c
+                        : 0xFFFD);
+          }
+        });
     return out.toString();
   }
 

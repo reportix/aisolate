@@ -36,13 +36,12 @@ public final class ReleaseEvents {
       Class<R> kind, EventSourceContext<P> context) {
     return new InformerEventSource<>(
         InformerEventSourceConfiguration.from(kind, context.getPrimaryResourceClass())
-            .withSecondaryToPrimaryMapper(
-                resource ->
-                    context
-                        .getPrimaryCache()
-                        .list()
-                        .map(ResourceID::fromResource)
-                        .collect(Collectors.toSet()))
+            .withSecondaryToPrimaryMapper(resource ->
+                context
+                    .getPrimaryCache()
+                    .list()
+                    .map(ResourceID::fromResource)
+                    .collect(Collectors.toSet()))
             .withOnUpdateFilter((newer, older) -> generationChanged(older, newer))
             .build());
   }
@@ -89,13 +88,12 @@ public final class ReleaseEvents {
   static <R extends HasMetadata> InformerEventSourceConfiguration<R> configureSpaceOf(
       Class<R> kind, Function<R, String> spaceNamed) {
     return InformerEventSourceConfiguration.from(kind, Space.class)
-        .withSecondaryToPrimaryMapper(
-            resource -> {
-              String space = spaceNamed.apply(resource);
-              return space == null
-                  ? Set.of()
-                  : Set.of(new ResourceID(space, resource.getMetadata().getNamespace()));
-            })
+        .withSecondaryToPrimaryMapper(resource -> {
+          String space = spaceNamed.apply(resource);
+          return space == null
+              ? Set.of()
+              : Set.of(new ResourceID(space, resource.getMetadata().getNamespace()));
+        })
         .withOnUpdateFilter((newer, older) -> generationChanged(older, newer))
         .build();
   }

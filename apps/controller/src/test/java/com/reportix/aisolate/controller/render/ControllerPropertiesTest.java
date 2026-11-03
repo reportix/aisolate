@@ -152,10 +152,9 @@ class ControllerPropertiesTest {
 
     // Act
     Throwable thrown =
-        catchThrowable(
-            () ->
-                new ControllerProperties.Images(
-                    pinned, "aisolate/tool-server:dev", pinned, pinned, "Never", allowTags));
+        catchThrowable(() ->
+            new ControllerProperties.Images(
+                pinned, "aisolate/tool-server:dev", pinned, pinned, "Never", allowTags));
 
     // Assert
     if (refused) {
@@ -190,11 +189,10 @@ class ControllerPropertiesTest {
 
     // Act
     Throwable thrown =
-        catchThrowable(
-            () ->
-                new Binder(ConfigurationPropertySources.get(environment))
-                    .bind("aisolate.controller", ControllerProperties.class)
-                    .get());
+        catchThrowable(() ->
+            new Binder(ConfigurationPropertySources.get(environment))
+                .bind("aisolate.controller", ControllerProperties.class)
+                .get());
 
     // Assert: the controller does not start on a peer no policy would bound
     assertThat(thrown)

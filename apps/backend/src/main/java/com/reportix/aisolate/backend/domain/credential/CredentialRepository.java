@@ -112,16 +112,15 @@ public class CredentialRepository {
    * the delete and its event commit together.
    */
   public Optional<Row> deleteOrphan(String secretRef, String actor) {
-    return requiresNew.execute(
-        s -> {
-          Optional<Row> row =
-              db.sql("DELETE FROM credentials WHERE secret_ref = ? RETURNING " + COLUMNS)
-                  .param(secretRef)
-                  .query(CredentialRepository::readRow)
-                  .optional();
-          row.ifPresent(r -> insertEvent(Event.of(r, actor, "deleted", null)));
-          return row;
-        });
+    return requiresNew.execute(s -> {
+      Optional<Row> row =
+          db.sql("DELETE FROM credentials WHERE secret_ref = ? RETURNING " + COLUMNS)
+              .param(secretRef)
+              .query(CredentialRepository::readRow)
+              .optional();
+      row.ifPresent(r -> insertEvent(Event.of(r, actor, "deleted", null)));
+      return row;
+    });
   }
 
   /** In the caller's transaction; the install's credentials stay. */
@@ -137,17 +136,16 @@ public class CredentialRepository {
             "SELECT actor, action, secret_ref, owner_kind, owner, kind, item_id, reason"
                 + " FROM credential_events WHERE secret_ref = ? ORDER BY id")
         .param(secretRef)
-        .query(
-            (rs, n) ->
-                new Event(
-                    rs.getString("actor"),
-                    rs.getString("action"),
-                    rs.getString("secret_ref"),
-                    rs.getString("owner_kind"),
-                    rs.getString("owner"),
-                    rs.getString("kind"),
-                    rs.getString("item_id"),
-                    rs.getString("reason")))
+        .query((rs, n) ->
+            new Event(
+                rs.getString("actor"),
+                rs.getString("action"),
+                rs.getString("secret_ref"),
+                rs.getString("owner_kind"),
+                rs.getString("owner"),
+                rs.getString("kind"),
+                rs.getString("item_id"),
+                rs.getString("reason")))
         .list();
   }
 

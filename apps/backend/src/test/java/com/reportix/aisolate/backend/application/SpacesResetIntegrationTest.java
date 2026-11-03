@@ -137,10 +137,8 @@ class SpacesResetIntegrationTest {
             secretRefOf(resource(SPACES, "reset-lab")),
             secretRefOf(resource(AIRLOCKS, "reset-assistant")));
     assertThat(secrets)
-        .allSatisfy(
-            name ->
-                assertThat(client.secrets().inNamespace("aisolate").withName(name).get())
-                    .isNotNull());
+        .allSatisfy(name ->
+            assertThat(client.secrets().inNamespace("aisolate").withName(name).get()).isNotNull());
     pod("aisolate-controller-0", "controller");
 
     // Act
@@ -158,9 +156,8 @@ class SpacesResetIntegrationTest {
     assertThat(cluster.path("problem").isString()).isFalse();
     // The mock has no garbage collector: gone because the reset deleted them by name
     assertThat(secrets)
-        .allSatisfy(
-            name ->
-                assertThat(client.secrets().inNamespace("aisolate").withName(name).get()).isNull());
+        .allSatisfy(name ->
+            assertThat(client.secrets().inNamespace("aisolate").withName(name).get()).isNull());
     assertThat(
             client.genericKubernetesResources(AIRLOCKS).inNamespace("aisolate").list().getItems())
         .isEmpty();
