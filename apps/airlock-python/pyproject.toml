@@ -7,29 +7,29 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "aisolate",
     "aisolate-runtime",
-    "starlette==1.9.0",
+    "starlette==1.10.0",
     "uvicorn==0.54.0",
     # Unused by the airlock's own code (its MCP client is httpx2), but both images ship one pinned set:
     # the constraints a project builds against must hold on either pod.
     "mcp==2.3.0",
     "httpx2==2.16.0",
-    "anyio==4.15.1",
-    "opentelemetry-api==1.45.1",
-    "opentelemetry-sdk==1.45.1",
-    "opentelemetry-exporter-otlp-proto-common==1.45.1",
+    "anyio==4.16.0",
+    "opentelemetry-api==1.45.2",
+    "opentelemetry-sdk==1.45.2",
+    "opentelemetry-exporter-otlp-proto-common==1.45.2",
     "prometheus-client==0.26.0",
     "PyYAML==6.0.3",
 ]
 
 [dependency-groups]
-dev = ["pytest==9.1.1"]
+dev = ["pytest==9.2.0"]
 
 [tool.uv.sources]
 aisolate = { path = "../../libs/sdk-python" }
 aisolate-runtime = { path = "../../libs/runtime-python" }
 
 [build-system]
-requires = ["hatchling==1.32.4"]
+requires = ["hatchling==1.33.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]

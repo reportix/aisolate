@@ -10,7 +10,7 @@ dependencies = ["aisolate"]
 aisolate = { path = "libs/aisolate-sdk" }
 
 [dependency-groups]
-dev = ["pytest==9.1.1"]
+dev = ["pytest==9.2.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
