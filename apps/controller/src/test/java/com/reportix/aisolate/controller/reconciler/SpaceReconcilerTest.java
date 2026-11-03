@@ -72,16 +72,14 @@ class SpaceReconcilerTest {
                 .withName(Renderer.DISCOVERY)
                 .get());
     assertThat(owned)
-        .allSatisfy(
-            o ->
-                assertThat(o.getMetadata().getOwnerReferences())
-                    .singleElement()
-                    .satisfies(
-                        owner -> {
-                          assertThat(owner.getKind()).isEqualTo("Space");
-                          assertThat(owner.getName()).isEqualTo("hr-acme");
-                          assertThat(owner.getController()).isNotEqualTo(Boolean.TRUE);
-                        }));
+        .allSatisfy(o ->
+            assertThat(o.getMetadata().getOwnerReferences())
+                .singleElement()
+                .satisfies(owner -> {
+                  assertThat(owner.getKind()).isEqualTo("Space");
+                  assertThat(owner.getName()).isEqualTo("hr-acme");
+                  assertThat(owner.getController()).isNotEqualTo(Boolean.TRUE);
+                }));
   }
 
   @Test

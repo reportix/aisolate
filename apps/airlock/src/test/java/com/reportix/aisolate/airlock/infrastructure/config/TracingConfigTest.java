@@ -33,11 +33,10 @@ class TracingConfigTest {
             : context.withSystemProperties(TracingConfig.ENDPOINT + "=" + endpoint);
 
     // Act / Assert: the pod starts and keeps its spans
-    blank.run(
-        started -> {
-          assertThat(started).hasNotFailed();
-          assertThat(started).doesNotHaveBean(OtlpHttpSpanExporter.class);
-        });
+    blank.run(started -> {
+      assertThat(started).hasNotFailed();
+      assertThat(started).doesNotHaveBean(OtlpHttpSpanExporter.class);
+    });
   }
 
   @ParameterizedTest
@@ -54,11 +53,10 @@ class TracingConfigTest {
         context.withSystemProperties(TracingConfig.ENDPOINT + "=" + endpoint);
 
     // Act / Assert
-    set.run(
-        started -> {
-          assertThat(started).hasSingleBean(OtlpHttpSpanExporter.class);
-          assertThat(started.getBean(OtlpTracingConnectionDetails.class).getUrl(Transport.HTTP))
-              .isEqualTo(traces);
-        });
+    set.run(started -> {
+      assertThat(started).hasSingleBean(OtlpHttpSpanExporter.class);
+      assertThat(started.getBean(OtlpTracingConnectionDetails.class).getUrl(Transport.HTTP))
+          .isEqualTo(traces);
+    });
   }
 }

@@ -270,12 +270,11 @@ class AgentLoopServiceTest {
     // And the audit is for the operator: nothing of it ever reaches the model
     assertThat(model.prompts())
         .extracting(AgentLoopServiceTest::promptText)
-        .allSatisfy(
-            text ->
-                assertThat(text)
-                    .doesNotContain("trace_id")
-                    .doesNotContain("input_tokens")
-                    .doesNotContain(AuditLog.LOGGER));
+        .allSatisfy(text ->
+            assertThat(text)
+                .doesNotContain("trace_id")
+                .doesNotContain("input_tokens")
+                .doesNotContain(AuditLog.LOGGER));
   }
 
   @Test
@@ -301,11 +300,10 @@ class AgentLoopServiceTest {
         "hr-acme",
         "acme-hr",
         () -> {
-          tracing.admission(
-              admission -> {
-                admission.asked(AIRLOCK, CLIENT);
-                return AIRLOCK;
-              });
+          tracing.admission(admission -> {
+            admission.asked(AIRLOCK, CLIENT);
+            return AIRLOCK;
+          });
           service().answerUserMessage(AIRLOCK, "What is my salary?", MANAGER, CLIENT, events::add);
           return null;
         });
@@ -348,30 +346,27 @@ class AgentLoopServiceTest {
             .toList();
     assertThat(modelCalls)
         .hasSize(2)
-        .allSatisfy(
-            call ->
-                assertThat(call.getTags())
-                    .containsEntry("gen_ai.usage.input_tokens", "100")
-                    .containsEntry("gen_ai.usage.output_tokens", "20"));
+        .allSatisfy(call ->
+            assertThat(call.getTags())
+                .containsEntry("gen_ai.usage.input_tokens", "100")
+                .containsEntry("gen_ai.usage.output_tokens", "20"));
     // Names and counts only: no question, answer, row or e-mail in any span
     assertThat(spans)
         .flatExtracting(span -> span.getTags().values())
-        .noneMatch(
-            value ->
-                value.contains("salary")
-                    || value.contains("78,000")
-                    || value.contains("Lindholm")
-                    || value.contains("eric@"));
+        .noneMatch(value ->
+            value.contains("salary")
+                || value.contains("78,000")
+                || value.contains("Lindholm")
+                || value.contains("eric@"));
   }
 
   private static SimpleSpan spanNamed(List<SimpleSpan> spans, String name) {
     return spans.stream()
         .filter(span -> name.equals(span.getName()))
         .findFirst()
-        .orElseThrow(
-            () ->
-                new AssertionError(
-                    name + " is not among " + spans.stream().map(SimpleSpan::getName).toList()));
+        .orElseThrow(() ->
+            new AssertionError(
+                name + " is not among " + spans.stream().map(SimpleSpan::getName).toList()));
   }
 
   @Test
@@ -381,12 +376,11 @@ class AgentLoopServiceTest {
     AtomicInteger calls = new AtomicInteger();
     model
         .toolCall("read_records", "{}")
-        .onCall(
-            () -> {
-              if (calls.incrementAndGet() == 2) {
-                throw new ResourceAccessException("Connection refused: localhost/127.0.0.1:11434");
-              }
-            });
+        .onCall(() -> {
+          if (calls.incrementAndGet() == 2) {
+            throw new ResourceAccessException("Connection refused: localhost/127.0.0.1:11434");
+          }
+        });
 
     // Act
     service().answerUserMessage(AIRLOCK, "What is my salary?", MANAGER, CLIENT, events::add);
@@ -828,14 +822,13 @@ class AgentLoopServiceTest {
       StringBuilder text = new StringBuilder();
       options
           .getToolCallbacks()
-          .forEach(
-              callback ->
-                  text.append(callback.getToolDefinition().name())
-                      .append(' ')
-                      .append(callback.getToolDefinition().description())
-                      .append(' ')
-                      .append(callback.getToolDefinition().inputSchema())
-                      .append('\n'));
+          .forEach(callback ->
+              text.append(callback.getToolDefinition().name())
+                  .append(' ')
+                  .append(callback.getToolDefinition().description())
+                  .append(' ')
+                  .append(callback.getToolDefinition().inputSchema())
+                  .append('\n'));
       return text.toString();
     }
     return "";
@@ -1004,12 +997,11 @@ class AgentLoopServiceTest {
     // Assert: the airlock travels beside the arguments, never out of them
     assertThat(tools.calls())
         .singleElement()
-        .satisfies(
-            call -> {
-              assertThat(call.airlock()).isEqualTo("acme-hr");
-              assertThat(call.revision()).isEqualTo("1");
-              assertThat(call.args()).containsKeys("airlock", "_meta");
-            });
+        .satisfies(call -> {
+          assertThat(call.airlock()).isEqualTo("acme-hr");
+          assertThat(call.revision()).isEqualTo("1");
+          assertThat(call.args()).containsKeys("airlock", "_meta");
+        });
   }
 
   static Stream<Arguments>
@@ -1028,10 +1020,9 @@ class AgentLoopServiceTest {
       RuntimeException failure, String providersWords) {
     // Arrange: the provider client fails the way it does when the model server is down or busy
     tools.tool("read_records", args -> FakeToolClient.evidence(1, "own-record"));
-    model.onCall(
-        () -> {
-          throw failure;
-        });
+    model.onCall(() -> {
+      throw failure;
+    });
 
     // Act
     service().answerUserMessage(AIRLOCK, "What is my salary?", MANAGER, CLIENT, events::add);
@@ -1076,10 +1067,9 @@ class AgentLoopServiceTest {
   void givenErrorDuringTheExchange_whenRun_thenTheStreamEndsWithAnErrorEventBeforeItIsRethrown() {
     // Arrange: what the JVM throws past every RuntimeException handler
     tools.tool("read_records", args -> FakeToolClient.evidence(1, "own-record"));
-    model.onCall(
-        () -> {
-          throw new AssertionError("out of everything");
-        });
+    model.onCall(() -> {
+      throw new AssertionError("out of everything");
+    });
 
     // Act
     Throwable thrown =
@@ -1438,12 +1428,11 @@ class AgentLoopServiceTest {
     ChatEvent.Verification verification = (ChatEvent.Verification) events.get(1);
     assertThat(verification.verdicts())
         .singleElement()
-        .satisfies(
-            verdict -> {
-              assertThat(verdict.handler()).isEqualTo("Crashing");
-              assertThat(verdict.status()).isEqualTo(Verdict.Status.WARN);
-              assertThat(verdict.note()).contains(failure);
-            });
+        .satisfies(verdict -> {
+          assertThat(verdict.handler()).isEqualTo("Crashing");
+          assertThat(verdict.status()).isEqualTo(Verdict.Status.WARN);
+          assertThat(verdict.note()).contains(failure);
+        });
     assertThat(events.getLast()).isInstanceOf(ChatEvent.Done.class);
   }
 
@@ -1470,11 +1459,10 @@ class AgentLoopServiceTest {
         .filteredOn(ChatEvent.Verification.class::isInstance)
         .flatExtracting(event -> ((ChatEvent.Verification) event).verdicts())
         .singleElement()
-        .satisfies(
-            verdict -> {
-              assertThat(verdict.status()).isEqualTo(Verdict.Status.WARN);
-              assertThat(verdict.note()).contains("IllegalStateException");
-            });
+        .satisfies(verdict -> {
+          assertThat(verdict.status()).isEqualTo(Verdict.Status.WARN);
+          assertThat(verdict.note()).contains("IllegalStateException");
+        });
     assertThat(events).filteredOn(ChatEvent.Evidence.class::isInstance).isEmpty();
     assertThat(events.getLast()).isInstanceOf(ChatEvent.Done.class);
   }
@@ -1569,10 +1557,9 @@ class AgentLoopServiceTest {
     handlers.memory(
         "Broken",
         1,
-        rememberOnly(
-            (exchange, answer) -> {
-              throw new IllegalStateException("disk full");
-            }));
+        rememberOnly((exchange, answer) -> {
+          throw new IllegalStateException("disk full");
+        }));
     model.answer("Hi.");
 
     // Act
@@ -1590,11 +1577,10 @@ class AgentLoopServiceTest {
     handlers.memory(
         "Late",
         1,
-        rememberOnly(
-            (exchange, answer) -> {
-              read.add(exchange.question() + ", " + exchange.evidence().size() + " evidence");
-              exchange.addEvidence("late", List.of(new Passage("t", "s", "b")));
-            }));
+        rememberOnly((exchange, answer) -> {
+          read.add(exchange.question() + ", " + exchange.evidence().size() + " evidence");
+          exchange.addEvidence("late", List.of(new Passage("t", "s", "b")));
+        }));
     model.answer("Hi.");
 
     // Act

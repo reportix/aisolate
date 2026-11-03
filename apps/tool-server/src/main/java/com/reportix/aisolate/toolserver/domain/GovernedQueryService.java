@@ -79,30 +79,29 @@ public class GovernedQueryService {
     tag(span, "aisolate.revision", revision);
     tag(span, "aisolate.tool", toolName);
     Policy policy = findPinnedPolicy(airlockId, revision);
-    return span.observe(
-        () -> {
-          String outcome = "error";
-          try {
-            Result result = answer(user, policy, toolName, arguments, span);
-            outcome = outcomeOf(result, span);
-            return result;
-          } catch (IllegalArgumentException invalid) {
-            outcome = "invalid";
-            throw invalid;
-          } finally {
-            tag(span, "aisolate.outcome", outcome);
-            meters
-                .counter(
-                    "aisolate.tool.queries",
-                    "airlock",
-                    policy == null ? "none" : policy.id(),
-                    "tool",
-                    toolName,
-                    "outcome",
-                    outcome)
-                .increment();
-          }
-        });
+    return span.observe(() -> {
+      String outcome = "error";
+      try {
+        Result result = answer(user, policy, toolName, arguments, span);
+        outcome = outcomeOf(result, span);
+        return result;
+      } catch (IllegalArgumentException invalid) {
+        outcome = "invalid";
+        throw invalid;
+      } finally {
+        tag(span, "aisolate.outcome", outcome);
+        meters
+            .counter(
+                "aisolate.tool.queries",
+                "airlock",
+                policy == null ? "none" : policy.id(),
+                "tool",
+                toolName,
+                "outcome",
+                outcome)
+            .increment();
+      }
+    });
   }
 
   private Result answer(

@@ -113,11 +113,10 @@ class CredentialServiceTest {
   private void verifyRefusal(String reason) {
     verify(rows)
         .record(
-            argThat(
-                e ->
-                    e.action().equals("reveal_refused")
-                        && e.reason().equals(reason)
-                        && e.actor().equals("andrew@example.com")));
+            argThat(e ->
+                e.action().equals("reveal_refused")
+                    && e.reason().equals(reason)
+                    && e.actor().equals("andrew@example.com")));
   }
 
   @Test
@@ -238,11 +237,10 @@ class CredentialServiceTest {
     assertThat(revealed.values()).isEqualTo(Map.of("username", "reader", "password", "hunter2"));
     verify(rows)
         .record(
-            argThat(
-                e ->
-                    e.action().equals("revealed")
-                        && e.actor().equals("andrew@example.com")
-                        && e.secretRef().equals(REF)));
+            argThat(e ->
+                e.action().equals("revealed")
+                    && e.actor().equals("andrew@example.com")
+                    && e.secretRef().equals(REF)));
   }
 
   @Test

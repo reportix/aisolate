@@ -118,10 +118,9 @@ class ManifestReaderTest {
         arguments(
             named(
                 "a number column marked a fact",
-                edit(
-                    m ->
-                        ((ObjectNode) m.path("entities").get(0).path("columns").get(0))
-                            .put("fact", true))),
+                edit(m ->
+                    ((ObjectNode) m.path("entities").get(0).path("columns").get(0))
+                        .put("fact", true))),
             "column employee_id is a number: only a text column can be a fact"),
         arguments(
             named(
@@ -131,10 +130,9 @@ class ManifestReaderTest {
         arguments(
             named(
                 "a handler twice",
-                edit(
-                    m ->
-                        m.withArray("handlers")
-                            .add(((ObjectNode) m.path("handlers").get(0)).deepCopy()))),
+                edit(m ->
+                    m.withArray("handlers")
+                        .add(((ObjectNode) m.path("handlers").get(0)).deepCopy()))),
             "handler SalaryVerifier is declared twice"));
   }
 

@@ -36,11 +36,10 @@ public class ControllerApplication {
   Operator operator(KubernetesClient client, ControllerProperties settings) {
     String namespace = settings.namespace();
     Operator operator =
-        new Operator(
-            o ->
-                o.withKubernetesClient(client)
-                    .withLeaderElectionConfiguration(
-                        new LeaderElectionConfiguration("aisolate-controller", namespace)));
+        new Operator(o ->
+            o.withKubernetesClient(client)
+                .withLeaderElectionConfiguration(
+                    new LeaderElectionConfiguration("aisolate-controller", namespace)));
     Releases releases =
         new Releases(
             client, new Renderer(settings), namespace, Releases.BY_SERVER_SIDE_APPLY, settings);

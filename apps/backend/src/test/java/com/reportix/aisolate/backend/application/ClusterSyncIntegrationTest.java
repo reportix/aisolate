@@ -171,12 +171,11 @@ class ClusterSyncIntegrationTest {
     assertThat(secret.getType()).isEqualTo("Opaque");
     assertThat(secret.getMetadata().getOwnerReferences())
         .singleElement()
-        .satisfies(
-            owner -> {
-              assertThat(owner.getKind()).isEqualTo("Airlock");
-              assertThat(owner.getName()).isEqualTo("cluster-assistant");
-              assertThat(owner.getUid()).isEqualTo(airlock.getMetadata().getUid());
-            });
+        .satisfies(owner -> {
+          assertThat(owner.getKind()).isEqualTo("Airlock");
+          assertThat(owner.getName()).isEqualTo("cluster-assistant");
+          assertThat(owner.getUid()).isEqualTo(airlock.getMetadata().getUid());
+        });
     JsonNode dataSource =
         JSON.readTree(get(AIRLOCK_PATH).body()).path("form").path("data_sources").path(0);
     assertThat(dataSource.path("secret_ref").asString()).isEqualTo(secretRef);
@@ -282,12 +281,11 @@ class ClusterSyncIntegrationTest {
     assertThat(decode(secret, "password")).isEqualTo("d0cs");
     assertThat(secret.getMetadata().getOwnerReferences())
         .singleElement()
-        .satisfies(
-            owner -> {
-              assertThat(owner.getKind()).isEqualTo("Space");
-              assertThat(owner.getName()).isEqualTo("cluster-lab");
-              assertThat(owner.getUid()).isEqualTo(space.getMetadata().getUid());
-            });
+        .satisfies(owner -> {
+          assertThat(owner.getKind()).isEqualTo("Space");
+          assertThat(owner.getName()).isEqualTo("cluster-lab");
+          assertThat(owner.getUid()).isEqualTo(space.getMetadata().getUid());
+        });
   }
 
   /** The space with its data source's typed password: the Secret name the save gave it. */
@@ -324,11 +322,10 @@ class ClusterSyncIntegrationTest {
     assertThat(row.itemId()).isEqualTo("hr-documents");
     assertThat(rows.events(ref))
         .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.action()).isEqualTo("stored");
-              assertThat(event.actor()).isEqualTo("andrew@example.com");
-            });
+        .satisfies(event -> {
+          assertThat(event.action()).isEqualTo("stored");
+          assertThat(event.actor()).isEqualTo("andrew@example.com");
+        });
   }
 
   @Test
@@ -436,10 +433,9 @@ class ClusterSyncIntegrationTest {
     assertThat((String) resource(AIRLOCKS, "cluster-assistant").get("spec", "jar", "digest"))
         .startsWith("sha256:");
     assertThat(scheduled.getScheduledTasks())
-        .anySatisfy(
-            task ->
-                assertThat(task.getTask().toString())
-                    .isEqualTo(ClusterSyncService.class.getName() + ".resyncAll"));
+        .anySatisfy(task ->
+            assertThat(task.getTask().toString())
+                .isEqualTo(ClusterSyncService.class.getName() + ".resyncAll"));
   }
 
   @Test
@@ -491,12 +487,11 @@ class ClusterSyncIntegrationTest {
     assertThat(decode(secret, "password")).isEqualTo("l3dger");
     assertThat(secret.getMetadata().getOwnerReferences())
         .singleElement()
-        .satisfies(
-            owner -> {
-              assertThat(owner.getKind()).isEqualTo("Global");
-              assertThat(owner.getName()).isEqualTo("aisolate");
-              assertThat(owner.getUid()).isEqualTo(aisolate.getMetadata().getUid());
-            });
+        .satisfies(owner -> {
+          assertThat(owner.getKind()).isEqualTo("Global");
+          assertThat(owner.getName()).isEqualTo("aisolate");
+          assertThat(owner.getUid()).isEqualTo(aisolate.getMetadata().getUid());
+        });
     assertThat(edited.statusCode()).as(edited.body()).isEqualTo(200);
     assertThat(JSON.readTree(edited.body()).path("secret_ref").asString()).isEqualTo(secretRef);
     assertThat(global.statusCode()).as(global.body()).isEqualTo(201);
@@ -739,10 +734,8 @@ class ClusterSyncIntegrationTest {
     assertThat(get(SPACE_PATH + "/airlocks/" + id).statusCode()).isEqualTo(404);
     assertThat(requests).contains("POST /apis/aisolate.dev/v1/namespaces/aisolate/airlocks");
     assertThat(requests)
-        .anyMatch(
-            line ->
-                line.matches(
-                    "DELETE " + secrets + "/cluster-lab-" + id + "-ds-acme-hr-[a-z0-9]{6}"));
+        .anyMatch(line ->
+            line.matches("DELETE " + secrets + "/cluster-lab-" + id + "-ds-acme-hr-[a-z0-9]{6}"));
     assertThat(
             client.genericKubernetesResources(AIRLOCKS).inNamespace("aisolate").withName(id).get())
         .isNull();

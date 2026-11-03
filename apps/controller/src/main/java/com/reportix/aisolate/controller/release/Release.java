@@ -139,9 +139,8 @@ public record Release(Configuration configuration, Map<String, List<String>> pro
       }
       int before = documents.size();
       for (String key : found.keySet()) {
-        documents.removeIf(
-            document ->
-                ConfigurationLoader.fileName(document).equals(key.replace('/', '-') + ".yaml"));
+        documents.removeIf(document ->
+            ConfigurationLoader.fileName(document).equals(key.replace('/', '-') + ".yaml"));
       }
       if (documents.size() == before) {
         return new Release(null, problems);

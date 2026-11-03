@@ -215,9 +215,8 @@ public class AuditRepository {
     return db.sql(
             "SELECT count(*), min(id), max(id) FROM audit_events WHERE space = ? AND airlock = ?")
         .params(space, airlock)
-        .query(
-            (rs, n) ->
-                new Extent(rs.getLong(1), rs.getObject(2, Long.class), rs.getObject(3, Long.class)))
+        .query((rs, n) ->
+            new Extent(rs.getLong(1), rs.getObject(2, Long.class), rs.getObject(3, Long.class)))
         .single();
   }
 

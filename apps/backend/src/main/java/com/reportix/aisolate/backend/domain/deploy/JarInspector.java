@@ -184,14 +184,13 @@ public final class JarInspector {
             Comparator.comparing(HandlerCandidate::stage)
                 .thenComparingInt(HandlerCandidate::order)
                 .thenComparing(HandlerCandidate::name))
-        .map(
-            candidate ->
-                new Handler(
-                    candidate.name(),
-                    candidate.stage().name().toLowerCase(Locale.ROOT),
-                    candidate.order(),
-                    candidate.description(),
-                    candidate.dataSources()))
+        .map(candidate ->
+            new Handler(
+                candidate.name(),
+                candidate.stage().name().toLowerCase(Locale.ROOT),
+                candidate.order(),
+                candidate.description(),
+                candidate.dataSources()))
         .toList();
   }
 

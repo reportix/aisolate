@@ -272,11 +272,10 @@ class ChatEndpointSecurityTest {
     assertThat(spans.getFinishedSpanItems())
         .noneMatch(span -> exposed(span).contains("ROLE_"))
         .extracting(SpanData::getName)
-        .noneMatch(
-            name ->
-                name.startsWith("security filterchain")
-                    || name.startsWith("authorize ")
-                    || name.startsWith("authenticate "));
+        .noneMatch(name ->
+            name.startsWith("security filterchain")
+                || name.startsWith("authorize ")
+                || name.startsWith("authenticate "));
     SpanData tool = spanNamed(trace, "tool read_records");
     assertThat(tool.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
     assertThat(attribute(tool, "error.type")).endsWith("ToolCallFailedException");
@@ -328,10 +327,8 @@ class ChatEndpointSecurityTest {
     tracerProvider.forceFlush().join(10, TimeUnit.SECONDS);
     assertThat(spans.getFinishedSpanItems())
         .noneMatch(span -> span.getTraceId().equals(callers))
-        .anyMatch(
-            span ->
-                span.getTraceId().equals(traceId)
-                    && span.getName().equals("exchange hr-acme/acme-hr"));
+        .anyMatch(span ->
+            span.getTraceId().equals(traceId) && span.getName().equals("exchange hr-acme/acme-hr"));
   }
 
   @Test
@@ -397,10 +394,9 @@ class ChatEndpointSecurityTest {
     return trace.stream()
         .filter(span -> name.equals(span.getName()))
         .findFirst()
-        .orElseThrow(
-            () ->
-                new AssertionError(
-                    name + " is not among " + trace.stream().map(SpanData::getName).toList()));
+        .orElseThrow(() ->
+            new AssertionError(
+                name + " is not among " + trace.stream().map(SpanData::getName).toList()));
   }
 
   private static String attribute(SpanData span, String key) {
@@ -526,11 +522,10 @@ class ChatEndpointSecurityTest {
                 "the model server down or busy, as the provider client fails then",
                 (Consumer<ScriptedChatModel>)
                     m ->
-                        m.onCall(
-                            () -> {
-                              throw new ResourceAccessException(
-                                  "Connection refused: localhost/127.0.0.1:11434");
-                            })),
+                        m.onCall(() -> {
+                          throw new ResourceAccessException(
+                              "Connection refused: localhost/127.0.0.1:11434");
+                        })),
             503,
             "The model is not available right now",
             "11434"));
@@ -582,12 +577,11 @@ class ChatEndpointSecurityTest {
 
     // Assert: a generic client learns where to authenticate from the challenge itself
     assertThat(response.headers().firstValue("WWW-Authenticate"))
-        .hasValueSatisfying(
-            h ->
-                assertThat(h)
-                    .startsWith("Bearer")
-                    .contains(
-                        "resource_metadata=\"http://localhost:8080/.well-known/oauth-protected-resource\""));
+        .hasValueSatisfying(h ->
+            assertThat(h)
+                .startsWith("Bearer")
+                .contains(
+                    "resource_metadata=\"http://localhost:8080/.well-known/oauth-protected-resource\""));
   }
 
   @Test

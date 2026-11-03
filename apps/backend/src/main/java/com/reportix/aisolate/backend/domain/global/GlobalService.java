@@ -62,15 +62,14 @@ public class GlobalService {
     LlmFormDTO llm = submitted.withSecretRef("");
     List<LlmFormDTO> rows = List.of(llm);
     one(() -> secrets.requireValid(owner(), LlmFormDTO.validate(rows), rows, List.of()));
-    return transactions.execute(
-        status -> {
-          if (globals.findLlm(llm.id(), true).isPresent()) {
-            throw new ConflictException("id", "a model " + llm.id() + " already exists");
-          }
-          globals.insertLlm(llm, actor);
-          storeLlmKey(rows);
-          return llm(llm.id());
-        });
+    return transactions.execute(status -> {
+      if (globals.findLlm(llm.id(), true).isPresent()) {
+        throw new ConflictException("id", "a model " + llm.id() + " already exists");
+      }
+      globals.insertLlm(llm, actor);
+      storeLlmKey(rows);
+      return llm(llm.id());
+    });
   }
 
   /**
@@ -80,45 +79,43 @@ public class GlobalService {
    * @param ifMatch the {@code updated_at} the form was read at, or null
    */
   public GlobalLlm updateLlm(String id, LlmFormDTO submitted, String ifMatch) {
-    return transactions.execute(
-        status -> {
-          GlobalLlm stored = globals.findLlm(id, true).orElseThrow(() -> noLlm(id));
-          requireIdKept(id, submitted.id());
-          ConflictException.requireUnchanged("updated_at", ifMatch, stored.updatedAt());
-          LlmFormDTO llm =
-              new LlmFormDTO(
-                  id,
-                  submitted.provider(),
-                  submitted.url(),
-                  submitted.model(),
-                  stored.secretRef(),
-                  submitted.apiKey());
-          List<LlmFormDTO> rows = List.of(llm);
-          List<LlmFormDTO> before = List.of(stored.toRow());
-          one(() -> secrets.requireValid(owner(), LlmFormDTO.validate(rows), rows, before));
-          globals.updateLlm(llm);
-          storeLlmKey(rows);
-          GlobalLlm saved = llm(id);
-          secrets.publishReplaced(before, List.of(saved.toRow()));
-          return saved;
-        });
+    return transactions.execute(status -> {
+      GlobalLlm stored = globals.findLlm(id, true).orElseThrow(() -> noLlm(id));
+      requireIdKept(id, submitted.id());
+      ConflictException.requireUnchanged("updated_at", ifMatch, stored.updatedAt());
+      LlmFormDTO llm =
+          new LlmFormDTO(
+              id,
+              submitted.provider(),
+              submitted.url(),
+              submitted.model(),
+              stored.secretRef(),
+              submitted.apiKey());
+      List<LlmFormDTO> rows = List.of(llm);
+      List<LlmFormDTO> before = List.of(stored.toRow());
+      one(() -> secrets.requireValid(owner(), LlmFormDTO.validate(rows), rows, before));
+      globals.updateLlm(llm);
+      storeLlmKey(rows);
+      GlobalLlm saved = llm(id);
+      secrets.publishReplaced(before, List.of(saved.toRow()));
+      return saved;
+    });
   }
 
   /** Refused while an airlock answers with it and nothing nearer defines its id. */
   public void deleteLlm(String id) {
-    transactions.executeWithoutResult(
-        status -> {
-          GlobalLlm stored = globals.findLlm(id, true).orElseThrow(() -> noLlm(id));
-          GlobalDocument before = globals.document();
-          requireNoAirlockLoses(
+    transactions.executeWithoutResult(status -> {
+      GlobalLlm stored = globals.findLlm(id, true).orElseThrow(() -> noLlm(id));
+      GlobalDocument before = globals.document();
+      requireNoAirlockLoses(
+          before,
+          withSpec(
               before,
-              withSpec(
-                  before,
-                  before.spec().llms().stream().filter(llm -> !llm.id().equals(id)).toList(),
-                  before.spec().dataSources()));
-          globals.deleteLlm(id);
-          secrets.publishReplaced(List.of(stored.toRow()), List.<LlmFormDTO>of());
-        });
+              before.spec().llms().stream().filter(llm -> !llm.id().equals(id)).toList(),
+              before.spec().dataSources()));
+      globals.deleteLlm(id);
+      secrets.publishReplaced(List.of(stored.toRow()), List.<LlmFormDTO>of());
+    });
   }
 
   public List<GlobalDataSource> dataSources() {
@@ -137,15 +134,14 @@ public class GlobalService {
     DataSourceFormDTO row = submitted.withSecretRef("");
     List<DataSourceFormDTO> rows = List.of(row);
     one(() -> secrets.requireValid(owner(), DataSourceFormDTO.validate(rows), rows, List.of()));
-    return transactions.execute(
-        status -> {
-          if (globals.findDataSource(row.id(), true).isPresent()) {
-            throw new ConflictException("id", "a data source " + row.id() + " already exists");
-          }
-          globals.insertDataSource(row, actor);
-          storeCredentials(rows);
-          return dataSource(row.id());
-        });
+    return transactions.execute(status -> {
+      if (globals.findDataSource(row.id(), true).isPresent()) {
+        throw new ConflictException("id", "a data source " + row.id() + " already exists");
+      }
+      globals.insertDataSource(row, actor);
+      storeCredentials(rows);
+      return dataSource(row.id());
+    });
   }
 
   /**
@@ -155,45 +151,43 @@ public class GlobalService {
    * @param ifMatch the {@code updated_at} the form was read at, or null
    */
   public GlobalDataSource updateDataSource(String id, DataSourceFormDTO submitted, String ifMatch) {
-    return transactions.execute(
-        status -> {
-          GlobalDataSource stored =
-              globals.findDataSource(id, true).orElseThrow(() -> noDataSource(id));
-          requireIdKept(id, submitted.id());
-          ConflictException.requireUnchanged("updated_at", ifMatch, stored.updatedAt());
-          DataSourceFormDTO row =
-              new DataSourceFormDTO(
-                      id, submitted.url(), null, submitted.username(), submitted.password())
-                  .withSecretRef(stored.toRow().secretRef());
-          List<DataSourceFormDTO> rows = List.of(row);
-          List<DataSourceFormDTO> before = List.of(stored.toRow());
-          one(() -> secrets.requireValid(owner(), DataSourceFormDTO.validate(rows), rows, before));
-          globals.updateDataSource(row);
-          storeCredentials(rows);
-          GlobalDataSource saved = dataSource(id);
-          secrets.publishReplaced(before, List.of(saved.toRow()));
-          return saved;
-        });
+    return transactions.execute(status -> {
+      GlobalDataSource stored =
+          globals.findDataSource(id, true).orElseThrow(() -> noDataSource(id));
+      requireIdKept(id, submitted.id());
+      ConflictException.requireUnchanged("updated_at", ifMatch, stored.updatedAt());
+      DataSourceFormDTO row =
+          new DataSourceFormDTO(
+                  id, submitted.url(), null, submitted.username(), submitted.password())
+              .withSecretRef(stored.toRow().secretRef());
+      List<DataSourceFormDTO> rows = List.of(row);
+      List<DataSourceFormDTO> before = List.of(stored.toRow());
+      one(() -> secrets.requireValid(owner(), DataSourceFormDTO.validate(rows), rows, before));
+      globals.updateDataSource(row);
+      storeCredentials(rows);
+      GlobalDataSource saved = dataSource(id);
+      secrets.publishReplaced(before, List.of(saved.toRow()));
+      return saved;
+    });
   }
 
   /** Refused while an airlock's code reads it and nothing nearer defines its id. */
   public void deleteDataSource(String id) {
-    transactions.executeWithoutResult(
-        status -> {
-          GlobalDataSource stored =
-              globals.findDataSource(id, true).orElseThrow(() -> noDataSource(id));
-          GlobalDocument before = globals.document();
-          requireNoAirlockLoses(
+    transactions.executeWithoutResult(status -> {
+      GlobalDataSource stored =
+          globals.findDataSource(id, true).orElseThrow(() -> noDataSource(id));
+      GlobalDocument before = globals.document();
+      requireNoAirlockLoses(
+          before,
+          withSpec(
               before,
-              withSpec(
-                  before,
-                  before.spec().llms(),
-                  before.spec().dataSources().stream()
-                      .filter(dataSource -> !dataSource.id().equals(id))
-                      .toList()));
-          globals.deleteDataSource(id);
-          secrets.publishReplaced(List.of(stored.toRow()), List.of());
-        });
+              before.spec().llms(),
+              before.spec().dataSources().stream()
+                  .filter(dataSource -> !dataSource.id().equals(id))
+                  .toList()));
+      globals.deleteDataSource(id);
+      secrets.publishReplaced(List.of(stored.toRow()), List.of());
+    });
   }
 
   /**
@@ -205,54 +199,50 @@ public class GlobalService {
     for (Space space : spaces.list()) {
       airlockService
           .lostBy(before, after, space, space, airlocks.list(space.id()), airlock -> airlock)
-          .forEach(
-              (problem, airlocks) ->
-                  lost.computeIfAbsent(problem, p -> new TreeSet<>()).addAll(airlocks));
+          .forEach((problem, airlocks) ->
+              lost.computeIfAbsent(problem, p -> new TreeSet<>()).addAll(airlocks));
     }
     if (!lost.isEmpty()) {
       throw new InvalidFormException(
           lost.entrySet().stream()
-              .map(
-                  entry ->
-                      "id: "
-                          + AirlockService.joinNames(entry.getValue())
-                          + " would have "
-                          + entry.getKey().lack()
-                          + "; define it on "
-                          + (entry.getValue().size() == 1 ? "its" : "their")
-                          + " space first")
+              .map(entry ->
+                  "id: "
+                      + AirlockService.joinNames(entry.getValue())
+                      + " would have "
+                      + entry.getKey().lack()
+                      + "; define it on "
+                      + (entry.getValue().size() == 1 ? "its" : "their")
+                      + " space first")
               .toList());
     }
   }
 
   /** The Secret of a row that brings a password, owned by the Global resource. */
   private void storeCredentials(List<DataSourceFormDTO> rows) {
-    one(
-        () ->
-            secrets.storeIfAny(
-                owner(),
-                rows,
-                null,
-                () -> clusterSync.findOrCreate(globals.document()),
-                refs -> {
-                  refs.forEach(ref -> globals.updateSecretRef(ref.id(), ref.secretRef()));
-                  return null;
-                }));
+    one(() ->
+        secrets.storeIfAny(
+            owner(),
+            rows,
+            null,
+            () -> clusterSync.findOrCreate(globals.document()),
+            refs -> {
+              refs.forEach(ref -> globals.updateSecretRef(ref.id(), ref.secretRef()));
+              return null;
+            }));
   }
 
   /** The Secret of a model's typed API key, owned by the Global resource. */
   private void storeLlmKey(List<LlmFormDTO> rows) {
-    one(
-        () ->
-            secrets.storeIfAny(
-                owner(),
-                rows,
-                null,
-                () -> clusterSync.findOrCreate(globals.document()),
-                refs -> {
-                  refs.forEach(ref -> globals.updateLlmSecretRef(ref.id(), ref.secretRef()));
-                  return null;
-                }));
+    one(() ->
+        secrets.storeIfAny(
+            owner(),
+            rows,
+            null,
+            () -> clusterSync.findOrCreate(globals.document()),
+            refs -> {
+              refs.forEach(ref -> globals.updateLlmSecretRef(ref.id(), ref.secretRef()));
+              return null;
+            }));
   }
 
   private static DataSourceSecrets.Owner owner() {

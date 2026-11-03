@@ -8,14 +8,14 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "aisolate",
     "httpx2==2.16.0",
-    "opentelemetry-api==1.45.1",
-    "opentelemetry-exporter-otlp-proto-common==1.45.1",
-    "opentelemetry-sdk==1.45.1",
-    "pg8000==1.31.5",
+    "opentelemetry-api==1.45.2",
+    "opentelemetry-exporter-otlp-proto-common==1.45.2",
+    "opentelemetry-sdk==1.45.2",
+    "pg8000==1.31.6",
     "prometheus-client==0.26.0",
     "pyjwt[crypto]==2.15.1",
     "pyyaml==6.0.3",
-    "starlette==1.9.0",
+    "starlette==1.10.0",
     "uvicorn==0.54.0",
 ]
 
@@ -23,10 +23,10 @@ dependencies = [
 aisolate = { path = "../sdk-python" }
 
 [dependency-groups]
-dev = ["pytest==9.1.1"]
+dev = ["pytest==9.2.0"]
 
 [build-system]
-requires = ["hatchling==1.32.4"]
+requires = ["hatchling==1.33.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]

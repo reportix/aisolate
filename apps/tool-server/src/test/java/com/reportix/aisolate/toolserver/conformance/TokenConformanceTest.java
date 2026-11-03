@@ -117,21 +117,19 @@ class TokenConformanceTest {
     Map<String, Object> claims =
         new LinkedHashMap<>((Map<String, Object>) ConformanceCases.value(FILE.path("base_claims")));
     ((Map<String, Object>) ConformanceCases.value(testCase.path("claims")))
-        .forEach(
-            (name, value) -> {
-              if (value == null) {
-                claims.remove(name);
-              } else {
-                claims.put(name, value);
-              }
-            });
-    long now = Instant.now().getEpochSecond();
-    TIMES.forEach(
-        name -> {
-          if (claims.get(name) instanceof Number offset) {
-            claims.put(name, now + offset.longValue());
+        .forEach((name, value) -> {
+          if (value == null) {
+            claims.remove(name);
+          } else {
+            claims.put(name, value);
           }
         });
+    long now = Instant.now().getEpochSecond();
+    TIMES.forEach(name -> {
+      if (claims.get(name) instanceof Number offset) {
+        claims.put(name, now + offset.longValue());
+      }
+    });
     Payload payload = new Payload(claims);
     return switch (testCase.path("signed_by").asString()) {
       case "issuer_key" -> signed(JWSAlgorithm.RS256, payload, new RSASSASigner(ISSUER_KEY));

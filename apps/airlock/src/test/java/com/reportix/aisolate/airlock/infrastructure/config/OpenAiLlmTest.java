@@ -160,13 +160,12 @@ class OpenAiLlmTest {
     assertThat(spans)
         .filteredOn(context -> span.equals(context.getContextualName()))
         .singleElement()
-        .satisfies(
-            context -> {
-              assertThat(context.getHighCardinalityKeyValue("aisolate.llm").getValue())
-                  .isEqualTo("gpt");
-              assertThat(context.getLowCardinalityKeyValue("gen_ai.request.model").getValue())
-                  .isEqualTo("gpt-4o-mini");
-            });
+        .satisfies(context -> {
+          assertThat(context.getHighCardinalityKeyValue("aisolate.llm").getValue())
+              .isEqualTo("gpt");
+          assertThat(context.getLowCardinalityKeyValue("gen_ai.request.model").getValue())
+              .isEqualTo("gpt-4o-mini");
+        });
   }
 
   private OpenAiLlm serve(String body, ObservationRegistry registry) throws IOException {

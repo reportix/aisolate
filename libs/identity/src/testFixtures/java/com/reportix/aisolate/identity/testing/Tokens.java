@@ -36,11 +36,10 @@ public final class Tokens {
                 "scope", "openid profile email")
             .entrySet()
             .stream()
-            .map(
-                e ->
-                    URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8)
-                        + "="
-                        + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+            .map(e ->
+                URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8)
+                    + "="
+                    + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
             .collect(Collectors.joining("&"));
     HttpRequest request =
         HttpRequest.newBuilder(URI.create(issuer + "/protocol/openid-connect/token"))

@@ -3,7 +3,7 @@
 # prints it for apps/airlock-python and apps/tool-server-python. A project's build resolves its own
 # dependencies against it; tests/test_build.py fails when it drifts from the images' uv.lock files.
 annotated-types==0.8.0
-anyio==4.15.1
+anyio==4.16.0
 asn1crypto==1.5.1
 attrs==26.1.0
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
@@ -18,12 +18,12 @@ jsonschema-specifications==2025.9.1
 jsonschema==4.26.0
 mcp-types==2.3.0
 mcp==2.3.0
-opentelemetry-api==1.45.1
-opentelemetry-exporter-otlp-proto-common==1.45.1
-opentelemetry-proto==1.45.1
-opentelemetry-sdk==1.45.1
-opentelemetry-semantic-conventions==0.66b1
-pg8000==1.31.5
+opentelemetry-api==1.45.2
+opentelemetry-exporter-otlp-proto-common==1.45.2
+opentelemetry-proto==1.45.2
+opentelemetry-sdk==1.45.2
+opentelemetry-semantic-conventions==0.66b2
+pg8000==1.31.6
 prometheus-client==0.26.0
 protobuf==7.36.2
 pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
@@ -39,7 +39,7 @@ rpds-py==2026.9.1
 scramp==1.5.0
 six==1.17.0
 sse-starlette==3.6.0
-starlette==1.9.0
+starlette==1.10.0
 truststore==0.10.5 ; sys_platform != 'emscripten'
 typing-extensions==4.16.0
 typing-inspection==0.4.4

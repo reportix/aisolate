@@ -51,30 +51,25 @@ public class SpaceService {
    * @throws ConflictException the id is taken, or would collide
    */
   public Space create(SpaceFormDTO submitted, Creator actor) {
-    return transactions.execute(
-        status -> {
-          spaces.lockNames();
-          SpaceFormDTO form =
-              submitted.withIdFromName(
-                  id ->
-                      spaces.find(id).isPresent()
-                          || airlockService.clusterNameOwner(id).isPresent());
-          DataSourceSecrets.Owner owner = DataSourceSecrets.Owner.ofSpace(form.id());
-          List<String> errors = new ArrayList<>(form.validate());
-          errors.addAll(secrets.problems(owner, form.llms(), List.of()));
-          secrets.requireValid(owner, errors, form.dataSources(), List.of());
-          if (spaces.find(form.id()).isPresent()) {
-            throw new ConflictException(
-                "id", "A space with the id " + form.id() + " already exists.");
-          }
-          airlockService
-              .clusterNameOwner(form.id())
-              .ifPresent(
-                  other -> {
-                    throw ConflictException.collision("id", "id", form.id(), other);
-                  });
-          return storeCredentials(spaces.insert(form, actor), form, owner);
-        });
+    return transactions.execute(status -> {
+      spaces.lockNames();
+      SpaceFormDTO form =
+          submitted.withIdFromName(
+              id -> spaces.find(id).isPresent() || airlockService.clusterNameOwner(id).isPresent());
+      DataSourceSecrets.Owner owner = DataSourceSecrets.Owner.ofSpace(form.id());
+      List<String> errors = new ArrayList<>(form.validate());
+      errors.addAll(secrets.problems(owner, form.llms(), List.of()));
+      secrets.requireValid(owner, errors, form.dataSources(), List.of());
+      if (spaces.find(form.id()).isPresent()) {
+        throw new ConflictException("id", "A space with the id " + form.id() + " already exists.");
+      }
+      airlockService
+          .clusterNameOwner(form.id())
+          .ifPresent(other -> {
+            throw ConflictException.collision("id", "id", form.id(), other);
+          });
+      return storeCredentials(spaces.insert(form, actor), form, owner);
+    });
   }
 
   /**
@@ -90,26 +85,25 @@ public class SpaceService {
       throw new InvalidFormException(List.of("id: cannot be changed"));
     }
     DataSourceSecrets.Owner owner = DataSourceSecrets.Owner.ofSpace(id);
-    return transactions.execute(
-        status -> {
-          Space stored = spaces.lock(id);
-          ConflictException.requireUnchanged("updated_at", ifMatch, stored.updatedAt());
-          SpaceFormDTO form =
-              submitted
-                  .withDataSources(
-                      DataSourceSecrets.keepRefs(stored.dataSources(), submitted.dataSources()))
-                  .withLlms(DataSourceSecrets.keepRefs(stored.llms(), submitted.llms()));
-          List<String> errors = new ArrayList<>(form.validate());
-          errors.addAll(secrets.problems(owner, form.llms(), stored.llms()));
-          secrets.requireValid(owner, errors, form.dataSources(), stored.dataSources());
-          Space updated = spaces.update(id, form);
-          airlockService.requireAirlocksStillResolve(
-              stored, updated, airlocks.list(id), airlock -> airlock, "on the airlock", "airlock");
-          Space saved = storeCredentials(updated, form, owner);
-          secrets.publishReplaced(stored.dataSources(), saved.dataSources());
-          secrets.publishReplaced(stored.llms(), saved.llms());
-          return saved;
-        });
+    return transactions.execute(status -> {
+      Space stored = spaces.lock(id);
+      ConflictException.requireUnchanged("updated_at", ifMatch, stored.updatedAt());
+      SpaceFormDTO form =
+          submitted
+              .withDataSources(
+                  DataSourceSecrets.keepRefs(stored.dataSources(), submitted.dataSources()))
+              .withLlms(DataSourceSecrets.keepRefs(stored.llms(), submitted.llms()));
+      List<String> errors = new ArrayList<>(form.validate());
+      errors.addAll(secrets.problems(owner, form.llms(), stored.llms()));
+      secrets.requireValid(owner, errors, form.dataSources(), stored.dataSources());
+      Space updated = spaces.update(id, form);
+      airlockService.requireAirlocksStillResolve(
+          stored, updated, airlocks.list(id), airlock -> airlock, "on the airlock", "airlock");
+      Space saved = storeCredentials(updated, form, owner);
+      secrets.publishReplaced(stored.dataSources(), saved.dataSources());
+      secrets.publishReplaced(stored.llms(), saved.llms());
+      return saved;
+    });
   }
 
   /**

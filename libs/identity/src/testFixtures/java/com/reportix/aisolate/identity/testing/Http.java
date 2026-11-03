@@ -46,19 +46,17 @@ public final class Http {
       HttpRequest.Builder request, String method, Map<String, ?> parts) {
     String boundary = "aisolate-" + UUID.randomUUID();
     ByteArrayOutputStream body = new ByteArrayOutputStream();
-    parts.forEach(
-        (name, value) -> {
-          String head =
-              "--" + boundary + "\r\nContent-Disposition: form-data; name=\"" + name + "\"";
-          if (value instanceof FilePart file) {
-            head += "; filename=\"" + file.filename() + "\"\r\nContent-Type: " + file.contentType();
-            body.writeBytes((head + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
-            body.writeBytes(file.content());
-          } else {
-            body.writeBytes((head + "\r\n\r\n" + value).getBytes(StandardCharsets.UTF_8));
-          }
-          body.writeBytes("\r\n".getBytes(StandardCharsets.UTF_8));
-        });
+    parts.forEach((name, value) -> {
+      String head = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"" + name + "\"";
+      if (value instanceof FilePart file) {
+        head += "; filename=\"" + file.filename() + "\"\r\nContent-Type: " + file.contentType();
+        body.writeBytes((head + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+        body.writeBytes(file.content());
+      } else {
+        body.writeBytes((head + "\r\n\r\n" + value).getBytes(StandardCharsets.UTF_8));
+      }
+      body.writeBytes("\r\n".getBytes(StandardCharsets.UTF_8));
+    });
     body.writeBytes(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
     return request
         .header("Content-Type", "multipart/form-data; boundary=" + boundary)

@@ -92,11 +92,8 @@ public class DataSourceSecrets {
     Map<String, String> refs =
         stored.stream().collect(Collectors.toMap(R::id, R::secretRef, (a, b) -> a));
     return rows.stream()
-        .map(
-            row ->
-                row.secretRef().isEmpty()
-                    ? row.withSecretRef(refs.getOrDefault(row.id(), ""))
-                    : row)
+        .map(row ->
+            row.secretRef().isEmpty() ? row.withSecretRef(refs.getOrDefault(row.id(), "")) : row)
         .toList();
   }
 
@@ -212,14 +209,13 @@ public class DataSourceSecrets {
       throw new InvalidFormException(
           IntStream.range(0, rows.size())
               .filter(i -> rows.get(i).bringsCredentials())
-              .mapToObj(
-                  i ->
-                      rows.get(i).listField()
-                          + "["
-                          + i
-                          + "]."
-                          + rows.get(i).credentialField()
-                          + ": the cluster did not take the credentials; nothing was saved")
+              .mapToObj(i ->
+                  rows.get(i).listField()
+                      + "["
+                      + i
+                      + "]."
+                      + rows.get(i).credentialField()
+                      + ": the cluster did not take the credentials; nothing was saved")
               .toList());
     }
   }

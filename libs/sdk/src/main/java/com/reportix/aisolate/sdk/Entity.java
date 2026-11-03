@@ -41,13 +41,12 @@ public record Entity(
   public Entity {
     // The key is what the model and the rules use: a column filed under another name would answer
     // to a name its own record does not carry.
-    columns.forEach(
-        (key, column) -> {
-          if (!key.equals(column.name())) {
-            throw new IllegalArgumentException(
-                "entity " + name + ": column " + column.name() + " is keyed " + key);
-          }
-        });
+    columns.forEach((key, column) -> {
+      if (!key.equals(column.name())) {
+        throw new IllegalArgumentException(
+            "entity " + name + ": column " + column.name() + " is keyed " + key);
+      }
+    });
     // Declaration order is the result's column order.
     columns = Collections.unmodifiableMap(new LinkedHashMap<>(columns));
     subject = subject == null || subject.isBlank() ? rowKey : subject;

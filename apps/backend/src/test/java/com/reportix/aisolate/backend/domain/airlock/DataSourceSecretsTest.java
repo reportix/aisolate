@@ -131,19 +131,13 @@ class DataSourceSecretsTest {
 
     // Act
     Throwable failed =
-        catchThrowable(
-            () ->
-                secrets.storeIfAny(
-                    DataSourceSecrets.Owner.ofSpace("p"),
-                    List.of(typed),
-                    "saved",
-                    () ->
-                        new ConfigMapBuilder()
-                            .withNewMetadata()
-                            .withName("p")
-                            .endMetadata()
-                            .build(),
-                    refs -> "written"));
+        catchThrowable(() ->
+            secrets.storeIfAny(
+                DataSourceSecrets.Owner.ofSpace("p"),
+                List.of(typed),
+                "saved",
+                () -> new ConfigMapBuilder().withNewMetadata().withName("p").endMetadata().build(),
+                refs -> "written"));
 
     // Assert
     assertThat(failed).isSameAs(down);

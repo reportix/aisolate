@@ -212,11 +212,10 @@ public final class DocumentForms {
     } catch (ConfigurationException invalid) {
       throw new InvalidFormException(
           invalid.problems().stream()
-              .map(
-                  problem ->
-                      problem.replaceFirst(
-                          ": llm (\\S+) is no model of it, .*",
-                          ": llm: no model named $1 in this airlock's space or globally"))
+              .map(problem ->
+                  problem.replaceFirst(
+                      ": llm (\\S+) is no model of it, .*",
+                      ": llm: no model named $1 in this airlock's space or globally"))
               .toList());
     }
     AirlockFormDTO base =
@@ -278,17 +277,16 @@ public final class DocumentForms {
       List<DataSource> dataSources,
       Map<String, ProjectDocuments.Credentials> credentials) {
     return dataSources.stream()
-        .map(
-            dataSource -> {
-              ProjectDocuments.Credentials login =
-                  credentials.get(ProjectDocuments.dataSourceKey(document, dataSource.id()));
-              return new DataSourceFormDTO(
-                  dataSource.id(),
-                  dataSource.url(),
-                  null,
-                  login == null ? null : login.username(),
-                  login == null ? null : login.password());
-            })
+        .map(dataSource -> {
+          ProjectDocuments.Credentials login =
+              credentials.get(ProjectDocuments.dataSourceKey(document, dataSource.id()));
+          return new DataSourceFormDTO(
+              dataSource.id(),
+              dataSource.url(),
+              null,
+              login == null ? null : login.username(),
+              login == null ? null : login.password());
+        })
         .toList();
   }
 

@@ -162,11 +162,10 @@ class CrdGenerationTest {
     }
     object
         .getProperties()
-        .forEach(
-            (name, child) -> {
-              fields.add(prefix + name);
-              collectFields(child, prefix + name + ".", fields);
-            });
+        .forEach((name, child) -> {
+          fields.add(prefix + name);
+          collectFields(child, prefix + name + ".", fields);
+        });
   }
 
   private static List<String> fileNames(Path dir) throws IOException {

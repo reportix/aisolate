@@ -66,14 +66,11 @@ public record Airlock(
     /** The nearest level's LLM of that id, as the controller resolves it; null for none. */
     public static MainLlm of(String id, Map<String, List<Llm>> nearestFirst) {
       return nearestFirst.entrySet().stream()
-          .flatMap(
-              level ->
-                  level.getValue().stream()
-                      .filter(llm -> llm.id().equals(id))
-                      .map(
-                          llm ->
-                              new MainLlm(
-                                  id, llm.provider(), llm.url(), llm.model(), level.getKey())))
+          .flatMap(level ->
+              level.getValue().stream()
+                  .filter(llm -> llm.id().equals(id))
+                  .map(llm ->
+                      new MainLlm(id, llm.provider(), llm.url(), llm.model(), level.getKey())))
           .findFirst()
           .orElse(null);
     }

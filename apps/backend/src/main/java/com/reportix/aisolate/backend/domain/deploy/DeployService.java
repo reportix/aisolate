@@ -144,23 +144,19 @@ public class DeployService {
     List<String> warnings = new ArrayList<>();
     code.toolNames().stream()
         .filter(tool -> !form.tools().contains(tool))
-        .forEach(
-            tool ->
-                warnings.add(
-                    "tool "
-                        + tool
-                        + " of this project is not in tools, so the model cannot call it"));
+        .forEach(tool ->
+            warnings.add(
+                "tool " + tool + " of this project is not in tools, so the model cannot call it"));
     for (Stage stage : STAGES) {
       List<String> listed = stage.listed().apply(form);
       code.handlerNames(stage.code()).stream()
           .filter(handler -> !listed.contains(handler))
-          .forEach(
-              handler ->
-                  warnings.add(
-                      stage.word()
-                          + " "
-                          + handler
-                          + " of this project is listed nowhere and runs nowhere"));
+          .forEach(handler ->
+              warnings.add(
+                  stage.word()
+                      + " "
+                      + handler
+                      + " of this project is listed nowhere and runs nowhere"));
     }
     return warnings;
   }

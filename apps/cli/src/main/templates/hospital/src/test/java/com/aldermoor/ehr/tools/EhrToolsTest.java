@@ -145,11 +145,10 @@ class EhrToolsTest {
     // Act
     List<String> lacking =
         entities.stream()
-            .filter(
-                e ->
-                    !e.columns()
-                        .keySet()
-                        .containsAll(List.of("patient", "patient_id", "national_id", "age_group")))
+            .filter(e ->
+                !e.columns()
+                    .keySet()
+                    .containsAll(List.of("patient", "patient_id", "national_id", "age_group")))
             .map(Entity::name)
             .toList();
 
@@ -215,10 +214,9 @@ class EhrToolsTest {
     assertThat(joined).containsExactlyElementsOf(expected);
     assertThat(entity.columns().keySet().stream().filter(c -> c.endsWith("_clinician")))
         .containsExactlyElementsOf(expected.stream().map(d -> d + "_clinician").toList());
-    expected.forEach(
-        d ->
-            assertThat(entity.column(d + "_clinician").expression())
-                .isEqualTo(d + "_team.clinician_id"));
+    expected.forEach(d ->
+        assertThat(entity.column(d + "_clinician").expression())
+            .isEqualTo(d + "_team.clinician_id"));
   }
 
   @ParameterizedTest

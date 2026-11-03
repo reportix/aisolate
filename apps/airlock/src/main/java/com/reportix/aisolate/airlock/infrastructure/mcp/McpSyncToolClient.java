@@ -91,12 +91,11 @@ final class McpSyncToolClient implements McpToolClient, AutoCloseable {
       // cursor); follow nextCursor with the pin if a server ever pages.
       listed =
           asCurrentUser(() -> mcpClient.listTools(null, pin(airlock))).tools().stream()
-              .map(
-                  mcpTool ->
-                      new ToolSpec(
-                          mcpTool.name(),
-                          mcpTool.description(),
-                          jsonMapper.writeValueAsString(mcpTool.inputSchema())))
+              .map(mcpTool ->
+                  new ToolSpec(
+                      mcpTool.name(),
+                      mcpTool.description(),
+                      jsonMapper.writeValueAsString(mcpTool.inputSchema())))
               .toList();
       tools = listed;
     }

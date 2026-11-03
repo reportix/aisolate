@@ -74,11 +74,10 @@ class AirlockReconcilerTest {
     Deployment deployment = deployment(HR_POD);
     assertThat(deployment.getMetadata().getOwnerReferences())
         .singleElement()
-        .satisfies(
-            owner -> {
-              assertThat(owner.getKind()).isEqualTo("Airlock");
-              assertThat(owner.getName()).isEqualTo(HR);
-            });
+        .satisfies(owner -> {
+          assertThat(owner.getKind()).isEqualTo("Airlock");
+          assertThat(owner.getName()).isEqualTo(HR);
+        });
     assertThat(deployment(HR_MCP)).isNotNull();
     assertThat(client.services().inNamespace(NS).withName(HR_MCP).get()).isNotNull();
     assertThat(client.network().v1().ingresses().inNamespace(NS).withName(HR_POD).get())

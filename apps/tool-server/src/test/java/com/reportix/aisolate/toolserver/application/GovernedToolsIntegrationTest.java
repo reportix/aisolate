@@ -181,15 +181,14 @@ class GovernedToolsIntegrationTest {
     assertThat(attribute(sql, "aisolate.revision")).isEqualTo(REVISION);
     // Names and counts only: never a statement, a row or who asked
     assertThat(trace.values())
-        .allSatisfy(
-            span ->
-                assertThat(exposed(span))
-                    .doesNotContainIgnoringCase("select")
-                    .doesNotContainIgnoringCase("join")
-                    .doesNotContain("hr.employees")
-                    .doesNotContain("Lindholm")
-                    .doesNotContain("78000")
-                    .doesNotContain("eric@"));
+        .allSatisfy(span ->
+            assertThat(exposed(span))
+                .doesNotContainIgnoringCase("select")
+                .doesNotContainIgnoringCase("join")
+                .doesNotContain("hr.employees")
+                .doesNotContain("Lindholm")
+                .doesNotContain("78000")
+                .doesNotContain("eric@"));
   }
 
   /** Everything a span carries to the collector besides its name. */
@@ -206,12 +205,9 @@ class GovernedToolsIntegrationTest {
     return trace.values().stream()
         .filter(span -> name.equals(span.getName()))
         .findFirst()
-        .orElseThrow(
-            () ->
-                new AssertionError(
-                    name
-                        + " is not among "
-                        + trace.values().stream().map(SpanData::getName).toList()));
+        .orElseThrow(() ->
+            new AssertionError(
+                name + " is not among " + trace.values().stream().map(SpanData::getName).toList()));
   }
 
   /** The span ids above {@code span} in its trace, nearest first. */
@@ -386,13 +382,12 @@ class GovernedToolsIntegrationTest {
     assertThat(query.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
     assertThat(attribute(query, "error.type")).isNotBlank();
     assertThat(trace)
-        .allSatisfy(
-            span ->
-                assertThat(exposed(span))
-                    .doesNotContainIgnoringCase("select")
-                    .doesNotContain("localhost:1")
-                    .doesNotContain("Lind")
-                    .doesNotContain("nora@"));
+        .allSatisfy(span ->
+            assertThat(exposed(span))
+                .doesNotContainIgnoringCase("select")
+                .doesNotContain("localhost:1")
+                .doesNotContain("Lind")
+                .doesNotContain("nora@"));
   }
 
   static Stream<Arguments>

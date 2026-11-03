@@ -101,19 +101,16 @@ public class AirlockAdmissionService {
   public List<AirlockSummaryDTO> listAdmittedAirlocks(Map<String, Object> claims) {
     Principal user = Principal.of(claims, properties.rolesClaim());
     return airlocks.listAirlocks().stream()
-        .filter(
-            airlock ->
-                user.admissionFailure(airlock.roles(), airlock.callers(), airlock.clients())
-                    .isEmpty())
-        .map(
-            airlock ->
-                new AirlockSummaryDTO(
-                    airlock.id(),
-                    airlock.space(),
-                    airlock.name(),
-                    airlock.description(),
-                    properties.chatEndpoint(airlock.space(), airlock.id()),
-                    airlock.tools()))
+        .filter(airlock ->
+            user.admissionFailure(airlock.roles(), airlock.callers(), airlock.clients()).isEmpty())
+        .map(airlock ->
+            new AirlockSummaryDTO(
+                airlock.id(),
+                airlock.space(),
+                airlock.name(),
+                airlock.description(),
+                properties.chatEndpoint(airlock.space(), airlock.id()),
+                airlock.tools()))
         .toList();
   }
 }

@@ -75,10 +75,9 @@ public final class OpenAiLlm implements CatalogLlm {
                     .maxRetries(0)
                     .build())
             .observationRegistry(observations)
-            .httpClientBuilderCustomizer(
-                client ->
-                    client.timeout(
-                        Timeout.builder().connect(Duration.ofSeconds(5)).read(readTimeout).build()))
+            .httpClientBuilderCustomizer(client ->
+                client.timeout(
+                    Timeout.builder().connect(Duration.ofSeconds(5)).read(readTimeout).build()))
             .build();
     model.setObservationConvention(CatalogLlm.chatSpans(entry));
     this.chatModel = refusing(model, entry);

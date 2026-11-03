@@ -125,12 +125,11 @@ class CredentialRepositoryIntegrationTest {
     String ref = ref();
 
     // Act
-    transactions.execute(
-        s -> {
-          repository.record(CredentialRepository.Event.of(row(ref), "a", "stored", null));
-          s.setRollbackOnly();
-          return null;
-        });
+    transactions.execute(s -> {
+      repository.record(CredentialRepository.Event.of(row(ref), "a", "stored", null));
+      s.setRollbackOnly();
+      return null;
+    });
 
     // Assert
     assertThat(repository.events(ref)).hasSize(1);

@@ -64,12 +64,11 @@ class OllamaLlmTest {
     assertThat(spans)
         .filteredOn(context -> span.equals(context.getContextualName()))
         .singleElement()
-        .satisfies(
-            context -> {
-              assertThat(context.getHighCardinalityKeyValue("aisolate.llm").getValue())
-                  .isEqualTo("nomic");
-              assertThat(context.getLowCardinalityKeyValue("gen_ai.request.model").getValue())
-                  .isEqualTo("nomic-embed-text");
-            });
+        .satisfies(context -> {
+          assertThat(context.getHighCardinalityKeyValue("aisolate.llm").getValue())
+              .isEqualTo("nomic");
+          assertThat(context.getLowCardinalityKeyValue("gen_ai.request.model").getValue())
+              .isEqualTo("nomic-embed-text");
+        });
   }
 }

@@ -197,13 +197,11 @@ public class ClusterSyncService {
       for (Class<?> kind : APPLY_ORDER) {
         documents.stream()
             .filter(kind::isInstance)
-            .forEach(
-                document ->
-                    createOrUpdate(
-                        k8s.genericKubernetesResources(
-                                CONTEXTS.get(ConfigurationLoader.kind(document)))
-                            .inNamespace(properties.namespace())
-                            .resource(toResource(document))));
+            .forEach(document ->
+                createOrUpdate(
+                    k8s.genericKubernetesResources(CONTEXTS.get(ConfigurationLoader.kind(document)))
+                        .inNamespace(properties.namespace())
+                        .resource(toResource(document))));
       }
       log.info(
           "space {} applied to namespace {}: {} document(s)",

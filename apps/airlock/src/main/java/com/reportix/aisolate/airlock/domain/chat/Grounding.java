@@ -175,23 +175,20 @@ final class Grounding {
           .labels()
           .unitColumns()
           .values()
-          .forEach(
-              column ->
-                  result.byHandle().values().stream()
-                      .map(row -> row.get(column))
-                      .filter(Objects::nonNull)
-                      .forEach(unit -> units.add(String.valueOf(unit))));
+          .forEach(column ->
+              result.byHandle().values().stream()
+                  .map(row -> row.get(column))
+                  .filter(Objects::nonNull)
+                  .forEach(unit -> units.add(String.valueOf(unit))));
       for (String column : result.labels().facts()) {
         result
             .byHandle()
-            .forEach(
-                (handle, row) -> {
-                  if (row.get(column) instanceof String value
-                      && value.strip().codePoints().count() >= 3) {
-                    facts.putIfAbsent(
-                        factKey(value), result.evidence() + " " + handle + " " + column);
-                  }
-                });
+            .forEach((handle, row) -> {
+              if (row.get(column) instanceof String value
+                  && value.strip().codePoints().count() >= 3) {
+                facts.putIfAbsent(factKey(value), result.evidence() + " " + handle + " " + column);
+              }
+            });
       }
     }
     documents.forEach(document -> passages.put(document.evidence(), document));
@@ -663,21 +660,18 @@ final class Grounding {
     String unitColumn = result.labels().unitColumns().get(column);
     result
         .byHandle()
-        .forEach(
-            (handle, row) -> {
-              Object value = row.get(column);
-              Object comparable =
-                  value instanceof Number
-                      ? number(value)
-                      : value instanceof String text ? text : null;
-              if (comparable != null) {
-                kinds.add(comparable.getClass());
-                values.put(handle, (Comparable<Object>) comparable);
-                if (unitColumn != null && row.get(unitColumn) != null) {
-                  rowUnits.add(String.valueOf(row.get(unitColumn)));
-                }
-              }
-            });
+        .forEach((handle, row) -> {
+          Object value = row.get(column);
+          Object comparable =
+              value instanceof Number ? number(value) : value instanceof String text ? text : null;
+          if (comparable != null) {
+            kinds.add(comparable.getClass());
+            values.put(handle, (Comparable<Object>) comparable);
+            if (unitColumn != null && row.get(unitColumn) != null) {
+              rowUnits.add(String.valueOf(row.get(unitColumn)));
+            }
+          }
+        });
     if (kinds.size() > 1) {
       throw new Mismatch(
           "column "
@@ -1287,11 +1281,10 @@ final class Grounding {
     String alternatives =
         keys.stream()
             .sorted(Comparator.comparingInt(String::length).reversed())
-            .map(
-                key ->
-                    Arrays.stream(key.split(" "))
-                        .map(Pattern::quote)
-                        .collect(Collectors.joining("\\s+")))
+            .map(key ->
+                Arrays.stream(key.split(" "))
+                    .map(Pattern::quote)
+                    .collect(Collectors.joining("\\s+")))
             .collect(Collectors.joining("|"));
     // UNICODE_CASE: a value in any alphabet, in any case; \s stays ASCII, as spaces() reads it.
     return Pattern.compile(

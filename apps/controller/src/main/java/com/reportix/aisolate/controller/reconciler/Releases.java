@@ -130,14 +130,13 @@ public class Releases {
     // Not the controller of it: several owners, and garbage collection waits for the last one.
     List<OwnerReference> owners =
         snapshot.spaces().stream()
-            .map(
-                space ->
-                    new OwnerReferenceBuilder()
-                        .withApiVersion(space.getApiVersion())
-                        .withKind(space.getKind())
-                        .withName(name(space))
-                        .withUid(space.getMetadata().getUid())
-                        .build())
+            .map(space ->
+                new OwnerReferenceBuilder()
+                    .withApiVersion(space.getApiVersion())
+                    .withKind(space.getKind())
+                    .withName(name(space))
+                    .withUid(space.getMetadata().getUid())
+                    .build())
             .toList();
     return renderer.renderDiscovery(valid, owners);
   }

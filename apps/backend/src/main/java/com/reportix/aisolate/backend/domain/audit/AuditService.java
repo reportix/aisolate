@@ -58,20 +58,18 @@ public class AuditService {
     if (!AuditIngestToken.matches(properties.ingestKey(), token, c.space(), c.airlock())) {
       throw new AuditException(HttpStatus.FORBIDDEN, "forbidden");
     }
-    return transactions.execute(
-        status -> {
-          repository.becomeWriter();
-          repository.lockChain(c.space(), c.airlock());
-          return repository
-              .findRepeat(c.space(), c.airlock(), line.digest())
-              .map(id -> new Appended(id, true))
-              .orElseGet(
-                  () -> {
-                    String prev = repository.head(c.space(), c.airlock()).orElse(AuditLine.GENESIS);
-                    return new Appended(
-                        repository.insert(line, prev, AuditLine.chain(prev, line.body())), false);
-                  });
-        });
+    return transactions.execute(status -> {
+      repository.becomeWriter();
+      repository.lockChain(c.space(), c.airlock());
+      return repository
+          .findRepeat(c.space(), c.airlock(), line.digest())
+          .map(id -> new Appended(id, true))
+          .orElseGet(() -> {
+            String prev = repository.head(c.space(), c.airlock()).orElse(AuditLine.GENESIS);
+            return new Appended(
+                repository.insert(line, prev, AuditLine.chain(prev, line.body())), false);
+          });
+    });
   }
 
   public record Page(List<AuditRepository.Row> events, String nextCursor) {}
@@ -123,11 +121,10 @@ public class AuditService {
             bound("to", to, true));
     Long page = before;
     List<AuditRepository.Row> rows =
-        transactions.execute(
-            status -> {
-              repository.becomeWriter();
-              return repository.list(filter, page, limit + 1);
-            });
+        transactions.execute(status -> {
+          repository.becomeWriter();
+          return repository.list(filter, page, limit + 1);
+        });
     boolean more = rows.size() > limit;
     List<AuditRepository.Row> shown = more ? rows.subList(0, limit) : rows;
     return new Page(shown, more ? String.valueOf(shown.getLast().id()) : null);
@@ -161,11 +158,10 @@ public class AuditService {
    */
   public AuditRepository.Row find(long id) {
     return transactions
-        .execute(
-            status -> {
-              repository.becomeWriter();
-              return repository.find(id);
-            })
+        .execute(status -> {
+          repository.becomeWriter();
+          return repository.find(id);
+        })
         .orElseThrow(() -> new AuditException(HttpStatus.NOT_FOUND, "unknown audit event"));
   }
 
@@ -187,11 +183,10 @@ public class AuditService {
    */
   public Optional<DataError> dataError(String space, String airlock) {
     Optional<AuditRepository.Row> row =
-        transactions.execute(
-            status -> {
-              repository.becomeWriter();
-              return repository.latestToolExchange(space, airlock);
-            });
+        transactions.execute(status -> {
+          repository.becomeWriter();
+          return repository.latestToolExchange(space, airlock);
+        });
     return row.flatMap(r -> dataErrorOf(r.body(), r.columns().ts()));
   }
 
@@ -208,11 +203,10 @@ public class AuditService {
 
   /** The stored lines of these ids, by id: a page's, which the list gives without them. */
   public Map<Long, String> bodies(List<Long> ids) {
-    return transactions.execute(
-        status -> {
-          repository.becomeWriter();
-          return repository.bodies(ids);
-        });
+    return transactions.execute(status -> {
+      repository.becomeWriter();
+      return repository.bodies(ids);
+    });
   }
 
   public record Broken(long id, String reason) {}
@@ -238,35 +232,33 @@ public class AuditService {
     if (blankToNull(space) == null || blankToNull(airlock) == null) {
       throw AuditException.invalid("space and airlock are required");
     }
-    return transactions.execute(
-        status -> {
-          repository.becomeWriter();
-          AuditRepository.Extent extent = repository.extent(space, airlock);
-          String head = repository.head(space, airlock).orElse(null);
-          AuditRepository.Row last = null;
-          List<AuditRepository.Row> page;
-          while (!(page =
-                  repository.chain(space, airlock, last == null ? 0 : last.id(), CHAIN_PAGE))
-              .isEmpty()) {
-            for (AuditRepository.Row row : page) {
-              String reason = check(last, row);
-              if (reason != null) {
-                return new Verification(
-                    space,
-                    airlock,
-                    "broken",
-                    extent.events(),
-                    extent.firstId(),
-                    extent.lastId(),
-                    head,
-                    new Broken(row.id(), reason));
-              }
-              last = row;
-            }
+    return transactions.execute(status -> {
+      repository.becomeWriter();
+      AuditRepository.Extent extent = repository.extent(space, airlock);
+      String head = repository.head(space, airlock).orElse(null);
+      AuditRepository.Row last = null;
+      List<AuditRepository.Row> page;
+      while (!(page = repository.chain(space, airlock, last == null ? 0 : last.id(), CHAIN_PAGE))
+          .isEmpty()) {
+        for (AuditRepository.Row row : page) {
+          String reason = check(last, row);
+          if (reason != null) {
+            return new Verification(
+                space,
+                airlock,
+                "broken",
+                extent.events(),
+                extent.firstId(),
+                extent.lastId(),
+                head,
+                new Broken(row.id(), reason));
           }
-          return new Verification(
-              space, airlock, "ok", extent.events(), extent.firstId(), extent.lastId(), head, null);
-        });
+          last = row;
+        }
+      }
+      return new Verification(
+          space, airlock, "ok", extent.events(), extent.firstId(), extent.lastId(), head, null);
+    });
   }
 
   private static String check(AuditRepository.Row previous, AuditRepository.Row row) {

@@ -77,20 +77,19 @@ class ClusterSyncOrderTest {
     CountDownLatch secondRead = new CountDownLatch(1);
     AtomicReference<Thread> second = new AtomicReference<>();
     when(airlocks.list("hr-acme"))
-        .thenAnswer(
-            call -> {
-              if (reads.getAndIncrement() == 0) {
-                committed.set(space("ceo"));
-                second.set(Thread.startVirtualThread(() -> sync.sync("hr-acme")));
-                // Serialized, the second sync cannot read until this one is done: go on alone.
-                if (secondRead.await(200, TimeUnit.MILLISECONDS)) {
-                  second.get().join();
-                }
-              } else {
-                secondRead.countDown();
-              }
-              return List.of();
-            });
+        .thenAnswer(call -> {
+          if (reads.getAndIncrement() == 0) {
+            committed.set(space("ceo"));
+            second.set(Thread.startVirtualThread(() -> sync.sync("hr-acme")));
+            // Serialized, the second sync cannot read until this one is done: go on alone.
+            if (secondRead.await(200, TimeUnit.MILLISECONDS)) {
+              second.get().join();
+            }
+          } else {
+            secondRead.countDown();
+          }
+          return List.of();
+        });
 
     // Act
     Cluster first = sync.sync("hr-acme");

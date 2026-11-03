@@ -72,51 +72,48 @@ public class AirlockService {
   public Airlock createAirlock(
       String spaceId, AirlockFormDTO submitted, AirlockRepository.Code code, Creator actor) {
     spaces.require(spaceId);
-    return transactions.execute(
-        status -> {
-          spaces.lockNames();
-          AirlockFormDTO form =
-              submitted
-                  .withIdFromName(
-                      spaceId,
-                      id ->
-                          airlocks.find(id).isPresent()
-                              || clusterNameHolder(spaceId + "-" + id).isPresent())
-                  .withDefaultCallers()
-                  .withDefaultPrompt();
-          DataSourceSecrets.Owner owner = DataSourceSecrets.Owner.ofAirlock(spaceId, form.id());
-          Space space = spaces.require(spaceId);
-          GlobalDocument global = globals.document();
-          List<String> errors =
-              new ArrayList<>(
-                  validateAirlock(global, space, form, code == null ? null : code.contents()));
-          if (form.id() != null && form.id().length() > Names.maxAirlockId(spaceId)) {
-            errors.add(
-                "id: at most "
-                    + Names.maxAirlockId(spaceId)
-                    + " characters in the space "
-                    + spaceId
-                    + ": it runs as <space>-<airlock>-mcp-server, and Kubernetes allows "
-                    + Names.MAX_NAME);
-          }
-          errors.addAll(secrets.problems(owner, form.llms(), List.of()));
-          secrets.requireValid(owner, errors, form.dataSources(), List.of());
-          airlocks
-              .find(form.id())
-              .ifPresent(
-                  taken -> {
-                    throw ConflictException.airlockTaken(form.id(), spaceId, taken.spaceId());
-                  });
-          clusterNameHolder(spaceId + "-" + form.id())
-              .ifPresent(
-                  other -> {
-                    throw ConflictException.collision("id", "id", form.id(), other);
-                  });
-          return resolved(
-              storeCredentials(airlocks.insert(spaceId, form, code, actor), form, owner),
-              global,
-              space);
-        });
+    return transactions.execute(status -> {
+      spaces.lockNames();
+      AirlockFormDTO form =
+          submitted
+              .withIdFromName(
+                  spaceId,
+                  id ->
+                      airlocks.find(id).isPresent()
+                          || clusterNameHolder(spaceId + "-" + id).isPresent())
+              .withDefaultCallers()
+              .withDefaultPrompt();
+      DataSourceSecrets.Owner owner = DataSourceSecrets.Owner.ofAirlock(spaceId, form.id());
+      Space space = spaces.require(spaceId);
+      GlobalDocument global = globals.document();
+      List<String> errors =
+          new ArrayList<>(
+              validateAirlock(global, space, form, code == null ? null : code.contents()));
+      if (form.id() != null && form.id().length() > Names.maxAirlockId(spaceId)) {
+        errors.add(
+            "id: at most "
+                + Names.maxAirlockId(spaceId)
+                + " characters in the space "
+                + spaceId
+                + ": it runs as <space>-<airlock>-mcp-server, and Kubernetes allows "
+                + Names.MAX_NAME);
+      }
+      errors.addAll(secrets.problems(owner, form.llms(), List.of()));
+      secrets.requireValid(owner, errors, form.dataSources(), List.of());
+      airlocks
+          .find(form.id())
+          .ifPresent(taken -> {
+            throw ConflictException.airlockTaken(form.id(), spaceId, taken.spaceId());
+          });
+      clusterNameHolder(spaceId + "-" + form.id())
+          .ifPresent(other -> {
+            throw ConflictException.collision("id", "id", form.id(), other);
+          });
+      return resolved(
+          storeCredentials(airlocks.insert(spaceId, form, code, actor), form, owner),
+          global,
+          space);
+    });
   }
 
   /**
@@ -168,39 +165,38 @@ public class AirlockService {
       AirlockRepository.Code code,
       String ifMatch) {
     DataSourceSecrets.Owner owner = DataSourceSecrets.Owner.ofAirlock(spaceId, id);
-    return transactions.execute(
-        status -> {
-          Airlock stored = airlocks.lock(spaceId, id);
-          if (!id.equals(submitted.id())) {
-            throw new InvalidFormException(List.of("id: cannot be changed"));
-          }
-          ConflictException.requireUnchanged("updated_at", ifMatch, stored.updatedAt());
-          AirlockFormDTO form =
-              (code == null ? submitted.withRunOf(stored.form()) : submitted)
-                  .withDefaultPrompt()
-                  .withDataSources(
-                      DataSourceSecrets.keepRefs(stored.dataSources(), submitted.dataSources()))
-                  .withLlms(DataSourceSecrets.keepRefs(stored.llms(), submitted.llms()));
-          Space space = spaces.require(spaceId);
-          GlobalDocument global = globals.document();
-          // The UI's save changes nothing the code is checked against: its form's own checks do.
-          List<String> errors =
-              new ArrayList<>(
-                  code == null
-                      ? form.validate()
-                      : validateAirlock(global, space, form, code.contents()));
-          errors.addAll(secrets.problems(owner, form.llms(), stored.llms()));
-          secrets.requireValid(owner, errors, form.dataSources(), stored.dataSources());
-          Airlock updated = airlocks.update(id, form, code);
-          if (code == null) {
-            requireAirlocksStillResolve(
-                space, space, List.of(stored), airlock -> updated, "on the space", "space");
-          }
-          Airlock saved = storeCredentials(updated, form, owner);
-          secrets.publishReplaced(stored.dataSources(), saved.dataSources());
-          secrets.publishReplaced(stored.llms(), saved.llms());
-          return resolved(saved, global, space);
-        });
+    return transactions.execute(status -> {
+      Airlock stored = airlocks.lock(spaceId, id);
+      if (!id.equals(submitted.id())) {
+        throw new InvalidFormException(List.of("id: cannot be changed"));
+      }
+      ConflictException.requireUnchanged("updated_at", ifMatch, stored.updatedAt());
+      AirlockFormDTO form =
+          (code == null ? submitted.withRunOf(stored.form()) : submitted)
+              .withDefaultPrompt()
+              .withDataSources(
+                  DataSourceSecrets.keepRefs(stored.dataSources(), submitted.dataSources()))
+              .withLlms(DataSourceSecrets.keepRefs(stored.llms(), submitted.llms()));
+      Space space = spaces.require(spaceId);
+      GlobalDocument global = globals.document();
+      // The UI's save changes nothing the code is checked against: its form's own checks do.
+      List<String> errors =
+          new ArrayList<>(
+              code == null
+                  ? form.validate()
+                  : validateAirlock(global, space, form, code.contents()));
+      errors.addAll(secrets.problems(owner, form.llms(), stored.llms()));
+      secrets.requireValid(owner, errors, form.dataSources(), stored.dataSources());
+      Airlock updated = airlocks.update(id, form, code);
+      if (code == null) {
+        requireAirlocksStillResolve(
+            space, space, List.of(stored), airlock -> updated, "on the space", "space");
+      }
+      Airlock saved = storeCredentials(updated, form, owner);
+      secrets.publishReplaced(stored.dataSources(), saved.dataSources());
+      secrets.publishReplaced(stored.llms(), saved.llms());
+      return resolved(saved, global, space);
+    });
   }
 
   /**
@@ -277,20 +273,19 @@ public class AirlockService {
               .collect(Collectors.toSet());
       jar.tools().stream()
           .filter(tool -> tool.dataSource() != null && !defined.contains(tool.dataSource()))
-          .map(
-              tool ->
-                  new Unresolved(
-                      "data_sources",
-                      "no data source "
-                          + tool.dataSource()
-                          + ", which its plugin "
-                          + tool.plugin()
-                          + " reads",
-                      "tools: plugin "
-                          + tool.plugin()
-                          + " reads data source "
-                          + tool.dataSource()
-                          + ", which this airlock does not define"))
+          .map(tool ->
+              new Unresolved(
+                  "data_sources",
+                  "no data source "
+                      + tool.dataSource()
+                      + ", which its plugin "
+                      + tool.plugin()
+                      + " reads",
+                  "tools: plugin "
+                      + tool.plugin()
+                      + " reads data source "
+                      + tool.dataSource()
+                      + ", which this airlock does not define"))
           .distinct()
           .forEach(found::add);
     }
@@ -344,26 +339,23 @@ public class AirlockService {
     if (!lost.isEmpty()) {
       throw new InvalidFormException(
           lost.entrySet().stream()
-              .map(
-                  entry ->
-                      entry.getKey().field().equals("llms")
-                          ? "llms: "
-                              + joinNames(entry.getValue())
-                              + " would have "
-                              + entry.getKey().lack()
-                              + "; define it on their "
-                              + theirs
-                              + " first"
-                          : entry.getKey().field()
-                              + ": "
-                              + joinNames(entry.getValue())
-                              + (entry.getValue().size() == 1
-                                  ? " would have "
-                                  : " would each have ")
-                              + entry.getKey().lack()
-                              + "; keep it, or define it "
-                              + elsewhere
-                              + " first")
+              .map(entry ->
+                  entry.getKey().field().equals("llms")
+                      ? "llms: "
+                          + joinNames(entry.getValue())
+                          + " would have "
+                          + entry.getKey().lack()
+                          + "; define it on their "
+                          + theirs
+                          + " first"
+                      : entry.getKey().field()
+                          + ": "
+                          + joinNames(entry.getValue())
+                          + (entry.getValue().size() == 1 ? " would have " : " would each have ")
+                          + entry.getKey().lack()
+                          + "; keep it, or define it "
+                          + elsewhere
+                          + " first")
               .toList());
     }
   }

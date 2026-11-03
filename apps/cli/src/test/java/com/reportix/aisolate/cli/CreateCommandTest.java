@@ -120,11 +120,10 @@ class CreateCommandTest {
     assertThat(Files.readString(project.resolve(".env"))).contains("AISOLATE_SPACE=hr-lab\n");
     try (Stream<Path> files = Files.walk(project)) {
       assertThat(files.filter(Files::isRegularFile))
-          .allSatisfy(
-              file -> {
-                assertThat(file.toString()).doesNotContain("__pycache__", ".pytest_cache");
-                assertThat(Files.readString(file)).doesNotContain("${SPACE}", "${AIRLOCK");
-              });
+          .allSatisfy(file -> {
+            assertThat(file.toString()).doesNotContain("__pycache__", ".pytest_cache");
+            assertThat(Files.readString(file)).doesNotContain("${SPACE}", "${AIRLOCK");
+          });
     }
   }
 
