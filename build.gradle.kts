@@ -34,7 +34,7 @@ configure(subprojects.filter { it.childProjects.isEmpty() }) {
     dependencies {
         // CVE-2026-68497, CVE-2026-89407, CVE-2026-89425, CVE-2026-91776, CVE-2026-91777 (Trivy);
         // test fixtures resolve apart from implementation
-        val jacksonBoms = listOf("com.fasterxml.jackson:jackson-bom:2.22.4", "tools.jackson:jackson-bom:3.2.4")
+        val jacksonBoms = listOf("com.fasterxml.jackson:jackson-bom:2.23.0", "tools.jackson:jackson-bom:3.3.0")
         jacksonBoms.forEach { "implementation"(platform(it)) }
         plugins.withId("java-test-fixtures") { jacksonBoms.forEach { "testFixturesImplementation"(platform(it)) } }
     }
