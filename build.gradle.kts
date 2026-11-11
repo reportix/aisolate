@@ -39,7 +39,7 @@ configure(subprojects.filter { it.childProjects.isEmpty() }) {
         plugins.withId("java-test-fixtures") { jacksonBoms.forEach { "testFixturesImplementation"(platform(it)) } }
         // CVE-2026-118259 (Trivy; GHSA-ccrj-gw8r-854m, W3C tracestate parsing), fixed in OpenTelemetry 1.67.0.
         // Boot 4.1.x manages 1.62.0 in every patch release; Boot 4.2 manages 1.67.0: remove with the move to 4.2.
-        "implementation"(platform("io.opentelemetry:opentelemetry-bom:1.67.0"))
+        "implementation"(platform("io.opentelemetry:opentelemetry-bom:1.68.0"))
     }
 
     extensions.configure<JavaPluginExtension> {
