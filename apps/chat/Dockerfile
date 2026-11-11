@@ -1,6 +1,6 @@
 # The AIsolate chat, a demo AIsolate client; the chart installs it as platform.chat (headless or not).
 # Build context is the repository root (the npm workspace). NEXT_PUBLIC_* are inlined at build time.
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /src
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY libs/ui/package.json libs/ui/
@@ -15,7 +15,7 @@ ENV NEXT_PUBLIC_AISOLATE_URL=$NEXT_PUBLIC_AISOLATE_URL \
     NEXT_TELEMETRY_DISABLED=1
 RUN npm run build -w apps/chat
 
-FROM node:24-alpine
+FROM node:26-alpine
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 COPY --from=build /src/apps/chat/.next/standalone ./
