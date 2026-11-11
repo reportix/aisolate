@@ -1,6 +1,6 @@
 # The AIsolate UI. Build context is the repository root (the npm workspace with libs/ui).
 # NEXT_PUBLIC_* are inlined at build time: one image per environment, built with its URLs.
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /src
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY libs/ui/package.json libs/ui/
@@ -23,7 +23,7 @@ ENV NEXT_PUBLIC_AISOLATE_URL=$NEXT_PUBLIC_AISOLATE_URL \
     NEXT_TELEMETRY_DISABLED=1
 RUN npm run build -w apps/frontend
 
-FROM node:24-alpine
+FROM node:26-alpine
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 COPY --from=build /src/apps/frontend/.next/standalone ./
