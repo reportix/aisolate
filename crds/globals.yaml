@@ -59,6 +59,7 @@ spec:
                     message:
                       type: "string"
                     observedGeneration:
+                      format: "int64"
                       type: "integer"
                     reason:
                       type: "string"
@@ -69,6 +70,7 @@ spec:
                   type: "object"
                 type: "array"
               observedGeneration:
+                format: "int64"
                 type: "integer"
               phase:
                 type: "string"
@@ -77,6 +79,7 @@ spec:
                   type: "string"
                 type: "array"
               readyReplicas:
+                format: "int32"
                 type: "integer"
               revision:
                 type: "string"
