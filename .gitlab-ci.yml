@@ -33,7 +33,9 @@ variables:
 
 default:
   cache:
-    key: gradle-$CI_COMMIT_REF_SLUG
+    # One cache for the project. A key with the branch name in it stores a copy for every branch,
+    # Renovate's included, and the runners' cache storage has a quota.
+    key: gradle
     paths: [.gradle-home/caches, .gradle-home/wrapper, node_modules]
 
 spotless:
@@ -78,7 +80,9 @@ python-test:
   variables:
     UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
   cache:
-    key: uv-$CI_COMMIT_REF_SLUG
+    # One cache for the project. A key with the branch name in it stores a copy for every branch,
+    # Renovate's included, and the runners' cache storage has a quota.
+    key: uv
     paths: [.uv-cache, .gradle-home/caches, .gradle-home/wrapper]
   before_script:
     - mise use -g python@3.13
