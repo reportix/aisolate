@@ -123,7 +123,7 @@ python-test:
     - |
       $declared = (Get-Content gradle.properties | Where-Object { $_ -match '^version=' }) -replace '^version=', ''
       if ($env:CI_COMMIT_TAG -and $env:CI_COMMIT_TAG -ne $declared) { throw "tag $env:CI_COMMIT_TAG is not version=$declared in gradle.properties" }
-    - ./gradlew :apps:cli:createWindowsInstaller --console=plain; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    - ./gradlew :apps:cli:createWindowsInstaller --console=plain $env:SIGN_FLAG; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     # sha256sum -c format, LF-terminated, so the file checks on macOS and Linux too.
     - |
       $hash = (Get-FileHash -Algorithm SHA256 apps/cli/build/aisolate-cli-installer.exe).Hash.ToLower()
@@ -158,12 +158,25 @@ python-test:
     paths:
       - apps/cli/build/aisolate-cli-linux-x64.tar.gz
       - apps/cli/build/aisolate-cli-linux-x64.tar.gz.sha256
+      - apps/cli/build/aisolate-cli-linux-x64.tar.gz.asc
 
-# On a tag: the release's assets, which gitlab-release links, so they never expire.
+# On a tag: the release's assets, which gitlab-release links, so they never expire. The tag's archive carries a
+# detached OpenPGP signature by the release key: GPG_SIGNING_KEY (the armored private key, a file variable) and
+# GPG_PASSPHRASE on the project or the group; the public key is apps/cli/installer/linux/aisolate-release-key.asc.
+# Without the variables the tag's job fails, never ships unsigned.
 cli-linux-archive:
   extends: .cli-linux-archive
   rules:
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
+  after_script:
+    - |
+      set -e
+      if [ -z "$GPG_SIGNING_KEY" ] || [ -z "$GPG_PASSPHRASE" ]; then echo "GPG_SIGNING_KEY and GPG_PASSPHRASE are not set: the tag's archive must be signed"; exit 1; fi
+      export GNUPGHOME=$(mktemp -d)
+      gpg --batch --import "$GPG_SIGNING_KEY"
+      cd apps/cli/build
+      gpg --batch --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --armor --detach-sign aisolate-cli-linux-x64.tar.gz
+      gpg --batch --verify aisolate-cli-linux-x64.tar.gz.asc aisolate-cli-linux-x64.tar.gz
   artifacts:
     expire_in: never
 
@@ -177,11 +190,21 @@ cli-linux-archive-manual:
   artifacts:
     expire_in: 30 days
 
-# On a tag: the release's assets, which gitlab-release links, so they never expire.
+# On a tag: the release's assets, which gitlab-release links, so they never expire. The tag's build is signed
+# (Azure Trusted Signing through the `sign` dotnet CLI, as skye/platform/desktop does), with the six variables
+# TRUSTED_SIGNING_ENDPOINT, TRUSTED_SIGNING_ACCOUNT, TRUSTED_SIGNING_PROFILE, AZURE_TENANT_ID, AZURE_CLIENT_ID
+# and AZURE_CLIENT_SECRET set on the project or the group; without them the tag's job fails, never ships unsigned.
 cli-windows-installer:
   extends: .cli-windows-installer
+  variables:
+    SIGN_FLAG: "-PsignWindows"
   rules:
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
+  before_script:
+    - !reference [.cli-windows-installer, before_script]
+    # Interim until `sign` is baked into reportix/ci-images/windows.
+    - dotnet tool update --global sign --version 0.9.1-beta.26301.2
+    - $env:PATH = "$env:USERPROFILE\.dotnet\tools;$env:PATH"
   artifacts:
     expire_in: never
 
@@ -238,4 +261,8 @@ gitlab-release:
         - name: aisolate-cli-linux-x64.tar.gz.sha256
           url: $CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/apps/cli/build/aisolate-cli-linux-x64.tar.gz.sha256?job=cli-linux-archive
           filepath: /aisolate-cli-linux-x64.tar.gz.sha256
+          link_type: other
+        - name: aisolate-cli-linux-x64.tar.gz.asc
+          url: $CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/apps/cli/build/aisolate-cli-linux-x64.tar.gz.asc?job=cli-linux-archive
+          filepath: /aisolate-cli-linux-x64.tar.gz.asc
           link_type: other
