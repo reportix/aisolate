@@ -21,7 +21,7 @@ class ClinicalNotesContextPreparatorTest {
     FakeAIsolateManager grace =
         new FakeAIsolateManager(
             new Principal("grace", "grace@example.com", Set.of(role)),
-            new AirlockRef("test-space", "cardiology", "test"));
+            new AirlockRef("test-space", "cardiology", "v1", "test"));
     FakeExchange exchange = new FakeExchange("Average blood pressure by age group");
 
     // Act
@@ -38,7 +38,7 @@ class ClinicalNotesContextPreparatorTest {
     FakeAIsolateManager clara =
         new FakeAIsolateManager(
             new Principal("clara", "clara@example.com", Set.of("doctor")),
-            new AirlockRef("test-space", "psychiatry", "test"));
+            new AirlockRef("test-space", "psychiatry", "v1", "test"));
     FakeExchange exchange = new FakeExchange("How has Julian's mood changed?");
 
     // Act
@@ -57,7 +57,7 @@ class ClinicalNotesContextPreparatorTest {
     FakeAIsolateManager noah =
         new FakeAIsolateManager(
             new Principal("noah", "noah@example.com", Set.of("doctor")),
-            new AirlockRef("test-space", "cardiology", "test"),
+            new AirlockRef("test-space", "cardiology", "v1", "test"),
             ehr.dataSource());
     FakeExchange exchange = new FakeExchange("What was Julian's last troponin?");
 

@@ -16,7 +16,7 @@ public record FakeAIsolateManager(Principal principal, AirlockRef airlock)
   public FakeAIsolateManager() {
     this(
         new Principal("leo", "leo@example.com", Set.of("employee", "founder")),
-        new AirlockRef("test-space", "sales", "test"));
+        new AirlockRef("test-space", "sales", "v1", "test"));
   }
 
   /** Every id is an LLM; a vector is one dimension, the text's length: enough to tell two apart. */

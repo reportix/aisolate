@@ -23,7 +23,7 @@ def test_given_another_users_questions_when_recalled_then_nothing_of_theirs():
     memory, eric = SessionMemory(), FakeAIsolateManager()
     memory.remember(FakeExchange("What is Nora's salary?"), None, eric)
     nora = FakeAIsolateManager(
-        Principal("nora", "nora@example.com", frozenset({"ceo"})), AirlockRef("test-space", "hr", "test")
+        Principal("nora", "nora@example.com", frozenset({"ceo"})), AirlockRef("test-space", "hr", "v1", "test")
     )
     hers = FakeExchange("Average salary by department?")
 

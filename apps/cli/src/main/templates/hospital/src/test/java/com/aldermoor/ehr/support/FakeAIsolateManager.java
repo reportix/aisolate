@@ -24,7 +24,7 @@ public final class FakeAIsolateManager implements AIsolateManager {
   public FakeAIsolateManager() {
     this(
         new Principal("noah", "noah@example.com", Set.of("doctor")),
-        new AirlockRef("test-space", "cardiology", "test"));
+        new AirlockRef("test-space", "cardiology", "v1", "test"));
   }
 
   public FakeAIsolateManager(Principal principal, AirlockRef airlock) {

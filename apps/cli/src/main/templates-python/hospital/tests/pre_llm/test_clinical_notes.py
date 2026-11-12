@@ -9,7 +9,7 @@ from aldermoor_ehr.pre_llm.clinical_notes import SEARCH, TOP_K, ClinicalNotesCon
 def test_given_no_doctor_role_when_prepare_then_the_health_record_is_never_opened(role):
     # Arrange: the chief's statistics never come with a patient's notes
     grace = FakeAIsolateManager(
-        Principal("grace", "grace@example.com", frozenset({role})), AirlockRef("test-space", "cardiology", "test")
+        Principal("grace", "grace@example.com", frozenset({role})), AirlockRef("test-space", "cardiology", "v1", "test")
     )
     exchange = FakeExchange("Average blood pressure by age group")
 
@@ -25,7 +25,7 @@ def test_given_doctor_and_no_data_source_ehr_when_prepare_then_no_passages_and_n
     # Arrange: the fake defines no data source, as a space without ehr would
     clara = FakeAIsolateManager(
         Principal("clara", "clara@example.com", frozenset({"doctor"})),
-        AirlockRef("test-space", "psychiatry", "test"),
+        AirlockRef("test-space", "psychiatry", "v1", "test"),
     )
     exchange = FakeExchange("How has Julian's mood changed?")
 
@@ -43,7 +43,7 @@ def test_given_cardiology_doctor_when_prepare_then_searches_his_care_teams_cardi
     ehr = RecordingConnection()
     noah = FakeAIsolateManager(
         Principal("noah", "noah@example.com", frozenset({"doctor"})),
-        AirlockRef("test-space", "cardiology", "test"),
+        AirlockRef("test-space", "cardiology", "v1", "test"),
         ehr,
     )
     exchange = FakeExchange("What was Julian's last troponin?")

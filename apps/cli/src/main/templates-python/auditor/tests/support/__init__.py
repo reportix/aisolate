@@ -39,7 +39,7 @@ class FakeAIsolateManager:
     and the data sources a handler asked for."""
 
     principal: Principal = Principal("hannah", "hannah@example.com", frozenset({"auditor"}))
-    airlock: AirlockRef = AirlockRef("test-space", "audit", "test")
+    airlock: AirlockRef = AirlockRef("test-space", "audit", "v1", "test")
     log: logging.Logger = field(default_factory=lambda: logging.getLogger("tests"))
     data_sources_asked: list[str] = field(default_factory=list)
 

@@ -39,7 +39,7 @@ class SessionMemoryTest {
     FakeAIsolateManager nora =
         new FakeAIsolateManager(
             new Principal("nora", "nora@example.com", Set.of("founder")),
-            new AirlockRef("test-space", "sales", "test"));
+            new AirlockRef("test-space", "sales", "v1", "test"));
     FakeExchange hers = new FakeExchange("Total contract value by industry?");
 
     // Act

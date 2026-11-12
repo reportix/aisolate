@@ -614,7 +614,7 @@ class FormularyVerifierTest {
   private static FakeAIsolateManager noahWith(DataSource ehr) {
     return new FakeAIsolateManager(
         new Principal("noah", "noah@example.com", Set.of("doctor")),
-        new AirlockRef("test-space", "cardiology", "test"),
+        new AirlockRef("test-space", "cardiology", "v1", "test"),
         ehr);
   }
 

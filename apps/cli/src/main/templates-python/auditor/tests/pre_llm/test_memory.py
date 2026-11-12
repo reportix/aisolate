@@ -23,7 +23,7 @@ def test_given_another_users_questions_when_recalled_then_nothing_of_theirs():
     memory, hannah = SessionMemory(), FakeAIsolateManager()
     memory.remember(FakeExchange("Which invoices have no contract?"), None, hannah)
     noah = FakeAIsolateManager(
-        Principal("noah", "noah@example.com", frozenset({"auditor"})), AirlockRef("test-space", "audit", "test")
+        Principal("noah", "noah@example.com", frozenset({"auditor"})), AirlockRef("test-space", "audit", "v1", "test")
     )
     his = FakeExchange("Payments to related parties above 10,000 EUR?")
 

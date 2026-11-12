@@ -24,7 +24,7 @@ def test_given_another_users_questions_when_recalled_then_nothing_of_theirs():
     memory.remember(FakeExchange("What was Julian's last troponin?"), None, noah)
     grace = FakeAIsolateManager(
         Principal("grace", "grace@example.com", frozenset({"chief"})),
-        AirlockRef("test-space", "cardiology", "test"),
+        AirlockRef("test-space", "cardiology", "v1", "test"),
     )
     hers = FakeExchange("Average blood pressure by age group?")
 

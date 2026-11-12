@@ -3,6 +3,11 @@ package com.reportix.aisolate.cli;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import com.reportix.aisolate.config.AirlockVersionDocument;
+import com.reportix.aisolate.config.Configuration;
+import com.reportix.aisolate.config.ConfigurationLoader;
+import com.reportix.aisolate.config.DataSource;
+import com.reportix.aisolate.config.Llm;
 import com.reportix.aisolate.config.rules.Rule;
 import com.reportix.aisolate.config.rules.RuleSet;
 import com.reportix.aisolate.sdk.Entity;
@@ -29,7 +34,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.MappingIterator;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
@@ -40,13 +44,18 @@ class TemplateBuildTest {
 
   private static final YAMLMapper YAML = YAMLMapper.builder().build();
 
+  /** Where the admin's LLMs and data source live, as far as the test cares: URLs only. */
+  private static final String OLLAMA = "http://ollama.aisolate.svc:11434";
+
+  private static final String DATABASE = "jdbc:postgresql://db.aisolate.svc:5432/hr";
+
   /**
-   * What a template promises: its airlock, its code, the tools the airlock offers and the one data
+   * What a template promises: its airlock, its code, the tools its version offers and the one data
    * source its code reads, which the admin defines.
    *
    * @param plugin the code's tool plugin, null when it has no tools
    * @param pluginTools the tools of the code
-   * @param tools the tools the airlock's {@code tools} offers
+   * @param tools the tools the version's {@code tools} offers
    * @param retrieval the handler that reads the data source itself
    */
   record TemplateSpec(
@@ -227,48 +236,94 @@ class TemplateBuildTest {
 
   @ParameterizedTest
   @MethodSource("templates")
-  void givenTemplateDocuments_whenRead_thenOneAirlockNamesTheAdminsLlmAndDataSourceByIdOnly(
-      TemplateSpec spec) throws Exception {
-    // Arrange: the file as deploy sends it, and the variables it may read beside it
+  void
+      givenTemplateDocuments_whenSplitAndLoaded_thenOneAirlockAndItsV1NameTheAdminsLlmAndDataSource(
+          TemplateSpec spec) throws Exception {
+    // Arrange: the file as deploy sends it, and what the backend puts around its version: the code
+    // it scanned, the Global, the Space and the Airlock the AIsolate UI keeps, with the LLMs and
+    // the data source the template names by id
     Path project = createProject(spec);
     String file = Files.readString(project.resolve(ProjectFile.FILE));
     Map<String, String> variables = ProjectFile.readEnvFile(project.resolve(".env.example"));
+    List<String> documents = List.of(file.split("(?m)^---\n"));
+    String airlock =
+        documents.stream().filter(d -> d.contains("kind: Airlock\n")).findFirst().orElseThrow();
+    String version =
+        documents.stream()
+            .filter(d -> d.contains("kind: AirlockVersion\n"))
+            .findFirst()
+            .orElseThrow()
+            .replace(
+                "spec:\n  airlock: " + spec.airlock() + "\n",
+                "spec:\n"
+                    + "  jar: {digest: \"sha256:0f1e\", tools: ["
+                    + String.join(", ", spec.pluginTools())
+                    + "]}\n"
+                    + "  airlock: "
+                    + spec.airlock()
+                    + "\n");
+    String adminsDocuments =
+        """
+        apiVersion: aisolate.dev/v1
+        kind: Global
+        metadata: {name: aisolate}
+        spec:
+          llms:
+            - {id: granite, provider: ollama, url: "%1$s", model: "granite4.1:8b"}
+            - {id: nomic, provider: ollama, url: "%1$s", model: nomic-embed-text}
+          dataSources: [{id: %2$s, url: "%3$s", secretRef: ds-secret}]
+        ---
+        apiVersion: aisolate.dev/v1
+        kind: Space
+        metadata: {name: hr-lab}
+        spec:
+          access: {roles: [employee]}
+        ---
+        apiVersion: aisolate.dev/v1
+        kind: Airlock
+        metadata: {name: %4$s}
+        spec:
+          space: hr-lab
+          displayName: %4$s
+          access: {roles: [doctor], callers: ["*"]}
+        """
+            .formatted(OLLAMA, spec.dataSource(), DATABASE, spec.airlock());
 
-    // Act: the yaml shape is text to the CLI; the test reads it the way the backend will
-    List<JsonNode> documents = new ArrayList<>();
-    try (MappingIterator<JsonNode> stream = YAML.readerFor(JsonNode.class).readValues(file)) {
-      while (stream.hasNext()) {
-        documents.add(stream.next());
-      }
-    }
+    // Act: the backend saves the project's Airlock as the airlock's row; only the version is loaded
+    JsonNode airlockDocument = YAML.readTree(airlock);
+    Configuration loaded =
+        ConfigurationLoader.parse(Map.of("admin.yaml", adminsDocuments, "aisolate.yaml", version));
 
-    // Assert: one Airlock carrying everything an exchange runs, the LLM and the data source by
-    // id, no credential
-    assertThat(documents).hasSize(1);
-    JsonNode airlock = documents.getFirst();
-    assertThat(airlock.path("kind").asString()).isEqualTo("Airlock");
-    assertThat(airlock.path("metadata").path("name").asString()).isEqualTo(spec.airlock());
-    JsonNode airlockSpec = airlock.path("spec");
+    // Assert: the Airlock is the container, nothing that runs; the version, named <airlock>-v1,
+    // runs it all, the LLM and the data source by id, no credential
+    assertThat(documents).hasSize(2);
+    assertThat(airlockDocument.path("metadata").path("name").asString()).isEqualTo(spec.airlock());
+    JsonNode airlockSpec = airlockDocument.path("spec");
     assertThat(airlockSpec.path("displayName").asString()).isNotBlank();
     assertThat(airlockSpec.path("description").asString()).isNotBlank();
-    assertThat(list(airlockSpec.path("preLLM").path("contextPreparator").path("handlers")))
-        .containsExactlyElementsOf(spec.contextPreparators());
-    assertThat(list(airlockSpec.path("preLLM").path("conversationMemory").path("handlers")))
-        .containsExactly("SessionMemory");
-    assertThat(airlockSpec.path("llm").asString()).isEqualTo("granite");
-    assertThat(airlockSpec.path("prompt").asString()).startsWith(spec.promptStart());
-    assertThat(list(airlockSpec.path("tools"))).containsExactlyElementsOf(spec.tools());
-    assertThat(list(airlockSpec.path("postLLM").path("answerVerifier").path("handlers")))
-        .containsExactlyElementsOf(spec.verifiers());
-    // The admin's, named by id at run time: the project defines no LLM and no database.
-    assertThat(airlockSpec.has("llms")).isFalse();
-    assertThat(airlockSpec.has("dataSources")).isFalse();
-    assertThat(airlockSpec.has("space")).isFalse();
+    assertThat(airlockSpec.propertyNames()).isSubsetOf("displayName", "description", "access");
+    assertThat(loaded.airlockVersions()).hasSize(1);
+    AirlockVersionDocument v1 = loaded.airlockVersions().values().iterator().next();
+    assertThat(v1.name()).isEqualTo(spec.airlock() + "-v1");
+    assertThat(v1.spec().version()).isEqualTo("v1");
+    assertThat(v1.spec().description()).isNotBlank();
+    assertThat(loaded.airlockOf(v1.name()).name()).isEqualTo(spec.airlock());
+    assertThat(v1.contextPreparatorHandlers()).containsExactlyElementsOf(spec.contextPreparators());
+    assertThat(v1.memoryHandlers()).containsExactly("SessionMemory");
+    assertThat(v1.spec().llm()).isEqualTo("granite");
+    assertThat(v1.spec().llms()).isEmpty();
+    assertThat(loaded.mainLlmOf(v1.name()))
+        .isEqualTo(new Llm("granite", "ollama", OLLAMA, "granite4.1:8b"));
+    assertThat(v1.spec().prompt()).startsWith(spec.promptStart());
+    assertThat(v1.tools()).containsExactlyElementsOf(spec.tools());
+    assertThat(v1.verifierHandlers()).containsExactlyElementsOf(spec.verifiers());
+    // The admin's, resolved by id: the project names no database and holds no credential.
+    assertThat(loaded.dataSourcesOf(v1.name()))
+        .containsExactly(new DataSource(spec.dataSource(), DATABASE, "ds-secret"));
     assertThat(variables).containsOnlyKeys("AISOLATE_ENDPOINT", "AISOLATE_SPACE");
     assertThat(file)
         .doesNotContain("${")
-        .doesNotContain("username:", "password:")
-        .doesNotContain("AirlockVersion", "version");
+        .doesNotContain("username:", "password:", "secretRef", "jar:", "kind: Space");
     // The code sits by stage, the rules at the root, and the code reads the data source above
     Path sources = project.resolve("src/main/java");
     Stream.concat(Stream.ofNullable(spec.plugin()), spec.handlers().stream())

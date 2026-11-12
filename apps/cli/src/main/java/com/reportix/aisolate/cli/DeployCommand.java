@@ -28,7 +28,7 @@ import tools.jackson.databind.JsonNode;
     name = "deploy",
     mixinStandardHelpOptions = true,
     versionProvider = AIsolateCli.Version.class,
-    description = "Build the project and deploy it as its airlock: the code and the settings.")
+    description = "Build the project and deploy it as one version of its airlock.")
 @RequiredArgsConstructor
 final class DeployCommand implements Callable<Integer> {
 
@@ -111,22 +111,32 @@ final class DeployCommand implements Callable<Integer> {
     switch (response.statusCode()) {
       case 200 -> {
         JsonNode airlock = body.path("airlock");
-        if (airlock.path("endpoint").asString("").isEmpty()) {
-          console.error("AIsolate answered HTTP 200 without a deploy result");
+        JsonNode version = body.path("version");
+        if (version.path("endpoint").asString("").isEmpty()) {
+          // An airlock without a version: a backend from before airlock versions answered.
+          console.error(
+              airlock.isMissingNode()
+                  ? "AIsolate answered HTTP 200 without a deploy result"
+                  : "AIsolate answered HTTP 200 without the version's outcome");
           return 1;
         }
         // Deployed anyway, worth knowing: a tool of the project that tools leaves out, for one.
         body.path("warnings").forEach(warning -> console.warn(warning.asString("")));
+        String airlockName = config.space() + "/" + airlock.path("id").asString("");
+        // An existing airlock is worth no line: the version's names it.
+        if (airlock.path("created").asBoolean(false)) {
+          console.success("airlock " + airlockName + " (created)");
+        }
         console.success(
-            "airlock "
-                + config.space()
+            "version "
+                + airlockName
                 + "/"
-                + airlock.path("id").asString("")
-                + (airlock.path("created").asBoolean(false) ? " (created" : " (updated")
+                + version.path("version").asString("")
+                + (version.path("created").asBoolean(false) ? " (created" : " (updated")
                 + ", revision "
-                + airlock.path("revision").asString("")
+                + version.path("revision").asString("")
                 + ")");
-        console.println("   POST " + airlock.path("endpoint").asString(""));
+        console.println("   POST " + version.path("endpoint").asString(""));
         JsonNode code = body.path("jar");
         console.println(
             "   code "
@@ -140,7 +150,7 @@ final class DeployCommand implements Callable<Integer> {
         if (!cluster.isMissingNode() && !cluster.isNull()) {
           console.println(
               cluster.path("applied").asBoolean(false)
-                  ? "   cluster: applied, the status of the Airlock shows its pods"
+                  ? "   cluster: applied, the status of the AirlockVersion shows its pods"
                   : "   cluster: not applied: "
                       + cluster.path("problem").asString("unknown problem"));
         }

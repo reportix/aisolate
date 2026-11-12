@@ -38,7 +38,7 @@ class FakeAIsolateManager:
     """A fixed user, by default Eric, an employee, on the hr airlock."""
 
     principal: Principal = Principal("eric", "eric@example.com", frozenset({"employee"}))
-    airlock: AirlockRef = AirlockRef("test-space", "hr", "test")
+    airlock: AirlockRef = AirlockRef("test-space", "hr", "v1", "test")
     log: logging.Logger = field(default_factory=lambda: logging.getLogger("tests"))
 
     def llm(self, id: str) -> FakeLlm:

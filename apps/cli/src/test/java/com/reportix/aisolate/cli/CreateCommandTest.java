@@ -140,8 +140,11 @@ class CreateCommandTest {
     // Assert
     assertThat(exit).isZero();
     assertThat(Files.readString(parent.resolve(template).resolve("aisolate.yaml")))
-        .contains("kind: Airlock\nmetadata:\n  name: " + airlock + "\n")
-        .doesNotContain("${AIRLOCK}", "${SPACE}", "${AIRLOCK_", "---");
+        .contains(
+            "kind: Airlock\nmetadata:\n  name: " + airlock + "\n",
+            "kind: AirlockVersion\nmetadata:\n  name: " + airlock + "-v1 ",
+            "  airlock: " + airlock + "\n")
+        .doesNotContain("${AIRLOCK}", "${SPACE}", "${AIRLOCK_");
   }
 
   @ParameterizedTest
@@ -189,8 +192,10 @@ class CreateCommandTest {
     assertThat(exit).isZero();
     Path project = parent.resolve(template + "-" + airlock);
     assertThat(Files.readString(project.resolve("aisolate.yaml")))
-        .contains("kind: Airlock\nmetadata:\n  name: " + airlock + "\n")
-        .doesNotContain("${AIRLOCK}", "---");
+        .contains(
+            "kind: Airlock\nmetadata:\n  name: " + airlock + "\n",
+            "kind: AirlockVersion\nmetadata:\n  name: " + airlock + "-v1 ")
+        .doesNotContain("${AIRLOCK}");
     assertThat(parent.resolve(template)).doesNotExist();
     assertThat(console.lines)
         .first()

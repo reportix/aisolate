@@ -9,7 +9,7 @@ from halvardfinch_audit.pre_llm.documents import AuditDocumentsContextPreparator
 def test_given_no_auditor_role_when_prepare_then_the_database_is_never_opened(role):
     # Arrange
     clerk = FakeAIsolateManager(
-        Principal("clerk", "clerk@example.com", frozenset({role})), AirlockRef("test-space", "audit", "test")
+        Principal("clerk", "clerk@example.com", frozenset({role})), AirlockRef("test-space", "audit", "v1", "test")
     )
     exchange = FakeExchange("What did the board decide on the warehouse lease?")
 
