@@ -36,16 +36,4 @@ public record IdentityProperties(
         + version
         + "/chat";
   }
-
-  /** The endpoint of one airlock version: the URL a chat client posts its messages to. */
-  public String chatEndpoint(String spaceId, String airlockId, String version) {
-    return publicUrl
-        + "/v1/spaces/"
-        + spaceId
-        + "/airlocks/"
-        + airlockId
-        + "/versions/"
-        + version
-        + "/chat";
-  }
 }
