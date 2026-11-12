@@ -26,7 +26,7 @@ An auditor's question to the `northbeck` airlock of the `auditor` template (21 s
 
 ```
 http post /v1/spaces/{spaceId}/airlocks/{airlockId}/versions/{version}/chat
-└── exchange audit/northbeck/v1                 aisolate.outcome, aisolate.client, aisolate.figures.sourced,
+└── exchange audit/northbeck                    aisolate.outcome, aisolate.client, aisolate.figures.sourced,
     │                                           .computed, .unsourced and .mismatch (counts, never a value)
     ├── admission                               aisolate.admitted, aisolate.reason on a refusal
     ├── Read minutes and policies

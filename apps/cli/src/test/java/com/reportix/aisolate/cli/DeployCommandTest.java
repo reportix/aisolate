@@ -166,7 +166,7 @@ class DeployCommandTest {
   @CsvSource(
       delimiter = '|',
       value = {
-        "{\"applied\":true}|'   cluster: applied, the status of the AirlockVersion shows its pods'",
+        "{\"applied\":true}|'   cluster: applied, the status of the version shows its pods'",
         "{\"applied\":false,\"problem\":\"forbidden: configmaps is forbidden\"}|'   cluster: not"
             + " applied: forbidden: configmaps is forbidden'",
       })

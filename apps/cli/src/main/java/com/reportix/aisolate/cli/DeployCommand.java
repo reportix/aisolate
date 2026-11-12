@@ -150,7 +150,7 @@ final class DeployCommand implements Callable<Integer> {
         if (!cluster.isMissingNode() && !cluster.isNull()) {
           console.println(
               cluster.path("applied").asBoolean(false)
-                  ? "   cluster: applied, the status of the AirlockVersion shows its pods"
+                  ? "   cluster: applied, the status of the version shows its pods"
                   : "   cluster: not applied: "
                       + cluster.path("problem").asString("unknown problem"));
         }
