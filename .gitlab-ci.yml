@@ -218,6 +218,28 @@ cli-windows-installer-manual:
   artifacts:
     expire_in: 30 days
 
+# On a branch, by hand: the signed build to try, with the tag job's signing; says first which of the six
+# variables the runner sees (never their values), so a missing one is read off the log.
+cli-windows-installer-signed-manual:
+  extends: .cli-windows-installer
+  variables:
+    SIGN_FLAG: "-PsignWindows"
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+      allow_failure: true
+  before_script:
+    - !reference [.cli-windows-installer, before_script]
+    - |
+      foreach ($v in "TRUSTED_SIGNING_ENDPOINT","TRUSTED_SIGNING_ACCOUNT","TRUSTED_SIGNING_PROFILE","AZURE_TENANT_ID","AZURE_CLIENT_ID","AZURE_CLIENT_SECRET") {
+        $val = [Environment]::GetEnvironmentVariable($v)
+        if ([string]::IsNullOrEmpty($val)) { Write-Host "signing variable ${v}: missing" } else { Write-Host "signing variable ${v}: present" }
+      }
+    - dotnet tool update --global sign --version 0.9.1-beta.26301.2
+    - $env:PATH = "$env:USERPROFILE\.dotnet\tools;$env:PATH"
+  artifacts:
+    expire_in: 30 days
+
 # The tag's GitLab Release. The release component verifies the tag and publishes the images but creates no
 # Release (release@1 has no release: step and no asset input), so this job does, after publish-release, with
 # the Windows installer, the Linux archive and their checksums as asset links. The links are the tag's job
