@@ -39,7 +39,6 @@ describe("railOf", () => {
       [
         ["dashboard", "/", "Dashboard", "home"],
         ["spaces", "/spaces", "Spaces", "spaces"],
-        ["settings", "/settings", "Settings", "settings"],
       ],
     ],
     [
@@ -105,7 +104,6 @@ describe("trailOf", () => {
 
   it.each([
     ["/", [["Dashboard"]], true],
-    ["/settings", [["Settings"]], false],
     ["/spaces", [["Spaces"]], false],
     ["/spaces/new", [S, ["New space"]], false],
     [SPACE, [S, ["Acme"]], false],
@@ -173,14 +171,14 @@ describe("the top rail by role", () => {
   const DEVELOPER = { admin: false, auditor: false, developer: true, monitoring: true };
   const AUDITOR = { admin: false, auditor: true, developer: false, monitoring: false };
   const USER = { admin: false, auditor: false, developer: false, monitoring: false };
-  const ALL = ["dashboard", "spaces", "llms", "data-sources", "monitoring", "audit", "settings"];
+  const ALL = ["dashboard", "spaces", "llms", "data-sources", "monitoring", "audit"];
 
   it.each([
     ["Admin", ADMIN, ALL],
     ["Developer", DEVELOPER, ALL],
     ["AuditorAndDeveloper", { ...DEVELOPER, auditor: true }, ALL],
-    ["AuditorOnly", AUDITOR, ["audit", "settings"]],
-    ["UserOnly", USER, ["dashboard", "spaces", "settings"]],
+    ["AuditorOnly", AUDITOR, ["audit"]],
+    ["UserOnly", USER, ["dashboard", "spaces"]],
   ])("given%s_whenTheTopRailIsShown_thenOnlyTheRowsTheyMayUse", (_, viewer, keys) => {
     // Arrange / Act
     const rail = railOf("/", null, viewer);
@@ -209,7 +207,6 @@ describe("the top rail by role", () => {
     ["/llms/granite/edit", "llms"],
     ["/data-sources/new", "data-sources"],
     ["/monitoring", "monitoring"],
-    ["/settings", "settings"],
   ])("givenPath_%s_whenRailOf_thenOnly_%s_isLit", (path, key) => {
     // Arrange / Act
     const rail = railOf(path, null, ADMIN);

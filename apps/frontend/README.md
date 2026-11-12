@@ -12,7 +12,7 @@ npm run dev -w apps/frontend  # http://localhost:3001
 ```
 
 Environment (`.env.local`): `NEXT_PUBLIC_AISOLATE_URL`, `NEXT_PUBLIC_OIDC_AUTHORITY`,
-`NEXT_PUBLIC_OIDC_CLIENT_ID=aisolate-ui` ([Configuration](../../docs/configuration.md#clients)); the About section's version and Source link (Settings; AGPL-3.0 section 13) come from `AISOLATE_VERSION` and `NEXT_PUBLIC_AISOLATE_SOURCE_URL`. Sign-in is
+`NEXT_PUBLIC_OIDC_CLIENT_ID=aisolate-ui` ([Configuration](../../docs/configuration.md#clients)); the Help menu's Documentation and Source links are `NEXT_PUBLIC_AISOLATE_DOCS_URL` (default the docs on aisolate.ai) and `NEXT_PUBLIC_AISOLATE_SOURCE_URL` (AGPL-3.0 section 13; default the GitHub repository). Sign-in is
 AIsolate's own identity provider (the operators': locally the realm `aisolate`, not the organisation's `acme`, whose
 users ask the airlocks); the realm role `aisolate-admin` may do everything, and each space names its
 developers (its airlocks) and roles (who only ask), which the space's `caller_role` tells the pages.

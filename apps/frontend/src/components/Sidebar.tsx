@@ -10,7 +10,6 @@ import {
   DatabaseIcon,
   HomeIcon,
   PanelLeftIcon,
-  SettingsIcon,
   SpacesIcon,
   Tile,
   UserMenu,
@@ -19,6 +18,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { logout } from "@/lib/auth";
+import { HelpMenu } from "./HelpMenu";
 import type { Rail, RailIcon, RailRow } from "@/lib/rail";
 import { useSession } from "./Session";
 
@@ -30,7 +30,6 @@ const ICONS: Record<RailIcon, ComponentType<{ size?: number; className?: string 
   llm: CpuIcon,
   "data-sources": DatabaseIcon,
   monitoring: ActivityIcon,
-  settings: SettingsIcon,
 };
 
 type Props = { rail: Rail; collapsed: boolean; onToggle: () => void };
@@ -112,6 +111,8 @@ export function Sidebar({ rail, collapsed, onToggle }: Props) {
             />
           ))}
         </nav>
+        {/* Help at the foot, as Skye's: the links a user may need wherever they are. */}
+        <HelpMenu collapsed={collapsed} />
       </div>
     </aside>
   );
@@ -169,7 +170,12 @@ export function MobileHeader({ rail }: { rail: Rail }) {
         <Link href="/" aria-label="Homepage" className="flex text-ink">
           <AIsolateLogo />
         </Link>
-        <UserMenu name={session.name} email={session.email} onSignOut={() => void logout()} />
+        <div className="flex items-center gap-1">
+          <div className="w-9">
+            <HelpMenu collapsed placement="head" />
+          </div>
+          <UserMenu name={session.name} email={session.email} onSignOut={() => void logout()} />
+        </div>
       </div>
       <nav aria-label="AIsolate UI" className="flex flex-wrap gap-1 px-3 pb-3">
         {rail.rows.map((row) => {

@@ -3,7 +3,7 @@ import type { Overview } from "./useOverview";
 
 type RailContext = "top" | "space" | "airlock";
 export type RailIcon =
-  "home" | "spaces" | "audit" | "airlocks" | "llm" | "data-sources" | "monitoring" | "settings";
+  "home" | "spaces" | "audit" | "airlocks" | "llm" | "data-sources" | "monitoring";
 
 export type RailRow = {
   key: string;
@@ -48,8 +48,7 @@ export const auditsOnly = (v: Viewer) => v.auditor && !v.admin && !v.developer;
 
 /**
  * Dashboard, Spaces, then for who may read them AIsolate's Models and Data sources, Monitoring and
- * the Audit, and Settings for everyone (its About section is the AGPL offer of the source); an
- * auditor alone sees the Audit and Settings only. Each is lit anywhere under its path.
+ * the Audit; an auditor alone sees the Audit only. Each is lit anywhere under its path.
  */
 function topRows(pathname: string, v: Viewer): RailRow[] {
   const root = pathname.split("/").filter(Boolean)[0];
@@ -61,8 +60,7 @@ function topRows(pathname: string, v: Viewer): RailRow[] {
     lit: root === key,
   });
   const audit = row("audit", "Audit", "audit");
-  const settings = row("settings", "Settings", "settings");
-  if (auditsOnly(v)) return [audit, settings];
+  if (auditsOnly(v)) return [audit];
   return [
     { key: "dashboard", href: "/", label: "Dashboard", icon: "home", lit: !root },
     row("spaces", "Spaces", "spaces"),
@@ -71,7 +69,6 @@ function topRows(pathname: string, v: Viewer): RailRow[] {
       : []),
     ...(v.monitoring ? [row("monitoring", "Monitoring", "monitoring")] : []),
     ...(v.auditor || v.developer ? [audit] : []),
-    settings,
   ];
 }
 
@@ -155,7 +152,6 @@ export function trailOf(pathname: string, overview: Overview | null): Trail {
       heading: false,
     };
   }
-  if (root === "settings") return { crumbs: [{ label: "Settings" }], heading: false };
   if (root === "audit") {
     return {
       crumbs: spaceId

@@ -12,11 +12,11 @@ export const env = {
   get traceUrl() {
     return process.env.NEXT_PUBLIC_TRACE_URL || undefined;
   },
-  /** The running version, for the footer; the build injects it (AGPL section 13). */
-  get version() {
-    return process.env.NEXT_PUBLIC_AISOLATE_VERSION || "dev";
+  /** The Help menu's Documentation: the docs on the AIsolate website. */
+  get docsUrl() {
+    return process.env.NEXT_PUBLIC_AISOLATE_DOCS_URL || "https://aisolate.ai/docs";
   },
-  /** Where the source of this version lives (AGPL section 13); a fork's build points it at the fork. */
+  /** The Help menu's Source: where this AIsolate's source lives (AGPL section 13); a fork's build points it at the fork. */
   get sourceUrl() {
     return process.env.NEXT_PUBLIC_AISOLATE_SOURCE_URL || "https://github.com/reportix/aisolate";
   },
