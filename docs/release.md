@@ -128,22 +128,12 @@ tag's GitLab Release with `aisolate-cli-installer.exe`, `SHA256SUMS`, `aisolate-
 ### Signing
 
 The tag's Windows installer and the binary inside it are Authenticode-signed through Azure Trusted Signing with
-the `sign` dotnet CLI, the way skye/platform/desktop signs its installers; the tag's Linux archive carries a
-detached OpenPGP signature. Both jobs fail on a tag when their variables are missing, so a release is signed or
-not made. Set, on the `aisolate` group (masked, protected):
-
-| Variable | Windows or Linux | What |
-|---|---|---|
-| `TRUSTED_SIGNING_ENDPOINT` | Windows | The Trusted Signing account's endpoint, e.g. `https://weu.codesigning.azure.net` |
-| `TRUSTED_SIGNING_ACCOUNT` | Windows | The account name |
-| `TRUSTED_SIGNING_PROFILE` | Windows | The certificate profile |
-| `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` | Windows | A service principal with the Trusted Signing Certificate Profile Signer role |
-| `GPG_SIGNING_KEY` | Linux | The release key's armored private key, as a file variable |
-| `GPG_PASSPHRASE` | Linux | Its passphrase |
-
-The release key's public half is `apps/cli/installer/linux/aisolate-release-key.asc`, which a reader imports to
-verify: `gpg --verify aisolate-cli-linux-x64.tar.gz.asc aisolate-cli-linux-x64.tar.gz`. Branch builds
-(`cli-windows-installer-manual`, `cli-linux-archive-manual`) stay unsigned.
+the `sign` dotnet CLI, the way skye/platform/desktop signs its installers; the job fails on a tag when the
+signing variables are missing, so a release is signed or not made. The six are instance-level variables of the
+GitLab, shared with Skye: `TRUSTED_SIGNING_ENDPOINT`, `TRUSTED_SIGNING_ACCOUNT`, `TRUSTED_SIGNING_PROFILE`,
+`AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET`. Branch builds stay unsigned, except
+`cli-windows-installer-signed-manual`, a signed build to try by hand. The Linux archive is not signed: nothing
+on Linux checks a signature on a tarball, and the release serves the archive and its checksum over HTTPS.
 
 ### The macOS installer
 

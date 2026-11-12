@@ -158,25 +158,13 @@ python-test:
     paths:
       - apps/cli/build/aisolate-cli-linux-x64.tar.gz
       - apps/cli/build/aisolate-cli-linux-x64.tar.gz.sha256
-      - apps/cli/build/aisolate-cli-linux-x64.tar.gz.asc
 
-# On a tag: the release's assets, which gitlab-release links, so they never expire. The tag's archive carries a
-# detached OpenPGP signature by the release key: GPG_SIGNING_KEY (the armored private key, a file variable) and
-# GPG_PASSPHRASE on the project or the group; the public key is apps/cli/installer/linux/aisolate-release-key.asc.
-# Without the variables the tag's job fails, never ships unsigned.
+# On a tag: the release's assets, which gitlab-release links, so they never expire. The archive ships with its
+# checksum and no signature: nothing on Linux checks one on a tarball, and the release serves both over HTTPS.
 cli-linux-archive:
   extends: .cli-linux-archive
   rules:
     - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
-  after_script:
-    - |
-      set -e
-      if [ -z "$GPG_SIGNING_KEY" ] || [ -z "$GPG_PASSPHRASE" ]; then echo "GPG_SIGNING_KEY and GPG_PASSPHRASE are not set: the tag's archive must be signed"; exit 1; fi
-      export GNUPGHOME=$(mktemp -d)
-      gpg --batch --import "$GPG_SIGNING_KEY"
-      cd apps/cli/build
-      gpg --batch --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --armor --detach-sign aisolate-cli-linux-x64.tar.gz
-      gpg --batch --verify aisolate-cli-linux-x64.tar.gz.asc aisolate-cli-linux-x64.tar.gz
   artifacts:
     expire_in: never
 
@@ -283,8 +271,4 @@ gitlab-release:
         - name: aisolate-cli-linux-x64.tar.gz.sha256
           url: $CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/apps/cli/build/aisolate-cli-linux-x64.tar.gz.sha256?job=cli-linux-archive
           filepath: /aisolate-cli-linux-x64.tar.gz.sha256
-          link_type: other
-        - name: aisolate-cli-linux-x64.tar.gz.asc
-          url: $CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/apps/cli/build/aisolate-cli-linux-x64.tar.gz.asc?job=cli-linux-archive
-          filepath: /aisolate-cli-linux-x64.tar.gz.asc
           link_type: other
