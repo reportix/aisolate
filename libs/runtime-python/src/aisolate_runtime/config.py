@@ -31,10 +31,14 @@ _SCHEMAS: dict[str, dict[str, Any]] = {
         "dataSources": _DATA_SOURCES}},
     "Airlock": {"metadata": {"name": str}, "spec": {
         "space": str, "displayName": str, "description": str, "access": {"roles": [str], "callers": [str], "clients": [str]},
+        "llms": _LLMS, "dataSources": _DATA_SOURCES}},
+    # No dataSources: a data source needs a login, and a version holds no credential.
+    "AirlockVersion": {"metadata": {"name": str}, "spec": {
+        "airlock": str, "version": str, "description": str,
         "preLLM": {"contextPreparator": _HANDLERS, "conversationMemory": _HANDLERS},
         "llm": str, "prompt": str, "tools": [str],
         "postLLM": {"answerVerifier": _HANDLERS},
-        "llms": _LLMS, "dataSources": _DATA_SOURCES,
+        "llms": _LLMS,
         "jar": {"digest": str, "tools": [str], "language": str}}},
 }
 
@@ -86,12 +90,15 @@ class Code:
 
 
 @dataclass(frozen=True, slots=True)
-class Airlock:
-    """One served Airlock with everything resolved."""
+class Version:
+    """One served AirlockVersion with everything resolved."""
 
     name: str
-    """The document's name: the airlock id."""
+    """``<airlock>-<version>``, the document's name."""
     space: str
+    airlock: str
+    label: str
+    """``spec.version``, for example ``v1``: what ``_meta.version`` and the chat path carry."""
     description: str | None
     prompt: str
     tools: tuple[str, ...]
@@ -101,10 +108,11 @@ class Airlock:
     llm: str
     """``spec.llm``: the id of the LLM that answers, one of ``llms``."""
     llms: tuple[Llm, ...]
-    """Every LLM it sees: the Global's, its space's, its own; a nearer id replacing; by id."""
+    """Every LLM it sees: the Global's, its space's, its airlock's, its own; a nearer id replacing; by id."""
     data_sources: tuple[DataSource, ...]
-    """Over the same three levels, by id."""
+    """Its airlock's: the Global's, its space's, the airlock's own, by id; a version defines none."""
     access: Access
+    """Its airlock's."""
     code: Code | None
 
     @property
@@ -115,12 +123,12 @@ class Airlock:
 @dataclass(frozen=True, slots=True)
 class Configuration:
     revision: str
-    airlocks: Mapping[str, Airlock]
-    """By name, in file order; only the airlocks with an llm and a prompt (the others run nothing)."""
+    versions: Mapping[str, Version]
+    """By document name, in file order."""
 
-    def airlock(self, name: str) -> Airlock | None:
-        """The airlock ``name``, None when not served."""
-        return self.airlocks.get(name)
+    def version(self, airlock: str, label: str) -> Version | None:
+        """The version ``label`` of ``airlock``, None when not served."""
+        return next((v for v in self.versions.values() if v.airlock == airlock and v.label == label), None)
 
 
 def load(config_dir: str | Path | None, revision: str | None) -> Configuration:
@@ -175,7 +183,7 @@ def load(config_dir: str | Path | None, revision: str | None) -> Configuration:
                     keyed[f"{kind}/{name}"] = raw
     if not any(documents.values()) and not problems:
         problems.append(f"no documents: expected .yaml files with apiVersion {API_VERSION}")
-    airlocks = _resolve(documents, file_of, problems)
+    versions = _resolve(documents, file_of, problems)
     if problems:
         raise ConfigurationError(problems)
     computed = revision_of_documents(keyed)
@@ -183,12 +191,12 @@ def load(config_dir: str | Path | None, revision: str | None) -> Configuration:
         raise ConfigurationError(
             [f"revision mismatch: AISOLATE_CONFIG_REVISION says {revision}, the documents hash to {computed}"]
         )
-    return Configuration(computed, airlocks)
-
+    return Configuration(computed, versions)
 
 
 def revision_of_documents(keyed: Mapping[str, bytes]) -> str:
-    """The revision over ``{"<kind>/<name>": file bytes}``; kinds sort as strings (Airlock < Global < Space)."""
+    """The revision over ``{"<kind>/<name>": file bytes}``; kinds sort as strings, as Java's
+    ``Comparator.comparing(kind)`` does (Airlock < AirlockVersion < Global < Space)."""
     sha = hashlib.sha256()
     for key in sorted(keyed, key=lambda k: tuple(k.split("/", 1))):
         sha.update(key.encode() + b"\0" + keyed[key])
@@ -209,7 +217,7 @@ class _StrictLoader(yaml.SafeLoader):
 
 
 _StrictLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _StrictLoader.construct_mapping)
-# No timestamps, as Java's YAML 1.2 reads: a value like 2026-10-26 is text, and Java writes it unquoted.
+# No timestamps, as Java's YAML 1.2 reads: a version named 2026-10-26 is text, and Java writes it unquoted.
 _StrictLoader.yaml_implicit_resolvers = {
     first: [r for r in resolvers if r[0] != "tag:yaml.org,2002:timestamp"]
     for first, resolvers in yaml.SafeLoader.yaml_implicit_resolvers.items()
@@ -282,16 +290,14 @@ def _role_problems(roles: list[str | None] | None) -> list[str]:
     return problems + (["* is no role: list each role; only callers take * for any"] if "*" in named else [])
 
 
-def _resolve(documents: dict[str, dict[str, Any]], file_of: dict[str, str], problems: list[str]) -> dict[str, Airlock]:
-    """The references the pods must not serve without, and every airlock that runs resolved. One without an
-    llm or a prompt is valid but runs nothing (``aisolate deploy`` brings them): left out, never refused."""
-    spaces = documents["Space"]
+def _resolve(documents: dict[str, dict[str, Any]], file_of: dict[str, str], problems: list[str]) -> dict[str, Version]:
+    """The references the pods must not serve without, and every version resolved."""
+    spaces, airlocks = documents["Space"], documents["Airlock"]
     global_spec = _get(documents["Global"].get(GLOBAL), "spec") or {}  # none reads as empty
     for name, space in spaces.items():
         problems += [f"{file_of[f'Space/{name}']}: Space {name}: spec.access.roles {p}"
                      for p in _role_problems(_get(space, "spec", "access", "roles"))]
-    airlocks = {}
-    for name, airlock in documents["Airlock"].items():
+    for name, airlock in airlocks.items():
         where = f"{file_of[f'Airlock/{name}']}: Airlock {name}"
         spec = airlock.get("spec") or {}
         space_id = spec.get("space")
@@ -303,10 +309,24 @@ def _resolve(documents: dict[str, dict[str, Any]], file_of: dict[str, str], prob
             problems.append(f"{where}: spec.access.callers needs at least one caller")
         problems += [f"{where}: spec.access.roles {p}" for p in _role_problems(_get(spec, "access", "roles"))]
         problems += [f"{where}: spec.access.clients {p}" for p in _client_problems(_get(spec, "access", "clients"))]
-        llm, prompt = spec.get("llm"), spec.get("prompt")
-        if _blank(llm) or _blank(prompt):
+    versions = {}
+    for name, version in documents["AirlockVersion"].items():
+        where = f"{file_of[f'AirlockVersion/{name}']}: AirlockVersion {name}"
+        spec = version.get("spec") or {}
+        airlock_id, label = spec.get("airlock"), spec.get("version")
+        airlock = airlocks.get(airlock_id)
+        if airlock is None:
+            problems.append(f"{where}: spec.airlock is required" if _blank(airlock_id)
+                            else f"{where}: spec.airlock {airlock_id} is no Airlock")
             continue
+        if _blank(label) or name != f"{airlock_id}-{label}":
+            problems.append(f"{where}: metadata.name must be {airlock_id}-{label}")
+        airlock_spec = airlock.get("spec") or {}
+        space_id = airlock_spec.get("space")
         space = spaces.get(space_id) or {}
+        prompt = spec.get("prompt")
+        if _blank(prompt):
+            problems.append(f"{where}: spec.prompt is required")
         tools = tuple(spec.get("tools") or ())
         handlers = {
             Stage.CONTEXT_PREPARATOR: tuple(_get(spec, "preLLM", "contextPreparator", "handlers") or ()),
@@ -325,18 +345,22 @@ def _resolve(documents: dict[str, dict[str, Any]], file_of: dict[str, str], prob
             missing = [t for t in tools if t not in code.tools]
             if missing:
                 problems.append(f"{where}: spec.tools {', '.join(missing)} not in the code")
-        levels = (global_spec, _get(space, "spec") or {}, spec)
+        levels = (global_spec, _get(space, "spec") or {}, airlock_spec, spec)
         llms = {e["id"]: Llm(e["id"], e.get("provider"), e.get("url"), e.get("model"), e.get("secretRef"))
                 for level in levels for e in level.get("llms") or () if e and not _blank(e.get("id"))}
-        if llm not in llms:
-            problems.append(f"{where}: llm {llm} is no model of it, of Space {space_id} or of AIsolate")
+        llm = spec.get("llm")
+        if _blank(llm):
+            problems.append(f"{where}: spec.llm is required")
+        elif llm not in llms:
+            problems.append(f"{where}: llm {llm} is no model of it, of Airlock {airlock_id}, of Space {space_id} "
+                            "or of AIsolate")
         data_sources = {ds.get("id") or "": DataSource(ds.get("id"), ds.get("url"), ds.get("secretRef"))
-                        for level in levels for ds in level.get("dataSources") or () if ds}
-        roles = list(_get(space, "spec", "access", "roles") or ()) + list(_get(spec, "access", "roles") or ())
-        access = Access(tuple(dict.fromkeys(roles)), tuple(_get(spec, "access", "callers") or ()),
-                        tuple(_get(spec, "access", "clients") or ()))
-        airlocks[name] = Airlock(
-            name, space_id, spec.get("description"), prompt, tools, handlers, llm,
+                        for level in levels[:3] for ds in level.get("dataSources") or () if ds}
+        roles = list(_get(space, "spec", "access", "roles") or ()) + list(_get(airlock_spec, "access", "roles") or ())
+        access = Access(tuple(dict.fromkeys(roles)), tuple(_get(airlock_spec, "access", "callers") or ()),
+                        tuple(_get(airlock_spec, "access", "clients") or ()))
+        versions[name] = Version(
+            name, space_id, airlock_id, label, spec.get("description"), prompt or "", tools, handlers, llm or "",
             tuple(llms[k] for k in sorted(llms)), tuple(data_sources[k] for k in sorted(data_sources)), access, code,
         )
-    return airlocks
+    return versions
