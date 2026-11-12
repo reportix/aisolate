@@ -6,6 +6,10 @@ covers the project itself: its code, rules and `aisolate.yaml`.
 
 ## Install
 
+The installers are on the latest release, https://github.com/reportix/aisolate/releases/latest:
+`aisolate-cli-installer.pkg` for macOS and `aisolate-cli-installer.exe` for Windows, each with its SHA-256
+checksum beside it.
+
 ### macOS
 
 Open `aisolate-cli-installer.pkg`. It installs `/usr/local/bin/aisolate`, which is on the default `PATH`.
@@ -22,6 +26,12 @@ Run `aisolate-cli-installer.exe`. It installs for your user only, without admini
 
 The installer is not signed yet, so SmartScreen may warn about it: select **More info**, then **Run anyway**.
 Open a new terminal after the installation so that it reads the new `Path`.
+
+### Linux
+
+Not published; build from source: `GRAALVM_HOME=<GraalVM 25 home> ./gradlew :apps:cli:nativeCompile` writes
+`apps/cli/build/native/nativeCompile/aisolate-runner`; put it on your `PATH` as `aisolate`
+([Build the CLI yourself](#build-the-cli-yourself)).
 
 ### Check the installation
 

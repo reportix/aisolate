@@ -119,6 +119,41 @@ being `backend`, `controller`, `airlock`, `tool-server`, `airlock-python`, `tool
 (Keycloak with AIsolate's login themes). The UI and the chat are not published yet: they bake their deployment's
 URLs in at build time, so a deployment builds them from `apps/frontend/Dockerfile` and `apps/chat/Dockerfile`.
 
+The tag's pipeline also builds the Windows CLI installer from source on the Windows runner
+(`cli-windows-installer`: a GraalVM native image, then NSIS) and the Linux CLI archive on the Linux runners
+(`cli-linux-archive`: the native image and the licence in `aisolate-cli-linux-x64.tar.gz`), and creates the
+tag's GitLab Release with `aisolate-cli-installer.exe`, `SHA256SUMS`, `aisolate-cli-linux-x64.tar.gz` and its
+`.sha256` as asset links to those jobs' artifacts, which never expire on a tag.
+
+### Signing
+
+The tag's Windows installer and the binary inside it are Authenticode-signed through Azure Trusted Signing with
+the `sign` dotnet CLI, the way skye/platform/desktop signs its installers; the job fails on a tag when the
+signing variables are missing, so a release is signed or not made. The six are instance-level variables of the
+GitLab, shared with Skye: `TRUSTED_SIGNING_ENDPOINT`, `TRUSTED_SIGNING_ACCOUNT`, `TRUSTED_SIGNING_PROFILE`,
+`AZURE_TENANT_ID`, `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET`. Branch builds stay unsigned, except
+`cli-windows-installer-signed-manual`, a signed build to try by hand. The Linux archive is not signed: nothing
+on Linux checks a signature on a tarball, and the release serves the archive and its checksum over HTTPS.
+
+### The macOS installer
+
+No macOS runner exists, so a maintainer builds the `.pkg` on a Mac from the tag's checkout and attaches it to the
+same release with its checksum:
+
+```bash
+git checkout X.Y.Z
+GRAALVM_HOME=<GraalVM 25 home> ./gradlew :apps:cli:createMacosInstaller
+cd apps/cli/build && shasum -a 256 aisolate-cli-installer.pkg > aisolate-cli-installer.pkg.sha256
+glab release upload X.Y.Z aisolate-cli-installer.pkg aisolate-cli-installer.pkg.sha256
+```
+
+### The GitHub mirror
+
+The mirrored release carries the same assets, published by a maintainer: download the six files from the GitLab
+Release and `gh release create X.Y.Z --repo reportix/aisolate --title X.Y.Z --notes "AIsolate X.Y.Z"
+aisolate-cli-installer.exe SHA256SUMS aisolate-cli-linux-x64.tar.gz aisolate-cli-linux-x64.tar.gz.sha256
+aisolate-cli-installer.pkg aisolate-cli-installer.pkg.sha256`. The CLI guide links the mirror's latest release.
+
 `./gradlew :apps:controller:syncCrds` writes the CRDs into `crds/` from the controller's resource classes; a
 change to those classes commits the regenerated files with it. The chart is released on its own, with a version
 of its own, in [`aisolate-chart`](https://github.com/reportix/aisolate-chart): its pin script sets the chart's

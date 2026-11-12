@@ -1,3 +1,4 @@
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import org.gradle.process.ExecOperations
 
@@ -206,12 +207,97 @@ tasks.register("createMacosInstaller") {
     }
 }
 
+// The Linux build: the native binary and the licence in one archive, unpacked onto the PATH.
+tasks.register<Tar>("createLinuxArchive") {
+    group = "distribution"
+    description = "Creates the Linux archive (aisolate-cli-linux-x64.tar.gz) with the native binary"
+    dependsOn("nativeCompile")
+    archiveFileName.set("aisolate-cli-linux-x64.tar.gz")
+    destinationDirectory.set(layout.buildDirectory)
+    compression = Compression.GZIP
+    from(layout.buildDirectory.file("native/nativeCompile/aisolate-runner")) {
+        rename { "aisolate" }
+        filePermissions { unix("rwxr-xr-x") }
+    }
+    from(rootProject.file("LICENSE"))
+}
+
 tasks.register("renameRunnerWindows") {
     dependsOn("nativeCompile")
     doLast {
         val runner = layout.buildDirectory.file("native/nativeCompile/aisolate-runner.exe").get().asFile
         if (!runner.exists()) throw GradleException("native image not found at $runner")
         copy { from(runner); into(layout.buildDirectory); rename { "aisolate.exe" } }
+    }
+}
+
+// --- Windows code signing (Azure Trusted Signing), the recipe of skye/platform/desktop. Signing runs only
+// with -PsignWindows and the six variables below; the tag's CI job passes both, every other build is unsigned.
+val signingRequiredEnv = listOf(
+    "TRUSTED_SIGNING_ENDPOINT", "TRUSTED_SIGNING_ACCOUNT", "TRUSTED_SIGNING_PROFILE",
+    "AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET",
+)
+
+fun Project.signingRequested(): Boolean {
+    val p = findProperty("signWindows")?.toString()?.trim()?.lowercase()
+    return p != null && p != "false" && p != "0" && p != "no"
+}
+
+fun missingSigningVars(): List<String> = signingRequiredEnv.filter { System.getenv(it).isNullOrBlank() }
+
+// No inherited stdio: the `sign` CLI hangs on the Gradle daemon's handles, and on bad credentials; a timeout
+// keeps a release job from waiting for the runner's.
+fun Project.runSigningProcess(cmd: List<String>, label: String, timeoutMinutes: Long) {
+    val outFile = File.createTempFile("aisolate-sign-", ".log")
+    val proc = ProcessBuilder(cmd)
+        .redirectErrorStream(true)
+        .redirectInput(ProcessBuilder.Redirect.from(File("NUL")))
+        .redirectOutput(outFile)
+        .start()
+    val finished = proc.waitFor(timeoutMinutes, TimeUnit.MINUTES)
+    runCatching { outFile.readLines().forEach { logger.lifecycle(it) } }
+    outFile.delete()
+    if (!finished) {
+        proc.destroyForcibly()
+        throw GradleException("Timed out after ${timeoutMinutes}m while $label: the Azure credentials are missing or invalid.")
+    }
+    if (proc.exitValue() != 0) throw GradleException("Process failed (exit ${proc.exitValue()}) while $label.")
+}
+
+fun Project.windowsSign(files: Collection<File>, label: String) {
+    if (!signingRequested()) {
+        logger.lifecycle("Windows signing skipped for $label (no -PsignWindows).")
+        return
+    }
+    val missing = missingSigningVars()
+    if (missing.isNotEmpty()) {
+        throw GradleException("Windows signing requested (-PsignWindows) but Trusted Signing is not configured. Missing env: ${missing.joinToString(", ")}")
+    }
+    val toSign = files.filter { it.exists() }
+    toSign.forEach { it.setWritable(true) }
+    logger.lifecycle("Signing ${toSign.size} file(s) for $label via Trusted Signing (${System.getenv("TRUSTED_SIGNING_ACCOUNT")}/${System.getenv("TRUSTED_SIGNING_PROFILE")})...")
+    val cmd = buildList {
+        add("sign.exe"); add("code"); add("trusted-signing")
+        addAll(toSign.map { it.absolutePath })
+        addAll(listOf(
+            "-tse", System.getenv("TRUSTED_SIGNING_ENDPOINT"), "-tsa", System.getenv("TRUSTED_SIGNING_ACCOUNT"),
+            "-tscp", System.getenv("TRUSTED_SIGNING_PROFILE"), "-d", "AIsolate CLI", "-u", "https://aisolate.ai", "-v", "information"))
+    }
+    runSigningProcess(cmd, "signing $label", 10)
+}
+
+fun findSigntool(): File? {
+    val binDir = File("C:/Program Files (x86)/Windows Kits/10/bin")
+    if (!binDir.isDirectory) return null
+    return binDir.listFiles { f -> f.isDirectory }?.sortedByDescending { it.name }
+        ?.map { File(it, "x64/signtool.exe") }?.firstOrNull { it.exists() }
+}
+
+fun Project.windowsVerify(files: Collection<File>, label: String) {
+    if (!signingRequested()) return
+    val signtool = findSigntool() ?: throw GradleException("signtool.exe not found under the Windows Kits; cannot verify $label.")
+    files.filter { it.exists() }.forEach { f ->
+        runSigningProcess(listOf(signtool.absolutePath, "verify", "/pa", "/all", f.absolutePath), "verifying ${f.name}", 5)
     }
 }
 
@@ -224,6 +310,9 @@ tasks.register("createWindowsInstaller") {
     if (prebuiltWindowsExe == null) dependsOn("renameRunnerWindows")
     val exe = prebuiltWindowsExe ?: layout.buildDirectory.file("aisolate.exe").get().asFile.absolutePath
     doLast {
+        // The binary first, so the installer carries a signed copy; then the installer itself.
+        windowsSign(listOf(File(exe)), "aisolate.exe")
+        windowsVerify(listOf(File(exe)), "aisolate.exe")
         val workDir = layout.buildDirectory.dir("win-installer").get().asFile
         workDir.mkdirs()
         copy { from("$projectDir/installer/windows") { include("aisolate-cli-installer.nsi") }; from(rootProject.file("LICENSE")); into(workDir) }
@@ -231,6 +320,9 @@ tasks.register("createWindowsInstaller") {
             workingDir = workDir
             commandLine("makensis", "-DAISOLATE_EXE_PATH=$exe", "aisolate-cli-installer.nsi")
         }
-        copy { from(workDir.resolve("aisolate-cli-installer.exe")); into(layout.buildDirectory) }
+        val installer = workDir.resolve("aisolate-cli-installer.exe")
+        windowsSign(listOf(installer), "the installer")
+        windowsVerify(listOf(installer), "the installer")
+        copy { from(installer); into(layout.buildDirectory) }
     }
 }
