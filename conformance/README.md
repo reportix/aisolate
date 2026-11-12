@@ -86,14 +86,14 @@ body `{"status":401,"title":"Unauthorized"}`.
 
 ## admission/tool-server.json
 
-Shared inputs: `served_revision`, `space.roles`, `policies` (airlock, own roles, callers, clients, tools),
+Shared inputs: `served_revision`, `space.roles`, `policies` (airlock, version, own roles, callers, clients, tools),
 `published_tools` (tool → the data source of the plugin publishing it). A case: `claims`, `meta` (the `_meta` of
 the `tools/call`; `null` for none), `tool`, and `expect`: `admitted: true` (the call goes on to the rules), or
 `admitted: false` with the exact tool result JSON (`result`) and the labels of the one increment of
-`aisolate.tool.queries` (`metric`, plus `tool`). Pinned: the policy is found only when `airlock` and
-`revision` are both JSON strings and the revision is the served one; a refused call is the empty result
+`aisolate.tool.queries` (`metric`, plus `tool`). Pinned: the policy is found only when `airlock`, `version` and
+`revision` are all JSON strings and the revision is the served one; a refused call is the empty result
 (`entity` `""`, `rule_version` `""` without a policy, the served one with it), never an error; the metric's
-airlock is the served policy's, `none` without one, so a caller cannot invent a label; nothing is looked up or
+airlock and version are the served policy's, `none` without one, so a caller cannot invent a label; nothing is looked up or
 queried for a refused call.
 
 ## rules/compensation.json, rules/vitals.json
