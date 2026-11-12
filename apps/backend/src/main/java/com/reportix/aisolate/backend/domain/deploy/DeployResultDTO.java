@@ -5,12 +5,17 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 /**
- * What one deploy did: the airlock as saved with its endpoint, the code as stored, and the warnings
- * the deploy went ahead with. Nested records do not inherit the naming, so each carries its own.
+ * What one deploy did: the airlock it deployed into, the version as saved with its endpoint, the
+ * code as stored, and the warnings the deploy went ahead with. Nested records do not inherit the
+ * naming, so each carries its own.
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record DeployResultDTO(
-    AirlockOutcome airlock, Jar jar, List<String> warnings, Cluster cluster) {
+    AirlockOutcome airlock,
+    VersionOutcome version,
+    Jar jar,
+    List<String> warnings,
+    Cluster cluster) {
 
   public DeployResultDTO {
     warnings = warnings == null ? List.of() : List.copyOf(warnings);
@@ -32,15 +37,22 @@ public record DeployResultDTO(
   }
 
   public DeployResultDTO withCluster(Cluster cluster) {
-    return new DeployResultDTO(airlock, jar, warnings, cluster);
+    return new DeployResultDTO(airlock, version, jar, warnings, cluster);
   }
 
   /**
-   * @param created made by this deploy from the file's Airlock, else saved in place
+   * @param created made by this deploy from the file's Airlock
+   * @param updated saved by this deploy from the file's Airlock; neither: as it was
    */
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-  public record AirlockOutcome(
-      String id, String name, int revision, String endpoint, boolean created) {}
+  public record AirlockOutcome(String id, String name, boolean created, boolean updated) {}
+
+  /**
+   * @param created made by this deploy, else saved in place
+   */
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+  public record VersionOutcome(
+      String version, String description, int revision, String endpoint, boolean created) {}
 
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   public record Jar(String digest, List<String> tools, List<String> handlers) {}
