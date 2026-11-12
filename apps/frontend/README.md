@@ -1,8 +1,9 @@
 # AIsolate UI
 
 Where the admin defines a **space** (its developers and roles, its models and its data sources) and its developers its **airlocks** (the
-roles that may ask them, and their own models and data sources over the space's), and read each
-airlock's code, which `aisolate deploy` brings, as a graph, in details and as tools. A value an
+roles that may ask them, and their own models and data sources over the space's), start a **version** of
+an airlock by name and read each version's code, which `aisolate deploy` brings, as a graph, in details and
+as tools. A value an
 airlock does not set reads "from the space" or "from the platform". What each page holds and what a save does:
 [Define airlocks in the AIsolate UI](../../docs/develop.md#define-airlocks-in-the-aisolate-ui).
 
@@ -20,5 +21,5 @@ Demo operators: `jasmine` (a developer once an admin lists her e-mail as a devel
 `auditor` (reads the audit), `guest` (no role), password `password`.
 
 Shared look and helpers come from `../../libs/ui` (`@aisolate/ui`): the design tokens are in its `theme.css`. The words
-the UI keeps to: Roles and Developers (never Members or Users), Models (never LLMs), Data sources, Overview,
-Details, Tools. Gates, from the repository root: `npm run lint && npm run format && npm test && npm run build`.
+the UI keeps to: Roles and Developers (never Members or Users), Models (never LLMs), Data sources, Versions
+(a version, never an AirlockVersion), Overview, Graph, Details, Tools. Gates, from the repository root: `npm run lint && npm run format && npm test && npm run build`.
