@@ -1,14 +1,6 @@
 package com.reportix.aisolate.backend.domain.airlock;
 
 import com.reportix.aisolate.backend.domain.Creator;
-import com.reportix.aisolate.backend.domain.deploy.JarInspector;
-import com.reportix.aisolate.identity.IdentityProperties;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -18,40 +10,26 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The {@code airlocks} table: one row per airlock, its identity in columns, the rest of its form as
- * the definition JSON, saved in place ({@code revision} counts the saves). Its code is the jar the
- * last deploy brought: the bytes stay in {@code airlock_code} in chunks, read only when a pod
- * fetches them; what the jar holds is read with the row.
+ * the definition JSON, saved in place ({@code revision} counts the saves); the versions hold what
+ * runs and the code.
  */
 @Repository
 @RequiredArgsConstructor
 public class AirlockRepository {
 
-  /** The code a deploy brings: the jar on disk and what it holds. */
-  public record Code(Path file, JarInspector.Contents contents) {}
-
-  /** Postgres sends a bytea whole: chunks keep each row, and what reads one, small. */
-  static final int CHUNK = 1024 * 1024;
-
   private static final String SELECT =
       "SELECT a.id, a.space_id, a.name, a.description, a.definition::text AS definition,"
-          + " a.revision, a.created_by, a.created_by_name, a.created_at, a.updated_at,"
-          + " a.jar_digest, a.jar_size, a.jar_tools::text AS jar_tools, a.jar_handlers::text AS"
-          + " jar_handlers, a.jar_rules::text AS jar_rules, a.jar_language FROM airlocks a";
-
-  private static final TypeReference<List<JarInspector.Tool>> TOOLS = new TypeReference<>() {};
-  private static final TypeReference<List<JarInspector.Handler>> HANDLERS =
-      new TypeReference<>() {};
-  private static final TypeReference<List<JarInspector.RuleSet>> RULES = new TypeReference<>() {};
+          + " a.revision, (SELECT count(*) FROM airlock_versions v WHERE v.airlock_id = a.id) AS"
+          + " versions, a.created_by, a.created_by_name, a.created_at, a.updated_at FROM"
+          + " airlocks a";
 
   private final JdbcClient db;
   private final JsonMapper json;
-  private final IdentityProperties properties;
 
   public Optional<Airlock> find(String id) {
     return db.sql(SELECT + " WHERE a.id = ?").param(id).query(this::readAirlock).optional();
@@ -97,12 +75,8 @@ public class AirlockRepository {
         .list();
   }
 
-  /**
-   * A new airlock at revision 1, with its code when a deploy brings one.
-   *
-   * @param code null for an airlock created in the AIsolate UI
-   */
-  public Airlock insert(String spaceId, AirlockFormDTO form, Code code, Creator creator) {
+  /** A new airlock at revision 1, without versions. */
+  public Airlock insert(String spaceId, AirlockFormDTO form, Creator creator) {
     db.sql(
             "INSERT INTO airlocks (id, space_id, name, description, definition, created_by,"
                 + " created_by_name) VALUES (?, ?, ?, ?, ?::jsonb, ?, ?)")
@@ -115,18 +89,11 @@ public class AirlockRepository {
             creator.username(),
             creator.name())
         .update();
-    if (code != null) {
-      storeCode(form.id(), code);
-    }
     return find(form.id()).orElseThrow();
   }
 
-  /**
-   * Saves the airlock in place; the revision counts the save.
-   *
-   * @param code null keeps the code it has
-   */
-  public Airlock update(String id, AirlockFormDTO form, Code code) {
+  /** Saves the airlock in place; the revision counts the save. */
+  public Airlock update(String id, AirlockFormDTO form) {
     int updated =
         db.sql(
                 "UPDATE airlocks SET name = ?, description = ?, definition = ?::jsonb, revision ="
@@ -135,9 +102,6 @@ public class AirlockRepository {
             .update();
     if (updated != 1) {
       throw new AirlockNotFoundException(id);
-    }
-    if (code != null) {
-      storeCode(id, code);
     }
     return find(id).orElseThrow();
   }
@@ -163,24 +127,9 @@ public class AirlockRepository {
   }
 
   /**
-   * The airlock's code bytes into {@code out}, a chunk at a time, each its own query: a slow pod
-   * holds no connection. A deploy in between mixes two codes; the pod's digest check refuses that.
+   * A global data source or model, or a space's or an airlock's, still names the Secret. A version
+   * holds no credential, so none of its rows can.
    */
-  public void streamCode(String airlockId, OutputStream out) throws IOException {
-    for (int seq = 0; ; seq++) {
-      Optional<byte[]> chunk =
-          db.sql("SELECT bytes FROM airlock_code WHERE airlock_id = ? AND seq = ?")
-              .params(airlockId, seq)
-              .query(byte[].class)
-              .optional();
-      if (chunk.isEmpty()) {
-        return;
-      }
-      out.write(chunk.get());
-    }
-  }
-
-  /** A global data source or model, or a space's or an airlock's, still names the Secret. */
   public boolean isSecretReferenced(String name) {
     String probe = json.writeValueAsString(List.of(Map.of("secret_ref", name)));
     return db.sql(
@@ -195,40 +144,9 @@ public class AirlockRepository {
         .single();
   }
 
-  /** The code goes with the rows: {@code airlock_code} cascades. */
+  /** The versions and their code go with the rows: both cascade. */
   public int deleteAll() {
     return db.sql("DELETE FROM airlocks").update();
-  }
-
-  /** In the caller's transaction: the old chunks go with the save. */
-  private void storeCode(String airlockId, Code code) {
-    JarInspector.Contents contents = code.contents();
-    db.sql("DELETE FROM airlock_code WHERE airlock_id = ?").param(airlockId).update();
-    try (InputStream in = Files.newInputStream(code.file())) {
-      for (int seq = 0; ; seq++) {
-        byte[] chunk = in.readNBytes(CHUNK);
-        if (chunk.length == 0) {
-          break;
-        }
-        db.sql("INSERT INTO airlock_code (airlock_id, seq, bytes) VALUES (?, ?, ?)")
-            .params(airlockId, seq, chunk)
-            .update();
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-    db.sql(
-            "UPDATE airlocks SET jar_digest = ?, jar_size = ?, jar_tools = ?::jsonb, jar_handlers ="
-                + " ?::jsonb, jar_rules = ?::jsonb, jar_language = ? WHERE id = ?")
-        .params(
-            contents.digest(),
-            contents.size(),
-            json.writeValueAsString(contents.tools()),
-            json.writeValueAsString(contents.handlers()),
-            json.writeValueAsString(contents.ruleSets()),
-            contents.language(),
-            airlockId)
-        .update();
   }
 
   /** The form without the fields that have their own columns, and without credentials. */
@@ -240,32 +158,19 @@ public class AirlockRepository {
 
   private Airlock readAirlock(ResultSet rs, int i) throws SQLException {
     String id = rs.getString("id");
-    String spaceId = rs.getString("space_id");
     ObjectNode definition = (ObjectNode) json.readTree(rs.getString("definition"));
     definition.put("id", id);
     definition.put("name", rs.getString("name"));
     definition.put("description", rs.getString("description"));
-    AirlockFormDTO form = json.treeToValue(definition, AirlockFormDTO.class);
-    String digest = rs.getString("jar_digest");
     return new Airlock(
         id,
-        spaceId,
+        rs.getString("space_id"),
         rs.getInt("revision"),
-        properties.chatEndpoint(spaceId, id),
+        rs.getInt("versions"),
         rs.getString("created_by"),
         rs.getString("created_by_name"),
         rs.getObject("created_at", OffsetDateTime.class),
         rs.getObject("updated_at", OffsetDateTime.class),
-        form,
-        null,
-        digest == null
-            ? null
-            : new JarInspector.Contents(
-                digest,
-                rs.getLong("jar_size"),
-                json.readValue(rs.getString("jar_tools"), TOOLS),
-                json.readValue(rs.getString("jar_handlers"), HANDLERS),
-                json.readValue(rs.getString("jar_rules"), RULES),
-                rs.getString("jar_language")));
+        json.treeToValue(definition, AirlockFormDTO.class));
   }
 }

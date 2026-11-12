@@ -5,7 +5,7 @@ import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
 import com.reportix.aisolate.backend.domain.airlock.InvalidFormException;
-import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.config.rules.RuleSet;
 import com.reportix.aisolate.plugins.CatalogCheck;
 import com.reportix.aisolate.sdk.Column;
@@ -105,7 +105,7 @@ public final class ManifestReader {
         rules.stream()
             .map(set -> new JarInspector.RuleSet(set.entity(), set.rules().size()))
             .toList(),
-        AirlockDocument.Jar.PYTHON);
+        AirlockVersionDocument.Jar.PYTHON);
   }
 
   /**

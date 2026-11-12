@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.reportix.aisolate.backend.domain.deploy.JarInspector;
 import com.reportix.aisolate.backend.domain.space.Space;
 import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.config.Configuration;
 import com.reportix.aisolate.config.ConfigurationLoader;
 import com.reportix.aisolate.config.DataSource;
@@ -16,9 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 class DocumentsTest {
 
+  private static final JsonMapper JSON = JsonMapper.builder().build();
   private static final String DB = "jdbc:postgresql://db:5432/hr";
 
   private static final Llm GRANITE =
@@ -48,25 +51,31 @@ class DocumentsTest {
           null);
 
   /** A stored airlock of hr-space, its form flat as the row holds it. */
-  private static Airlock airlock(AirlockFormDTO form, JarInspector.Contents jar) {
-    return new Airlock(
-        form.id(),
+  private static Airlock airlock(AirlockFormDTO form, int versions) {
+    return new Airlock(form.id(), "hr-space", 5, versions, "jasmine", null, null, null, form);
+  }
+
+  /** A stored version of hr-app, its definition flat as the row holds it. */
+  private static AirlockVersionRepository.Row version(
+      String version, String definition, JarInspector.Contents jar) {
+    return new AirlockVersionRepository.Row(
+        "hr-app",
         "hr-space",
-        5,
-        "http://localhost:8080/v1/spaces/hr-space/airlocks/" + form.id() + "/chat",
+        version,
+        "Version " + version + ".",
+        2,
         "jasmine",
         null,
         null,
         null,
-        form,
-        null,
+        JSON.readTree(definition),
         jar);
   }
 
   @Test
   void
-      givenGlobalSpaceAndAirlocksWithAndWithoutCode_whenToDocuments_thenRefsLlmsAndDataSourcesResolveAndJarOnTheDeployedOne() {
-    // Arrange: hr-app was deployed; hr-idle was made in the UI and runs nothing yet
+      givenSpaceAirlocksAndVersions_whenToDocuments_thenRefsLlmsAndDataSourcesResolveAndJarOnTheDeployedVersion() {
+    // Arrange: hr-app has a deployed v1 and a v2 saved in the UI; hr-idle has no version yet
     JarInspector.Contents jar =
         new JarInspector.Contents(
             "sha256:ab",
@@ -77,7 +86,7 @@ class DocumentsTest {
             List.of(new JarInspector.Handler("SalaryVerifier", "verifier", 1, null, List.of())),
             List.of(new JarInspector.RuleSet("hr.compensation", 2)),
             "java");
-    AirlockFormDTO deployed =
+    AirlockFormDTO app =
         new AirlockFormDTO(
             "hr-app",
             "HR app",
@@ -85,12 +94,6 @@ class DocumentsTest {
             List.of("employee"),
             List.of("acme-chat"),
             List.of("acme-batch"),
-            null,
-            null,
-            "granite",
-            "p",
-            List.of("read_records"),
-            List.of("SalaryVerifier"),
             List.of(
                 LlmFormDTO.of(
                     new Llm("granite", "ollama", "http://ollama-hr:11434", "granite4.1:8b"))),
@@ -100,31 +103,31 @@ class DocumentsTest {
                 new DataSourceFormDTO(
                     "hr-documents", DB, "hr-space-hr-app-ds-hr-documents-d4e5f6", null, null)));
     AirlockFormDTO idle =
-        new AirlockFormDTO(
-            "hr-idle",
-            "HR idle",
-            "",
-            List.of(),
-            List.of("*"),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null);
+        new AirlockFormDTO("hr-idle", "HR idle", "", List.of(), List.of("*"), null, null, null);
+    String deployed =
+        """
+        {"llm":"granite","prompt":"p","tools":["read_records"],"verifiers":["SalaryVerifier"],
+         "context_preparators":[],"memory_handlers":[],"llms":[]}
+        """;
+    String drafted =
+        """
+        {"llm":"qwen","prompt":"q","tools":[],"verifiers":[],"context_preparators":[],
+         "memory_handlers":[],
+         "llms":[{"id":"qwen","provider":"ollama","url":"http://ollama:11434","model":"qwen3"}]}
+        """;
 
     // Act
     List<Object> documents = new ArrayList<>();
     documents.add(GLOBAL);
     documents.addAll(
-        Documents.toDocuments(SPACE, List.of(airlock(deployed, jar), airlock(idle, null))));
+        Documents.toDocuments(
+            SPACE,
+            List.of(airlock(app, 2), airlock(idle, 0)),
+            List.of(version("v1", deployed, jar), version("v2", drafted, null))));
     Configuration configuration =
         ConfigurationLoader.parse(Map.of("documents.yaml", ConfigurationLoader.toYaml(documents)));
 
-    // Assert: the loader accepts the three kinds, an airlock that runs nothing included
+    // Assert: the loader accepts the four kinds, an airlock without a version included
     assertThat(configuration.global()).isEqualTo(GLOBAL);
     SpaceDocument.Spec space = configuration.spaces().get("hr-space").spec();
     assertThat(space.displayName()).isEqualTo("HR");
@@ -133,26 +136,33 @@ class DocumentsTest {
     assertThat(space.llms()).containsExactly(NOMIC);
     assertThat(space.dataSources())
         .containsExactly(new DataSource("acme_hr", DB, "hr-space-ds-acme-hr-a1b2c3"));
-    AirlockDocument app = configuration.airlocks().get("hr-app");
-    assertThat(app.spec().space()).isEqualTo("hr-space");
-    assertThat(app.spec().access())
+    AirlockDocument airlock = configuration.airlocks().get("hr-app");
+    assertThat(airlock.spec().space()).isEqualTo("hr-space");
+    assertThat(airlock.spec().access())
         .isEqualTo(
             new AirlockDocument.Access(
                 List.of("employee"), List.of("acme-chat"), List.of("acme-batch")));
-    assertThat(app.spec().llm()).isEqualTo("granite");
-    assertThat(app.spec().prompt()).isEqualTo("p");
-    assertThat(app.tools()).containsExactly("read_records");
-    assertThat(app.verifierHandlers()).containsExactly("SalaryVerifier");
-    assertThat(app.spec().jar())
+    AirlockVersionDocument v1 = configuration.airlockVersions().get("hr-app-v1");
+    assertThat(v1.spec().airlock()).isEqualTo("hr-app");
+    assertThat(v1.spec().version()).isEqualTo("v1");
+    assertThat(v1.spec().description()).isEqualTo("Version v1.");
+    assertThat(v1.spec().llm()).isEqualTo("granite");
+    assertThat(v1.spec().prompt()).isEqualTo("p");
+    assertThat(v1.tools()).containsExactly("read_records");
+    assertThat(v1.verifierHandlers()).containsExactly("SalaryVerifier");
+    assertThat(v1.spec().jar())
         .isEqualTo(
-            new AirlockDocument.Jar(
+            new AirlockVersionDocument.Jar(
                 "sha256:ab", List.of("read_records", "aggregate_records"), null));
-    // The airlock's granite replaces the global one
-    assertThat(configuration.mainLlmOf("hr-app").url()).isEqualTo("http://ollama-hr:11434");
-    assertThat(configuration.llmsOf("hr-app"))
+    // The airlock's granite replaces the global one; v2's qwen is its own, keyless
+    assertThat(configuration.mainLlmOf("hr-app-v1").url()).isEqualTo("http://ollama-hr:11434");
+    assertThat(configuration.llmsOf("hr-app-v1"))
         .extracting(Llm::id)
         .containsExactly("granite", "nomic");
-    assertThat(configuration.dataSourcesOf("hr-app"))
+    assertThat(configuration.mainLlmOf("hr-app-v2").id()).isEqualTo("qwen");
+    assertThat(configuration.mainLlmOf("hr-app-v2").secretRef()).isNull();
+    assertThat(configuration.airlockVersions().get("hr-app-v2").hasCode()).isFalse();
+    assertThat(configuration.dataSourcesOf("hr-app-v1"))
         .containsExactly(
             new DataSource("acme_hr", DB, "hr-space-hr-app-ds-acme-hr-b2c3d4"),
             new DataSource("audit", DB, "aisolate-ds-audit-e5f6a7"),
@@ -161,9 +171,6 @@ class DocumentsTest {
     assertThat(idleDocument.spec().access())
         .isEqualTo(new AirlockDocument.Access(List.of(), List.of("*")));
     assertThat(idleDocument.spec().llms()).isEmpty();
-    assertThat(idleDocument.spec().llm()).isNull();
-    assertThat(idleDocument.spec().prompt()).isNull();
-    assertThat(idleDocument.hasCode()).isFalse();
-    assertThat(configuration.mainLlmOf("hr-idle")).isNull();
+    assertThat(configuration.versionsOf("hr-idle")).isEmpty();
   }
 }

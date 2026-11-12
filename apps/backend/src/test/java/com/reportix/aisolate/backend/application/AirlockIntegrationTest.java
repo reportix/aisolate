@@ -46,10 +46,9 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The AIsolate UI's API, driven the way the UI drives it: the admin sets up a space with its
  * developers and the roles that may ask every airlock of it, a developer creates an airlock in it,
- * which may add roles of its own and serves at once on its own endpoint. An edit saves the airlock
- * in place and bumps its revision; its id stays. An airlock saved here has no code and runs
- * nothing: what runs (its LLM, prompt, tools and handlers) comes with a deploy, never from the UI's
- * form.
+ * which may add roles of its own, and adds named versions, each serving at once on its own
+ * endpoint. An edit saves the airlock or the version in place and bumps its revision; the id and
+ * the name stay. A version saved here has no code: the code comes with a deploy.
  */
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -89,6 +88,14 @@ class AirlockIntegrationTest {
   private static final String AIRLOCK_FORM =
       """
       {"id":"hr-app-1","name":"HR app 1","description":"Pay questions."}
+      """;
+
+  /** Its LLM granite is the space's. */
+  private static final String VERSION_FORM =
+      """
+      {"version":"v1","description":"Pay questions in EUR.",
+       "tools":[],"llm":"granite",
+       "prompt":"You are the HR assistant. All amounts are in EUR."}
       """;
 
   @ParameterizedTest
@@ -149,10 +156,11 @@ class AirlockIntegrationTest {
 
   @Test
   @Order(2)
-  void givenSeededAirlock_whenRead_thenItCarriesItsFormItsEndpointAndNoCode() {
-    // Arrange / Act
+  void givenSeededAirlock_whenRead_thenItCarriesItsFormAndItsMigratedV1RunsWhatItRan() {
+    // Arrange / Act: the seed is a V2 airlock that named its model; V3 made that its v1
     JsonNode space = JSON.readTree(get(jasmine, SPACE).body());
     JsonNode airlock = JSON.readTree(get(jasmine, SEEDED).body());
+    JsonNode version = JSON.readTree(get(jasmine, SEEDED + "/versions/v1").body());
 
     // Assert: the space names its developers, roles, LLM and data sources; the airlock replaces
     // none of them
@@ -178,24 +186,32 @@ class AirlockIntegrationTest {
     assertThat(strings(airlock.path("callers"))).containsExactly("*");
     assertThat(airlock.path("llms").isEmpty()).isTrue();
     assertThat(airlock.path("data_sources").isEmpty()).isTrue();
-    assertThat(airlock.has("versions")).isFalse();
+    assertThat(airlock.path("versions").asInt()).isEqualTo(1);
     assertThat(airlock.path("revision").asInt()).isEqualTo(1);
     assertThat(airlock.path("created_by").asString()).isEqualTo("jasmine");
-    assertThat(airlock.path("endpoint").asString())
-        .endsWith("/v1/spaces/hr-acme/airlocks/acme-hr/chat");
-    assertThat(airlock.path("jar").isNull()).isTrue();
+    assertThat(airlock.has("endpoint") || airlock.has("jar") || airlock.has("main_llm")).isFalse();
     JsonNode form = airlock.path("form");
     assertThat(form.path("id").asString()).isEqualTo("acme-hr");
-    assertThat(form.path("llm").asString()).isEqualTo("granite");
-    assertThat(form.path("prompt").asString()).startsWith("You are the Acme HR assistant.");
-    assertThat(airlock.path("main_llm").path("from").asString()).isEqualTo("space");
-    assertThat(airlock.path("main_llm").path("model").asString()).isEqualTo("granite4.1:8b");
-    assertThat(strings(form.path("tools"))).isEmpty();
-    assertThat(strings(form.path("context_preparators"))).isEmpty();
-    assertThat(strings(form.path("memory_handlers"))).isEmpty();
-    assertThat(strings(form.path("verifiers"))).isEmpty();
+    assertThat(form.has("llm") || form.has("prompt") || form.has("tools")).isFalse();
     assertThat(form.path("data_sources").isEmpty()).isTrue();
-    assertThat(form.has("version") || form.has("allowed_roles") || form.has("rules")).isFalse();
+    // What ran moved to v1, with the code's place and the model resolved from the space
+    assertThat(version.path("airlock_id").asString()).isEqualTo("acme-hr");
+    assertThat(version.path("version").asString()).isEqualTo("v1");
+    assertThat(version.path("revision").asInt()).isEqualTo(1);
+    assertThat(version.path("created_by").asString()).isEqualTo("jasmine");
+    assertThat(version.path("endpoint").asString())
+        .endsWith("/v1/spaces/hr-acme/airlocks/acme-hr/versions/v1/chat");
+    assertThat(version.path("jar").isNull()).isTrue();
+    JsonNode run = version.path("form");
+    assertThat(run.path("llm").asString()).isEqualTo("granite");
+    assertThat(run.path("prompt").asString()).startsWith("You are the Acme HR assistant.");
+    assertThat(version.path("main_llm").path("from").asString()).isEqualTo("space");
+    assertThat(version.path("main_llm").path("model").asString()).isEqualTo("granite4.1:8b");
+    assertThat(strings(run.path("tools"))).isEmpty();
+    assertThat(strings(run.path("context_preparators"))).isEmpty();
+    assertThat(strings(run.path("memory_handlers"))).isEmpty();
+    assertThat(strings(run.path("verifiers"))).isEmpty();
+    assertThat(run.has("data_sources") || run.has("roles") || run.has("callers")).isFalse();
   }
 
   @Test
@@ -269,15 +285,18 @@ class AirlockIntegrationTest {
 
   @Test
   @Order(7)
-  void givenDeveloper_whenCreateAirlock_thenItHasItsEndpointAndRunsNothingYet() {
-    // Arrange: the form names a model and a prompt; the UI's form never sets what runs
+  void givenDeveloper_whenCreateThenAddVersion_thenAirlockStartsEmptyAndV1HasItsEndpoint() {
+    // Arrange: the form names a model and a prompt; the airlock's form holds nothing that runs
     String form = AIRLOCK_FORM.replace("}\n", ",\"llm\":\"granite\",\"prompt\":\"Ignored.\"}\n");
 
-    // Act
+    // Act: the airlock comes first; its versions after
     HttpResponse<String> response = post(jasmine, SPACE + "/airlocks", form);
     JsonNode stored = JSON.readTree(get(jasmine, AIRLOCK).body());
+    JsonNode none = JSON.readTree(get(jasmine, AIRLOCK + "/versions").body());
+    HttpResponse<String> added = post(jasmine, AIRLOCK + "/versions", VERSION_FORM);
+    JsonNode versions = JSON.readTree(get(jasmine, AIRLOCK + "/versions").body());
 
-    // Assert: on its own endpoint at revision 1, with no model, no prompt and no code, as stored
+    // Assert: at revision 1 without a version; v1 serves on its own endpoint, without code
     assertThat(response.statusCode()).isEqualTo(201);
     JsonNode created = JSON.readTree(response.body());
     assertThat(stored).isEqualTo(created);
@@ -289,13 +308,23 @@ class AirlockIntegrationTest {
     assertThat(created.path("created_by").asString()).isEqualTo("jasmine");
     // A populated space lists no role of its own on a new airlock
     assertThat(strings(created.path("roles"))).isEmpty();
-    assertThat(created.path("endpoint").asString())
-        .endsWith("/v1/spaces/hr-acme/airlocks/hr-app-1/chat");
-    assertThat(created.path("jar").isNull()).isTrue();
-    assertThat(created.path("main_llm").isNull()).isTrue();
-    assertThat(created.path("form").path("llm").asString()).isEmpty();
-    assertThat(created.path("form").path("prompt").asString()).isEmpty();
-    assertThat(created.has("versions") || created.has("definition")).isFalse();
+    assertThat(created.path("versions").asInt()).isZero();
+    assertThat(created.has("endpoint") || created.has("jar") || created.has("definition"))
+        .isFalse();
+    assertThat(created.path("form").has("llm")).isFalse();
+    assertThat(none.isEmpty()).isTrue();
+    assertThat(added.statusCode()).as(added.body()).isEqualTo(201);
+    assertThat(versions.valueStream().map(v -> v.path("version").asString())).containsExactly("v1");
+    JsonNode v1 = versions.get(0);
+    assertThat(v1.path("airlock_id").asString()).isEqualTo("hr-app-1");
+    assertThat(v1.path("description").asString()).isEqualTo("Pay questions in EUR.");
+    assertThat(v1.path("revision").asInt()).isEqualTo(1);
+    assertThat(v1.path("created_by").asString()).isEqualTo("jasmine");
+    assertThat(v1.path("endpoint").asString())
+        .endsWith("/v1/spaces/hr-acme/airlocks/hr-app-1/versions/v1/chat");
+    assertThat(v1.path("jar").isNull()).isTrue();
+    assertThat(v1.path("main_llm").path("from").asString()).isEqualTo("space");
+    assertThat(JSON.readTree(get(jasmine, AIRLOCK).body()).path("versions").asInt()).isEqualTo(1);
   }
 
   static Stream<Arguments> givenIdTaken_whenCreateAgain_then409SayingItExists() {
@@ -316,7 +345,12 @@ class AirlockIntegrationTest {
             named("an airlock, in another space", "/v1/spaces/sandbox/airlocks"),
             AIRLOCK_FORM,
             "id",
-            "An airlock with the id hr-app-1 already exists in space hr-acme."));
+            "An airlock with the id hr-app-1 already exists in space hr-acme."),
+        arguments(
+            named("a version", AIRLOCK + "/versions"),
+            VERSION_FORM,
+            "version",
+            "A version named v1 already exists in this airlock."));
   }
 
   @ParameterizedTest
@@ -384,25 +418,156 @@ class AirlockIntegrationTest {
 
   @Test
   @Order(11)
-  void givenAirlockFormNamingWhatRuns_whenSaved_thenWhatRunsStaysAsStored() {
+  void givenAirlockFormNamingWhatRuns_whenSaved_thenIgnoredAndTheVersionStays() {
     // Arrange: a stale tab, or a hand-made request, sends a model, a prompt and tools
     String form =
         """
         {"id":"hr-app-1","name":"HR app one","callers":["*"],
-         "llm":"granite","prompt":"From the form.","tools":["read_records"]}
+         "llm":"gemma","prompt":"From the form.","tools":["read_records"]}
         """;
     int before = JSON.readTree(get(jasmine, AIRLOCK).body()).path("revision").asInt();
 
     // Act
     HttpResponse<String> response = put(jasmine, AIRLOCK, form);
 
-    // Assert: saved, and only a deploy sets what runs
+    // Assert: saved; what runs is v1's and only its own save or a deploy sets it
     assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
     JsonNode saved = JSON.readTree(response.body());
     assertThat(saved.path("revision").asInt()).isEqualTo(before + 1);
-    assertThat(saved.path("form").path("llm").asString()).isEmpty();
-    assertThat(saved.path("form").path("prompt").asString()).isEmpty();
-    assertThat(strings(saved.path("form").path("tools"))).isEmpty();
+    assertThat(saved.path("form").has("llm")).isFalse();
+    JsonNode v1 = JSON.readTree(get(jasmine, AIRLOCK + "/versions/v1").body());
+    assertThat(v1.path("form").path("llm").asString()).isEqualTo("granite");
+    assertThat(v1.path("revision").asInt()).isEqualTo(1);
+  }
+
+  @Test
+  @Order(12)
+  void givenAirlock_whenVersionCreated_thenV2AtRevisionOneOnItsOwnEndpoint() {
+    // Arrange
+    String v2 = versionForm("v2");
+
+    // Act
+    HttpResponse<String> response = post(jasmine, AIRLOCK + "/versions", v2);
+    JsonNode versions = JSON.readTree(get(jasmine, AIRLOCK + "/versions").body());
+
+    // Assert: listed by name, and the airlock counts both
+    assertThat(response.statusCode()).isEqualTo(201);
+    JsonNode created = JSON.readTree(response.body());
+    assertThat(created.path("version").asString()).isEqualTo("v2");
+    assertThat(created.path("revision").asInt()).isEqualTo(1);
+    assertThat(created.path("endpoint").asString())
+        .endsWith("/v1/spaces/hr-acme/airlocks/hr-app-1/versions/v2/chat");
+    assertThat(versions.valueStream().map(v -> v.path("version").asString()))
+        .containsExactly("v1", "v2");
+    assertThat(JSON.readTree(get(jasmine, AIRLOCK).body()).path("versions").asInt()).isEqualTo(2);
+  }
+
+  @Test
+  @Order(13)
+  void givenVersion_whenSavedInPlace_thenItsRevisionCountsTheSave() {
+    // Arrange: the same name, another prompt and description
+    String edited =
+        VERSION_FORM
+            .replace("All amounts are in EUR.", "Amounts are in EUR.")
+            .replace("Pay questions in EUR.", "Pay questions.");
+
+    // Act
+    HttpResponse<String> response = put(jasmine, AIRLOCK + "/versions/v1", edited);
+    JsonNode v2 = JSON.readTree(get(jasmine, AIRLOCK + "/versions/v2").body());
+
+    // Assert: the same version, one revision on; v2 is untouched
+    assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+    JsonNode v1 = JSON.readTree(response.body());
+    assertThat(v1.path("version").asString()).isEqualTo("v1");
+    assertThat(v1.path("revision").asInt()).isEqualTo(2);
+    assertThat(v1.path("description").asString()).isEqualTo("Pay questions.");
+    assertThat(v1.path("form").path("prompt").asString())
+        .isEqualTo("You are the HR assistant. Amounts are in EUR.");
+    assertThat(OffsetDateTime.parse(v1.path("updated_at").asString()))
+        .isAfter(OffsetDateTime.parse(v1.path("created_at").asString()));
+    assertThat(v2.path("revision").asInt()).isEqualTo(1);
+  }
+
+  @ParameterizedTest
+  @Order(17)
+  @CsvSource({"GET, v9", "PUT, v9"})
+  void givenUnknownVersion_whenAddressed_then404UnknownVersion(String method, String version) {
+    // Arrange / Act
+    HttpResponse<String> response =
+        send(method, jasmine, AIRLOCK + "/versions/" + version, VERSION_FORM);
+
+    // Assert
+    assertThat(response.statusCode()).isEqualTo(404);
+    assertThat(JSON.readTree(response.body()).path("detail").asString())
+        .isEqualTo("unknown version");
+  }
+
+  @Test
+  @Order(18)
+  void givenInvalidVersionForm_whenCreateVersion_then400WithOneErrorPerField() {
+    // Arrange: every field broken, a URL with a password in it, a model bringing a key
+    String bad =
+        """
+        {"version":"V 1","context_preparators":[" "],"llm":"granite",
+         "llms":[{"id":"granite","provider":"mistral",
+                  "url":"http://ollama:hunter2@ollama:11434","model":"m"},
+                 {"id":"gpt","provider":"openai","url":"https://api.openai.example/v1",
+                  "model":"m","api_key":"sk-nope"}],"tools":[" "]}
+        """;
+
+    // Act
+    HttpResponse<String> response = post(jasmine, AIRLOCK + "/versions", bad);
+
+    // Assert
+    assertThat(response.statusCode()).isEqualTo(400);
+    assertThat(errors(response))
+        .contains(
+            "version: 1 to 31 lowercase letters, digits or dashes, not starting or ending with a"
+                + " dash",
+            "context_preparators: must not contain a blank name",
+            "llms[0].provider: mistral is not one of [ollama, openai]",
+            "llms[1].api_key: a version's model takes no API key; define the model on its airlock",
+            "tools: must not contain a blank name")
+        .anySatisfy(e -> assertThat(e).startsWith("llms[0].url: carries a password"));
+    assertThat(response.body()).doesNotContain("hunter2", "sk-nope");
+    assertThat(JSON.readTree(get(jasmine, AIRLOCK).body()).path("versions").asInt()).isEqualTo(2);
+  }
+
+  @Test
+  @Order(19)
+  void givenFullNameOfAnotherAirlocksVersion_whenCreated_then409Collides() {
+    // Arrange: hr-app-1-eu/v1 and hr-app-1/eu-v1 would be one resource, hr-app-1-eu-v1
+    String sibling =
+        """
+        {"id":"hr-app-1-eu","name":"HR app 1 EU"}
+        """;
+    assertThat(post(jasmine, SPACE + "/airlocks", sibling).statusCode()).isEqualTo(201);
+    assertThat(post(jasmine, SPACE + "/airlocks/hr-app-1-eu/versions", VERSION_FORM).statusCode())
+        .isEqualTo(201);
+
+    // Act
+    HttpResponse<String> collides = post(jasmine, AIRLOCK + "/versions", versionForm("eu-v1"));
+
+    // Assert
+    assertConflict(
+        collides,
+        "version",
+        "The name eu-v1 can't be used here: it would collide with the version hr-app-1-eu/v1 in"
+            + " space hr-acme. Choose another name.");
+  }
+
+  @Test
+  @Order(20)
+  void givenVersion_whenRenamed_then400CannotChange() {
+    // Arrange
+    String renamed = VERSION_FORM.replace("\"version\":\"v1\"", "\"version\":\"v1-renamed\"");
+
+    // Act
+    HttpResponse<String> response = put(jasmine, AIRLOCK + "/versions/v1", renamed);
+
+    // Assert
+    assertThat(response.statusCode()).isEqualTo(400);
+    assertThat(errors(response)).containsExactly("version: cannot change; create a version");
   }
 
   @ParameterizedTest
@@ -450,19 +615,22 @@ class AirlockIntegrationTest {
   static Stream<Arguments> givenFormJustRead_whenSavedTwiceWithWhatItRead_then200Then409() {
     return Stream.of(
         // The space's own form is the admin's to save
-        arguments(named("a space", SPACE), "rita"),
-        arguments(named("an airlock", AIRLOCK), "jasmine"));
+        arguments(named("a space", SPACE), "", "rita"),
+        arguments(named("an airlock", AIRLOCK), "", "jasmine"),
+        // A version's form is under form: the rest is read-only
+        arguments(named("a version", AIRLOCK + "/versions/v2"), "/form", "jasmine"));
   }
 
   @ParameterizedTest
   @Order(16)
   @MethodSource
-  void givenFormJustRead_whenSavedTwiceWithWhatItRead_then200Then409(String path, String saver) {
+  void givenFormJustRead_whenSavedTwiceWithWhatItRead_then200Then409(
+      String path, String form, String saver) {
     // Arrange: the UI sends back what it read, quoted as an ETag
     String token = saver.equals("rita") ? rita : jasmine;
     JsonNode read = JSON.readTree(get(token, path).body());
     String ifMatch = "\"" + read.path("updated_at").asString() + "\"";
-    String body = JSON.writeValueAsString(read);
+    String body = JSON.writeValueAsString(read.at(form));
 
     // Act
     HttpResponse<String> first = putIfMatch(token, path, body, ifMatch);
@@ -712,9 +880,8 @@ class AirlockIntegrationTest {
 
   @Test
   @Order(35)
-  void givenAirlocksResolvingTheSpacesLlm_whenSpaceSavedWithoutIt_then400NamingThemAndKept() {
-    // Arrange: two airlocks answer with the space's granite, as a deploy left them; they define
-    // none
+  void givenVersionsResolvingTheSpacesLlm_whenSpaceSavedWithoutIt_then400NamingThemAndKept() {
+    // Arrange: two airlocks' v1 answer with the space's granite; neither level defines it
     String space =
         """
         {"id":"llm-home","name":"LLM home","roles":["employee"]%s}
@@ -729,7 +896,7 @@ class AirlockIntegrationTest {
               post(rita, home + "/airlocks", "{\"id\":\"" + id + "\",\"name\":\"LLM app\"}")
                   .statusCode())
           .isEqualTo(201);
-      answersWith(id, "granite");
+      answersWith(home, id, "granite");
     }
 
     // Act
@@ -739,8 +906,8 @@ class AirlockIntegrationTest {
     assertThat(response.statusCode()).isEqualTo(400);
     assertThat(errors(response))
         .containsExactly(
-            "llms: llm-home/llm-app and llm-home/llm-app-2 would have no model granite; define it"
-                + " on their airlock first");
+            "llms: llm-home/llm-app-2/v1 and llm-home/llm-app/v1 would have no model granite;"
+                + " define it on their airlock or version first");
     assertThat(JSON.readTree(get(rita, home).body()).path("llms").path(0).path("id").asString())
         .isEqualTo("granite");
   }
@@ -773,14 +940,15 @@ class AirlockIntegrationTest {
     assertThat(response.statusCode()).isEqualTo(400);
     assertThat(errors(response))
         .containsExactly(
-            "llms: llm-home/llm-app would have no model granite; define it on their space first");
+            "llms: llm-home/llm-app/v1 would have no model granite; define it on their space or"
+                + " version first");
   }
 
   @Test
   @Order(37)
-  void givenLongSpaceId_whenAirlockNamedPast63Characters_then400NamingTheLength() {
-    // Arrange: 22 characters of space; Kubernetes names an airlock's MCP server
-    // <space>-<airlock>-mcp-server, at most 63 characters
+  void givenLongSpaceId_whenAirlockOrVersionNamedPast63Characters_then400NamingTheLength() {
+    // Arrange: 22 characters of space; Kubernetes names a version's MCP server
+    // <space>-<airlock>-<version>-mcp-server, at most 63 characters
     String space = "/v1/spaces/acme-financial-holding";
     assertThat(
             post(
@@ -798,23 +966,34 @@ class AirlockIntegrationTest {
             rita,
             space + "/airlocks",
             "{\"id\":\"acme-hr-assistant-for-employees-at\",\"name\":\"X\"}");
+    String fits = "acme-hr-assistant-for-empl";
     HttpResponse<String> fitting =
-        post(
-            rita, space + "/airlocks", "{\"id\":\"acme-hr-assistant-for-staff-1\",\"name\":\"X\"}");
+        post(rita, space + "/airlocks", "{\"id\":\"" + fits + "\",\"name\":\"X\"}");
+    String versions = space + "/airlocks/" + fits + "/versions";
+    HttpResponse<String> v1 = post(rita, versions, "{\"version\":\"v1\",\"llm\":\"granite\"}");
+    HttpResponse<String> v10 = post(rita, versions, "{\"version\":\"v10\",\"llm\":\"granite\"}");
 
-    // Assert: the controller would refuse it; the backend says so before anything is saved
+    // Assert: the controller would refuse both; the backend says so before anything is saved
     assertThat(airlock.statusCode()).isEqualTo(400);
     assertThat(errors(airlock))
         .containsExactly(
-            "id: at most 29 characters in the space acme-financial-holding: it runs as"
-                + " <space>-<airlock>-mcp-server, and Kubernetes allows 63");
+            "id: at most 26 characters in the space acme-financial-holding: its versions run as"
+                + " <space>-<airlock>-<version>-mcp-server, and Kubernetes allows 63");
     assertThat(fitting.statusCode()).as(fitting.body()).isEqualTo(201);
+    assertThat(v1.statusCode()).as(v1.body()).isEqualTo(201);
+    assertThat(v10.statusCode()).isEqualTo(400);
+    assertThat(errors(v10))
+        .containsExactly(
+            "version: it would run as"
+                + " acme-financial-holding-acme-hr-assistant-for-empl-v10-mcp-server, 64"
+                + " characters; Kubernetes allows 63 (shorten the space, the airlock or the version"
+                + " name)");
   }
 
   @Test
   @Order(38)
-  void givenGlobalLlm_whenAnAirlockAnswersWithIt_thenItResolvesFromGlobalAndItsDeleteWaits() {
-    // Arrange: gemma is the install's; an airlock of the seeded space names it, as a deploy would
+  void givenGlobalLlm_whenAVersionAnswersWithIt_thenItResolvesFromGlobalAndItsDeleteWaits() {
+    // Arrange: gemma is the install's; v1 of an airlock of the seeded space names it
     String gemma =
         """
         {"id":"gemma","provider":"ollama","url":"http://ollama:11434","model":"gemma3:4b"}
@@ -827,11 +1006,11 @@ class AirlockIntegrationTest {
             post(jasmine, SPACE + "/airlocks", "{\"id\":\"global-app\",\"name\":\"G\"}")
                 .statusCode())
         .isEqualTo(201);
-    answersWith("global-app", "gemma");
+    answersWith(SPACE, "global-app", "gemma");
     String app = SPACE + "/airlocks/global-app";
-    HttpResponse<String> airlock = get(jasmine, app);
+    HttpResponse<String> version = get(jasmine, app + "/versions/v1");
     String readAt = JSON.readTree(created.body()).path("updated_at").asString();
-    JsonNode listed = JSON.readTree(get(jasmine, SPACE + "/airlocks").body());
+    JsonNode listed = JSON.readTree(get(jasmine, app + "/versions").body());
     JsonNode llms = JSON.readTree(get(jasmine, "/v1/llms").body());
 
     // Act
@@ -841,7 +1020,7 @@ class AirlockIntegrationTest {
         putIfMatch(
             rita, "/v1/llms/gemma", gemma.replace("gemma3:4b", "gemma3:12b"), "\"" + readAt + "\"");
     HttpResponse<String> refused = send("DELETE", rita, "/v1/llms/gemma", "");
-    answersWith("global-app", "granite");
+    answersWith(SPACE, "global-app", "granite");
     HttpResponse<String> deleted = send("DELETE", rita, "/v1/llms/gemma", "");
 
     // Assert
@@ -855,13 +1034,9 @@ class AirlockIntegrationTest {
             "provider: bedrock is not one of [ollama, openai]",
             "url: required",
             "model: required");
-    assertThat(JSON.readTree(airlock.body()).path("main_llm").path("from").asString())
+    assertThat(JSON.readTree(version.body()).path("main_llm").path("from").asString())
         .isEqualTo("global");
-    assertThat(
-            listed
-                .valueStream()
-                .filter(a -> a.path("id").asString().equals("global-app"))
-                .map(a -> a.path("main_llm").path("model").asString()))
+    assertThat(listed.valueStream().map(v -> v.path("main_llm").path("model").asString()))
         .containsExactly("gemma3:4b");
     assertThat(llms.valueStream().map(l -> l.path("id").asString())).contains("gemma");
     assertThat(JSON.readTree(get(jasmine, "/v1/llms/nope").body()).path("detail").asString())
@@ -874,24 +1049,24 @@ class AirlockIntegrationTest {
     assertThat(refused.statusCode()).isEqualTo(400);
     assertThat(errors(refused))
         .containsExactly(
-            "id: hr-acme/global-app would have no model gemma; define it on its space first");
+            "id: hr-acme/global-app/v1 would have no model gemma; define it on its space first");
     assertThat(deleted.statusCode()).isEqualTo(204);
     assertThat(get(jasmine, "/v1/llms/gemma").statusCode()).isEqualTo(404);
   }
 
-  /** What runs is a deploy's to set: the row as one left it, naming the model that answers. */
-  private void answersWith(String airlockId, String llm) {
-    try (Connection db = dataSource.getConnection();
-        Statement sql = db.createStatement()) {
-      sql.execute(
-          "UPDATE airlocks SET definition = definition || '{\"llm\":\""
-              + llm
-              + "\",\"prompt\":\"p\"}' WHERE id = '"
-              + airlockId
-              + "'");
-    } catch (Exception e) {
-      throw new IllegalStateException(e);
-    }
+  /** What runs is a version's: v1 of the airlock, created or saved, answering with that model. */
+  private void answersWith(String spacePath, String airlockId, String llm) {
+    String versions = spacePath + "/airlocks/" + airlockId + "/versions";
+    String form = "{\"version\":\"v1\",\"llm\":\"" + llm + "\"}";
+    HttpResponse<String> saved =
+        get(rita, versions + "/v1").statusCode() == 404
+            ? post(rita, versions, form)
+            : put(rita, versions + "/v1", form);
+    assertThat(saved.statusCode()).as(saved.body()).isIn(200, 201);
+  }
+
+  private static String versionForm(String version) {
+    return VERSION_FORM.replace("\"version\":\"v1\"", "\"version\":\"" + version + "\"");
   }
 
   private HttpResponse<String> putIfMatch(String bearer, String path, String body, String ifMatch) {

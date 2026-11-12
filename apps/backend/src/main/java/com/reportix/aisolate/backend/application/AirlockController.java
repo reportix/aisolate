@@ -4,6 +4,8 @@ import com.reportix.aisolate.backend.domain.Creator;
 import com.reportix.aisolate.backend.domain.airlock.Airlock;
 import com.reportix.aisolate.backend.domain.airlock.AirlockFormDTO;
 import com.reportix.aisolate.backend.domain.airlock.AirlockService;
+import com.reportix.aisolate.backend.domain.airlock.AirlockVersion;
+import com.reportix.aisolate.backend.domain.airlock.VersionFormDTO;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
 import java.util.List;
@@ -24,10 +26,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The airlocks of a space as the AIsolate UI edits them, under {@code /spaces/{space}/airlocks}.
- * Every write is applied to the cluster before it answers ({@link ClusterHeader}). Airlock ids are
- * unique across spaces, which keeps the airlock pods' paths flat. What runs ({@code llm}, {@code
- * prompt}, the handlers, the tools, the code) comes from {@code aisolate deploy}, never from here.
+ * The airlocks of a space and their versions as the AIsolate UI edits them, under {@code
+ * /spaces/{space}/airlocks}, a version by its name. Every write is applied to the cluster before it
+ * answers ({@link ClusterHeader}). Airlock ids are unique across spaces, which keeps the airlock
+ * pods' paths flat. A version's code comes from {@code aisolate deploy}, never from here.
  */
 @RestController
 @RequestMapping("/v1")
@@ -69,6 +71,45 @@ public class AirlockController {
       @RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch,
       @RequestBody AirlockFormDTO form) {
     Airlock updated = airlockService.updateAirlock(spaceId, id, form, ifMatch);
+    return ClusterHeader.synced(clusterSync, HttpStatus.OK, spaceId, updated);
+  }
+
+  @GetMapping("/spaces/{spaceId}/airlocks/{id}/versions")
+  @PreAuthorize(Access.DEVELOPER)
+  public List<AirlockVersion> listVersions(@PathVariable String spaceId, @PathVariable String id) {
+    return airlockService.listVersions(spaceId, id);
+  }
+
+  /** Its name is fixed from then on; it has no code until a deploy. */
+  @PostMapping("/spaces/{spaceId}/airlocks/{id}/versions")
+  @PreAuthorize(Access.DEVELOPER)
+  public ResponseEntity<AirlockVersion> createVersion(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable String spaceId,
+      @PathVariable String id,
+      @RequestBody VersionFormDTO form) {
+    AirlockVersion created =
+        airlockService.createVersion(spaceId, id, form, Creator.of(jwt.getClaims()));
+    return ClusterHeader.synced(clusterSync, HttpStatus.CREATED, spaceId, created);
+  }
+
+  @GetMapping("/spaces/{spaceId}/airlocks/{id}/versions/{version}")
+  @PreAuthorize(Access.DEVELOPER)
+  public AirlockVersion getVersion(
+      @PathVariable String spaceId, @PathVariable String id, @PathVariable String version) {
+    return airlockService.findVersion(spaceId, id, version);
+  }
+
+  /** Its name and code stay; each save counts one revision. */
+  @PutMapping("/spaces/{spaceId}/airlocks/{id}/versions/{version}")
+  @PreAuthorize(Access.DEVELOPER)
+  public ResponseEntity<AirlockVersion> updateVersion(
+      @PathVariable String spaceId,
+      @PathVariable String id,
+      @PathVariable String version,
+      @RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+      @RequestBody VersionFormDTO form) {
+    AirlockVersion updated = airlockService.updateVersion(spaceId, id, version, form, ifMatch);
     return ClusterHeader.synced(clusterSync, HttpStatus.OK, spaceId, updated);
   }
 }
