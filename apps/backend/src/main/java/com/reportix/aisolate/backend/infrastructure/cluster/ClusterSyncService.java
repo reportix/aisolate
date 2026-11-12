@@ -2,6 +2,7 @@ package com.reportix.aisolate.backend.infrastructure.cluster;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.reportix.aisolate.backend.domain.airlock.AirlockRepository;
+import com.reportix.aisolate.backend.domain.airlock.AirlockVersionRepository;
 import com.reportix.aisolate.backend.domain.airlock.Documents;
 import com.reportix.aisolate.backend.domain.deploy.DeployResultDTO.Cluster;
 import com.reportix.aisolate.backend.domain.global.GlobalRepository;
@@ -9,6 +10,7 @@ import com.reportix.aisolate.backend.domain.space.Space;
 import com.reportix.aisolate.backend.domain.space.SpaceRepository;
 import com.reportix.aisolate.backend.domain.space.SpacesDeletedDTO;
 import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.config.ConfigurationLoader;
 import com.reportix.aisolate.config.Names;
 import com.reportix.aisolate.config.SpaceDocument;
@@ -42,9 +44,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The cluster follows the database: after a write, the space's documents (the Global, the Space,
- * then its Airlocks), each created or replaced, and every space again now and then, so a failed
- * apply heals. An airlock's code stays here: its pods fetch it from the ingest port. Failures are
- * reported, never thrown: the database is the source of truth.
+ * then its Airlocks, then their AirlockVersions), each created or replaced, and every space again
+ * now and then, so a failed apply heals. A version's code stays here: its pods fetch it from the
+ * ingest port. Failures are reported, never thrown: the database is the source of truth.
  */
 @Component
 @RequiredArgsConstructor
@@ -54,6 +56,8 @@ public class ClusterSyncService {
   static final ResourceDefinitionContext GLOBALS = buildContext("Global", "globals");
   static final ResourceDefinitionContext SPACES = buildContext("Space", "spaces");
   static final ResourceDefinitionContext AIRLOCKS = buildContext("Airlock", "airlocks");
+  static final ResourceDefinitionContext AIRLOCK_VERSIONS =
+      buildContext("AirlockVersion", "airlockversions");
 
   /** Under ingress-nginx's default 60 s read timeout, so the answer still reaches the caller. */
   public static final Duration PODS_PATIENCE = Duration.ofSeconds(45);
@@ -65,10 +69,18 @@ public class ClusterSyncService {
 
   /** Each kind names its parent: the parent goes first. The Global has its own apply. */
   private static final List<Class<?>> APPLY_ORDER =
-      List.of(SpaceDocument.class, AirlockDocument.class);
+      List.of(SpaceDocument.class, AirlockDocument.class, AirlockVersionDocument.class);
 
   private static final Map<String, ResourceDefinitionContext> CONTEXTS =
-      Map.of("Global", GLOBALS, "Space", SPACES, "Airlock", AIRLOCKS);
+      Map.of(
+          "Global",
+          GLOBALS,
+          "Space",
+          SPACES,
+          "Airlock",
+          AIRLOCKS,
+          "AirlockVersion",
+          AIRLOCK_VERSIONS);
 
   private static final TypeReference<Map<String, Object>> MAP = new TypeReference<>() {};
 
@@ -83,6 +95,7 @@ public class ClusterSyncService {
   private final ObjectProvider<KubernetesClient> client;
   private final SpaceRepository spaces;
   private final AirlockRepository airlocks;
+  private final AirlockVersionRepository versions;
   private final GlobalRepository globals;
   private final ApplicationEventPublisher events;
   private final Map<String, Object> spaceLocks = new ConcurrentHashMap<>();
@@ -192,7 +205,8 @@ public class ClusterSyncService {
   private Cluster applySpace(String spaceId) {
     try {
       List<Object> documents =
-          Documents.toDocuments(spaces.require(spaceId), airlocks.list(spaceId));
+          Documents.toDocuments(
+              spaces.require(spaceId), airlocks.list(spaceId), versions.listInSpace(spaceId));
       KubernetesClient k8s = client.getObject();
       for (Class<?> kind : APPLY_ORDER) {
         documents.stream()
@@ -229,7 +243,7 @@ public class ClusterSyncService {
    * its data sources. An existing one is left as it is; the sync after the save updates it. A Space
    * or Airlock created here goes again if the save rolls back.
    *
-   * @param document a Global, Space or Airlock document
+   * @param document a Global, Space, Airlock or AirlockVersion document
    */
   public GenericKubernetesResource findOrCreate(Object document) {
     ResourceDefinitionContext kind = CONTEXTS.get(ConfigurationLoader.kind(document));
@@ -289,16 +303,16 @@ public class ClusterSyncService {
 
   /**
    * The cluster's half of the reset, after the database's: the Secrets the Spaces and Airlocks
-   * name, then every such resource in the namespace; the controller's objects follow their owners.
-   * Waits for the airlock and tool-server pods, so a deploy right after does not meet the old
-   * Deployments on their way out.
+   * name, then every such resource and every AirlockVersion in the namespace; the controller's
+   * objects follow their owners. Waits for the airlock and tool-server pods, so a deploy right
+   * after does not meet the old Deployments on their way out.
    */
   public SpacesDeletedDTO.Cluster clear(Duration patience) {
     String namespace = properties.namespace();
     resetLock.writeLock().lock();
     try {
       KubernetesClient k8s = client.getObject();
-      List<ResourceDefinitionContext> kinds = List.of(AIRLOCKS, SPACES);
+      List<ResourceDefinitionContext> kinds = List.of(AIRLOCK_VERSIONS, AIRLOCKS, SPACES);
       // By name: the backend may create and delete Secrets, never list them.
       for (ResourceDefinitionContext kind : kinds) {
         for (GenericKubernetesResource resource :
