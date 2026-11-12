@@ -1,7 +1,7 @@
-# The contracts airlock, in the order an exchange runs. The space it deploys into is
-# AISOLATE_SPACE in .env; the space is created in the AIsolate UI, where it lists its roles. The
-# LLMs and data sources are the admin's, defined for all of AIsolate or on the space or the
-# airlock: this file names them by id and holds no credential.
+# The contracts airlock and one version of it, in the order an exchange runs. The space it deploys
+# into is AISOLATE_SPACE in .env; the space is created in the AIsolate UI, where it lists its
+# roles. The LLMs and data sources are the admin's, defined for all of AIsolate or on the space
+# or the airlock: this file names them by id and holds no credential.
 # The Airlock below is created or updated on every deploy: each field it writes replaces
 # the airlock's, a field left out keeps what the AIsolate UI set.
 apiVersion: aisolate.dev/v1
@@ -13,6 +13,15 @@ spec:
   description: "Employment contracts: position, pay, working time, notice and confidentiality."
   access:
     roles: [employee]   # its own roles, besides the space's
+---
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata:
+  name: ${AIRLOCK}-v1            # <airlock>-<version>
+spec:
+  airlock: ${AIRLOCK}
+  version: v1                    # any name: lowercase letters, digits and dashes
+  description: First version of the HR contracts airlock.
 
   # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
   preLLM:

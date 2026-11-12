@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.reportix.aisolate.backend.domain.airlock.AirlockRepository;
+import com.reportix.aisolate.backend.domain.airlock.AirlockVersionRepository;
 import com.reportix.aisolate.backend.domain.airlock.Documents;
 import com.reportix.aisolate.backend.domain.deploy.DeployResultDTO.Cluster;
 import com.reportix.aisolate.backend.domain.global.GlobalRepository;
@@ -35,6 +36,7 @@ class ClusterSyncOrderTest {
 
   private final SpaceRepository spaces = mock(SpaceRepository.class);
   private final AirlockRepository airlocks = mock(AirlockRepository.class);
+  private final AirlockVersionRepository versions = mock(AirlockVersionRepository.class);
   private final GlobalRepository globals = mock(GlobalRepository.class);
   private final List<Object> published = new ArrayList<>();
 
@@ -45,6 +47,7 @@ class ClusterSyncOrderTest {
               .getBeanProvider(KubernetesClient.class),
           spaces,
           airlocks,
+          versions,
           globals,
           published::add);
 

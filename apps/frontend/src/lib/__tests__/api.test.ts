@@ -4,7 +4,8 @@ import { STALE, api, clusterTookLastWrite, onApiError } from "../api";
 import { forgetAndLogin } from "../auth";
 import { reportDown } from "../connection";
 import type { ExportFormat } from "../audit";
-import type { AirlockForm, DataSourceInput, SpaceForm } from "../types";
+import type { AirlockForm, DataSourceInput, SpaceForm, VersionInput } from "../types";
+import { emptyVersionForm } from "../version";
 
 // The sign-in itself needs a browser; only whether a 401 starts it matters here.
 vi.mock("../auth", () => ({ forgetAndLogin: vi.fn(async () => {}) }));
@@ -54,6 +55,15 @@ const airlock: AirlockForm = {
   clients: [],
   llms: [],
   data_sources: [],
+};
+
+/** A version as its page read it: its own model keyless, its Secret's name blank. */
+const version: VersionInput = {
+  ...emptyVersionForm(),
+  version: "v1",
+  description: "First version.",
+  llm: "granite",
+  llms: [{ ...GRANITE, secret_ref: "" }],
 };
 
 const BASE = "http://backend.test/v1/spaces/hr-acme";
@@ -113,10 +123,45 @@ describe("call", () => {
       undefined,
     ],
     [
+      "AVersionList",
+      () => api.versions.list("token", "hr-acme", "hr-assistant"),
+      "GET",
+      "/spaces/hr-acme/airlocks/hr-assistant/versions",
+      undefined,
+    ],
+    [
+      "AVersionGet",
+      () => api.versions.get("token", "hr-acme", "hr-assistant", "v1"),
+      "GET",
+      "/spaces/hr-acme/airlocks/hr-assistant/versions/v1",
+      undefined,
+    ],
+    [
+      "AVersionCreate",
+      () => api.versions.create("token", "hr-acme", "hr-assistant", version),
+      "POST",
+      "/spaces/hr-acme/airlocks/hr-assistant/versions",
+      { ...version, llms: [GRANITE] },
+    ],
+    [
+      "AVersionUpdate",
+      () => api.versions.update("token", "hr-acme", "hr-assistant", version, READ_AT),
+      "PUT",
+      "/spaces/hr-acme/airlocks/hr-assistant/versions/v1",
+      { ...version, llms: [GRANITE] },
+    ],
+    [
       "ADataErrorRead",
       () => api.audit.dataError("token", "hr-acme", "hr-assistant"),
       "GET",
       "/audit/data-error?space=hr-acme&airlock=hr-assistant",
+      undefined,
+    ],
+    [
+      "ADataErrorReadOfAVersion",
+      () => api.audit.dataError("token", "hr-acme", "hr-assistant", "v1"),
+      "GET",
+      "/audit/data-error?space=hr-acme&airlock=hr-assistant&version=v1",
       undefined,
     ],
     ["AnLlmList", () => api.llms.list("token"), "GET", "/llms", undefined],

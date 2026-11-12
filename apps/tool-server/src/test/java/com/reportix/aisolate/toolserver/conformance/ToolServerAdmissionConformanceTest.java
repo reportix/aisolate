@@ -77,7 +77,12 @@ class ToolServerAdmissionConformanceTest {
     // Act
     Result result =
         service.call(
-            new UserToken(claims), pin(meta, "airlock"), pin(meta, "revision"), tool, Map.of());
+            new UserToken(claims),
+            pin(meta, "airlock"),
+            pin(meta, "version"),
+            pin(meta, "revision"),
+            tool,
+            Map.of());
 
     // Assert
     if (expect.path("admitted").booleanValue()) {
@@ -162,6 +167,7 @@ class ToolServerAdmissionConformanceTest {
                         "model", "granite4.1:8b")))));
     for (JsonNode policy : FILE.path("policies")) {
       String airlock = policy.path("airlock").asString();
+      String version = policy.path("version").asString();
       files.put(
           "airlock-" + airlock + ".yaml",
           document(
@@ -177,7 +183,17 @@ class ToolServerAdmissionConformanceTest {
                       "callers",
                       policy.path("callers"),
                       "clients",
-                      policy.has("clients") ? policy.path("clients") : List.of()),
+                      policy.has("clients") ? policy.path("clients") : List.of()))));
+      files.put(
+          "version-" + airlock + "-" + version + ".yaml",
+          document(
+              "AirlockVersion",
+              airlock + "-" + version,
+              Map.of(
+                  "airlock",
+                  airlock,
+                  "version",
+                  version,
                   "llm",
                   "granite",
                   "prompt",
@@ -192,7 +208,8 @@ class ToolServerAdmissionConformanceTest {
         FILE.path("served_revision").asString(),
         parsed.global(),
         parsed.spaces(),
-        parsed.airlocks());
+        parsed.airlocks(),
+        parsed.airlockVersions());
   }
 
   /** JSON is YAML: one document, as a file of the documents ConfigMap. */

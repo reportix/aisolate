@@ -59,7 +59,7 @@ def test_given_stub_model_server_when_code_calls_a_model_then_the_request_and_ou
     env = {k: (re.sub(r"^https?://[^/]+", "http://stub:11434", v) if k.endswith("_URL") else v)
            for k, v in _env(case).items()}
     _, llms = llm.catalog(env, sync_transport=httpx2.MockTransport(answer))
-    manager = Manager(Principal("u-1", "elena@acme.example"), AirlockRef("acme", "hr", "r"), llms=llms)
+    manager = Manager(Principal("u-1", "elena@acme.example"), AirlockRef("acme", "hr", "v1", "r"), llms=llms)
     call, expect = case["call"], case["expect"]
 
     # Act

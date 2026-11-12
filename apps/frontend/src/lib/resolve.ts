@@ -20,8 +20,8 @@ export function catalogOf<R extends { id: string }>(levels: [Origin, R[]][]): En
   return [...byId.values()];
 }
 
-/** Where an airlock's value comes from, in GitLab's words: its own is "Direct", else "Inherited from" its definer. */
-export function originLabel(from: Origin, names: { space: string }): string {
-  if (from === "airlock") return "Direct";
-  return `Inherited from ${from === "global" ? "the platform" : names.space}`;
+/** Where a version's value comes from, in GitLab's words: its own is "Direct", else "Inherited from" its definer. */
+export function originLabel(from: Origin, names: { airlock: string; space: string }): string {
+  if (from === "version") return "Direct";
+  return `Inherited from ${from === "global" ? "the platform" : names[from]}`;
 }

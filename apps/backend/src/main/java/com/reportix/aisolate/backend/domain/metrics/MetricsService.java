@@ -19,7 +19,8 @@ import tools.jackson.databind.annotation.JsonNaming;
  * Monitoring's charts (docs/observability.md): the example dashboard's five panels, as fixed
  * queries over the series the pods serve, scoped to the caller's spaces by the {@code space} label
  * the scraper copies from the pod. Nothing a caller sends becomes PromQL but a space or an airlock
- * id, each checked against the id rule first. Without a metrics store every call is 404.
+ * id, or a version name, each checked against its rule first. Without a metrics store every call is
+ * 404.
  */
 @Service
 public class MetricsService {
@@ -65,7 +66,12 @@ public class MetricsService {
    *     502 when the store did not answer
    */
   public Charts charts(
-      String space, List<String> spaces, String airlock, String period, Instant now) {
+      String space,
+      List<String> spaces,
+      String airlock,
+      String version,
+      String period,
+      Instant now) {
     PrometheusClient prometheus =
         store.orElseThrow(
             () -> new AuditException(HttpStatus.NOT_FOUND, "no metrics store is connected"));
@@ -74,6 +80,9 @@ public class MetricsService {
       throw new AuditException(HttpStatus.BAD_REQUEST, "period: 10m, 1h, 24h, 7d or 30d");
     checkId("space", space);
     checkId("airlock", airlock);
+    if (version != null && !Names.VERSION_LABEL.matcher(version).matches()) {
+      throw new AuditException(HttpStatus.BAD_REQUEST, "version: not a version name");
+    }
     Instant from = now.minus(range);
     Duration step = Duration.ofSeconds(Math.max(15, range.toSeconds() / POINTS));
     if (spaces != null && spaces.isEmpty()) {
@@ -81,7 +90,7 @@ public class MetricsService {
       return new Charts(
           from, now, step.toSeconds(), List.of(), List.of(), List.of(), List.of(), List.of());
     }
-    String s = selector(space, spaces, airlock);
+    String s = selector(space, spaces, airlock, version);
     try {
       return new Charts(
           from,
@@ -101,12 +110,16 @@ public class MetricsService {
     }
   }
 
-  /** The label matchers every query carries: the space or the caller's spaces, the airlock. */
-  static String selector(String space, List<String> spaces, String airlock) {
+  /**
+   * The label matchers every query carries: the space or the caller's spaces, the airlock, the
+   * version. The charts still group by space and airlock: a version narrows, never splits.
+   */
+  static String selector(String space, List<String> spaces, String airlock, String version) {
     List<String> matchers = new ArrayList<>();
     if (space != null) matchers.add("space=\"" + space + "\"");
     else if (spaces != null) matchers.add("space=~\"" + String.join("|", spaces) + "\"");
     if (airlock != null) matchers.add("airlock=\"" + airlock + "\"");
+    if (version != null) matchers.add("version=\"" + version + "\"");
     return String.join(", ", matchers);
   }
 

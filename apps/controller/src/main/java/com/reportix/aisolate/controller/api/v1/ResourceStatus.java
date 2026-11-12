@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * What the controller reports after a pass: {@code Pending} until the pods are up or while nothing
- * of it runs (its Space does not exist, no deploy yet), {@code Ready} (a Space naming any airlock
- * of it that is held back), or {@code Invalid} with the release's problems that concern this
- * resource; the same as one Kubernetes {@code Ready} condition, for tools that read conditions.
+ * What the controller reports after a pass: {@code Pending} until the pods are up or while the
+ * resource it names does not exist, {@code Ready} (a Space or Airlock naming any version of it that
+ * is held back), or {@code Invalid} with the release's problems that concern this resource; the
+ * same as one Kubernetes {@code Ready} condition, for tools that read conditions.
  */
 public record ResourceStatus(
     String phase,
@@ -34,7 +34,7 @@ public record ResourceStatus(
   }
 
   /**
-   * @param heldBack what it serves but one of its airlocks does not: that airlock serves no one
+   * @param heldBack what it serves but one of its versions does not: that version serves no one
    */
   public static ResourceStatus ready(
       String revision, Long generation, Integer readyReplicas, List<String> heldBack) {
@@ -58,10 +58,10 @@ public record ResourceStatus(
   }
 
   /**
-   * Not an error: its Space does not exist (yet, or any more), or no deploy has brought its model
-   * yet, so nothing of it runs.
+   * Not an error: the Airlock or Space it names does not exist (yet, or any more), so nothing of it
+   * is served.
    */
-  public static ResourceStatus runsNothing(Long generation, String problem) {
+  public static ResourceStatus orphaned(Long generation, String problem) {
     return new ResourceStatus(
         PENDING,
         null,

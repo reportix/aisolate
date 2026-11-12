@@ -19,7 +19,7 @@ public record FakeAIsolateManager(Principal principal, AirlockRef airlock)
       new Principal("sub-eric", "eric@example.com", Set.of("employee"));
 
   public static FakeAIsolateManager forEric() {
-    return new FakeAIsolateManager(ERIC, new AirlockRef("hr-acme", "acme-hr", "1"));
+    return new FakeAIsolateManager(ERIC, new AirlockRef("hr-acme", "acme-hr", "v1", "1"));
   }
 
   @Override

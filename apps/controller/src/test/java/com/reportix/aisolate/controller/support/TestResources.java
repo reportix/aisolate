@@ -1,6 +1,7 @@
 package com.reportix.aisolate.controller.support;
 
 import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.config.Configuration;
 import com.reportix.aisolate.config.ConfigurationLoader;
 import com.reportix.aisolate.config.DataSource;
@@ -8,6 +9,7 @@ import com.reportix.aisolate.config.GlobalDocument;
 import com.reportix.aisolate.config.Llm;
 import com.reportix.aisolate.config.SpaceDocument;
 import com.reportix.aisolate.controller.api.v1.Airlock;
+import com.reportix.aisolate.controller.api.v1.AirlockVersion;
 import com.reportix.aisolate.controller.api.v1.Global;
 import com.reportix.aisolate.controller.api.v1.Space;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -37,19 +39,34 @@ public final class TestResources {
     return FIXTURES.airlocks().values().stream().map(d -> airlock(d.name(), d.spec())).toList();
   }
 
-  /** The Global, then the airlocks, then the space: the backend's apply order. */
+  public static List<AirlockVersion> versions() {
+    return FIXTURES.airlockVersions().values().stream()
+        .map(d -> version(d.name(), d.spec()))
+        .toList();
+  }
+
+  /** The Global, versions, then airlocks, then the space: the backend's apply order. */
   public static void applyFixtures(KubernetesClient client) {
     client.resource(global()).create();
+    versions().forEach(v -> client.resource(v).create());
     airlocks().forEach(a -> client.resource(a).create());
     spaces().forEach(s -> client.resource(s).create());
   }
 
-  /** {@code airlock} redeployed with a digest no pod accepts: the release leaves it out. */
-  public static void breakJarDigest(KubernetesClient client, String airlock) {
-    updateAirlock(
+  /** {@code version} redeployed with a digest no pod accepts: the release leaves it out. */
+  public static void breakJarDigest(KubernetesClient client, String version) {
+    updateVersion(
         client,
-        airlock,
-        s -> withJar(s, new AirlockDocument.Jar("not-a-digest", s.jar().tools(), null)));
+        version,
+        s -> withJar(s, new AirlockVersionDocument.Jar("not-a-digest", s.jar().tools(), null)));
+  }
+
+  /** The AirlockVersion {@code name} as the cluster holds it, its spec changed. */
+  public static void updateVersion(
+      KubernetesClient client, String name, UnaryOperator<AirlockVersionDocument.Spec> change) {
+    AirlockVersion v = client.resources(AirlockVersion.class).inNamespace(NS).withName(name).get();
+    v.setSpec(change.apply(v.getSpec()));
+    client.resource(v).update();
   }
 
   /** The Airlock {@code name} as the cluster holds it, its spec changed. */
@@ -60,87 +77,60 @@ public final class TestResources {
     client.resource(a).update();
   }
 
-  public static AirlockDocument.Spec withJar(AirlockDocument.Spec s, AirlockDocument.Jar jar) {
-    return new AirlockDocument.Spec(
-        s.space(),
-        s.displayName(),
+  public static AirlockVersionDocument.Spec withJar(
+      AirlockVersionDocument.Spec s, AirlockVersionDocument.Jar jar) {
+    return new AirlockVersionDocument.Spec(
+        s.airlock(),
+        s.version(),
         s.description(),
-        s.access(),
         s.preLLM(),
         s.llm(),
         s.prompt(),
         s.tools(),
         s.postLLM(),
         s.llms(),
-        s.dataSources(),
         jar);
   }
 
-  public static AirlockDocument.Spec withTools(AirlockDocument.Spec s, List<String> tools) {
-    return new AirlockDocument.Spec(
-        s.space(),
-        s.displayName(),
+  public static AirlockVersionDocument.Spec withTools(
+      AirlockVersionDocument.Spec s, List<String> tools) {
+    return new AirlockVersionDocument.Spec(
+        s.airlock(),
+        s.version(),
         s.description(),
-        s.access(),
         s.preLLM(),
         s.llm(),
         s.prompt(),
         tools,
         s.postLLM(),
         s.llms(),
-        s.dataSources(),
         s.jar());
   }
 
-  /** The model and the prompt as the AIsolate UI saves an airlock before its first deploy. */
-  public static AirlockDocument.Spec withLlmAndPrompt(
-      AirlockDocument.Spec s, String llm, String prompt) {
-    return new AirlockDocument.Spec(
-        s.space(),
-        s.displayName(),
+  public static AirlockVersionDocument.Spec withVersionLlms(
+      AirlockVersionDocument.Spec s, List<Llm> llms) {
+    return new AirlockVersionDocument.Spec(
+        s.airlock(),
+        s.version(),
         s.description(),
-        s.access(),
-        s.preLLM(),
-        llm,
-        prompt,
-        s.tools(),
-        s.postLLM(),
-        s.llms(),
-        s.dataSources(),
-        s.jar());
-  }
-
-  public static AirlockDocument.Spec withLlms(AirlockDocument.Spec s, List<Llm> llms) {
-    return new AirlockDocument.Spec(
-        s.space(),
-        s.displayName(),
-        s.description(),
-        s.access(),
         s.preLLM(),
         s.llm(),
         s.prompt(),
         s.tools(),
         s.postLLM(),
         llms,
-        s.dataSources(),
         s.jar());
+  }
+
+  public static AirlockDocument.Spec withLlms(AirlockDocument.Spec s, List<Llm> llms) {
+    return new AirlockDocument.Spec(
+        s.space(), s.displayName(), s.description(), s.access(), llms, s.dataSources());
   }
 
   public static AirlockDocument.Spec withDataSources(
       AirlockDocument.Spec s, List<DataSource> dataSources) {
     return new AirlockDocument.Spec(
-        s.space(),
-        s.displayName(),
-        s.description(),
-        s.access(),
-        s.preLLM(),
-        s.llm(),
-        s.prompt(),
-        s.tools(),
-        s.postLLM(),
-        s.llms(),
-        dataSources,
-        s.jar());
+        s.space(), s.displayName(), s.description(), s.access(), s.llms(), dataSources);
   }
 
   public static Global global(GlobalDocument.Spec spec) {
@@ -162,6 +152,13 @@ public final class TestResources {
     a.setMetadata(meta(name));
     a.setSpec(spec);
     return a;
+  }
+
+  public static AirlockVersion version(String name, AirlockVersionDocument.Spec spec) {
+    AirlockVersion v = new AirlockVersion();
+    v.setMetadata(meta(name));
+    v.setSpec(spec);
+    return v;
   }
 
   private static ObjectMeta meta(String name) {

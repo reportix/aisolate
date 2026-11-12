@@ -4,7 +4,7 @@ import { type Outcome, outcomeOf } from "@/lib/audit";
 import { number } from "@/lib/text";
 import { type TraceSummary, duration, rowTime, stepsLabel, totalTokens } from "@/lib/trace";
 
-const HEADS = ["Time", "Question", "Airlock", "Outcome", "Duration", "Tokens", "Steps"];
+const HEADS = ["Time", "Question", "Airlock", "Version", "Outcome", "Duration", "Tokens", "Steps"];
 const RIGHT = new Set(["Duration", "Tokens"]);
 
 /** An outcome as a chip: its state's ink on a wash of it, the word always beside the hue. */
@@ -63,6 +63,7 @@ export function TraceTable({ traces, now }: { traces: TraceSummary[]; now: Date 
               {t.user && <div className="text-xs font-normal text-ink-tertiary">{t.user}</div>}
             </Td>
             <Td className="font-normal">{t.airlock}</Td>
+            <Td className="font-normal">{t.version ?? "—"}</Td>
             <Td>
               <OutcomeChip outcome={t.outcome} />
             </Td>

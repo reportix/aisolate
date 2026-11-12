@@ -134,7 +134,7 @@ async def test_given_ollama_when_asked_then_options_tools_format_and_usage_as_sp
     # Act
     reply = await model.chat([{"role": "user", "content": "q"}],
                              tools=[{"name": "t", "description": "d", "input_schema": '{"type":"object"}'}],
-                             schema='{"type":"object"}', airlock="hr")
+                             schema='{"type":"object"}', airlock="hr", version="v1")
 
     # Assert
     assert (reply.text, reply.input_tokens, reply.output_tokens) == ("hi", 12, 3)
@@ -147,7 +147,7 @@ async def test_given_ollama_when_asked_then_options_tools_format_and_usage_as_sp
     assert (span.name, span.attributes["gen_ai.usage.input_tokens"], span.attributes["gen_ai.system"],
             span.attributes["aisolate.llm"]) == ("chat qwen", "12", "ollama", "qwen")
     assert (http.name, http.parent.span_id) == ("http post", span.context.span_id)
-    assert llm.TOKENS.labels(airlock="hr", gen_ai_token_type="total", gen_ai_operation_name="chat",
+    assert llm.TOKENS.labels(airlock="hr", version="v1", gen_ai_token_type="total", gen_ai_operation_name="chat",
                            gen_ai_system="ollama", gen_ai_request_model="qwen")._value.get() >= 15
 
 
@@ -177,18 +177,18 @@ def test_given_ollama_embedding_when_embedded_then_vector_and_tokens_under_the_e
 
     model = llm.Ollama("nomic", "http://ollama:11434", "nomic", sync_transport=httpx2.MockTransport(answer))
     SPANS.clear()
-    before = llm.TOKENS.labels(airlock="hr", gen_ai_token_type="input", gen_ai_operation_name="embedding",
+    before = llm.TOKENS.labels(airlock="hr", version="v1", gen_ai_token_type="input", gen_ai_operation_name="embedding",
                                gen_ai_system="ollama", gen_ai_request_model="nomic")._value.get()
 
     # Act
-    vector = model.embed("notice period", "hr")
+    vector = model.embed("notice period", "hr", "v1")
 
     # Assert
     assert vector == [0.5, -1.0]
     span = next(s for s in SPANS.get_finished_spans() if s.name == "embedding")
     assert {k: span.attributes[k] for k in ("gen_ai.request.model", "aisolate.llm", "gen_ai.usage.input_tokens")} == {
         "gen_ai.request.model": "nomic", "aisolate.llm": "nomic", "gen_ai.usage.input_tokens": "4"}
-    assert llm.TOKENS.labels(airlock="hr", gen_ai_token_type="input", gen_ai_operation_name="embedding",
+    assert llm.TOKENS.labels(airlock="hr", version="v1", gen_ai_token_type="input", gen_ai_operation_name="embedding",
                              gen_ai_system="ollama", gen_ai_request_model="nomic")._value.get() == before + 4
 
 
@@ -202,14 +202,14 @@ def test_given_handler_chat_when_asked_then_a_chat_span_naming_the_llm_and_token
     SPANS.clear()
 
     # Act
-    text = model.ask("Say hello.", "hr")
+    text = model.ask("Say hello.", "hr", "v1")
 
     # Assert
     assert text == "Hello."
     span = next(s for s in SPANS.get_finished_spans() if s.name == "chat granite4.1:8b")
     assert (span.attributes["aisolate.llm"], span.attributes["gen_ai.request.model"],
             span.attributes["gen_ai.usage.output_tokens"]) == ("granite", "granite4.1:8b", "3")
-    assert llm.TOKENS.labels(airlock="hr", gen_ai_token_type="total", gen_ai_operation_name="chat",
+    assert llm.TOKENS.labels(airlock="hr", version="v1", gen_ai_token_type="total", gen_ai_operation_name="chat",
                              gen_ai_system="ollama", gen_ai_request_model="granite4.1:8b")._value.get() >= 12
 
 
@@ -239,7 +239,7 @@ async def test_given_openai_model_when_asked_then_tools_response_format_and_usag
     # Act
     reply = await model.chat([{"role": "system", "content": "s"}, {"role": "user", "content": "q"}],
                              tools=[{"name": "t", "description": "d", "input_schema": '{"type":"object"}'}],
-                             schema='{"type":"object"}', airlock="hr")
+                             schema='{"type":"object"}', airlock="hr", version="v1")
 
     # Assert
     assert (reply.text, reply.input_tokens, reply.output_tokens) == ("", 12, 3)
@@ -255,7 +255,7 @@ async def test_given_openai_model_when_asked_then_tools_response_format_and_usag
                         "name": "json_schema", "strict": False, "schema": {"type": "object"}}}}
     span = next(s for s in SPANS.get_finished_spans() if s.name == "chat gpt-4o-mini")
     assert (span.attributes["gen_ai.system"], span.attributes["aisolate.llm"]) == ("openai", "gpt")
-    assert llm.TOKENS.labels(airlock="hr", gen_ai_token_type="total", gen_ai_operation_name="chat",
+    assert llm.TOKENS.labels(airlock="hr", version="v1", gen_ai_token_type="total", gen_ai_operation_name="chat",
                              gen_ai_system="openai", gen_ai_request_model="gpt-4o-mini")._value.get() >= 15
 
 

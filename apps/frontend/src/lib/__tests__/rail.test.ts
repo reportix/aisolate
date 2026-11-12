@@ -20,8 +20,10 @@ describe("railOf", () => {
     [`${SPACE}/airlocks`, "space", "airlocks"],
     [`${SPACE}/airlocks/new`, "space", "airlocks"],
     [AIRLOCK, "airlock", "airlock"],
-    // The airlock's own tabs light its row, as its page does.
-    [`${AIRLOCK}/tools`, "airlock", "airlock"],
+    [`${AIRLOCK}/versions`, "airlock", "versions"],
+    // A version's pages light Versions, as its list does.
+    [`${AIRLOCK}/versions/new`, "airlock", "versions"],
+    [`${AIRLOCK}/versions/v1/tools`, "airlock", "versions"],
     [`${AIRLOCK}/llms/new`, "airlock", "llms"],
   ])("givenPath_%s_whenRailOf_thenContext_%s_andOnlyRow_%s_isLit", (path, context, litKey) => {
     // Arrange / Act
@@ -56,6 +58,7 @@ describe("railOf", () => {
       "Airlock",
       [
         ["airlock", AIRLOCK, "hr", null],
+        ["versions", `${AIRLOCK}/versions`, "Versions", "versions"],
         ["llms", `${AIRLOCK}/llms`, "Models", "llm"],
         ["data-sources", `${AIRLOCK}/data-sources`, "Data sources", "data-sources"],
       ],
@@ -110,8 +113,11 @@ describe("trailOf", () => {
     [`${SPACE}/airlocks`, [S, R, ["Airlocks"]], false],
     [`${SPACE}/airlocks/new`, [S, R, A, ["New airlock"]], false],
     [`${AIRLOCK}/llms`, [S, R, A, H, ["Models"]], false],
-    [`${AIRLOCK}/details`, [S, R, A, H, ["Details"]], false],
-    [`${AIRLOCK}/tools`, [S, R, A, H, ["Tools"]], false],
+    [`${AIRLOCK}/versions`, [S, R, A, H, ["Versions"]], false],
+    [`${AIRLOCK}/versions/new`, [S, R, A, H, ["New version"]], false],
+    // The version's tabs name themselves on the page: its crumb is the version alone.
+    [`${AIRLOCK}/versions/v1`, [S, R, A, H, ["v1"]], false],
+    [`${AIRLOCK}/versions/v1/tools`, [S, R, A, H, ["v1"]], false],
     [`${SPACE}/llms/new`, [S, R, ["Models", `${SPACE}/llms`], ["Add model"]], false],
     [
       `${AIRLOCK}/llms/granite/edit`,

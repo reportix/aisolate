@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { deployHint, fitZoom, nodesOf, stepZoom } from "../graph";
-import type { Airlock, Code } from "../types";
-import { airlockOf } from "./airlock.fixture";
+import type { AirlockVersion, Code } from "../types";
+import { versionOf } from "./airlock.fixture";
 
 const GRANITE = {
   id: "granite",
@@ -19,13 +19,9 @@ const handler = (
   data_sources: string[] = [],
 ) => ({ name, stage, order, description, data_sources });
 
-/** A deployed airlock answering with granite, listing `lists` of its code. */
-const deployed = (jar: Code | null, lists: Partial<Airlock["form"]> = {}): Airlock =>
-  airlockOf({
-    form: { ...airlockOf().form, llm: "granite", ...lists },
-    main_llm: GRANITE,
-    jar,
-  });
+/** A deployed version answering with granite, listing `lists` of its code. */
+const deployed = (jar: Code | null, lists: Partial<AirlockVersion["form"]> = {}): AirlockVersion =>
+  versionOf({ form: { ...versionOf().form, ...lists }, main_llm: GRANITE, jar });
 
 const codeOf = (handlers: Code["handlers"]): Code => ({
   digest: "sha256:abc",
@@ -37,7 +33,7 @@ const codeOf = (handlers: Code["handlers"]): Code => ({
 
 describe("nodesOf", () => {
   it("givenCodeAndListedHandlers_whenNodesOf_thenCodeOrderWithinEachStageAndTheLlmBetween", () => {
-    // Arrange: listed out of code order, one handler of the code the airlock does not list
+    // Arrange: listed out of code order, one handler of the code the version does not list
     const code = codeOf([
       handler("CitationVerifier", "verifier", 2),
       handler("SessionMemory", "memory", 1),
@@ -46,14 +42,14 @@ describe("nodesOf", () => {
       handler("HrDocumentsContextPreparator", "context_prep", 1),
       handler("UnlistedContext", "context_prep", 0),
     ]);
-    const airlock = deployed(code, {
+    const version = deployed(code, {
       context_preparators: ["TodayContext", "HrDocumentsContextPreparator"],
       memory_handlers: ["SessionMemory"],
       verifiers: ["CitationVerifier", "FigureVerifier"],
     });
 
     // Act
-    const nodes = nodesOf(airlock);
+    const nodes = nodesOf(version);
 
     // Assert
     expect(nodes.map((n) => [n.kind, n.key, n.icon])).toEqual([
@@ -64,7 +60,7 @@ describe("nodesOf", () => {
       ["Verifier", "FigureVerifier", "check"],
       ["Verifier", "CitationVerifier", "check"],
     ]);
-    // Every airlock's Model node reads the same; the card shows its id.
+    // Every version's Model node reads the same; the card shows its id.
     expect(nodes[3]).toEqual({
       key: "llm",
       kind: "Model",
@@ -83,12 +79,12 @@ describe("nodesOf", () => {
       handler("HrDocumentsContextPreparator", "context_prep", 1, "Read HR documents", ["hr"]),
       handler("BothBooks", "context_prep", 2, "Read both books", ["hr", "clients"]),
     ]);
-    const airlock = deployed(code, {
+    const version = deployed(code, {
       context_preparators: ["HrDocumentsContextPreparator", "BothBooks"],
     });
 
     // Act
-    const [hr, both] = nodesOf(airlock);
+    const [hr, both] = nodesOf(version);
 
     // Assert
     expect(hr.details).toEqual([
@@ -104,13 +100,13 @@ describe("nodesOf", () => {
       handler("HrDocumentsContextPreparator", "context_prep", 1, null),
       handler("SessionMemory", "memory", 1, "Remember the conversation"),
     ]);
-    const airlock = deployed(code, {
+    const version = deployed(code, {
       context_preparators: ["HrDocumentsContextPreparator"],
       memory_handlers: ["SessionMemory"],
     });
 
     // Act
-    const [preparator, memory] = nodesOf(airlock);
+    const [preparator, memory] = nodesOf(version);
 
     // Assert
     expect(preparator).toEqual({
@@ -125,14 +121,14 @@ describe("nodesOf", () => {
 
   it("givenAnLlmIdThatResolvesToNothing_whenNodesOf_thenTheLlmNodesDetailSaysSoInPlainText", () => {
     // Arrange
-    const airlock = {
+    const version = {
       ...deployed(codeOf([])),
       main_llm: null,
-      form: { ...airlockOf().form, llm: "mistral" },
+      form: { ...versionOf().form, llm: "mistral" },
     };
 
     // Act
-    const nodes = nodesOf(airlock);
+    const nodes = nodesOf(version);
 
     // Assert
     expect(nodes).toEqual([
@@ -152,21 +148,21 @@ describe("nodesOf", () => {
     ]);
   });
 
-  it("givenNoCode_whenNodesOf_thenEmptyAndTheDeployHintNamesTheAirlock", () => {
+  it("givenNoCode_whenNodesOf_thenEmptyAndTheDeployHintNamesTheAirlockAndTheVersion", () => {
     // Arrange
-    const airlock = deployed(null, {
+    const version = deployed(null, {
       context_preparators: ["HrDocumentsContextPreparator"],
     });
 
     // Act
-    const nodes = nodesOf(airlock);
-    const hint = deployHint(airlock.id);
+    const nodes = nodesOf(version);
+    const hint = deployHint(version.airlock_id, version.version);
 
     // Assert
     expect(nodes).toEqual([]);
     expect(hint).toEqual({
       lead: "No code yet.",
-      rest: "In the project's aisolate.yaml set name: hr, then run aisolate deploy.",
+      rest: "In the project's aisolate.yaml set airlock: hr and version: v1, then run aisolate deploy.",
     });
   });
 });

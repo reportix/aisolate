@@ -167,6 +167,7 @@ describe("signOut", () => {
         id: "salary",
         title: "",
         airlockId: "hr",
+        version: "v1",
         messages: [],
         updatedAt: 1,
       });

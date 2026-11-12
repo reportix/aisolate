@@ -20,7 +20,7 @@ class AuditDocumentsContextPreparatorTest {
     FakeAIsolateManager clerk =
         new FakeAIsolateManager(
             new Principal("clerk", "clerk@example.com", Set.of(role)),
-            new AirlockRef("test-space", "audit", "test"));
+            new AirlockRef("test-space", "audit", "v1", "test"));
     FakeExchange exchange = new FakeExchange("What did the board decide on the warehouse lease?");
 
     // Act

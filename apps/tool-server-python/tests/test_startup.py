@@ -41,7 +41,8 @@ TABLE = {"name": "startup.staff", "columns": {"id": "integer", "name": "text", "
          "rows": [{"id": 1, "name": "Nora", "email": "nora@example.com"}, {"id": 2, "name": "Eric", "email": "eric@example.com"}]}
 DOCUMENTS = {
     "Space-s.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Space\nmetadata:\n  name: s\nspec:\n  access:\n    roles:\n    - staff\n  llms:\n  - id: granite\n    provider: ollama\n    url: http://ollama:11434\n    model: granite4.1:8b\n",
-    "Airlock-a.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Airlock\nmetadata:\n  name: a\nspec:\n  space: s\n  access:\n    callers:\n    - '*'\n  llm: granite\n  prompt: Answer.\n  tools:\n  - read_people\n  jar:\n    digest: DIGEST\n    language: python\n    tools:\n    - read_people\n",
+    "Airlock-a.yaml": "---\napiVersion: aisolate.dev/v1\nkind: Airlock\nmetadata:\n  name: a\nspec:\n  space: s\n  access:\n    callers:\n    - '*'\n",
+    "AirlockVersion-a-v1.yaml": "---\napiVersion: aisolate.dev/v1\nkind: AirlockVersion\nmetadata:\n  name: a-v1\nspec:\n  airlock: a\n  version: v1\n  llm: granite\n  prompt: Answer.\n  tools:\n  - read_people\n  jar:\n    digest: DIGEST\n    language: python\n    tools:\n    - read_people\n",
 }
 
 
@@ -129,7 +130,7 @@ async def test_given_deployed_airlock_when_user_asks_then_own_row_from_postgres(
 
                         # Act
                         result = await session.call_tool(
-                            "read_people", {}, meta={"airlock": "a", "revision": _revision(env)})
+                            "read_people", {}, meta={"airlock": "a", "version": "v1", "revision": _revision(env)})
 
     # Assert
     evidence = json.loads(result.content[0].text)
@@ -145,8 +146,8 @@ def _revision(env: dict[str, str]) -> str:
 
 @pytest.mark.parametrize(
     ("host", "status"),
-    [("s-a-mcp-server:8081", 200), ("localhost:8081", 200), ("attacker.example:8081", 421),
-     ("s-a-mcp-server.attacker.example:8081", 421)],
+    [("s-a-v1-mcp-server:8081", 200), ("s-a-mcp-server:8081", 421), ("localhost:8081", 200),
+     ("attacker.example:8081", 421), ("s-a-v1-mcp-server.attacker.example:8081", 421)],
 )
 def test_given_deployed_airlock_when_posted_with_host_then_only_its_service_and_localhost_answer(
         deployed: dict[str, Any], host: str, status: int) -> None:

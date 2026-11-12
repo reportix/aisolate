@@ -6,8 +6,10 @@ import com.reportix.aisolate.backend.domain.airlock.DataSourceFormDTO;
 import com.reportix.aisolate.backend.domain.airlock.Documents;
 import com.reportix.aisolate.backend.domain.airlock.InvalidFormException;
 import com.reportix.aisolate.backend.domain.airlock.LlmFormDTO;
+import com.reportix.aisolate.backend.domain.airlock.VersionFormDTO;
 import com.reportix.aisolate.backend.domain.space.Space;
 import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.config.ConfigurationException;
 import com.reportix.aisolate.config.ConfigurationLoader;
 import com.reportix.aisolate.config.DataSource;
@@ -29,14 +31,15 @@ import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
- * A project's {@code aisolate.yaml} as the deploy stores it: one Airlock, which the deploy saves as
- * the AIsolate UI's form would. {@link ProjectDocuments#split} reads the variables and takes the
- * credentials out; a lenient scan finds the airlock; then the loader the pods read releases with
- * checks the document, with the code the deploy brings, together with the stored Global and Space,
- * so unknown fields and dangling references are refused in its own words, an LLM provider the
- * airlock pod has no client for included; a main LLM that resolves to nothing is refused as the
- * AIsolate UI's form refuses it. Only the stored row reaches the pods: the project's Airlock
- * becomes one, never a file of its own.
+ * A project's {@code aisolate.yaml} as the deploy stores it: one AirlockVersion, naming the airlock
+ * it belongs to and its own name there, and at most that airlock's Airlock, which the deploy saves
+ * as the AIsolate UI's form would. {@link ProjectDocuments#split} reads the variables and takes the
+ * credentials out; a lenient scan finds the version's airlock; then the loader the pods read
+ * releases with checks each document together with the stored Global, Space (and Airlock, for the
+ * version), so unknown fields and dangling references are refused in its own words, an LLM provider
+ * the airlock pod has no client for included; a main LLM that resolves to nothing is refused as the
+ * AIsolate UI's form refuses it. Only the stored rows reach the pods: the project's documents
+ * become rows, never files of their own.
  */
 public final class DocumentForms {
 
@@ -53,14 +56,20 @@ public final class DocumentForms {
   private static final TypeReference<Map<String, String>> VARIABLES = new TypeReference<>() {};
 
   /**
-   * The project's Airlock before the strict parse.
+   * The project's AirlockVersion before the strict parse.
    *
-   * @param airlock its {@code metadata.name}, the airlock's id
+   * @param name its {@code metadata.name}, {@code <airlock>-<version>}
    * @param document as the split left it: variables read, credentials out
+   * @param airlockDocument the airlock's Airlock as the split left it; null when the file has none
    * @param credentials what the split took out, by {@link ProjectDocuments#dataSourceKey}
    */
   public record Project(
-      String airlock, ObjectNode document, Map<String, ProjectDocuments.Credentials> credentials) {}
+      String name,
+      String airlock,
+      String version,
+      ObjectNode document,
+      ObjectNode airlockDocument,
+      Map<String, ProjectDocuments.Credentials> credentials) {}
 
   /**
    * The {@code variables} part: names to values; no value is ever echoed.
@@ -81,12 +90,14 @@ public final class DocumentForms {
   }
 
   /**
-   * The project file split and scanned: one Airlock, named by its id, with no space, no Secret name
-   * and no jar of its own.
+   * The project file split and scanned: one AirlockVersion naming its airlock and its version,
+   * under the name the two give it, and at most that airlock's Airlock, with no Secret name and no
+   * jar of their own.
    *
    * @param documentsYaml the project file as one YAML stream; null or blank for none
    * @throws InvalidFormException an unset variable, a key written twice, a document of another kind
-   *     or API group, not exactly one Airlock, or a field that is not the developer's to set
+   *     or API group, not exactly one AirlockVersion, more than one Airlock or one of another
+   *     airlock, no airlock, or a field that is not the developer's to set
    */
   public static Project scan(String documentsYaml, Map<String, String> variables) {
     ProjectDocuments.Split split;
@@ -98,50 +109,72 @@ public final class DocumentForms {
       throw new InvalidFormException(
           List.of(FILE + ": " + ConfigurationLoader.firstLine(unreadable.getMessage())));
     }
+    List<ObjectNode> versions = new ArrayList<>();
     List<ObjectNode> airlocks = new ArrayList<>();
     boolean otherKind = false;
     try (MappingIterator<JsonNode> stream =
         YAML.readerFor(JsonNode.class).readValues(split.documents())) {
       while (stream.hasNext()) {
         if (stream.next() instanceof ObjectNode node) {
-          if ("Airlock".equals(node.path("kind").asString(""))) {
-            airlocks.add(node);
-          } else {
+          switch (node.path("kind").asString("")) {
+            case "AirlockVersion" -> versions.add(node);
+            case "Airlock" -> airlocks.add(node);
             // A Space or a misspelt kind.
-            otherKind = true;
+            default -> otherKind = true;
           }
         }
       }
     }
-    if (otherKind || airlocks.size() != 1) {
+    if (otherKind || versions.size() != 1 || airlocks.size() > 1) {
       throw new InvalidFormException(
-          List.of(FILE + ": a project is one Airlock; the Space is defined in the AIsolate UI"));
+          List.of(
+              FILE
+                  + ": a project is one AirlockVersion and at most its Airlock; the Space is"
+                  + " defined in the AIsolate UI"));
     }
-    ObjectNode document = airlocks.getFirst();
+    ObjectNode document = versions.getFirst();
     String name = document.path("metadata").path("name").asString("");
     JsonNode spec = document.path("spec");
-    String where = FILE + ": " + ("Airlock " + name).strip() + ": ";
+    String airlock = spec.path("airlock").asString("");
+    String version = spec.path("version").asString("");
+    String where = FILE + ": " + ("AirlockVersion " + name).strip() + ": ";
     List<String> refused = new ArrayList<>();
-    // The loader skips another group's document as not its own: the deploy would find no airlock.
+    // The loader skips another group's document as not its own: the deploy would find no version.
     String apiVersion = document.path("apiVersion").asString("");
     if (!ConfigurationLoader.API_VERSION.equals(apiVersion)) {
       refused.add(
           where + "apiVersion " + apiVersion + " is not " + ConfigurationLoader.API_VERSION);
     }
-    if (name.isBlank()) {
-      refused.add(where + "metadata.name is required");
+    if (airlock.isBlank()) {
+      refused.add(where + "spec.airlock is required");
     }
-    if (spec.has("space")) {
-      refused.add(where + "spec.space is AISOLATE_SPACE's to set; leave it out");
-    }
+    // The version and the name are the loader's to check, once the airlock is found.
     refuseSecretRefs(spec, where, refused);
     if (spec.has("jar")) {
       refused.add(where + "spec.jar is the deploy's to set");
     }
+    ObjectNode airlockDocument = airlocks.isEmpty() ? null : airlocks.getFirst();
+    if (airlockDocument != null) {
+      String named = airlockDocument.path("metadata").path("name").asString("");
+      String at = FILE + ": " + ("Airlock " + named).strip() + ": ";
+      String itsApiVersion = airlockDocument.path("apiVersion").asString("");
+      if (!ConfigurationLoader.API_VERSION.equals(itsApiVersion)) {
+        refused.add(
+            at + "apiVersion " + itsApiVersion + " is not " + ConfigurationLoader.API_VERSION);
+      }
+      if (!named.equals(airlock)) {
+        refused.add(at + "metadata.name must be the AirlockVersion's spec.airlock, " + airlock);
+      }
+      JsonNode itsSpec = airlockDocument.path("spec");
+      if (itsSpec.has("space")) {
+        refused.add(at + "spec.space is AISOLATE_SPACE's to set; leave it out");
+      }
+      refuseSecretRefs(itsSpec, at, refused);
+    }
     if (!refused.isEmpty()) {
       throw new InvalidFormException(refused);
     }
-    return new Project(name, document, split.credentials());
+    return new Project(name, airlock, version, document, airlockDocument, split.credentials());
   }
 
   // A Secret name is AIsolate's to give: a sent one could name any Secret in reach.
@@ -169,25 +202,18 @@ public final class DocumentForms {
   }
 
   /**
-   * The project's Airlock with the code the deploy brings, parsed strictly together with the stored
-   * Global and Space it sees, as the AIsolate UI's form saves it: each field the document writes
-   * replaces the stored airlock's, a field it leaves out keeps it, so roles added in the UI survive
-   * a document without roles, and the prompt a deploy without one. A new airlock starts with its id
-   * as its name and the default callers. Each data source lands with the credentials the split took
-   * out; the Secret names are the server's.
+   * The project's Airlock as the AIsolate UI's form saves it, parsed strictly with the stored
+   * Space: each field the document writes replaces the stored airlock's, a field it leaves out
+   * keeps it, so roles added in the UI survive a document without roles. A new airlock starts with
+   * its id as its name and the default callers. Each data source lands with the credentials the
+   * split took out; the Secret names are the server's.
    *
    * @param stored the airlock in the space; null when the deploy creates it
-   * @throws InvalidFormException every loader problem, verbatim but for the main LLM's, which reads
-   *     as the AIsolate UI's form reads it
+   * @throws InvalidFormException every loader problem, verbatim
    */
-  public static AirlockFormDTO toForm(
-      Project project,
-      JarInspector.Contents code,
-      GlobalDocument global,
-      Space space,
-      Airlock stored) {
-    JsonNode written = project.document().path("spec");
-    ObjectNode copy = project.document().deepCopy();
+  public static AirlockFormDTO toAirlockForm(Project project, Space space, Airlock stored) {
+    JsonNode written = project.airlockDocument().path("spec");
+    ObjectNode copy = project.airlockDocument().deepCopy();
     ObjectNode spec = copy.path("spec") instanceof ObjectNode s ? s : copy.putObject("spec");
     spec.put("space", space.id());
     // The loader wants a caller; a document without them keeps the stored ones, or the default.
@@ -195,46 +221,19 @@ public final class DocumentForms {
     if (!access.has("callers")) {
       access.putArray("callers").add("*");
     }
-    ObjectNode jar = spec.putObject("jar");
-    jar.put("digest", code.digest());
-    ArrayNode tools = jar.putArray("tools");
-    code.toolNames().forEach(tools::add);
-    String language = Documents.documentLanguage(code);
-    if (language != null) {
-      jar.put("language", language);
-    }
     Map<String, String> files = new LinkedHashMap<>();
-    files.put(STORED, ConfigurationLoader.toYaml(List.of(global, Documents.toSpace(space))));
+    files.put(STORED, ConfigurationLoader.toYaml(List.of(Documents.toSpace(space))));
     files.put(FILE, toYaml(copy));
     AirlockDocument parsed;
     try {
       parsed = ConfigurationLoader.parse(files).airlocks().get(project.airlock());
     } catch (ConfigurationException invalid) {
-      throw new InvalidFormException(
-          invalid.problems().stream()
-              .map(problem ->
-                  problem.replaceFirst(
-                      ": llm (\\S+) is no model of it, .*",
-                      ": llm: no model named $1 in this airlock's space or globally"))
-              .toList());
+      throw new InvalidFormException(invalid.problems());
     }
     AirlockFormDTO base =
         stored == null
             ? new AirlockFormDTO(
-                project.airlock(),
-                project.airlock(),
-                "",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null)
+                project.airlock(), project.airlock(), "", null, null, null, null, null)
             : stored.form();
     JsonNode writtenAccess = written.path("access");
     return new AirlockFormDTO(
@@ -244,26 +243,72 @@ public final class DocumentForms {
         writtenAccess.has("roles") ? parsed.spec().access().roles() : base.roles(),
         writtenAccess.has("callers") ? parsed.spec().access().callers() : base.callers(),
         writtenAccess.has("clients") ? parsed.spec().access().clients() : base.clients(),
-        writes(written, "/preLLM/contextPreparator/handlers")
-            ? parsed.contextPreparatorHandlers()
-            : base.contextPreparators(),
-        writes(written, "/preLLM/conversationMemory/handlers")
-            ? parsed.memoryHandlers()
-            : base.memoryHandlers(),
-        written.has("llm") ? parsed.spec().llm() : base.llm(),
-        written.has("prompt") ? parsed.spec().prompt() : base.prompt(),
-        written.has("tools") ? parsed.tools() : base.tools(),
-        writes(written, "/postLLM/answerVerifier/handlers")
-            ? parsed.verifierHandlers()
-            : base.verifiers(),
         written.has("llms") ? rows(parsed.spec().llms()) : base.llms(),
         written.has("dataSources")
             ? rows(project.airlock(), parsed.spec().dataSources(), project.credentials())
             : base.dataSources());
   }
 
-  private static boolean writes(JsonNode spec, String pointer) {
-    return !spec.at(pointer).isMissingNode();
+  /**
+   * The project's AirlockVersion with the code the deploy brings, parsed strictly together with the
+   * stored Global, Space and Airlock it sees.
+   *
+   * @throws InvalidFormException every loader problem, verbatim but for the main LLM's, which reads
+   *     as the AIsolate UI's form reads it
+   */
+  public static AirlockVersionDocument parse(
+      Project project,
+      JarInspector.Contents code,
+      GlobalDocument global,
+      Space space,
+      Airlock airlock) {
+    ObjectNode document = project.document().deepCopy();
+    ObjectNode spec =
+        document.path("spec") instanceof ObjectNode s ? s : document.putObject("spec");
+    ObjectNode jar = spec.putObject("jar");
+    jar.put("digest", code.digest());
+    ArrayNode tools = jar.putArray("tools");
+    code.toolNames().forEach(tools::add);
+    String language = Documents.documentLanguage(code);
+    if (language != null) {
+      jar.put("language", language);
+    }
+    Map<String, String> files = new LinkedHashMap<>();
+    files.put(
+        STORED,
+        ConfigurationLoader.toYaml(
+            List.of(global, Documents.toSpace(space), Documents.toAirlock(airlock))));
+    files.put(FILE, toYaml(document));
+    try {
+      return ConfigurationLoader.parse(files).airlockVersions().get(project.name());
+    } catch (ConfigurationException invalid) {
+      throw new InvalidFormException(
+          invalid.problems().stream()
+              .map(problem ->
+                  problem
+                      .replaceFirst(
+                          ": llm (\\S+) is no model of it, .*",
+                          ": llm: no model named $1 in this airlock's space or globally")
+                      .replaceFirst(
+                          ": spec\\.llm is required$",
+                          ": llm: name the model that answers, for example granite"))
+              .toList());
+    }
+  }
+
+  /** The version as the form saves it: its models keyless, as a project never holds a key. */
+  public static VersionFormDTO toForm(AirlockVersionDocument version) {
+    AirlockVersionDocument.Spec spec = version.spec();
+    return new VersionFormDTO(
+        spec.version(),
+        spec.description(),
+        version.contextPreparatorHandlers(),
+        version.memoryHandlers(),
+        spec.llm(),
+        spec.prompt(),
+        spec.tools(),
+        version.verifierHandlers(),
+        rows(spec.llms()));
   }
 
   /** A document's models as form rows: no key, which a project never holds. */

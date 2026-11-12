@@ -4,6 +4,7 @@ import com.reportix.aisolate.config.Configuration;
 import com.reportix.aisolate.config.GlobalDocument;
 import com.reportix.aisolate.config.Metadata;
 import com.reportix.aisolate.controller.api.v1.Airlock;
+import com.reportix.aisolate.controller.api.v1.AirlockVersion;
 import com.reportix.aisolate.controller.api.v1.Global;
 import com.reportix.aisolate.controller.api.v1.ResourceStatus;
 import com.reportix.aisolate.controller.api.v1.Space;
@@ -13,6 +14,7 @@ import com.reportix.aisolate.controller.render.Owners;
 import com.reportix.aisolate.controller.render.Renderer;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -24,7 +26,9 @@ import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import io.fabric8.kubernetes.client.dsl.NonDeletingOperation;
+import io.fabric8.kubernetes.client.dsl.Resource;
 import io.javaoperatorsdk.operator.api.reconciler.ErrorStatusUpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import java.util.ArrayList;
@@ -38,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * What every reconciler shares: a space as one release, the render, create-or-apply, the prune.
- * Each pass reads the API (not a cache) so the three kinds are seen together.
+ * Each pass reads the API (not a cache) so the four kinds are seen together.
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -79,10 +83,14 @@ public class Releases {
   private final ControllerProperties settings;
 
   /**
-   * The Global and every Space and Airlock of the namespace, listed in one pass; an install without
-   * a Global reads as an empty one.
+   * The Global and every Space, Airlock and AirlockVersion of the namespace, listed in one pass; an
+   * install without a Global reads as an empty one.
    */
-  public record Snapshot(GlobalDocument global, List<Space> spaces, List<Airlock> airlocks) {
+  public record Snapshot(
+      GlobalDocument global,
+      List<Space> spaces,
+      List<Airlock> airlocks,
+      List<AirlockVersion> versions) {
 
     /** The Space {@code airlock} names; empty while either does not exist. */
     public Optional<String> findSpaceOf(String airlock) {
@@ -92,10 +100,19 @@ public class Releases {
           .filter(space -> spaces.stream().anyMatch(s -> name(s).equals(space)))
           .findFirst();
     }
+
+    /** The Airlock {@code version} names; empty while either does not exist. */
+    public Optional<String> findAirlockOf(String version) {
+      return versions.stream()
+          .filter(v -> name(v).equals(version) && v.getSpec() != null)
+          .map(v -> v.getSpec().airlock())
+          .filter(airlock -> airlocks.stream().anyMatch(a -> name(a).equals(airlock)))
+          .findFirst();
+    }
   }
 
   // Every pass lists the namespace and re-validates; cache by resourceVersion if the
-  // airlocks grow many
+  // versions grow many
   public Snapshot read() {
     Global global =
         client.resources(Global.class).inNamespace(namespace).withName(GlobalDocument.NAME).get();
@@ -104,7 +121,8 @@ public class Releases {
             ? GlobalDocument.empty()
             : new GlobalDocument(new Metadata(GlobalDocument.NAME), global.getSpec()),
         client.resources(Space.class).inNamespace(namespace).list().getItems(),
-        client.resources(Airlock.class).inNamespace(namespace).list().getItems());
+        client.resources(Airlock.class).inNamespace(namespace).list().getItems(),
+        client.resources(AirlockVersion.class).inNamespace(namespace).list().getItems());
   }
 
   /** One space's release: a broken space elsewhere leaves it alone. */
@@ -114,6 +132,7 @@ public class Releases {
         snapshot.global(),
         snapshot.spaces(),
         snapshot.airlocks(),
+        snapshot.versions(),
         settings.egress(),
         settings.otlpEndpoint());
   }
@@ -142,27 +161,27 @@ public class Releases {
   }
 
   /**
-   * The airlocks of {@code space} the release leaves out, each told: such an airlock serves no one
-   * until it is valid again.
+   * The versions of {@code airlocks} the release leaves out, each told: such a version serves no
+   * one until it is valid again.
    */
-  public static List<String> heldBack(Snapshot snapshot, Release release, String space) {
-    return snapshot.airlocks().stream()
-        .filter(a -> a.getSpec() != null && space.equals(a.getSpec().space()))
+  public static List<String> heldBack(Snapshot snapshot, Release release, Set<String> airlocks) {
+    return snapshot.versions().stream()
+        .filter(v -> v.getSpec() != null && airlocks.contains(v.getSpec().airlock()))
         .map(Releases::name)
-        .filter(a -> !release.serves("Airlock", a))
+        .filter(v -> !release.serves("AirlockVersion", v))
         .sorted()
-        .map(a -> "Airlock " + a + " is held back: " + HELD_BACK)
+        .map(v -> "AirlockVersion " + v + " is held back: " + HELD_BACK)
         .toList();
   }
 
   /**
-   * Why a held-back airlock runs nothing: its pods hold the roles that may ask, which the documents
+   * Why a held-back version runs nothing: its pods hold the roles that may ask, which the documents
    * may narrow.
    */
   public static final String HELD_BACK = "it serves no one until it is valid again";
 
-  public List<HasMetadata> render(Release release, String airlock, Owners owners) {
-    return renderer.render(release.configuration(), airlock, owners);
+  public List<HasMetadata> render(Release release, String version, Owners owners) {
+    return renderer.render(release.configuration(), version, owners);
   }
 
   public void apply(List<HasMetadata> objects) {
@@ -172,26 +191,22 @@ public class Releases {
   }
 
   /**
-   * Deletes what the controller rendered for the Airlock {@code name} and {@code keep} does not
-   * name: an earlier render's objects. Each of the six lists asks the API for that airlock's
-   * objects alone (the controller's label and the airlock's), not for the namespace's; the owner
+   * Deletes what the controller rendered for the {@code kind/name} owner and {@code keep} does not
+   * name: an earlier render's objects. Each of the six lists asks the API for the objects of {@code
+   * airlock} alone (the controller's label and the airlock's), not for the namespace's; the owner
    * reference then confirms whose they are. The backend's Secrets carry no managed-by label, so
-   * they are never listed. {@code kind} is {@code Airlock}: the label names an airlock.
+   * they are never listed.
+   *
+   * @param airlock the airlock the owner belongs to, or is; null when unknown (a version without a
+   *     spec), and then the namespace's objects are listed
    */
-  public void deleteOwnedExcept(String kind, String name, List<HasMetadata> keep) {
+  public void deleteOwnedExcept(String kind, String name, String airlock, List<HasMetadata> keep) {
     Set<String> kept =
         keep.stream()
             .map(o -> o.getKind() + "/" + o.getMetadata().getName())
             .collect(Collectors.toSet());
     for (Class<? extends HasMetadata> type : RENDERED_KINDS) {
-      for (HasMetadata object :
-          client
-              .resources(type)
-              .inNamespace(namespace)
-              .withLabel(Renderer.MANAGED_BY, "controller")
-              .withLabel(Renderer.AIRLOCK, name)
-              .list()
-              .getItems()) {
+      for (HasMetadata object : listRendered(type, airlock)) {
         boolean owned =
             object.getMetadata().getOwnerReferences().stream()
                 .anyMatch(owner -> kind.equals(owner.getKind()) && name.equals(owner.getName()));
@@ -206,6 +221,15 @@ public class Releases {
         }
       }
     }
+  }
+
+  private <T extends HasMetadata> List<T> listRendered(Class<T> type, String airlock) {
+    FilterWatchListDeletable<T, KubernetesResourceList<T>, Resource<T>> rendered =
+        client.resources(type).inNamespace(namespace).withLabel(Renderer.MANAGED_BY, "controller");
+    if (airlock != null) {
+      rendered = rendered.withLabel(Renderer.AIRLOCK, airlock);
+    }
+    return rendered.list().getItems();
   }
 
   /** The new template's pods serving: not one pod of the old template still ready meanwhile. */

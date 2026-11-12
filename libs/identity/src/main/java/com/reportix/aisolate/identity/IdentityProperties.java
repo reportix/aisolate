@@ -21,8 +21,19 @@ public record IdentityProperties(
 
   public record Cors(@DefaultValue("*") List<String> allowedOrigins) {}
 
-  /** The endpoint of one airlock: the URL a chat client posts its messages to. */
-  public String chatEndpoint(String spaceId, String airlockId) {
-    return publicUrl + "/v1/spaces/" + spaceId + "/airlocks/" + airlockId + "/chat";
+  /**
+   * The endpoint of one airlock version: the URL a chat client posts its messages to.
+   *
+   * @param version the version's label within the airlock, for example {@code v1}
+   */
+  public String chatEndpoint(String spaceId, String airlockId, String version) {
+    return publicUrl
+        + "/v1/spaces/"
+        + spaceId
+        + "/airlocks/"
+        + airlockId
+        + "/versions/"
+        + version
+        + "/chat";
   }
 }

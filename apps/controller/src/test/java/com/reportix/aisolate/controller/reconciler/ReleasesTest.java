@@ -18,7 +18,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Ready means the new pods serve, not that some pod of the old template still does; a prune lists
- * one airlock's objects, not the namespace's.
+ * one airlock's objects, not the namespace's, unless the airlock is unknown.
  */
 @EnableKubernetesMockClient(crud = true)
 class ReleasesTest {
@@ -82,9 +82,13 @@ class ReleasesTest {
     assertThat(rollout.readyReplicas()).isNull();
   }
 
-  @Test
-  void givenObjectsOfOneOwner_whenPruned_thenOnlyThoseLabelledForThatAirlockAndTheControllerGo() {
-    // Arrange: three objects owned by Airlock hr-assistant, none of them in its render
+  @ParameterizedTest(name = "airlock {0}")
+  @CsvSource(
+      value = {"hr-assistant, other-airlock", "null, ''"},
+      nullValues = "null")
+  void givenObjectsOfOneOwner_whenPruned_thenOnlyThoseLabelledForThatAirlockAndTheControllerGo(
+      String airlock, String kept) {
+    // Arrange: three objects owned by AirlockVersion hr-assistant-v1, none of them in its render
     Releases releases = releases();
     client
         .resource(
@@ -103,12 +107,16 @@ class ReleasesTest {
         .create();
 
     // Act
-    releases.deleteOwnedExcept("Airlock", "hr-assistant", List.of());
+    releases.deleteOwnedExcept("AirlockVersion", "hr-assistant-v1", airlock, List.of());
 
-    // Assert: the list takes both labels, the controller's and the airlock's
+    // Assert: the list takes both labels, the controller's and the airlock's; without an airlock
+    // the owner reference alone decides
     assertThat(client.configMaps().inNamespace("aisolate").list().getItems())
         .extracting(m -> m.getMetadata().getName())
-        .containsExactlyInAnyOrder("other-airlock", "not-the-controllers");
+        .containsExactlyInAnyOrder(
+            kept.isEmpty()
+                ? new String[] {"not-the-controllers"}
+                : new String[] {kept, "not-the-controllers"});
   }
 
   private static ConfigMap ownedConfigMap(String name, Map<String, String> labels) {
@@ -119,9 +127,9 @@ class ReleasesTest {
         .withLabels(labels)
         .addNewOwnerReference()
         .withApiVersion("aisolate.dev/v1")
-        .withKind("Airlock")
-        .withName("hr-assistant")
-        .withUid("uid-hr")
+        .withKind("AirlockVersion")
+        .withName("hr-assistant-v1")
+        .withUid("uid-v1")
         .endOwnerReference()
         .endMetadata()
         .build();

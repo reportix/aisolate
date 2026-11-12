@@ -123,12 +123,14 @@ class GovernedToolsIntegrationTest {
   @MethodSource("toolQueries")
   void givenQuery_whenAnswered_thenToolQueriesCounterOutcomeRows(
       Map<String, Object> args, Map<String, Object> meta, String airlock, String outcome) {
-    // Arrange: labels from the served airlock, never from what the caller named
+    // Arrange: labels from the served version, never from what the caller named
     Counter queries =
         meters.counter(
             "aisolate.tool.queries",
             "airlock",
             airlock,
+            "version",
+            airlock.equals("none") ? "none" : "v1",
             "tool",
             "read_records",
             "outcome",
@@ -170,6 +172,7 @@ class GovernedToolsIntegrationTest {
     SpanData query = spanNamed(trace, "governed query read_records");
     assertThat(ancestors(query, trace)).contains(server.getSpanId());
     assertThat(attribute(query, "aisolate.airlock")).isEqualTo("hr-assistant");
+    assertThat(attribute(query, "aisolate.version")).isEqualTo("v1");
     assertThat(attribute(query, "aisolate.revision")).isEqualTo(REVISION);
     assertThat(attribute(query, "aisolate.data_source")).isEqualTo("acme_hr");
     assertThat(attribute(query, "aisolate.entity")).isEqualTo("hr.compensation");
@@ -178,6 +181,7 @@ class GovernedToolsIntegrationTest {
     SpanData sql = spanNamed(trace, "sql acme_hr");
     assertThat(sql.getParentSpanId()).isEqualTo(query.getSpanId());
     assertThat(attribute(sql, "aisolate.airlock")).isEqualTo("hr-assistant");
+    assertThat(attribute(sql, "aisolate.version")).isEqualTo("v1");
     assertThat(attribute(sql, "aisolate.revision")).isEqualTo(REVISION);
     // Names and counts only: never a statement, a row or who asked
     assertThat(trace.values())
@@ -227,15 +231,22 @@ class GovernedToolsIntegrationTest {
 
   static Stream<Arguments> givenMetaThatPinsNoServedAirlock_whenReadRecords_thenZeroRows() {
     return Stream.of(
-        arguments(named("no revision", Map.of("airlock", "hr-assistant"))),
+        arguments(named("no revision", Map.of("airlock", "hr-assistant", "version", "v1"))),
+        arguments(named("no version", Map.of("airlock", "hr-assistant", "revision", REVISION))),
         // An airlock given as a number, not its id
-        arguments(named("an airlock number", Map.of("airlock", 1, "revision", REVISION))),
+        arguments(
+            named(
+                "an airlock number", Map.of("airlock", 1, "version", "v1", "revision", REVISION))),
         arguments(named("an airlock nobody serves", pin("no-such-app"))),
+        arguments(
+            named(
+                "a version nobody serves",
+                Map.of("airlock", "hr-assistant", "version", "v9", "revision", REVISION))),
         // A pod of another release, or a stale one, does not agree on the revision
         arguments(
             named(
                 "another revision",
-                Map.of("airlock", "hr-assistant", "revision", "0123456789ab"))));
+                Map.of("airlock", "hr-assistant", "version", "v1", "revision", "0123456789ab"))));
   }
 
   @ParameterizedTest
@@ -417,9 +428,9 @@ class GovernedToolsIntegrationTest {
     assertThat(evidence.path("rules")).isEmpty();
   }
 
-  /** The _meta an airlock pod of this release sends for the airlock. */
+  /** The _meta an airlock pod of this release sends for the airlock's v1. */
   private static Map<String, Object> pin(String airlock) {
-    return Map.of("airlock", airlock, "revision", REVISION);
+    return Map.of("airlock", airlock, "version", "v1", "revision", REVISION);
   }
 
   private static List<String> names(JsonNode tools) {

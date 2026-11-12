@@ -10,14 +10,14 @@ from opentelemetry import context, trace
 from opentelemetry.trace import Status, StatusCode
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
-SPACE, AIRLOCK, REVISION = "aisolate.space", "aisolate.airlock", "aisolate.revision"
+SPACE, AIRLOCK, VERSION, REVISION = "aisolate.space", "aisolate.airlock", "aisolate.version", "aisolate.revision"
 PRE_LLM, POST_LLM = "pre_llm", "post_llm"
 
 tracer = trace.get_tracer("aisolate.airlock")
 
 
 def describe(airlock) -> dict:
-    return {SPACE: airlock.space, AIRLOCK: airlock.id, REVISION: airlock.revision}
+    return {SPACE: airlock.space, AIRLOCK: airlock.id, VERSION: airlock.version, REVISION: airlock.revision}
 
 
 def tag(span, key: str, value) -> None:

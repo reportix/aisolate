@@ -21,7 +21,7 @@ const ICON = {
 };
 
 /** The parts of the deploy hint a developer types, set apart in ink. */
-const TYPED = /(aisolate\.yaml|name: [\w-]+|aisolate deploy)/;
+const TYPED = /(aisolate\.yaml|(?:airlock|version): [\w-]+|aisolate deploy)/;
 
 /** A thin gray dashed arrow, its dashes moving the way the exchange flows. */
 function Wire({ wide }: { wide?: boolean }) {
@@ -104,10 +104,10 @@ function Node({ node }: { node: GraphNode }) {
 }
 
 /**
- * The airlock on a dotted canvas in the order its code runs an exchange: the pre-model box, the
+ * The version on a dotted canvas in the order its code runs an exchange: the pre-model box, the
  * model, the post-model box. Without code, the sentence that brings it.
  */
-export function AirlockGraph({ nodes, hint }: { nodes: GraphNode[]; hint: DeployHint }) {
+export function VersionGraph({ nodes, hint }: { nodes: GraphNode[]; hint: DeployHint }) {
   const canvas = useRef<HTMLDivElement>(null);
   const chain = useRef<HTMLOListElement>(null);
   const [width, setWidth] = useState<number>();

@@ -57,7 +57,8 @@ final class CreateCommand implements Callable<Integer> {
 
   /**
    * What the Airlock document of a parameterised template writes for one airlock: its name, its
-   * description and, when it has any, its own roles (the space's are set in the AIsolate UI).
+   * description and, when it has any, its own roles (the space's are set in the AIsolate UI). Its
+   * AirlockVersion, {@code <airlock>-v1}, is the same for every airlock of the template.
    */
   record Airlock(String name, String description, String roles) {}
 

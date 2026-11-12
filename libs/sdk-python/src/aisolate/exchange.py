@@ -24,10 +24,15 @@ class Principal:
 
 @dataclass(frozen=True, slots=True)
 class AirlockRef:
-    """Which airlock an exchange runs on, and at which revision of its configuration. Java: ``AirlockRef``."""
+    """Which airlock version an exchange runs on, and at which revision of its configuration.
+
+    ``version`` is the version's label within its airlock, for example ``v1``.
+    Java: ``AirlockRef``.
+    """
 
     space: str
     airlock: str
+    version: str
     revision: str
 
 
@@ -192,7 +197,7 @@ class AIsolateManager(Protocol):
 
     @property
     def airlock(self) -> AirlockRef:
-        """Which airlock this exchange runs on."""
+        """Which airlock version this exchange runs on."""
         ...
 
     def llm(self, id: str) -> Llm:

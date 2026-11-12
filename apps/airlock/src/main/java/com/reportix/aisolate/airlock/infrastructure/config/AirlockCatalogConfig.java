@@ -22,11 +22,11 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 public class AirlockCatalogConfig {
 
-  /** A discovery pod's own release: none, so no airlock's code, data source or model. */
+  /** A discovery pod's own release: none, so no version's code, data source or model. */
   private static final AirlockCatalog NONE =
       new AirlockCatalog() {
         @Override
-        public Optional<AirlockDefinition> findAirlock(String id) {
+        public Optional<AirlockDefinition> findAirlock(String id, String version) {
           return Optional.empty();
         }
 
@@ -56,14 +56,17 @@ public class AirlockCatalogConfig {
     }
     var loaded =
         ConfigurationLoader.load(properties.config().dir(), properties.config().revision());
-    DocumentsAirlockCatalog catalog = new DocumentsAirlockCatalog(loaded, properties.airlock());
+    DocumentsAirlockCatalog catalog =
+        new DocumentsAirlockCatalog(loaded, properties.airlock(), properties.version());
     // No audit store: the pod's log records which release it loaded.
     log.info(
-        "config_loaded revision={} airlock={} spaces={} airlocks={}",
+        "config_loaded revision={} airlock={} version={} spaces={} airlocks={} versions={}",
         loaded.revision(),
         properties.airlock(),
+        properties.version(),
         loaded.spaces().keySet(),
-        loaded.airlocks().keySet());
+        loaded.airlocks().keySet(),
+        loaded.airlockVersions().keySet());
     return discovers ? new DiscoveringAirlockCatalog(catalog, Path.of(discovery)) : catalog;
   }
 }

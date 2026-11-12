@@ -31,7 +31,7 @@ def _plugin(tool_name: str, data_source: str) -> ToolPlugin:
 def _service(database: RecordingDatabase) -> GovernedQueries:
     space = tuple(CASES["space"]["roles"])
     policies = [
-        Policy(p["airlock"], CASES["served_revision"],
+        Policy(p["airlock"], p["version"], CASES["served_revision"],
                Access(tuple(dict.fromkeys(space + tuple(p["roles"]))), tuple(p["callers"]), tuple(p.get("clients", ()))),
                tuple(p["tools"]))
         for p in CASES["policies"]
@@ -41,7 +41,7 @@ def _service(database: RecordingDatabase) -> GovernedQueries:
 
 
 def _count(labels: dict[str, str]) -> float:
-    return QUERIES.labels(labels["airlock"], labels["tool"], labels["outcome"])._value.get()
+    return QUERIES.labels(labels["airlock"], labels["version"], labels["tool"], labels["outcome"])._value.get()
 
 
 @pytest.mark.parametrize("case", CASES["cases"], ids=ids(CASES))

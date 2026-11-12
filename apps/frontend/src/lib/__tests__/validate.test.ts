@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { validateDataSources, validateLlms, validateName } from "../validate";
+import {
+  validateDataSources,
+  validateLlms,
+  validateMainLlm,
+  validateName,
+  validateVersion,
+} from "../validate";
 import type { DataSourceInput, Llm } from "../types";
 
 /** A row whose credentials a stored Secret holds, so a blank user and password keep it. */
@@ -79,6 +85,41 @@ describe("validateDataSources", () => {
   ])("givenRows_%#_whenValidateDataSources_thenErrors", (rows, expected) => {
     // Arrange / Act
     const errors = validateDataSources(rows);
+
+    // Assert
+    expect(errors).toEqual(expected);
+  });
+});
+
+describe("validateVersion", () => {
+  it.each<[string, string[]]>([
+    ["v1", []],
+    ["pilot-2026", []],
+    [" ", ["name: required"]],
+    ["V1", ["name: lowercase letters, digits and dashes"]],
+    ["v1-", ["name: lowercase letters, digits and dashes"]],
+    ["a".repeat(32), ["name: lowercase letters, digits and dashes"]],
+    ["new", ["name: new is reserved"]],
+  ])("givenName_%j_whenValidateVersion_thenErrors_%j", (name, expected) => {
+    // Arrange: the table's name
+
+    // Act
+    const errors = validateVersion(name);
+
+    // Assert
+    expect(errors).toEqual(expected);
+  });
+});
+
+describe("validateMainLlm", () => {
+  it.each<[string, string[]]>([
+    ["granite", []],
+    [" ", ["llm: name the model that answers, for example granite"]],
+  ])("givenLlm_%j_whenValidateMainLlm_thenErrors_%j", (id, expected) => {
+    // Arrange: the table's id
+
+    // Act
+    const errors = validateMainLlm(id);
 
     // Assert
     expect(errors).toEqual(expected);

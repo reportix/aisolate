@@ -46,9 +46,9 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 
 /**
- * A deploy ends in the cluster: the Space and Airlock resources, a Secret per data source login
- * owned by the resource that defines it, and no ConfigMap of code: the pods fetch it. The AIsolate
- * UI's edits follow.
+ * A deploy ends in the cluster: the Space, Airlock and AirlockVersion resources, a Secret per data
+ * source login owned by the resource that defines it, and no ConfigMap of code: the pods fetch it.
+ * The AIsolate UI's edits follow.
  */
 // The mock extension first: it injects the client Spring's context (built per class) hands out.
 @EnableKubernetesMockClient(crud = true)
@@ -78,6 +78,8 @@ class ClusterSyncIntegrationTest {
   static final ResourceDefinitionContext GLOBALS = context("Global", "globals");
   static final ResourceDefinitionContext SPACES = context("Space", "spaces");
   static final ResourceDefinitionContext AIRLOCKS = context("Airlock", "airlocks");
+  static final ResourceDefinitionContext AIRLOCK_VERSIONS =
+      context("AirlockVersion", "airlockversions");
   static final JsonMapper JSON = JsonMapper.builder().build();
   static final String SPACE_PATH = "/v1/spaces/cluster-lab";
   static final String AIRLOCK_PATH = SPACE_PATH + "/airlocks/cluster-assistant";
@@ -92,24 +94,35 @@ class ClusterSyncIntegrationTest {
                 "model":"granite4.1:8b"}]%s}
       """;
 
-  /** The project file: cluster-assistant, its data source's login from .env. */
+  /** The project file: cluster-assistant with its data source's login from .env, and its v1. */
   static final String DOCUMENTS =
       """
       apiVersion: aisolate.dev/v1
       kind: Airlock
       metadata: {name: cluster-assistant}
       spec:
-        llm: granite
-        prompt: Answer from the tools.
-        tools: [read_records, aggregate_records]
         dataSources:
           - id: acme_hr
             url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
             username: ${HR_USERNAME}
             password: ${HR_PASSWORD}
+      ---
+      apiVersion: aisolate.dev/v1
+      kind: AirlockVersion
+      metadata: {name: cluster-assistant-v1}
+      spec:
+        airlock: cluster-assistant
+        version: v1
+        llm: granite
+        prompt: Answer from the tools.
+        tools: [read_records, aggregate_records]
       """;
 
   static final String VARIABLES = "{\"HR_USERNAME\":\"reader\",\"HR_PASSWORD\":\"hunter2\"}";
+
+  /** The airlock's data source block of {@link #DOCUMENTS}: without it the file brings no login. */
+  static final String LOGIN =
+      DOCUMENTS.substring(DOCUMENTS.indexOf("  dataSources:"), DOCUMENTS.indexOf("---"));
 
   @LocalServerPort int port;
   @Autowired ClusterSyncService clusterSync;
@@ -158,10 +171,14 @@ class ClusterSyncIntegrationTest {
     // The space's roles ask it; it lists none of its own
     assertThat((List<String>) airlock.get("spec", "access", "roles")).isEmpty();
     assertThat((List<String>) airlock.get("spec", "access", "callers")).containsExactly("*");
-    assertThat((String) airlock.get("spec", "llm")).isEqualTo("granite");
-    assertThat((String) airlock.get("spec", "prompt")).isEqualTo("Answer from the tools.");
-    assertThat((String) airlock.get("spec", "jar", "digest")).startsWith("sha256:");
-    assertThat((List<String>) airlock.get("spec", "jar", "tools"))
+    assertThat((Object) airlock.get("spec", "llm")).isNull();
+    GenericKubernetesResource version = resource(AIRLOCK_VERSIONS, "cluster-assistant-v1");
+    assertThat((String) version.get("spec", "airlock")).isEqualTo("cluster-assistant");
+    assertThat((String) version.get("spec", "version")).isEqualTo("v1");
+    assertThat((String) version.get("spec", "llm")).isEqualTo("granite");
+    assertThat((String) version.get("spec", "prompt")).isEqualTo("Answer from the tools.");
+    assertThat((String) version.get("spec", "jar", "digest")).startsWith("sha256:");
+    assertThat((List<String>) version.get("spec", "jar", "tools"))
         .containsExactly("read_records", "aggregate_records");
     String secretRef = secretRefOf(airlock);
     assertThat(secretRef).matches("cluster-lab-cluster-assistant-ds-acme-hr-[a-z0-9]{6}");
@@ -197,9 +214,10 @@ class ClusterSyncIntegrationTest {
     assertThat(response.headers().firstValue("AIsolate-Cluster")).contains("applied");
     GenericKubernetesResource airlock = resource(AIRLOCKS, "cluster-assistant");
     assertThat((String) airlock.get("spec", "description")).isEqualTo("In one sentence.");
-    assertThat((String) airlock.get("spec", "prompt")).isEqualTo("Answer from the tools.");
     assertThat(secretRefOf(airlock)).isEqualTo(secretRef);
-    assertThat((String) airlock.get("spec", "jar", "digest")).startsWith("sha256:");
+    GenericKubernetesResource version = resource(AIRLOCK_VERSIONS, "cluster-assistant-v1");
+    assertThat((String) version.get("spec", "prompt")).isEqualTo("Answer from the tools.");
+    assertThat((String) version.get("spec", "jar", "digest")).startsWith("sha256:");
   }
 
   @Test
@@ -404,7 +422,9 @@ class ClusterSyncIntegrationTest {
     // Assert
     assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
     assertThat(JSON.readTree(response.body()).path("cluster").path("applied").asBoolean()).isTrue();
-    assertThat((String) resource(AIRLOCKS, "cluster-assistant").get("spec", "jar", "digest"))
+    assertThat(
+            (String)
+                resource(AIRLOCK_VERSIONS, "cluster-assistant-v1").get("spec", "jar", "digest"))
         .isEqualTo(JSON.readTree(response.body()).path("jar").path("digest").asString());
     assertThat(client.configMaps().inNamespace("aisolate").list().getItems()).isEmpty();
   }
@@ -413,6 +433,11 @@ class ClusterSyncIntegrationTest {
   @Order(12)
   void givenResourcesGoneFromTheCluster_whenTheScheduledResyncRuns_thenTheyAreBack() {
     // Arrange: an apply that failed, or an API server that lost them
+    client
+        .genericKubernetesResources(AIRLOCK_VERSIONS)
+        .inNamespace("aisolate")
+        .withName("cluster-assistant-v1")
+        .delete();
     client
         .genericKubernetesResources(AIRLOCKS)
         .inNamespace("aisolate")
@@ -430,7 +455,11 @@ class ClusterSyncIntegrationTest {
     // Assert: healed, and the healing is scheduled, not only callable
     assertThat((List<String>) resource(SPACES, "cluster-lab").get("spec", "access", "roles"))
         .containsExactly("employee");
-    assertThat((String) resource(AIRLOCKS, "cluster-assistant").get("spec", "jar", "digest"))
+    assertThat((String) resource(AIRLOCKS, "cluster-assistant").get("spec", "space"))
+        .isEqualTo("cluster-lab");
+    assertThat(
+            (String)
+                resource(AIRLOCK_VERSIONS, "cluster-assistant-v1").get("spec", "jar", "digest"))
         .startsWith("sha256:");
     assertThat(scheduled.getScheduledTasks())
         .anySatisfy(task ->
@@ -452,10 +481,7 @@ class ClusterSyncIntegrationTest {
         {"id":"acme_hr","url":"jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr",
          "username":"reader","password":"hunter2"}
         """;
-    String withoutLogin =
-        DOCUMENTS
-            .substring(0, DOCUMENTS.indexOf("  dataSources:"))
-            .replace("cluster-assistant", "cluster-nine");
+    String withoutLogin = DOCUMENTS.replace(LOGIN, "").replace("cluster-assistant", "cluster-nine");
 
     // Act
     HttpResponse<String> created = admin("POST", "/v1/data-sources", ledger, null);
@@ -499,7 +525,7 @@ class ClusterSyncIntegrationTest {
     assertThat(refused.statusCode()).isEqualTo(400);
     assertThat(JSON.readTree(refused.body()).path("errors").get(0).asString())
         .startsWith(
-            "id: cluster-lab/cluster-nine would have no data source acme_hr, which its plugin")
+            "id: cluster-lab/cluster-nine/v1 would have no data source acme_hr, which its plugin")
         .endsWith(" reads; define it on its space first");
     assertThat(deleted.statusCode()).isEqualTo(204);
     assertThat(client.secrets().inNamespace("aisolate").withName(secretRef).get()).isNull();
@@ -514,7 +540,7 @@ class ClusterSyncIntegrationTest {
     String documents =
         DOCUMENTS
             .replace("cluster-assistant", "cluster-block")
-            .replace("spec:\n", "spec:\n  description: First.\n");
+            .replace("spec:\n  dataSources:", "spec:\n  description: First.\n  dataSources:");
     byte[] jar = projectJar(Map.of());
 
     // Act
@@ -526,7 +552,8 @@ class ClusterSyncIntegrationTest {
     assertThat(JSON.readTree(created.body()).path("airlock").path("created").asBoolean()).isTrue();
     assertThat(updated.statusCode()).as(updated.body()).isEqualTo(200);
     assertThat(JSON.readTree(updated.body()).path("airlock").path("created").asBoolean()).isFalse();
-    assertThat(JSON.readTree(updated.body()).path("airlock").path("revision").asInt()).isEqualTo(2);
+    assertThat(JSON.readTree(updated.body()).path("airlock").path("updated").asBoolean()).isTrue();
+    assertThat(JSON.readTree(updated.body()).path("version").path("revision").asInt()).isEqualTo(2);
     GenericKubernetesResource resource = resource(AIRLOCKS, "cluster-block");
     assertThat((String) resource.get("spec", "description")).isEqualTo("Second.");
     String secretRef = secretRefOf(resource);
@@ -750,8 +777,7 @@ class ClusterSyncIntegrationTest {
     // Arrange: the database is the source of truth; the cluster is reported, never required, but
     // credentials have nowhere to go without it
     server.shutdown();
-    String withoutLogin =
-        DOCUMENTS.replace("      username: ${HR_USERNAME}\n      password: ${HR_PASSWORD}\n", "");
+    String withoutLogin = DOCUMENTS.replace(LOGIN, "");
 
     // Act
     HttpResponse<String> refused = deploy(projectJar(Map.of()), DOCUMENTS, VARIABLES);

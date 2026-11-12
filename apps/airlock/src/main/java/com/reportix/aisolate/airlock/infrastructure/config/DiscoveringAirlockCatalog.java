@@ -31,8 +31,8 @@ final class DiscoveringAirlockCatalog implements AirlockCatalog {
   private List<DiscoveredAirlock> discovered;
 
   @Override
-  public Optional<AirlockDefinition> findAirlock(String id) {
-    return served.findAirlock(id);
+  public Optional<AirlockDefinition> findAirlock(String id, String version) {
+    return served.findAirlock(id, version);
   }
 
   @Override

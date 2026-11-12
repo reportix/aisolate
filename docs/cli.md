@@ -54,7 +54,7 @@ provisions JDK 25.
 | `aisolate login` | Signs you in to the project's AIsolate in your browser. |
 | `aisolate logout` | Signs you out of the project's AIsolate. |
 | `aisolate build` | Builds the project: a Python project's zip, or a Java project's jar. |
-| `aisolate deploy` | Signs you in when there is no session, builds, and deploys the project as its airlock. |
+| `aisolate deploy` | Signs you in when there is no session, builds, and deploys the project as one version of its airlock. |
 
 `aisolate <command> --help` lists each command's options. The commands work the same in a macOS terminal,
 Windows Terminal, PowerShell and the Command Prompt.

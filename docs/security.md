@@ -22,7 +22,7 @@ sequenceDiagram
     Chat->>IdP: Authorization Code + PKCE
     IdP-->>Chat: token
     Eric->>Chat: "What is my gross salary?"
-    Chat->>AP: POST .../airlocks/hr/chat, Bearer token
+    Chat->>AP: POST .../airlocks/hr/versions/v1/chat, Bearer token
     Note over AP: gate 1 token, gate 2 the space's and the airlock's roles, the airlock's callers or machine clients
     AP->>DB: ContextPreparator: passages Eric may read
     AP->>MCP: tools/list, Bearer token (the pod's first exchange)
@@ -208,7 +208,7 @@ except through the ingress.
 | airlock pod, MCP server, discovery pod | kube-dns | port 53 |
 | airlock pod, MCP server, discovery pod | the admin's peer for the host of `platform.observability.otlpEndpoint`, when set | traces over OTLP/HTTP, names and counts only ([Observability](observability.md#what-never-goes-into-a-span)) |
 | a pod labelled `aisolate.dev/scraper: "true"`, any namespace | airlock pod, MCP server, discovery pod `:9464`, the management port no Service exposes | `/actuator/prometheus` without a token, and health; nothing else listens there ([Observability](observability.md#metrics)) |
-| airlock pod, MCP server | the backend's ingest port `:8085` (with the AIsolate UI) | the airlock pod `POST /v1/audit/events`, both `GET /v1/code/…` of their own airlock; the port answers nothing else |
+| airlock pod, MCP server | the backend's ingest port `:8085` (with the AIsolate UI) | the airlock pod `POST /v1/audit/events`, both `GET /v1/code/…` of their own version; the port answers nothing else |
 | backend (with the AIsolate UI) | the peer and port of `platform.metrics.egress`, when `platform.metrics.queryUrl` is set | Prometheus's HTTP API, the backend's fixed queries for Monitoring's charts, scoped by the series' `space` label |
 | backend (with the AIsolate UI) | the peer and port of `platform.tracing.egress`, when `platform.tracing.queryUrl` is set | the trace store's query API, `GET /api/traces/{id}` for Monitoring's trace page; the browser never calls it ([Observability](observability.md#in-the-aisolate-ui)) |
 | anything else | airlock pods, MCP servers, discovery pods | denied |
@@ -269,7 +269,7 @@ with nothing in front of the object, for a SIEM to collect:
 a line that starts with `{"ts"` is an audit line, and no other line does.
 
 ```json
-{"ts":"2026-10-16T20:58:38.434Z","event":"exchange","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","space":"acme","airlock":"sales","revision":"7b2280eab4b5","user":"eric@example.com","client":"acme-chat","question":"What does Northwind owe?","answer":"Northwind owes 18,400 EUR.","outcome":"answered","reason":null,"tools":[{"name":"read_records","args":{"entity":"clients.invoices","filters":[{"column":"client","op":"ilike","value":"Northwind"},{"column":"status","op":"eq","value":"open"}]},"data_source":"clients","rows":1,"rule_version":"7b2280eab4b5","sql_hash":"3f9a1c0d2b7e","rows_hash":"5c1e9b0a4d7f2e8c3b6a1d0f9e8c7b6a5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a","error":null}],"evidence":["ev-1"],"verifiers":[{"name":"CustomerVerifier","verdict":"PASS"}],"figures":{"sourced":1,"computed":0,"unsourced":0,"mismatch":0},"grounding":{"segments":[{"text":"Northwind owes "},{"figure":"f1"},{"text":"."}],"figures":[{"id":"f1","display":"18,400 EUR","status":"sourced","source":{"evidence":"ev-1","entity":"clients.invoices","column":"amount_eur","row_key":"412"}}],"tables":[],"quotes":[]},"model":{"provider":"ollama","name":"qwen3.6:27b-q4_K_M","calls":2,"input_tokens":1840,"output_tokens":212},"duration_ms":6114}
+{"ts":"2026-10-16T20:58:38.434Z","event":"exchange","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736","space":"acme","airlock":"sales","version":"v1","revision":"7b2280eab4b5","user":"eric@example.com","client":"acme-chat","question":"What does Northwind owe?","answer":"Northwind owes 18,400 EUR.","outcome":"answered","reason":null,"tools":[{"name":"read_records","args":{"entity":"clients.invoices","filters":[{"column":"client","op":"ilike","value":"Northwind"},{"column":"status","op":"eq","value":"open"}]},"data_source":"clients","rows":1,"rule_version":"7b2280eab4b5","sql_hash":"3f9a1c0d2b7e","rows_hash":"5c1e9b0a4d7f2e8c3b6a1d0f9e8c7b6a5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a","error":null}],"evidence":["ev-1"],"verifiers":[{"name":"CustomerVerifier","verdict":"PASS"}],"figures":{"sourced":1,"computed":0,"unsourced":0,"mismatch":0},"grounding":{"segments":[{"text":"Northwind owes "},{"figure":"f1"},{"text":"."}],"figures":[{"id":"f1","display":"18,400 EUR","status":"sourced","source":{"evidence":"ev-1","entity":"clients.invoices","column":"amount_eur","row_key":"412"}}],"tables":[],"quotes":[]},"model":{"provider":"ollama","name":"qwen3.6:27b-q4_K_M","calls":2,"input_tokens":1840,"output_tokens":212},"duration_ms":6114}
 ```
 
 | Field | Holds |
@@ -277,8 +277,8 @@ a line that starts with `{"ts"` is an audit line, and no other line does.
 | `ts` | When the exchange began, ISO-8601 in UTC to the millisecond |
 | `event` | `exchange` for a request that ran; `refusal` for one the airlock turned away with a 403 |
 | `trace_id` | The exchange's trace, its root span's trace id ([Observability](observability.md#traces)); `null` only where nothing traces, as in a test without a tracer |
-| `space`, `airlock` | The airlock the request addressed |
-| `revision` | The revision of the documents that airlock serves; see [Names, ids and revision](documents.md#names-ids-and-revision) |
+| `space`, `airlock`, `version` | The version the request addressed |
+| `revision` | The revision of the documents that version serves; see [Names, ids and revision](documents.md#names-ids-and-revision) |
 | `user` | The token's `email`, else its `sub` (a machine client's token has no e-mail); never null |
 | `client` | The token's `azp`, the OAuth client that asked; for a machine client, who asked. The PDF export and the XBRL `User` fact show it where `user` is `null` |
 | `question` | The message as it was sent |

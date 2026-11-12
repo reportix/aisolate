@@ -5,7 +5,7 @@ import com.reportix.aisolate.config.AirlockDocument;
 import java.util.List;
 
 /**
- * The airlock the unit tests talk to: hr-acme/acme-hr, listing Eric, on the acme_hr data source.
+ * The version the unit tests talk to: hr-acme/acme-hr/v1, listing Eric, on the acme_hr data source.
  */
 public final class TestAirlocks {
 
@@ -19,6 +19,7 @@ public final class TestAirlocks {
       AirlockDefinition.HandlerSelection handlers) {
     return new AirlockDefinition(
         "acme-hr",
+        "v1",
         "",
         revision,
         "hr-acme",

@@ -3,25 +3,37 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { listAirlocks, streamChat } from "../api";
 import type { StreamEvent } from "../types";
 
-const SETTINGS = { aisolateUrl: "http://localhost:8080", airlockId: "acme-hr" };
+const SETTINGS = { aisolateUrl: "http://localhost:8080", airlockId: "acme-hr", version: "v1" };
 
 const sse = (text: string) =>
   new Response(text, { status: 200, headers: { "Content-Type": "text/event-stream" } });
-const ENDPOINT = "http://localhost:8080/v1/spaces/hr-acme/airlocks/acme-hr/chat";
+const ENDPOINT = "http://localhost:8080/v1/spaces/hr-acme/airlocks/acme-hr/versions/v1/chat";
 const AIRLOCKS = [
   {
     id: "acme-hr",
     name: "HR",
     description: "Pay and documents.",
-    endpoint: ENDPOINT,
-    tools: ["read_records", "aggregate_records"],
+    versions: [
+      {
+        version: "v1",
+        description: "Pay from the tools.",
+        endpoint: ENDPOINT,
+        tools: ["read_records", "aggregate_records"],
+      },
+    ],
   },
   {
     id: "drafts",
     name: "Drafts",
     description: "",
-    endpoint: ENDPOINT.replace("/acme-hr/", "/drafts/"),
-    tools: [],
+    versions: [
+      {
+        version: "v1",
+        description: "",
+        endpoint: ENDPOINT.replace("/acme-hr/", "/drafts/"),
+        tools: [],
+      },
+    ],
   },
 ];
 const listing = () =>
@@ -93,8 +105,9 @@ describe("streamChat", () => {
           id: "acme-hr",
           name: "HR",
           description: "",
-          endpoint: "https://evil.test/chat",
-          tools: [],
+          versions: [
+            { version: "v1", description: "", endpoint: "https://evil.test/chat", tools: [] },
+          ],
         },
       ]),
       { status: 200 },
@@ -108,13 +121,17 @@ describe("streamChat", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("givenAirlockNotListedForTheUser_whenStreamChat_thenRejectsWith404", async () => {
+  it.each([
+    { state: "AirlockNotListedForTheUser", airlockId: "founders-finance", version: "v1" },
+    { state: "VersionNotListedForTheUser", airlockId: "acme-hr", version: "v2" },
+  ])("given$state_whenStreamChat_thenRejectsWith404", async ({ airlockId, version }) => {
     // Arrange
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(listing()));
     // Act
     const act = streamChat("hi", "t1", new AbortController().signal, () => {}, {
       aisolateUrl: "http://localhost:8080",
-      airlockId: "founders-finance",
+      airlockId,
+      version,
     });
     // Assert
     await expect(act).rejects.toMatchObject({ status: 404 });
@@ -130,6 +147,7 @@ describe("streamChat", () => {
     const act = streamChat("hi", "expired", new AbortController().signal, () => {}, {
       aisolateUrl: "http://aisolate.test",
       airlockId: "hr-app-1",
+      version: "v1",
     });
     // Assert
     await expect(act).rejects.toBeInstanceOf(Unauthorized);
@@ -151,6 +169,7 @@ describe("streamChat", () => {
     const act = streamChat("hi", "t1", new AbortController().signal, () => {}, {
       aisolateUrl: "http://aisolate.test",
       airlockId: "hr-app-1",
+      version: "v1",
     });
     // Assert
     await expect(act).rejects.toMatchObject({

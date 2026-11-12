@@ -1,6 +1,6 @@
 package com.reportix.aisolate.airlock.infrastructure.config;
 
-import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.sdk.Llm;
 import com.reportix.aisolate.sdk.LlmException;
 import io.micrometer.observation.ObservationRegistry;
@@ -34,7 +34,7 @@ public record Llms(CatalogLlm main, Map<String, CatalogLlm> byId) {
                 Collectors.toUnmodifiableMap(
                     LlmCatalog.Entry::id,
                     entry ->
-                        AirlockDocument.OPENAI.equals(entry.provider())
+                        AirlockVersionDocument.OPENAI.equals(entry.provider())
                             ? new OpenAiLlm(entry, http, observations, readTimeout)
                             : new OllamaLlm(entry, http, observations, retry)));
     return new Llms(byId.get(catalog.main()), byId);

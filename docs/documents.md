@@ -1,17 +1,17 @@
 # Documents
 
-An airlock is defined by two kinds of document in the API group `aisolate.dev/v1`: `Space` and `Airlock`,
-beside the install's one `Global`, which holds the LLMs and data sources every space inherits
-([Where LLMs and data sources are defined](concepts.md#where-llms-and-data-sources-are-defined)). An airlock names its
-space (`spec.space`).
-A project's `aisolate.yaml` writes one `Airlock`, which every deploy creates or updates; the space is defined
-in the AIsolate UI. The backend keeps all three and applies them to the cluster. The same loader validates them
-in every process. The documents below are a complete example of the three kinds.
+An airlock is defined by three kinds of document in the API group `aisolate.dev/v1`: `Space`, `Airlock` and
+`AirlockVersion`, beside the install's one `Global`, which holds the LLMs and data sources every space inherits
+([Where LLMs and data sources are defined](concepts.md#where-llms-and-data-sources-are-defined)). Each names its
+parent: an airlock its space (`spec.space`), a version its airlock (`spec.airlock`).
+A project's `aisolate.yaml` writes one `AirlockVersion` and its `Airlock`, which every deploy creates or updates;
+the space is defined in the AIsolate UI. The backend keeps all four and applies them to the cluster. The same
+loader validates them in every process. The documents below are a complete example of the four kinds.
 
 ## Example documents
 
 The space `hr-space` after the `company-hr` template's deploy, into an install
-whose admin defined the LLMs `granite` and `nomic` and the data source `hr` for all of AIsolate, and a space that adds a larger model. It holds URLs and Secret names, never a credential, and no code: each airlock names its
+whose admin defined the LLMs `granite` and `nomic` and the data source `hr` for all of AIsolate, and a space that adds a larger model. It holds URLs and Secret names, never a credential, and no code: each version names its
 code by digest, and its pods fetch it from the backend.
 
 ```yaml
@@ -48,6 +48,16 @@ spec:
     roles: [employee]                         # its own roles, which may ask it alone; need not be the space's; may be empty; case matters
     callers: ["*"]                               # at least one; "*": any client the identity provider issued an aisolate token to
     # clients: [etl]                             # machine clients: a token without an e-mail whose azp is one of these, exact, no "*"; absent when none
+  llms: []                                       # none of its own; its versions share them
+  dataSources: []
+---
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata: {name: hr-contracts-v1}                # <airlock>-<version>
+spec:
+  airlock: hr-contracts
+  version: v1
+  description: First version of the HR contracts airlock.
   preLLM:
     contextPreparator:
       handlers: [ContractsContextPreparator]
@@ -62,9 +72,8 @@ spec:
   # postLLM:
   #   answerVerifier:
   #     handlers: [CustomerVerifier]             # the answer verifiers, after the model; none here
-  llms: []                                       # none of its own
-  dataSources: []
-  jar:                                           # the airlock's code, set by the deploy
+  # llms: []                                     # a version's own LLMs take no API key; no dataSources here
+  jar:                                           # the version's code, set by the deploy
     digest: "sha256:…"
     tools: []                                    # the tools the code publishes
     # language: python                           # a Python project's zip; absent for a jar
@@ -76,10 +85,10 @@ spec:
 sends it as written, with the values of the variables it reads.
 
 ```yaml
-# The contracts airlock, in the order an exchange runs. The space it deploys into is
-# AISOLATE_SPACE in .env; the space is created in the AIsolate UI, where it lists its roles. The
-# LLMs and data sources are the admin's, defined for all of AIsolate or on the space or the
-# airlock: this file names them by id and holds no credential.
+# The contracts airlock and one version of it, in the order an exchange runs. The space it deploys
+# into is AISOLATE_SPACE in .env; the space is created in the AIsolate UI, where it lists its
+# roles. The LLMs and data sources are the admin's, defined for all of AIsolate or on the space
+# or the airlock: this file names them by id and holds no credential.
 # The Airlock below is created or updated on every deploy: each field it writes replaces
 # the airlock's, a field left out keeps what the AIsolate UI set.
 apiVersion: aisolate.dev/v1
@@ -91,6 +100,15 @@ spec:
   description: "Employment contracts: position, pay, working time, notice and confidentiality."
   access:
     roles: [employee]   # its own roles, besides the space's
+---
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata:
+  name: hr-contracts-v1            # <airlock>-<version>
+spec:
+  airlock: hr-contracts
+  version: v1                    # any name: lowercase letters, digits and dashes
+  description: First version of the HR contracts airlock.
 
   # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
   preLLM:
@@ -121,15 +139,17 @@ spec:
 
 | In the project file | Rule |
 |---|---|
-| One `Airlock` | A project is one `Airlock`. A `Space` in the file is refused (the space is `AISOLATE_SPACE`'s, defined in the AIsolate UI), and so is a second `Airlock`. |
-| The `Airlock` | Every deploy applies it, in one transaction with the code. An airlock the space does not have is created from it (its name the `displayName`, else its id; callers `*` unless it sets them). An existing one gets each field the document writes: `displayName`, `description`, `access.roles`, `access.callers`, `access.clients`, the three stages, `llm`, `prompt`, `tools`, `llms`, `dataSources`; a field it leaves out keeps what the AIsolate UI or an earlier deploy set, so roles added there survive a document without `access.roles`, and machine clients one without `access.clients`. Nothing different, nothing saved. Data source credentials work as below. `spec.space` is refused: the space is `AISOLATE_SPACE`. A refused document saves nothing. |
-| `metadata.name` | Required: the airlock's id ([Airlock id](#names-ids-and-revision)), in the space `AISOLATE_SPACE` names. An id the space does not have creates the airlock; an existing one updates it in place. An id another space holds is refused (409). |
-| `spec.description` | Optional; shown with the airlock in the AIsolate UI and in discovery. |
-| `spec.llm` | The id of the LLM that answers, defined by the file's `llms`, the space or AIsolate (global), nearest first; an airlock without one runs nothing. One that resolves to nothing is refused, 400 `llm: no model named granite in this airlock's space or globally`. Ids that code names (`aisolate.llm("nomic")`) are not checked at deploy. |
-| `spec.llms` | Optional: `{id, provider, url, model}`, no type; the same id as an inherited LLM replaces it. `provider` is `ollama` (`url` the server, `http://ollama.aisolate.svc:11434`) or `openai`, any OpenAI-compatible server with its API version in the `url` (`https://api.openai.com/v1`, Ollama's own `http://…:11434/v1`); `model` is the name the server knows. A project's entry takes no key and names no Secret: an `openai` model's API key is typed once in the AIsolate UI ([Credentials](security.md#credentials)). |
-| `spec.access` | Who may ask, beside the space's `access.roles`: the airlock's own `access.roles` and its `access.callers`, set here or in the AIsolate UI, and its machine clients, `access.clients`, set here or through the API. |
-| An airlock created in the AIsolate UI | It has a name, a description, its roles, callers, LLMs and data sources, and no `llm`, `prompt` or code, so it runs nothing. The deploy fills its code, stages, prompt, `llm`, `llms` and data sources from the project. |
-| Credentials | Each data source gives `username` and `password`, usually as variables, where the stored document has `secretRef`. The backend turns them into a Secret and sets its name. A `secretRef` in a project file is refused. |
+| One `AirlockVersion`, at most one `Airlock` | A project is one `AirlockVersion` and at most its `Airlock`. A `Space` in the file is refused (the space is `AISOLATE_SPACE`'s, defined in the AIsolate UI), and so are a second `Airlock` and one whose `metadata.name` is not the version's `spec.airlock`. |
+| The `Airlock` | Every deploy applies it, in one transaction with the version. An airlock the space does not have is created from it (its name the `displayName`, else its id; callers `*` unless it sets them). An existing one gets each field the document writes: `displayName`, `description`, `access.roles`, `access.callers`, `access.clients`, `llms`, `dataSources`; a field it leaves out keeps what the AIsolate UI or an earlier deploy set, so roles added there survive a document without `access.roles`, and machine clients one without `access.clients`. Nothing different, nothing saved. Data source credentials work as below. `spec.space` is refused: the space is `AISOLATE_SPACE`. A refused version saves no airlock either. |
+| `spec.airlock` | Required: an airlock of the space `AISOLATE_SPACE` names, or the file's `Airlock`. Without that document, an airlock the space does not have is refused (404): add its `Airlock` to the file, or create it in the AIsolate UI. An airlock id another space holds is refused (409). |
+| `spec.version`, `metadata.name` | The version's name ([Version name](#names-ids-and-revision)) and `<airlock>-<version>`. A name the airlock has no version of creates one; an existing name updates that version in place. The templates write `v1`; a project that names another version runs beside it. |
+| `spec.description` | Optional; shown with the version in the AIsolate UI and in discovery. |
+| `spec.llm` | Required: the id of the LLM that answers, defined by the file's `llms`, the airlock, the space or AIsolate (global), nearest first. One that resolves to nothing is refused, 400 `llm: no model named granite in this airlock's space or globally`. Ids that code names (`aisolate.llm("nomic")`) are not checked at deploy. |
+| `spec.llms` | Optional, on the version and on the file's `Airlock`: `{id, provider, url, model}`, no type; the same id as an inherited LLM replaces it. `provider` is `ollama` (`url` the server, `http://ollama.aisolate.svc:11434`) or `openai`, any OpenAI-compatible server with its API version in the `url` (`https://api.openai.com/v1`, Ollama's own `http://…:11434/v1`); `model` is the name the server knows. A project's entry takes no key and names no Secret: an `openai` model's API key is typed once in the AIsolate UI, on the airlock, the space or the install ([Credentials](security.md#credentials)); a version's model takes none. |
+| `spec.access` | Not part of a version: who may ask is the space's `access.roles`, the airlock's own `access.roles`, its `access.callers` and its machine clients `access.clients`, set on the file's `Airlock` or in the AIsolate UI. One on the version is refused as an unknown field. |
+| `spec.dataSources` | Not part of a version: a data source needs a login, which belongs to the airlock, the space or the install, set in the AIsolate UI or on the file's `Airlock`. One on the version is refused as an unknown field. |
+| A version created in the AIsolate UI | It has a name, a description and the default prompt, and no code, so it runs nothing. The deploy fills its code, stages, prompt, `llm` and `llms` from the project. |
+| Credentials | Each data source of the file's `Airlock` gives `username` and `password`, usually as variables, where the stored document has `secretRef`. The backend turns them into a Secret and sets its name. A `secretRef` in a project file is refused. |
 | `spec.jar` | Set by the deploy from the built project; one in a project file is refused. `spec.jar.language` is `python` for a Python project's zip, which runs on the Python airlock and tool server images; absent (or `java`) for a jar. |
 | Variables | `${NAME}`, or `${NAME:-fallback}` when NAME may stay unset, anywhere in the file. The CLI resolves them from the shell, then from `.env`, and refuses an unset one by name. There is no escape: a prompt cannot hold a literal `${amount}`, which reads as the variable `amount`. |
 | Code and file | Every tool in `tools` is published by the code, and every handler the file lists is a handler of the code for that stage. A tool of the code the file does not list, and a handler listed nowhere, are warnings in the deploy result. |
@@ -150,7 +170,7 @@ defined for all of AIsolate, on the space or on the airlock in the AIsolate UI.
 
 ## Rule set
 
-A rule set lives in the airlock's code at `aisolate/rules/<entity>.json`, copied from the project's
+A rule set lives in the version's code at `aisolate/rules/<entity>.json`, copied from the project's
 `rules/<entity>.json`; any other path is refused. One file per entity. The `hospital` template's
 `cardiology.vitals.json`:
 
@@ -187,19 +207,22 @@ compiled: [Rules become SQL](security.md#rules-become-sql).
 
 | Name | Form |
 |---|---|
-| Airlock id | A global slug, `^[a-z]([a-z0-9-]{0,39}[a-z0-9])$`, generated from the name (`-2`, `-3`, … when taken or when its cluster name would collide). It names the airlock in the endpoint path, after its space's id. |
-| Cluster name | `<space>-<airlock>`, unique across the install and never a space's id: `ab` with `cd-ef` and `ab-cd` with `ef` would share pods and Secrets, so the second is refused (409). Messages, logs and the CLI write an airlock `<space>/<airlock>`: `hr-space/hr-contracts`. |
-| Data source id, LLM id | `^[a-z0-9][a-z0-9_-]{0,40}$`, once per list. The same id globally, on the space and the airlock is one data source (one LLM), the nearest definition winning. |
-| Pods | `<space>-<airlock>-airlock` and `<space>-<airlock>-mcp-server`. The longer one is at most 63 characters, Kubernetes' limit: an airlock that leaves no room is refused when created (400), naming the length. |
-| ConfigMaps | `<space>-<airlock>-config` (the documents the airlock serves), `aisolate-discovery` (`<space>.json` per valid space: what discovery lists, no document). |
-| Secrets | One per data source, keys `username` and `password`, named after the document that defines it: `aisolate-ds-<id>-<6 chars>` (global), `<space>-ds-<id>-<6 chars>`, `<space>-<airlock>-ds-<id>-<6 chars>`, an `_` of the id written `-`. The controller's per airlock: `<space>-<airlock>-audit` (the airlock pod's ingest token) and `<space>-<airlock>-code` (both pods' code token). |
+| Airlock id | A global slug, `^[a-z]([a-z0-9-]{0,39}[a-z0-9])$`, generated from the name (`-2`, `-3`, … when taken or when its cluster name would collide), cut to leave room for a version of three characters. It names the airlock in the endpoint path, after its space's id. |
+| Version name | `spec.version`, `^[a-z0-9]([a-z0-9-]{0,29}[a-z0-9])?$`: lowercase letters, digits and dashes, 1 to 31 characters, not ending in a dash (`v1`, `pilot`). Chosen when the version is created and fixed after. It is the endpoint path after the airlock's. Messages, logs and the CLI write a version `<space>/<airlock>/<version>`: `hr-space/hr-contracts/v1`. |
+| Version resource | `<airlock>-<version>`, unique across the install. Both names allow dashes, so `hr` with `eu-v1` and `hr-eu` with `v1` would collide: the second is refused. |
+| Cluster name | `<space>-<airlock>` and `<space>-<airlock>-<version>`, each unique across the install and never a space's id: `ab` with `cd-ef` and `ab-cd` with `ef` would share pods and Secrets, as would `ab`/`cd-ef`/`gh-ij` and `ab-cd`/`ef-gh`/`ij`, so the second is refused (409). Every create holds one PostgreSQL advisory lock while it checks and saves, so two cannot both pass. |
+| Data source id, LLM id | `^[a-z0-9][a-z0-9_-]{0,40}$`, once per list. The same id globally, on the space, the airlock and the version is one LLM (one data source, which stops at the airlock), the nearest definition winning. |
+| Pods | `<space>-<airlock>-<version>-airlock` and `<space>-<airlock>-<version>-mcp-server`. The longer one is at most 63 characters, Kubernetes' limit: a version or an airlock that leaves no room is refused when created (400), naming the length. |
+| ConfigMaps | `<space>-<airlock>-<version>-config` (the documents the version serves), `aisolate-discovery` (`<space>.json` per valid space: what discovery lists, no document). |
+| Secrets | One per data source, keys `username` and `password`, named after the document that defines it: `aisolate-ds-<id>-<6 chars>` (global), `<space>-ds-<id>-<6 chars>`, `<space>-<airlock>-ds-<id>-<6 chars>`, an `_` of the id written `-`; a version defines none. The controller's per version: `<space>-<airlock>-<version>-audit` (the airlock pod's ingest token) and `<space>-<airlock>-<version>-code` (both pods' code token). |
 
-An airlock's **revision** is twelve hex digits of the SHA-256 of the documents it serves: the `Global`, its `Space`
-and itself. Both of its pods carry it (`AISOLATE_CONFIG_REVISION`), every response carries
+A version's **revision** is twelve hex digits of the SHA-256 of the documents it serves: the `Global`, its `Space`,
+its `Airlock` and itself. Both of its pods carry it (`AISOLATE_CONFIG_REVISION`), every response carries
 `x-aisolate-revision`, every MCP call carries `_meta.revision`, and every evidence's `rule_version` starts
-with it. A change to an airlock restarts only that airlock's pods, a change to a space those of every airlock in
-it, a change to a global LLM or data source every airlock's. The MCP server answers only for the revision
-it loaded, so an exchange that spans a rollout may end in "I don't know".
+with it. A change to a version restarts only that version's pods; a change to an airlock restarts the pods of
+its versions, a change to a space those of every version in it, a change to a global LLM or data source every
+version's. The MCP server answers only for the revision it loaded, so an exchange that spans a rollout may end
+in "I don't know".
 
 ## Validation
 
@@ -209,16 +232,19 @@ The loader refuses a set of documents and names the file, the document and the f
 - a `Space` that lists a blank, spaced or repeated role, or `*`; a space may list none;
 - an `Airlock` without `spec.space`, or whose `spec.space` is no `Space`; without `access.callers`, at least
   one; that lists a blank, spaced or repeated role, or `*`; its own roles may be none, and need not be the
-  space's; whose `access.clients` lists a blank, repeated or spaced client id, or `*`; it may list none; whose
-  `llm` resolves to nothing (`hr: llm granite is no model of it, of Space acme or of AIsolate`); one without
-  `llm` or `prompt` is valid and runs nothing;
+  space's; whose `access.clients` lists a blank, repeated or spaced client id, or `*`; it may list none;
+- an `AirlockVersion` without `spec.airlock`, or whose `spec.airlock` is no `Airlock`; without `spec.version`,
+  or with one that breaks the [version name](#names-ids-and-revision) rule; whose `metadata.name` is not
+  `<airlock>-<version>`; without `prompt`; without `llm`, or whose `llm` resolves to nothing (`hr-contracts-v1:
+  llm granite is no model of it, of Airlock hr-contracts, of Space hr-space or of AIsolate`); with an `access`
+  or a `dataSources` of its own, unknown fields there;
 - a second `Global`, or one not named `aisolate`;
 - an LLM without an id, with a bad id or one its list holds twice, without a `url` or a `model`, or with a
   provider the airlock pod has no client for (`ollama` and `openai` are the providers), or with an `apiKey`: an
   `openai` model names its key's Secret (`secretRef`), which only AIsolate sets;
 - a data source without an id, with an id other than lowercase letters, digits, `_` or `-`, or with an id its
   document lists twice;
-- an airlock that lists tools or handlers but has no `spec.jar`; with one: no `jar.digest`, or a tool in
+- a version that lists tools or handlers but has no `spec.jar`; with one: no `jar.digest`, or a tool in
   `tools` that is not one of `jar.tools`;
 - a blank or repeated name in a list of roles, callers, machine clients, tools or handlers;
 - a URL that carries a credential (a user or password in `user[:password]@`, or a `user`, `username`,

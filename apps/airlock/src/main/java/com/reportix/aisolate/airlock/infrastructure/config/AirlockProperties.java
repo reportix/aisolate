@@ -17,8 +17,9 @@ import org.springframework.util.unit.DataSize;
  *     hash of the files as read), and where every space's airlocks are mounted for discovery
  *     (empty: discovery lists this pod's own)
  * @param airlock the one airlock this process serves; every other id is 404
- * @param toolServer the MCP server the controller rendered for this airlock
- * @param datasource the airlock's data sources as the controller renders them; a handler reaches
+ * @param version the one version of it this process serves; every other label is 404
+ * @param toolServer the MCP server the controller rendered for this version
+ * @param datasource the version's data sources as the controller renders them; a handler reaches
  *     one by id
  * @param audit where the audit lines go besides stdout
  */
@@ -27,13 +28,14 @@ public record AirlockProperties(
     @DefaultValue Exchange exchange,
     @DefaultValue Config config,
     String airlock,
+    String version,
     @DefaultValue ToolServer toolServer,
     @DefaultValue List<DataSourceLogin> datasource,
     @DefaultValue Audit audit) {
 
   /**
    * @param url the backend's ingest; blank: none (a headless install), the lines go to stdout alone
-   * @param tokenFile the airlock's ingest token, mounted from its Secret
+   * @param tokenFile the version's ingest token, mounted from its Secret
    * @param bufferDir unsent lines, on the pod's emptyDir
    * @param bufferMax the buffer's bound; full, the pod refuses new questions when {@code
    *     failClosed}, else drops lines
@@ -49,7 +51,7 @@ public record AirlockProperties(
 
   public record Config(String dir, String revision, String discoveryDir) {
 
-    /** A discovery pod's: the discovery mount and no documents, so no airlock to serve. */
+    /** A discovery pod's: the discovery mount and no documents, so no version to serve. */
     public boolean discoveryOnly() {
       return discoveryDir != null && !discoveryDir.isBlank() && (dir == null || dir.isBlank());
     }

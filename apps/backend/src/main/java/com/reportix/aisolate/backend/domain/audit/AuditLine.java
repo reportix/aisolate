@@ -45,6 +45,7 @@ public record AuditLine(String body, String digest, Columns columns) {
       Instant ts,
       String space,
       String airlock,
+      String version,
       String revision,
       String event,
       String traceId,
@@ -64,8 +65,8 @@ public record AuditLine(String body, String digest, Columns columns) {
 
   /**
    * @throws AuditException 400 when {@code json} is no audit line: no object, or no {@code ts},
-   *     {@code event}, {@code space}, {@code airlock} or {@code outcome} of the kinds the airlock
-   *     writes
+   *     {@code event}, {@code space}, {@code airlock}, {@code version} or {@code outcome} of the
+   *     kinds the airlock writes
    */
   public static AuditLine parse(String json) {
     Map<String, Object> line;
@@ -83,6 +84,7 @@ public record AuditLine(String body, String digest, Columns columns) {
     }
     required("space", columns.space());
     required("airlock", columns.airlock());
+    required("version", columns.version());
     String body = CANONICAL.writeValueAsString(line);
     return new AuditLine(body, sha256(body), columns);
   }
@@ -104,6 +106,7 @@ public record AuditLine(String body, String digest, Columns columns) {
         instant(line.get("ts")),
         text(line.get("space")),
         text(line.get("airlock")),
+        text(line.get("version")),
         text(line.get("revision")),
         text(line.get("event")),
         text(line.get("trace_id")),

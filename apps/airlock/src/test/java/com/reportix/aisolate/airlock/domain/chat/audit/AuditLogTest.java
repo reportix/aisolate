@@ -28,6 +28,7 @@ class AuditLogTest {
             "4bf92f3577b34da6a3ce929d0e0e4736",
             "hr-acme",
             "acme-hr",
+            "v1",
             "7b2280eab4b5",
             "eric@example.com",
             "acme-chat",
@@ -66,6 +67,7 @@ class AuditLogTest {
             "trace_id",
             "space",
             "airlock",
+            "version",
             "revision",
             "user",
             "client",
@@ -117,6 +119,7 @@ class AuditLogTest {
             null,
             "hr-acme",
             "acme-hr",
+            "v1",
             "7b2280eab4b5",
             "ivy@example.com",
             "acme-chat",
@@ -129,7 +132,7 @@ class AuditLogTest {
 
     // Assert: a reader finds every field on every line
     JsonNode line = audit.events().getFirst();
-    assertThat(line.propertyNames()).hasSize(19);
+    assertThat(line.propertyNames()).hasSize(20);
     assertThat(line.path("figures").isNull()).isTrue();
     assertThat(line.path("event").asString()).isEqualTo("refusal");
     assertThat(line.path("outcome").asString()).isEqualTo("refused");

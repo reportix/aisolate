@@ -32,7 +32,8 @@ aisolate deploy
 ```
 
 `create` writes a project from a template. `login` signs you in once, in your browser. `deploy` builds the project
-and creates its airlock in the space an admin set up in the AIsolate UI. The whole walk-through, from installing the
+and deploys it as one version of its airlock, `v1`, in the space an admin set up in the AIsolate UI; a project
+that names another version runs beside it. The whole walk-through, from installing the
 CLI to trying the airlock: [docs/develop.md](docs/develop.md).
 
 ## Documentation

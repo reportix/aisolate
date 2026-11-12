@@ -49,14 +49,14 @@ class CrdGenerationTest {
                 "self.metadata.name.matches('^[a-z][a-z0-9-]{1,40}$')",
                 "size(self.spec.space) > 0",
                 "has(self.spec.access) && size(self.spec.access.callers) > 0",
-                "jsonPath: \".spec.space\"",
-                "jsonPath: \".status.readyReplicas\""),
-            // its roles may be none: the space's roles may ask it; a model and a prompt come with
-            // the first deploy; a credential never sits in a resource
+                "jsonPath: \".spec.space\""),
+            // its roles may be none: the space's roles may ask it; what runs is its versions'; a
+            // credential never sits in a resource
             List.of(
                 "access.users",
                 "size(self.spec.llm) > 0",
                 "size(self.spec.prompt) > 0",
+                "jsonPath: \".status.readyReplicas\"",
                 "password"),
             concat(
                 List.of(
@@ -66,7 +66,28 @@ class CrdGenerationTest {
                     "access",
                     "access.roles",
                     "access.callers",
-                    "access.clients",
+                    "access.clients"),
+                llms,
+                dataSources)),
+        Arguments.of(
+            "airlockversions.yaml",
+            List.of(
+                "kind: \"AirlockVersion\"",
+                "plural: \"airlockversions\"",
+                "self.metadata.name == self.spec.airlock + '-' + self.spec.version",
+                "self.spec.version.matches('^[a-z0-9]([a-z0-9-]{0,29}[a-z0-9])?$')",
+                "size(self.spec.llm) > 0",
+                "size(self.spec.prompt) > 0",
+                "jsonPath: \".spec.airlock\"",
+                "jsonPath: \".spec.version\"",
+                "jsonPath: \".status.readyReplicas\""),
+            // who may ask is the airlock's, as are the data sources: a version holds no credential
+            List.of("access", "dataSources", "password"),
+            concat(
+                List.of(
+                    "airlock",
+                    "version",
+                    "description",
                     "preLLM",
                     "preLLM.contextPreparator",
                     "preLLM.contextPreparator.handlers",
@@ -82,8 +103,7 @@ class CrdGenerationTest {
                     "jar.digest",
                     "jar.tools",
                     "jar.language"),
-                llms,
-                dataSources)));
+                llms)));
   }
 
   @SafeVarargs

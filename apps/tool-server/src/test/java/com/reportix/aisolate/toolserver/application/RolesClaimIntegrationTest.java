@@ -52,7 +52,8 @@ class RolesClaimIntegrationTest {
                 Map.of("roles", List.of("ceo"))));
 
     // Act
-    Result result = governedQuery.call(nora, "hr-assistant", REVISION, "read_records", Map.of());
+    Result result =
+        governedQuery.call(nora, "hr-assistant", "v1", REVISION, "read_records", Map.of());
 
     // Assert
     assertThat(result.rowCount()).isEqualTo(rows);

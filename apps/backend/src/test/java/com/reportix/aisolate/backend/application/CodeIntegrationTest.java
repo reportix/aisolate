@@ -31,7 +31,7 @@ import org.springframework.test.context.ContextConfiguration;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * An airlock's pods fetch its code from the ingest port by digest, with the airlock's code token:
+ * A version's pods fetch its code from the ingest port by digest, with the version's code token:
  * any other token is refused, other code is not found, and neither port answers the other's paths.
  */
 @SpringBootTest(
@@ -45,13 +45,15 @@ class CodeIntegrationTest {
   private static final JsonMapper JSON = JsonMapper.builder().build();
   static final String KEY = BackendTestConfig.INGEST_KEY;
 
-  /** The Python airlock hr-assistant, its code the HR manifest's zip. */
+  /** Version v1 of the Python airlock hr-assistant, its code the HR manifest's zip. */
   static final String PROJECT =
       """
       apiVersion: aisolate.dev/v1
-      kind: Airlock
-      metadata: {name: hr-assistant}
+      kind: AirlockVersion
+      metadata: {name: hr-assistant-v1}
       spec:
+        airlock: hr-assistant
+        version: v1
         preLLM:
           contextPreparator:
             handlers: [HandbookPreparator]
@@ -103,9 +105,9 @@ class CodeIntegrationTest {
   }
 
   @Test
-  void givenTheAirlocksCodeToken_whenFetched_thenTheDeployedBytesWithTheirLength() {
+  void givenTheVersionsCodeToken_whenFetched_thenTheDeployedBytesWithTheirLength() {
     // Arrange
-    String token = AuditIngestToken.ofCode(KEY, "code-lab", "hr-assistant");
+    String token = AuditIngestToken.ofCode(KEY, "code-lab", "hr-assistant", "v1");
 
     // Act
     HttpResponse<byte[]> response = fetch(code("hr-assistant", digest), token);
@@ -129,27 +131,31 @@ class CodeIntegrationTest {
     assertThat(response.statusCode()).isEqualTo(401);
   }
 
-  static Stream<Arguments> tokensNotTheAirlocksCodeToken() {
+  static Stream<Arguments> tokensNotTheVersionsCodeToken() {
     String developer = Tokens.forOperator("jasmine", "password");
     return Stream.of(
         arguments(
             named(
                 "another airlock's code token",
-                AuditIngestToken.ofCode(KEY, "code-lab", "other-assistant"))),
+                AuditIngestToken.ofCode(KEY, "code-lab", "other-assistant", "v1"))),
         arguments(
             named(
-                "the airlock's audit ingest token",
-                AuditIngestToken.of(KEY, "code-lab", "hr-assistant"))),
+                "another version's code token",
+                AuditIngestToken.ofCode(KEY, "code-lab", "hr-assistant", "v2"))),
+        arguments(
+            named(
+                "the version's audit ingest token",
+                AuditIngestToken.of(KEY, "code-lab", "hr-assistant", "v1"))),
         arguments(
             named(
                 "another install's",
-                AuditIngestToken.ofCode("other-key", "code-lab", "hr-assistant"))),
+                AuditIngestToken.ofCode("other-key", "code-lab", "hr-assistant", "v1"))),
         arguments(named("a developer's own token", developer)));
   }
 
   @ParameterizedTest
-  @MethodSource("tokensNotTheAirlocksCodeToken")
-  void givenATokenNotTheAirlocksCodeToken_whenFetched_then403(String token) {
+  @MethodSource("tokensNotTheVersionsCodeToken")
+  void givenATokenNotTheVersionsCodeToken_whenFetched_then403(String token) {
     // Arrange
     String path = code("hr-assistant", digest);
 
@@ -163,20 +169,28 @@ class CodeIntegrationTest {
 
   static Stream<Arguments> codeNotHeld() {
     return Stream.of(
-        arguments(named("a stale digest", "hr-assistant"), "sha256:" + "0".repeat(64)),
-        arguments(named("an airlock without a row", "nobody"), null));
+        arguments(named("a stale digest", "hr-assistant"), "v1", "sha256:" + "0".repeat(64)),
+        arguments(named("a version without a row", "hr-assistant"), "v9", null),
+        arguments(named("an airlock without a row", "nobody"), "v1", null));
   }
 
   @ParameterizedTest
   @MethodSource("codeNotHeld")
-  void givenItsTokenButCodeTheAirlockDoesNotHold_whenFetched_then404(
-      String airlock, String otherDigest) {
+  void givenItsTokenButCodeTheVersionDoesNotHold_whenFetched_then404(
+      String airlock, String version, String otherDigest) {
     // Arrange
-    String token = AuditIngestToken.ofCode(KEY, "code-lab", airlock);
+    String token = AuditIngestToken.ofCode(KEY, "code-lab", airlock, version);
 
     // Act
     HttpResponse<byte[]> response =
-        fetch(code(airlock, otherDigest == null ? digest : otherDigest), token);
+        fetch(
+            "/v1/code/code-lab/"
+                + airlock
+                + "/"
+                + version
+                + "/"
+                + (otherDigest == null ? digest : otherDigest),
+            token);
 
     // Assert
     assertThat(response.statusCode()).isEqualTo(404);
@@ -185,19 +199,19 @@ class CodeIntegrationTest {
   @Test
   void givenAnotherSpacesNameAndItsToken_whenFetched_then404() {
     // Arrange: the airlock exists, in code-lab only
-    String token = AuditIngestToken.ofCode(KEY, "other-lab", "hr-assistant");
+    String token = AuditIngestToken.ofCode(KEY, "other-lab", "hr-assistant", "v1");
 
     // Act
-    HttpResponse<byte[]> response = fetch("/v1/code/other-lab/hr-assistant/" + digest, token);
+    HttpResponse<byte[]> response = fetch("/v1/code/other-lab/hr-assistant/v1/" + digest, token);
 
     // Assert
     assertThat(response.statusCode()).isEqualTo(404);
   }
 
   @Test
-  void givenTheAirlocksCodeToken_whenFetchedOnTheApiPort_then404() {
+  void givenTheVersionsCodeToken_whenFetchedOnTheApiPort_then404() {
     // Arrange
-    String token = AuditIngestToken.ofCode(KEY, "code-lab", "hr-assistant");
+    String token = AuditIngestToken.ofCode(KEY, "code-lab", "hr-assistant", "v1");
 
     // Act
     HttpResponse<String> response = send(port, "GET", code("hr-assistant", digest), token, null);
@@ -209,7 +223,7 @@ class CodeIntegrationTest {
   static Stream<Arguments> notOnTheIngestPort() {
     return Stream.of(
         arguments("GET", "/v1/spaces"),
-        arguments("POST", "/v1/code/code-lab/hr-assistant/sha256:00"),
+        arguments("POST", "/v1/code/code-lab/hr-assistant/v1/sha256:00"),
         arguments("GET", "/v1/codex"));
   }
 
@@ -227,7 +241,7 @@ class CodeIntegrationTest {
   }
 
   private static String code(String airlock, String digest) {
-    return "/v1/code/code-lab/" + airlock + "/" + digest;
+    return "/v1/code/code-lab/" + airlock + "/v1/" + digest;
   }
 
   private HttpResponse<byte[]> fetch(String path, String token) {

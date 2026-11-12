@@ -1,7 +1,6 @@
 package com.reportix.aisolate.toolserver.infrastructure.policy;
 
 import com.reportix.aisolate.config.ConfigurationLoader;
-import com.reportix.aisolate.toolserver.domain.Policy;
 import com.reportix.aisolate.toolserver.domain.PolicySource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,9 +22,11 @@ public class PolicyConfig {
     var configuration = ConfigurationLoader.load(configDir, configRevision);
     var source = new PolicySource(configuration);
     log.info(
-        "config_loaded revision={} airlocks={}",
+        "config_loaded revision={} versions={}",
         configuration.revision(),
-        source.listPolicies().stream().map(Policy::id).toList());
+        source.listPolicies().stream()
+            .map(policy -> policy.id() + "/" + policy.version())
+            .toList());
     return source;
   }
 }

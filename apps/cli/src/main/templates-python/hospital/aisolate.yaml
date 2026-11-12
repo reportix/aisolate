@@ -1,10 +1,11 @@
-# The ${AIRLOCK} airlock: one department's assistant over the hospital's one health record, in
-# the order an exchange runs. The space it deploys into is AISOLATE_SPACE in .env; the space (the
-# hospital) is created in the AIsolate UI; the LLMs are the admin's, defined for all of AIsolate
-# or on the space, and this file names one by id. Each airlock lists the department's own
-# doctors, below, and holds the data source ehr, set in the AIsolate UI: the one health record
-# opened as the department's own database role. The department is the airlock's id, cardiology
-# or psychiatry: it decides which of the code's tools it offers and whose notes it reads.
+# The ${AIRLOCK} airlock and one version of it: one department's assistant over the hospital's
+# one health record, in the order an exchange runs. The space it deploys into is AISOLATE_SPACE
+# in .env; the space (the hospital) is created in the AIsolate UI; the LLMs are the admin's,
+# defined for all of AIsolate or on the space, and this file names one by id. Each
+# airlock lists the department's own doctors, below, and holds the data source ehr, set in the
+# AIsolate UI: the one health record opened as the department's own database role. The
+# department is the airlock's id, cardiology or psychiatry: it decides which of the code's tools
+# this version offers and whose notes it reads.
 # The Airlock below is created or updated on every deploy: each field it writes replaces
 # the airlock's, a field left out keeps what the AIsolate UI set.
 apiVersion: aisolate.dev/v1
@@ -15,6 +16,15 @@ spec:
   displayName: ${AIRLOCK_NAME}
   description: "${AIRLOCK_DESCRIPTION}"
   ${AIRLOCK_ACCESS}
+---
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata:
+  name: ${AIRLOCK}-v1            # <airlock>-<version>
+spec:
+  airlock: ${AIRLOCK}
+  version: v1                    # any name: lowercase letters, digits and dashes
+  description: First version of the ${AIRLOCK} assistant.
 
   # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
   preLLM:

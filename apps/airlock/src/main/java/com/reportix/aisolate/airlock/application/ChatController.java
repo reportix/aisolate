@@ -23,8 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The endpoint of an airlock: one message in, a stream of events out, or the whole exchange as one
- * JSON document for the caller that asks for it.
+ * The endpoint of an airlock version: one message in, a stream of events out, or the whole exchange
+ * as one JSON document for the caller that asks for it. The path's version must be the one this pod
+ * serves: there is no version-less route.
  */
 @RestController
 @RequiredArgsConstructor
@@ -47,12 +48,13 @@ public class ChatController {
   // Both handlers match an Accept of "*/*" or none, and Spring then ranks consumes before produces:
   // the one declaring it wins, so the stream stays the default and JSON is only for who asks.
   @PostMapping(
-      value = "/v1/spaces/{spaceId}/airlocks/{airlockId}/chat",
+      value = "/v1/spaces/{spaceId}/airlocks/{airlockId}/versions/{version}/chat",
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public void chat(
       @PathVariable String spaceId,
       @PathVariable String airlockId,
+      @PathVariable String version,
       @AuthenticationPrincipal Jwt jwt,
       @Valid @RequestBody ChatRequest request,
       HttpServletResponse response)
@@ -60,10 +62,11 @@ public class ChatController {
     tracing.exchange(
         spaceId,
         airlockId,
+        version,
         () -> {
           // Admission first: while nothing is written, a failure can still become a status code.
           AirlockDefinition airlock =
-              airlockAdmission.admit(spaceId, airlockId, jwt, request.message());
+              airlockAdmission.admit(spaceId, airlockId, version, jwt, request.message());
           agentLoop.answerUserMessage(
               airlock,
               request.message(),
@@ -75,19 +78,21 @@ public class ChatController {
   }
 
   @PostMapping(
-      value = "/v1/spaces/{spaceId}/airlocks/{airlockId}/chat",
+      value = "/v1/spaces/{spaceId}/airlocks/{airlockId}/versions/{version}/chat",
       produces = MediaType.APPLICATION_JSON_VALUE)
   public ChatAnswer chatAsJson(
       @PathVariable String spaceId,
       @PathVariable String airlockId,
+      @PathVariable String version,
       @AuthenticationPrincipal Jwt jwt,
       @Valid @RequestBody ChatRequest request) {
     return tracing.exchange(
         spaceId,
         airlockId,
+        version,
         () -> {
           AirlockDefinition airlock =
-              airlockAdmission.admit(spaceId, airlockId, jwt, request.message());
+              airlockAdmission.admit(spaceId, airlockId, version, jwt, request.message());
           return agentLoop.collectAnswer(
               airlock,
               request.message(),

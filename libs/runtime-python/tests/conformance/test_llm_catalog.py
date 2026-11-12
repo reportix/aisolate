@@ -22,7 +22,7 @@ def test_given_documents_when_loaded_then_the_catalog_or_the_problems_of_the_cas
 
     # Act
     try:
-        airlock = config.load(tmp_path, None).airlock("hr")
+        version = config.load(tmp_path, None).version("hr", "v1")
         problems = None
     except ConfigurationError as refused:
         problems = refused.problems
@@ -33,6 +33,6 @@ def test_given_documents_when_loaded_then_the_catalog_or_the_problems_of_the_cas
     else:
         assert problems is None
         assert [{"id": m.id, "provider": m.provider, "url": m.url, "model": m.model,
-                 **({"secretRef": m.secret_ref} if m.secret_ref else {})} for m in airlock.llms] == expect["llms"]
-        assert airlock.llm == expect["main"] == airlock.main_llm.id
-        assert [{"id": d.id, "url": d.url, "secretRef": d.secret_ref} for d in airlock.data_sources] == expect["data_sources"]
+                 **({"secretRef": m.secret_ref} if m.secret_ref else {})} for m in version.llms] == expect["llms"]
+        assert version.llm == expect["main"] == version.main_llm.id
+        assert [{"id": d.id, "url": d.url, "secretRef": d.secret_ref} for d in version.data_sources] == expect["data_sources"]

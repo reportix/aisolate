@@ -22,7 +22,7 @@ npm ci && npm run dev -w apps/frontend     # :3001
 npm run dev -w apps/chat                   # :3000
 ```
 
-Spaces and airlocks can be defined there. Nothing answers without a cluster, and a data source that
+Spaces, airlocks and versions can be defined there. Nothing answers without a cluster, and a data source that
 brings credentials is refused: only a cluster keeps them, as Secrets. Keycloak imports a realm only when the
 realm is absent; after a realm change run
 `docker compose -f docker/compose.yaml up -d --force-recreate keycloak`.
@@ -34,7 +34,7 @@ The airlock core and the MCP server by hand, the way the controller runs them, w
 [docs/configuration.md](docs/configuration.md):
 
 ```bash
-AISOLATE_CONFIG_DIR=<documents> AISOLATE_AIRLOCK=hr ./gradlew :apps:airlock:bootRun
+AISOLATE_CONFIG_DIR=<documents> AISOLATE_AIRLOCK=hr-contracts AISOLATE_VERSION=v1 ./gradlew :apps:airlock:bootRun
 AISOLATE_CONFIG_DIR=<documents> ./gradlew :apps:tool-server:bootRun
 ./gradlew :apps:airlock:bootRun --args='validate <documents>'
 ```
@@ -44,9 +44,9 @@ side by side. Both `bootRun` tasks set two data sources on the compose stack's `
 `_URL`, `_USERNAME` and `_PASSWORD`: `hr` as `aisolate_hr` (the `hr` schema) and `clients` as
 `aisolate_clients` (the `clients` schema), what the two templates read; on this stack each role's password is its
 name.
-Both pods take `AISOLATE_PLUGINS_DIR` and `AISOLATE_PLUGIN_DIGESTS` for an airlock's code.
-`<documents>` is a directory of the document kinds, for example the Space and Airlock of the
-[example documents](docs/documents.md#example-documents), whose airlock is `hr`. Ollama must serve
+Both pods take `AISOLATE_PLUGINS_DIR` and `AISOLATE_PLUGIN_DIGESTS` for a version's code.
+`<documents>` is a directory of the document kinds, for example the Space, Airlock and AirlockVersion of the
+[example documents](docs/documents.md#example-documents), whose version is `hr-contracts/v1`. Ollama must serve
 `granite4.1:8b` and `nomic-embed-text`.
 
 ## Repository layout
@@ -85,7 +85,7 @@ publishes the public images and creates the tag's GitLab Release with the Window
 - Comments say why, not what.
 - Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`), one concern
   each. A pull request names the guarantee it touches.
-- Vocabulary: **airlock** (`hr-space/hr-contracts` in messages), **space**, **roles** (what admits: those a space lists may ask every airlock of it, those an airlock lists, that airlock alone), **developers** (the e-mails a space lists, who edit it in the AIsolate UI), **callers** (the OAuth clients an airlock admits), **data source** (a database the airlock's code reads, by
+- Vocabulary: **airlock** (`hr-space/hr-contracts` in messages), **version** (what runs, with the name its developer chooses: `hr-space/hr-contracts/v1`; a project deploys one), **space**, **roles** (what admits: those a space lists may ask every airlock of it, those an airlock lists, that airlock alone), **developers** (the e-mails a space lists, who edit it in the AIsolate UI), **callers** (the OAuth clients an airlock admits), **data source** (a database the version's code reads, by
   id), **exchange** (one request and its answer), **AIsolate UI**. Not application, app or turn.
 - No new dependency for what a few lines do. Versions are pinned (`gradle.lockfile`,
   `package-lock.json`) and scanned in CI.

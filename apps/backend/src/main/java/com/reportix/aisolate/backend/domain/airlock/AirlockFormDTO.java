@@ -13,17 +13,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * An airlock as the developer fills it in: the id is its endpoint path; the name (its label, the id
- * when blank) and description are what the AIsolate UI shows; who may ask it besides its space's
- * roles, by its own roles (the token's roles claim, exact), none at all allowed, the OAuth clients
- * they may call from (the token's azp, {@code *} for any), and the machine clients admitted without
- * an e-mail (the token's azp, exact); then what runs, in the order an exchange runs: before the
- * model, the context preparators and the memory handlers; the LLM that answers, by id, with the
- * prompt and the tools the model may call; after the model, the verifiers; and its own LLMs and
- * data sources, beside the space's and the global ones, an id of theirs replacing it. The UI's form
- * carries the first part; {@code aisolate deploy} brings what runs, with the code. Tools and
- * handlers are its code's, listed by tool name and class simple name, and checked against the code
- * by {@link AirlockService}. Stored flat as the airlock's definition JSON, the id, name and
- * description in their own columns.
+ * when blank) and description are what the AIsolate UI shows; who may ask every version of it
+ * besides its space's roles, by its own roles (the token's roles claim, exact), none at all
+ * allowed, the OAuth clients they may call from (the token's azp, {@code *} for any), and the
+ * machine clients admitted without an e-mail (the token's azp, exact); and its own LLMs and data
+ * sources, beside the space's and the global ones, an id of theirs replacing it. What runs is its
+ * versions' ({@link VersionFormDTO}). Stored flat as the airlock's definition JSON, the id, name
+ * and description in their own columns.
  */
 @With
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -35,19 +31,8 @@ public record AirlockFormDTO(
     List<String> roles,
     List<String> callers,
     List<String> clients,
-    List<String> contextPreparators,
-    List<String> memoryHandlers,
-    String llm,
-    String prompt,
-    List<String> tools,
-    List<String> verifiers,
     List<LlmFormDTO> llms,
     List<DataSourceFormDTO> dataSources) {
-
-  /** What an airlock tells the model when its developer wrote no prompt. */
-  public static final String DEFAULT_PROMPT =
-      "You are a governed assistant. Answer only from tool evidence and the documents provided to"
-          + " you, and cite them as [ev-n]. When nothing answers, reply exactly: I don't know.";
 
   /** The longest id {@link Names#SLUG} allows. */
   public static final int MAX_ID = 41;
@@ -62,12 +47,6 @@ public record AirlockFormDTO(
     roles = asTyped(roles);
     callers = stripEach(callers);
     clients = stripEach(clients);
-    contextPreparators = copy(contextPreparators);
-    memoryHandlers = copy(memoryHandlers);
-    llm = strip(llm);
-    prompt = prompt == null ? "" : prompt;
-    tools = copy(tools);
-    verifiers = copy(verifiers);
     llms = LlmFormDTO.clean(llms);
     dataSources = dataSources == null ? List.of() : List.copyOf(dataSources);
   }
@@ -99,7 +78,7 @@ public record AirlockFormDTO(
 
   /**
    * Without an id, a free one from the name ({@link #deriveId}), short enough that the space's
-   * cluster names still fit ({@link Names#maxAirlockId}).
+   * cluster names still fit a first version, {@code v1} ({@link Names#maxAirlockId}).
    */
   public AirlockFormDTO withIdFromName(String spaceId, Predicate<String> taken) {
     return hasIdOrNoName(id, name)
@@ -117,26 +96,6 @@ public record AirlockFormDTO(
     return callers.isEmpty() ? withCallers(List.of("*")) : this;
   }
 
-  /**
-   * This form with what runs as {@code stored} holds it: the AIsolate UI's form never changes the
-   * handlers, the LLM, the prompt or the tools, which {@code aisolate deploy} brings with the code.
-   *
-   * @param stored null for none, a new airlock's
-   */
-  public AirlockFormDTO withRunOf(AirlockFormDTO stored) {
-    return withContextPreparators(stored == null ? null : stored.contextPreparators())
-        .withMemoryHandlers(stored == null ? null : stored.memoryHandlers())
-        .withLlm(stored == null ? null : stored.llm())
-        .withPrompt(stored == null ? null : stored.prompt())
-        .withTools(stored == null ? null : stored.tools())
-        .withVerifiers(stored == null ? null : stored.verifiers());
-  }
-
-  /** An airlock with a model but no prompt tells the model {@link #DEFAULT_PROMPT}. */
-  public AirlockFormDTO withDefaultPrompt() {
-    return llm.isEmpty() || !prompt.isBlank() ? this : withPrompt(DEFAULT_PROMPT);
-  }
-
   /** One message per problem, each naming the field it is about, never its value. */
   public List<String> validate() {
     List<String> errors = new ArrayList<>();
@@ -149,10 +108,6 @@ public record AirlockFormDTO(
     }
     Names.problems("client", callers).forEach(problem -> errors.add("callers: " + problem));
     Names.clientProblems(clients).forEach(problem -> errors.add("clients: " + problem));
-    checkNames("context_preparators", contextPreparators, errors);
-    checkNames("memory_handlers", memoryHandlers, errors);
-    checkNames("tools", tools, errors);
-    checkNames("verifiers", verifiers, errors);
     errors.addAll(LlmFormDTO.validate(llms));
     errors.addAll(DataSourceFormDTO.validate(dataSources));
     return errors;
@@ -169,10 +124,6 @@ public record AirlockFormDTO(
     return "AirlockFormDTO" + JSON.writeValueAsString(this);
   }
 
-  private static void checkNames(String field, List<String> names, List<String> errors) {
-    Names.problems("name", names).forEach(problem -> errors.add(field + ": " + problem));
-  }
-
   private static String strip(String s) {
     return s == null ? "" : s.strip();
   }
@@ -185,9 +136,5 @@ public record AirlockFormDTO(
   /** Roles as typed, padding and blanks kept for {@link #checkRoles} to refuse, not to fix. */
   public static List<String> asTyped(List<String> entries) {
     return entries == null ? List.of() : entries.stream().toList();
-  }
-
-  private static List<String> copy(List<String> names) {
-    return names == null ? List.of() : List.copyOf(names);
   }
 }

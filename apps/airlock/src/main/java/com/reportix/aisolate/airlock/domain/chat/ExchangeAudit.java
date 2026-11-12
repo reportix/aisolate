@@ -177,6 +177,7 @@ final class ExchangeAudit implements Consumer<ChatEvent> {
         traceId,
         airlock.spaceId(),
         airlock.id(),
+        airlock.version(),
         airlock.revision(),
         user,
         client,

@@ -122,8 +122,9 @@ class DeployCommandTest {
             "⏺ Building hr-lab",
             "✔ Built build/libs/hr-lab.jar",
             "⏺ Deploying to space hr-lab",
-            "✔ airlock hr-lab/hr-assistant (created, revision 1)",
-            "   POST " + stub.url + "/v1/spaces/hr-lab/airlocks/hr-assistant/chat",
+            "✔ airlock hr-lab/hr-assistant (created)",
+            "✔ version hr-lab/hr-assistant/v1 (created, revision 1)",
+            "   POST " + stub.url + "/v1/spaces/hr-lab/airlocks/hr-assistant/versions/v1/chat",
             "   code sha256:0f1e; tools: read_records, aggregate_records; handlers:"
                 + " HrDocumentsContextPreparator, SessionMemory, SalaryVerifier");
     assertThat(console.errors).isEmpty();
@@ -132,7 +133,8 @@ class DeployCommandTest {
   @Test
   void givenWarningsInTheResult_whenDeploy_thenEachIsOneLineBeforeTheAirlockLine()
       throws Exception {
-    // Arrange: the backend updated the airlock in place, and says what the project lists nowhere
+    // Arrange: the backend updated the version of an existing airlock in place, and says what the
+    // project lists nowhere
     deployBody =
         deployResult(stub.url)
             .replace("\"revision\":1", "\"revision\":3")
@@ -155,7 +157,8 @@ class DeployCommandTest {
             "! tool export_payslips of this project is not in tools, so the model cannot call"
                 + " it",
             "! verifier PayslipVerifier of this project is listed nowhere and runs nowhere",
-            "✔ airlock hr-lab/hr-assistant (updated, revision 3)");
+            "✔ version hr-lab/hr-assistant/v1 (updated, revision 3)");
+    assertThat(console.lines).doesNotContain("✔ airlock hr-lab/hr-assistant (created)");
     assertThat(console.errors).isEmpty();
   }
 
@@ -163,7 +166,7 @@ class DeployCommandTest {
   @CsvSource(
       delimiter = '|',
       value = {
-        "{\"applied\":true}|'   cluster: applied, the status of the Airlock shows its pods'",
+        "{\"applied\":true}|'   cluster: applied, the status of the version shows its pods'",
         "{\"applied\":false,\"problem\":\"forbidden: configmaps is forbidden\"}|'   cluster: not"
             + " applied: forbidden: configmaps is forbidden'",
       })
@@ -239,12 +242,16 @@ class DeployCommandTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "<html>ok</html>",
-        "{\"airlock\":{\"id\":\"hr-assistant\",\"name\":\"HR assistant\"}}"
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "<html>ok</html>|AIsolate answered HTTP 200 without a deploy result",
+        // A backend from before airlock versions: the airlock alone, no version block.
+        "{\"airlock\":{\"id\":\"hr-assistant\",\"name\":\"HR"
+            + " assistant\",\"endpoint\":\"x\"}}|AIsolate answered HTTP 200 without the version's"
+            + " outcome",
       })
-  void givenServer200WithoutAResult_whenDeploy_thenOneLineAndExit1(String response)
+  void givenServer200WithoutAVersion_whenDeploy_thenOneLineAndExit1(String response, String error)
       throws Exception {
     // Arrange
     storeSession(stub.url, "stored", Instant.now().getEpochSecond() + 3600);
@@ -255,8 +262,7 @@ class DeployCommandTest {
 
     // Assert
     assertThat(exit).isEqualTo(1);
-    assertThat(console.errors)
-        .containsExactly("AIsolate answered HTTP 200 without a deploy result");
+    assertThat(console.errors).containsExactly(error);
     assertThat(console.lines)
         .containsExactly(
             "⏺ Signed in as jasmine",
@@ -448,8 +454,9 @@ class DeployCommandTest {
 
   private static String deployResult(String url) {
     return """
-    {"airlock":{"id":"hr-assistant","name":"HR assistant","created":true,"revision":1,
-       "endpoint":"%s/v1/spaces/hr-lab/airlocks/hr-assistant/chat"},
+    {"airlock":{"id":"hr-assistant","name":"HR assistant","created":true},
+     "version":{"version":"v1","created":true,"revision":1,
+       "endpoint":"%s/v1/spaces/hr-lab/airlocks/hr-assistant/versions/v1/chat"},
      "jar":{"digest":"sha256:0f1e","tools":["read_records","aggregate_records"],
        "handlers":["HrDocumentsContextPreparator","SessionMemory","SalaryVerifier"]},
      "warnings":[],"cluster":null}

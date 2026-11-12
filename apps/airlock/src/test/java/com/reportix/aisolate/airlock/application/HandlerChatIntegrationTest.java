@@ -323,7 +323,7 @@ class HandlerChatIntegrationTest {
     }
   }
 
-  /** One airlock in pipeline order; {@code preLLM} is a whole block or nothing. */
+  /** One airlock and its v1 in pipeline order; {@code preLLM} is a whole block or nothing. */
   private static String airlock(
       String name, String displayName, String preLLM, String tools, String digest) {
     return """
@@ -334,6 +334,13 @@ class HandlerChatIntegrationTest {
       space: handler-lab
       displayName: %s
       access: {roles: [employee], callers: [acme-chat]}
+    ---
+    apiVersion: aisolate.dev/v1
+    kind: AirlockVersion
+    metadata: {name: %s-v1}
+    spec:
+      airlock: %s
+      version: v1
     %s  llm: scripted
       prompt: You are the handler lab assistant.
       tools: [%s]
@@ -342,7 +349,7 @@ class HandlerChatIntegrationTest {
           handlers: [CitationVerifier]
       jar: {digest: "%s", tools: [%s]}
     """
-        .formatted(name, displayName, preLLM.indent(2), tools, digest, tools);
+        .formatted(name, displayName, name, name, preLLM.indent(2), tools, digest, tools);
   }
 
   private HttpResponse<String> chat(String airlock, String bearer, String body) {
@@ -357,7 +364,7 @@ class HandlerChatIntegrationTest {
                         + port
                         + "/v1/spaces/handler-lab/airlocks/"
                         + airlock
-                        + "/chat"))
+                        + "/versions/v1/chat"))
             .header("Content-Type", "application/json")
             .header("Accept", accept)
             .POST(HttpRequest.BodyPublishers.ofString(body));

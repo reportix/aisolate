@@ -26,6 +26,7 @@ const chat = (id: string, updatedAt: number): Chat => ({
   id,
   title: id,
   airlockId: "acme-hr",
+  version: "v1",
   messages: [],
   updatedAt,
 });
@@ -70,8 +71,8 @@ describe("sortedChats", () => {
 
 describe("listChats", () => {
   const listing = [
-    { id: "hr", name: "HR", description: "", endpoint: "", tools: [] },
-    { id: "finance", name: "Finance", description: "", endpoint: "", tools: [] },
+    { id: "hr", name: "HR", description: "", versions: [] },
+    { id: "finance", name: "Finance", description: "", versions: [] },
   ];
   const on = (airlockId: string, id: string, updatedAt: number): Chat => ({
     ...chat(id, updatedAt),
@@ -202,7 +203,7 @@ describe("chatsOwner", () => {
 });
 
 describe("chatFor", () => {
-  const hr = "acme-hr";
+  const hr = { airlockId: "acme-hr", version: "v1" };
 
   it("givenNoOpenChat_whenAFailedFirstMessageIsRetried_thenBothLandInOneChat", async () => {
     // Arrange

@@ -15,7 +15,7 @@ from aisolate_tool_server.rules import Action, RuleSet
 FILES = [case_file("rules/compensation.json"), case_file("rules/vitals.json")]
 CASES = [(f, c) for f in FILES for c in f["cases"]]
 REVISION = "0123456789ab"
-META = {"airlock": "conformance", "revision": REVISION}
+META = {"airlock": "conformance", "version": "v1", "revision": REVISION}
 
 
 def _claims(principal: dict[str, Any]) -> dict[str, Any]:
@@ -27,7 +27,7 @@ def _service(document: dict[str, Any], case: dict[str, Any], database: Any) -> G
     fixture = document["fixture"]
     entity = entity_of(fixture["entity"])
     plugin = standard_plugin(entity, "conformance", fixture["identity_attribute"], "SELECT 'the identity join'")
-    policy = Policy("conformance", REVISION, Access(tuple(case["principal"]["roles"]), ("*",)),
+    policy = Policy("conformance", "v1", REVISION, Access(tuple(case["principal"]["roles"]), ("*",)),
                     ("read_records", "aggregate_records"))
     rule_set = RuleSet.parse(json.dumps(document["rule_sets"][case["rule_set"]]))
     return GovernedQueries(PolicySource(REVISION, [policy]), Catalog("conformance", (plugin,), ()),

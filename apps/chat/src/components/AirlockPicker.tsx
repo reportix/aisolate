@@ -10,20 +10,26 @@ type Props = {
    * open chat's own airlock only, since a chat stays with its airlock. */
   options: AirlockListing[];
   selected: string;
+  /** The version that answers, named in the pill when it is the airlock's only one. */
+  version?: string;
   state: PickerState;
   onPick: (airlockId: string) => void;
 };
 
 /** The pill at the foot of the composer: which airlock answers, and the list to pick another from. */
-export function AirlockPicker({ options, selected, state, onPick }: Props) {
+export function AirlockPicker({ options, selected, version, state, onPick }: Props) {
   if (state === "loading") return <Pill muted>Loading airlocks…</Pill>;
   if (state === "failed") return <Pill muted>Could not load your airlocks</Pill>;
   if (state === "none") return <Pill muted>No airlock available</Pill>;
   const current = options.find((o) => o.id === selected);
-  const label = current?.name ?? "Choose an airlock";
+  const label = current
+    ? version
+      ? `${current.name} / ${version}`
+      : current.name
+    : "Choose an airlock";
   // Always a list, one airlock or ten: the pill reads as the place to choose.
   return (
-    <Menu label={label} name={current ? `Airlock ${label}` : label}>
+    <Menu label={label} name={current ? `Airlock ${label}` : label} icon={<AirlockIcon />}>
       {options.map((o) => (
         <MenuRow
           key={o.id}
@@ -48,7 +54,18 @@ function Pill({ muted = false, children }: { muted?: boolean; children: ReactNod
   );
 }
 
-function Menu({ label, name, children }: { label: string; name: string; children: ReactNode }) {
+/** A pill that opens a list, shared with the VersionPicker. */
+export function Menu({
+  label,
+  name,
+  icon,
+  children,
+}: {
+  label: string;
+  name: string;
+  icon?: ReactNode;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -92,7 +109,7 @@ function Menu({ label, name, children }: { label: string; name: string; children
           "font-medium text-ink-secondary transition-colors hover:bg-desk hover:text-ink",
         )}
       >
-        <AirlockIcon />
+        {icon}
         <span className="truncate">{label}</span>
         <ChevronDown />
       </button>
@@ -110,7 +127,7 @@ function Menu({ label, name, children }: { label: string; name: string; children
   );
 }
 
-function MenuRow({
+export function MenuRow({
   label,
   hint,
   selected = false,

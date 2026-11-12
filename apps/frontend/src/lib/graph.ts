@@ -1,12 +1,12 @@
 import { humanize } from "./humanize";
-import { handlersOf, noLlm } from "./airlock";
-import type { Airlock, Stage } from "./types";
+import type { AirlockVersion, Stage } from "./types";
+import { handlersOf, noLlm } from "./version";
 
 /** What a node shows on hover or focus: the facts behind its title. */
 export type GraphDetail = { label: string; value: string; mono: boolean };
 
 /**
- * One node of the airlock's graph: a handler of its code, titled by its short description, or the
+ * One node of the version's graph: a handler of its code, titled by its short description, or the
  * LLM that answers between them. Its kind names the step and picks its colour.
  */
 export type GraphNode = {
@@ -18,14 +18,14 @@ export type GraphNode = {
 };
 
 /**
- * The airlock as its code runs an exchange, on one line: the context preparators, the
+ * The version as its code runs an exchange, on one line: the context preparators, the
  * conversation memories, the LLM that answers, the answer verifiers; the other LLMs of its catalog
  * are its code's business. Empty until a deploy brings the code.
  */
-export function nodesOf(airlock: Airlock): GraphNode[] {
-  const code = airlock.jar;
+export function nodesOf(version: AirlockVersion): GraphNode[] {
+  const code = version.jar;
   if (!code) return [];
-  const { form, main_llm } = airlock;
+  const { form, main_llm } = version;
   const handlers = (
     stage: Stage,
     listed: string[],
@@ -79,13 +79,13 @@ export const stepZoom = (zoom: number, direction: 1 | -1) => {
   return Math.min(ZOOM.max, Math.max(ZOOM.min, next));
 };
 
-/** What the Overview tab says before a deploy, as its title and the line under it. */
+/** What the Graph tab says before a deploy, as its title and the line under it. */
 export type DeployHint = { lead: string; rest: string };
 
-/** Where the project names this airlock, before its first deploy. */
-export function deployHint(airlockId: string): DeployHint {
+/** Where the project names this version, before its first deploy. */
+export function deployHint(airlockId: string, version: string): DeployHint {
   return {
     lead: "No code yet.",
-    rest: `In the project's aisolate.yaml set name: ${airlockId}, then run aisolate deploy.`,
+    rest: `In the project's aisolate.yaml set airlock: ${airlockId} and version: ${version}, then run aisolate deploy.`,
   };
 }

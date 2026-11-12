@@ -40,7 +40,7 @@ class FakeAIsolateManager:
     sources a handler asked for, and optionally a stand-in for the data source ``ehr``."""
 
     principal: Principal = Principal("noah", "noah@example.com", frozenset({"doctor"}))
-    airlock: AirlockRef = AirlockRef("test-space", "cardiology", "test")
+    airlock: AirlockRef = AirlockRef("test-space", "cardiology", "v1", "test")
     ehr: "RecordingConnection | None" = None
     log: logging.Logger = field(default_factory=lambda: logging.getLogger("tests"))
     data_sources_asked: list[str] = field(default_factory=list)

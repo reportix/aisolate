@@ -27,8 +27,8 @@ import tools.jackson.databind.json.JsonMapper;
  * call is authorised as the user of the current request: the token is read from the request's
  * security context on the calling thread and attached to this one call through the MCP transport
  * context, which the customizer below turns into the {@code Authorization} header on whatever
- * thread the SDK sends from. The airlock id and its revision travel in the {@code _meta} of every
- * call and list, so the tool server knows exactly whose rules to apply.
+ * thread the SDK sends from. The airlock id, the version's label and its revision travel in the
+ * {@code _meta} of every call and list, so the tool server knows exactly whose rules to apply.
  *
  * <p>This is the only class that reads the token. It reads it on the calling thread and not inside
  * the customizer on purpose: the SDK sends from its own threads, where the security context is
@@ -123,11 +123,12 @@ final class McpSyncToolClient implements McpToolClient, AutoCloseable {
   }
 
   /**
-   * The {@code _meta} of a call and a list. Both from the admitted airlock, never from model
-   * output: the server pins its policy to exactly this airlock at this revision.
+   * The {@code _meta} of a call and a list. All three from the admitted version, never from model
+   * output: the server pins its policy to exactly this version at this revision.
    */
   private static Map<String, Object> pin(AirlockDefinition airlock) {
-    return Map.of("airlock", airlock.id(), "revision", airlock.revision());
+    return Map.of(
+        "airlock", airlock.id(), "version", airlock.version(), "revision", airlock.revision());
   }
 
   /** Spring calls this at shutdown. */

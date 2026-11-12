@@ -20,10 +20,6 @@ spec:
       name: "PHASE"
       priority: 0
       type: "string"
-    - jsonPath: ".status.readyReplicas"
-      name: "READY"
-      priority: 0
-      type: "integer"
     - jsonPath: ".status.revision"
       name: "REVISION"
       priority: 0
@@ -64,19 +60,6 @@ spec:
                 type: "string"
               displayName:
                 type: "string"
-              jar:
-                properties:
-                  digest:
-                    type: "string"
-                  language:
-                    type: "string"
-                  tools:
-                    items:
-                      type: "string"
-                    type: "array"
-                type: "object"
-              llm:
-                type: "string"
               llms:
                 items:
                   properties:
@@ -92,41 +75,8 @@ spec:
                       type: "string"
                   type: "object"
                 type: "array"
-              postLLM:
-                properties:
-                  answerVerifier:
-                    properties:
-                      handlers:
-                        items:
-                          type: "string"
-                        type: "array"
-                    type: "object"
-                type: "object"
-              preLLM:
-                properties:
-                  contextPreparator:
-                    properties:
-                      handlers:
-                        items:
-                          type: "string"
-                        type: "array"
-                    type: "object"
-                  conversationMemory:
-                    properties:
-                      handlers:
-                        items:
-                          type: "string"
-                        type: "array"
-                    type: "object"
-                type: "object"
-              prompt:
-                type: "string"
               space:
                 type: "string"
-              tools:
-                items:
-                  type: "string"
-                type: "array"
             type: "object"
           status:
             properties:

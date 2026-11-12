@@ -39,7 +39,7 @@ class SessionMemoryTest {
     FakeAIsolateManager grace =
         new FakeAIsolateManager(
             new Principal("grace", "grace@example.com", Set.of("chief")),
-            new AirlockRef("test-space", "cardiology", "test"));
+            new AirlockRef("test-space", "cardiology", "v1", "test"));
     FakeExchange hers = new FakeExchange("Average blood pressure by age group?");
 
     // Act

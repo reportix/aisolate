@@ -53,6 +53,7 @@ public class AuditController {
       String event,
       String space,
       String airlock,
+      String version,
       String revision,
       String traceId,
       String user,
@@ -82,6 +83,7 @@ public class AuditController {
           c.event(),
           c.space(),
           c.airlock(),
+          c.version(),
           c.revision(),
           c.traceId(),
           c.user(),
@@ -117,6 +119,7 @@ public class AuditController {
   public PageDTO list(
       @RequestParam(required = false) String space,
       @RequestParam(required = false) String airlock,
+      @RequestParam(required = false) String version,
       @RequestParam(required = false) String user,
       @RequestParam(required = false) String outcome,
       @RequestParam(name = "trace_id", required = false) String traceId,
@@ -131,6 +134,7 @@ public class AuditController {
             space,
             access.auditedSpaces(),
             airlock,
+            version,
             user,
             outcome,
             traceId,
@@ -240,12 +244,18 @@ public class AuditController {
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   public record DataErrorDTO(AuditService.DataError dataError) {}
 
-  /** Whether the airlock's newest exchange that called a tool could read its data sources. */
+  /**
+   * Whether the airlock's newest exchange that called a tool could read its data sources; one
+   * version's when {@code version} is given.
+   */
   @GetMapping("/data-error")
   @PreAuthorize(Access.AUDIT_READER)
-  public DataErrorDTO dataError(@RequestParam String space, @RequestParam String airlock) {
+  public DataErrorDTO dataError(
+      @RequestParam String space,
+      @RequestParam String airlock,
+      @RequestParam(required = false) String version) {
     requireAudited(space);
-    return new DataErrorDTO(audit.dataError(space, airlock).orElse(null));
+    return new DataErrorDTO(audit.dataError(space, airlock, version).orElse(null));
   }
 
   @GetMapping("/verify")

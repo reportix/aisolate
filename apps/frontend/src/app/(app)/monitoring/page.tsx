@@ -53,7 +53,7 @@ export default function TracingPage() {
       <MonitoringFilters filters={filters} onApply={apply} search />
       {banner && <Banner message={banner} />}
       {!banner && (
-        <Section loading={!list && { rows: 5, cols: 7 }}>
+        <Section loading={!list && { rows: 5, cols: 8 }}>
           {list && <TraceTable traces={list.traces} now={new Date(now)} />}
         </Section>
       )}

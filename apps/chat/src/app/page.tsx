@@ -9,6 +9,7 @@ import { MessageList } from "@/components/MessageList";
 import { Sidebar } from "@/components/Sidebar";
 import { SettingsDialog, settingsDialog } from "@/components/SettingsDialog";
 import { AirlockPicker, type PickerState } from "@/components/AirlockPicker";
+import { VersionPicker } from "@/components/VersionPicker";
 import { listAirlocks, streamChat, type AirlockListing } from "@/lib/api";
 import {
   activeChatStore,
@@ -22,7 +23,7 @@ import {
 } from "@/lib/chats";
 import { reduce } from "@/lib/events";
 import { NotConnected, accessToken, signOut, useAIsolateUser } from "@/lib/aisolateAuth";
-import { pickAirlock, settingsStore, type Settings } from "@/lib/settings";
+import { pickAirlockVersion, settingsStore, type Settings } from "@/lib/settings";
 import type { Message } from "@/lib/types";
 
 const LISTING_FAILED = "Could not load your airlocks";
@@ -123,12 +124,14 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
 
   const rows = useMemo(() => listing && listChats(chats, listing), [chats, listing]);
 
-  // Where a new chat goes. A stale or preset airlock is dropped; the only airlock there is is
-  // selected without asking.
+  // Where a new chat goes. A stale or preset airlock is dropped, a version it no longer lists
+  // falls to its newest; the only airlock there is is selected without asking.
   useEffect(() => {
     if (!listing) return;
-    const chosen = pickAirlock(settings.airlockId, listing);
-    if (chosen !== settings.airlockId) settingsStore.set({ ...settings, airlockId: chosen });
+    const chosen = pickAirlockVersion(settings, listing);
+    if (chosen.airlockId !== settings.airlockId || chosen.version !== settings.version) {
+      settingsStore.set({ ...settings, ...chosen });
+    }
   }, [listing, settings]);
 
   // Who answers: the open chat's own airlock, never another — else the airlock a new chat goes to.
@@ -136,10 +139,14 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
   const activeChat = activeChatId ? chats[activeChatId] : undefined;
   const airlockId = (activeChat ?? settings).airlockId;
   const current = listing?.find((a) => a.id === airlockId);
-  const ready = Boolean(current);
   const unavailable = Boolean(listing && airlockId && !current);
   // What the pill offers: an open chat its own airlock, a new chat every airlock.
   const offered = activeChat ? (current ? [current] : []) : (listing ?? []);
+  // Which of its versions answers: the chat's own (a new chat's setting) while the airlock lists
+  // it, else its newest. An airlock that runs no version yet takes no message.
+  const versions = current?.versions ?? [];
+  const version = pickAirlockVersion(activeChat ?? settings, offered).version;
+  const ready = Boolean(current && version);
   const pickerState: PickerState =
     banner?.message === LISTING_FAILED
       ? "failed"
@@ -151,7 +158,12 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
 
   // A new chat goes where the pill points; an open chat keeps its airlock.
   const onPickAirlock = (id: string) => {
-    if (!activeChat) settingsStore.set({ ...settings, airlockId: id });
+    if (!activeChat) settingsStore.set({ ...settings, airlockId: id, version: "" });
+  };
+  // A new chat's version is a setting; an open chat switches its own, the airlock staying.
+  const onPickVersion = (picked: string) => {
+    if (activeChat) upsertChat({ ...activeChat, version: picked });
+    else settingsStore.set({ ...settings, version: picked });
   };
 
   const send = async (text: string) => {
@@ -159,7 +171,7 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
     setBanner(null);
     // A fresh chat is saved on its first message: nothing is kept for a chat
     // nobody used. Its airlock is fixed here, for good.
-    const chatId = chatFor(text, airlockId);
+    const chatId = chatFor(text, { airlockId, version });
 
     // Guards every update below: if the user switches to another chat mid-stream, this stream's
     // own late events must not go on writing into whatever is on screen now.
@@ -190,6 +202,7 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
       await streamChat(text, token, controller.signal, (e) => patchLast((m) => reduce(m, e)), {
         aisolateUrl: settings.aisolateUrl,
         airlockId,
+        version,
       });
       // A stream that ends without a done frame still has to leave the message settled.
       patchLast((m) => (m.status === "streaming" ? { ...m, status: "done" } : m));
@@ -287,12 +300,16 @@ function ChatShell({ user, settings }: { user: User; settings: Settings }) {
               streaming={streaming}
               disabled={!ready}
               picker={
-                <AirlockPicker
-                  options={offered}
-                  selected={airlockId}
-                  state={pickerState}
-                  onPick={onPickAirlock}
-                />
+                <>
+                  <AirlockPicker
+                    options={offered}
+                    selected={airlockId}
+                    version={versions.length === 1 ? version : undefined}
+                    state={pickerState}
+                    onPick={onPickAirlock}
+                  />
+                  <VersionPicker versions={versions} selected={version} onPick={onPickVersion} />
+                </>
               }
               onSend={(t) => void send(t)}
               onStop={() => abort.current?.abort()}

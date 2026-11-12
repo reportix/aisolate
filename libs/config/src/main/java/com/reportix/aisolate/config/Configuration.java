@@ -9,14 +9,15 @@ import java.util.stream.Stream;
 /**
  * Every document of one release, by kind and name in file order, plus the revision that identifies
  * the set: the chart's checksum when it passed one, else a hash of the files as read. The loader
- * guarantees the references: each Airlock names its Space and, when it names an LLM, one it sees.
- * {@code global} is never null: a set without a Global holds an empty one.
+ * guarantees the references: each Airlock names its Space, each AirlockVersion its Airlock and an
+ * LLM it sees. {@code global} is never null: a set without a Global holds an empty one.
  */
 public record Configuration(
     String revision,
     GlobalDocument global,
     Map<String, SpaceDocument> spaces,
-    Map<String, AirlockDocument> airlocks) {
+    Map<String, AirlockDocument> airlocks,
+    Map<String, AirlockVersionDocument> airlockVersions) {
 
   public Configuration {
     global = global == null ? GlobalDocument.empty() : global;
@@ -25,6 +26,12 @@ public record Configuration(
   /** The Space {@code airlock} belongs to. */
   public SpaceDocument spaceOf(String airlock) {
     return require(spaces, "Space", require(airlocks, "Airlock", airlock).spec().space());
+  }
+
+  /** The Airlock {@code version}, an AirlockVersion's name, belongs to. */
+  public AirlockDocument airlockOf(String version) {
+    return require(
+        airlocks, "Airlock", require(airlockVersions, "AirlockVersion", version).spec().airlock());
   }
 
   /**
@@ -44,34 +51,48 @@ public record Configuration(
         own == null ? List.of() : own.clients());
   }
 
+  /** The versions of {@code airlock} in document order; none before its first deploy. */
+  public List<AirlockVersionDocument> versionsOf(String airlock) {
+    return airlockVersions.values().stream()
+        .filter(version -> airlock.equals(version.spec().airlock()))
+        .toList();
+  }
+
   /**
-   * Every LLM {@code airlock} sees, sorted by id: the global ones, its space's, then its own, a
-   * nearer definition of an id replacing the farther one whole.
+   * Every LLM {@code versionName} sees, sorted by id: the global ones, its space's, its airlock's,
+   * then its own, a nearer definition of an id replacing the farther one whole.
    */
-  public List<Llm> llmsOf(String airlock) {
+  public List<Llm> llmsOf(String versionName) {
+    AirlockVersionDocument version = require(airlockVersions, "AirlockVersion", versionName);
+    AirlockDocument airlock = airlockOf(versionName);
     return byId(
         Llm::id,
         global.spec().llms(),
-        spaceOf(airlock).spec().llms(),
-        require(airlocks, "Airlock", airlock).spec().llms());
+        spaceOf(airlock.name()).spec().llms(),
+        airlock.spec().llms(),
+        version.spec().llms());
   }
 
   /**
-   * The LLM that answers for {@code airlock}: the one of its catalog named by its llm; null before
-   * the first deploy names one.
+   * The LLM that answers for {@code versionName}: the one of its catalog named by its llm; null
+   * only while the documents are being validated, the loader refuses the version then.
    */
-  public Llm mainLlmOf(String airlock) {
-    String id = require(airlocks, "Airlock", airlock).spec().llm();
-    return llmsOf(airlock).stream().filter(llm -> llm.id().equals(id)).findFirst().orElse(null);
+  public Llm mainLlmOf(String versionName) {
+    String id = require(airlockVersions, "AirlockVersion", versionName).spec().llm();
+    return llmsOf(versionName).stream().filter(llm -> llm.id().equals(id)).findFirst().orElse(null);
   }
 
-  /** The data sources {@code airlock} reads, sorted by id, merged as {@link #llmsOf}. */
-  public List<DataSource> dataSourcesOf(String airlock) {
+  /**
+   * The data sources {@code versionName} reads, sorted by id, merged as {@link #llmsOf} over three
+   * levels: a version defines none, a data source needs a login and a version holds no credential.
+   */
+  public List<DataSource> dataSourcesOf(String versionName) {
+    AirlockDocument airlock = airlockOf(versionName);
     return byId(
         DataSource::id,
         global.spec().dataSources(),
-        spaceOf(airlock).spec().dataSources(),
-        require(airlocks, "Airlock", airlock).spec().dataSources());
+        spaceOf(airlock.name()).spec().dataSources(),
+        airlock.spec().dataSources());
   }
 
   /**

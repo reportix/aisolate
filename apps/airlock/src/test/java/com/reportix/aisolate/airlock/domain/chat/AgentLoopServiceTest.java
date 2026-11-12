@@ -299,6 +299,7 @@ class AgentLoopServiceTest {
     tracing.exchange(
         "hr-acme",
         "acme-hr",
+        "v1",
         () -> {
           tracing.admission(admission -> {
             admission.asked(AIRLOCK, CLIENT);

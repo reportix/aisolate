@@ -38,8 +38,8 @@ export type LlmInput = Llm & { api_key?: string };
 /** An LLM or a data source AIsolate defines for every space: `updated_at` is what an edit was read at. */
 export type Global<R> = R & { updated_at: string };
 
-/** Who defines an LLM or a data source an airlock sees, nearest first. */
-export type Origin = "airlock" | "space" | "global";
+/** Who defines an LLM or a data source one level sees, nearest first; a version defines LLMs only. */
+export type Origin = "version" | "airlock" | "space" | "global";
 
 /** A space: the roles every airlock of it admits, its developers, and the LLMs and data sources they share. */
 export type Space = {
@@ -76,10 +76,53 @@ export type SpaceForm = Omit<
   data_sources: DataSourceInput[];
 };
 
+/**
+ * An airlock: its name, which roles may ask it, the LLMs and data sources it defines over the
+ * space's for its versions, and how many versions it has. It runs nothing itself: each version
+ * does, on its own endpoint. A save from the UI sends the identity, roles and catalogs
+ * ({@link AirlockForm}).
+ */
+export type Airlock = {
+  id: string;
+  space_id: string;
+  name: string;
+  description: string;
+  /** The roles that may ask it besides the space's; maybe none. */
+  roles: string[];
+  /** The OAuth clients (azp) they may ask from; `*` admits any. */
+  callers: string[];
+  /** The machine clients (azp, exact) it admits on a token without an e-mail; maybe none. */
+  clients: string[];
+  llms: Llm[];
+  data_sources: DataSource[];
+  /** Counts its saves, the UI's and the deploys'. */
+  revision: number;
+  /** How many versions it has, not the versions themselves. */
+  versions: number;
+  /** The username of who created it; `created_by_name` is the name shown. */
+  created_by: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AirlockForm = Omit<
+  Airlock,
+  | "space_id"
+  | "llms"
+  | "data_sources"
+  | "revision"
+  | "versions"
+  | "created_by"
+  | "created_by_name"
+  | "created_at"
+  | "updated_at"
+> & { llms: LlmInput[]; data_sources: DataSourceInput[] };
+
 /** The pipeline stage a handler runs in. */
 export type Stage = "context_prep" | "memory" | "verifier";
 
-/** What `aisolate deploy` brought to an airlock, read-only: its tools and handlers. */
+/** What `aisolate deploy` brought to a version, read-only: its tools and handlers. */
 export type Code = {
   digest: string;
   size: number;
@@ -101,70 +144,53 @@ export type Code = {
 };
 
 /**
- * What an airlock runs, in the order an exchange runs it, as `aisolate deploy` set it from the
- * project's aisolate.yaml: the pages read it and never send it back. The handlers and tools it
- * lists are its code's.
+ * What one version runs, in the order an exchange runs it, as `aisolate deploy` set it from the
+ * project's aisolate.yaml: a save of the description sends it back untouched. The handlers and
+ * tools it lists are its code's.
  */
-export type Pipeline = {
+export type VersionForm = {
+  /** Its name, fixed once created: lowercase letters, digits and dashes. */
+  version: string;
+  description: string;
   /** The context preparators it runs, by class name. */
   context_preparators: string[];
   /** The conversation memories it runs, by class name. */
   memory_handlers: string[];
-  /** The id of the LLM that answers, from its own, its space's or AIsolate's; "" before a deploy. */
+  /** The id of the LLM that answers, from its own, its airlock's, its space's or AIsolate's. */
   llm: string;
+  /** What the model is told; blank, the server's default prompt. */
   prompt: string;
   /** The tools of its code the model may call. */
   tools: string[];
   /** The answer verifiers it runs, by class name. */
   verifiers: string[];
+  /** Its own, never with an API key; the airlock's, the space's and AIsolate's come with it. */
+  llms: Llm[];
 };
 
+/** What a version save carries: the form, its models as rows ({@link LlmInput}). */
+export type VersionInput = Omit<VersionForm, "llms"> & { llms: LlmInput[] };
+
 /**
- * An airlock, on its own endpoint: its name, which roles may ask it, the LLMs and data sources it defines
- * over the space's, and what it runs, which `aisolate deploy` brings. A save from the UI sends the
- * identity, roles and catalogs ({@link AirlockForm}); the deploy's fields stay as they are.
+ * One version of an airlock, what runs, on its own endpoint: its form, the LLM that answers and
+ * the code `aisolate deploy` brought. `updated_at` is what an edit was read at.
  */
-export type Airlock = {
-  id: string;
-  space_id: string;
-  name: string;
+export type AirlockVersion = {
+  airlock_id: string;
+  version: string;
   description: string;
-  /** The roles that may ask it besides the space's; maybe none. */
-  roles: string[];
-  /** The OAuth clients (azp) they may ask from; `*` admits any. */
-  callers: string[];
-  /** The machine clients (azp, exact) it admits on a token without an e-mail; maybe none. */
-  clients: string[];
-  llms: Llm[];
-  data_sources: DataSource[];
   /** Counts its saves, the UI's and the deploys'. */
   revision: number;
   /** Where it answers: a whole URL, or a path on the API's host (see endpointUrl). */
   endpoint: string;
-  form: Pipeline;
-  /** The LLM its `llm` names, and where that is defined; null while it names none it sees. */
-  main_llm: (Llm & { from: Origin }) | null;
-  /** Its code (the wire's name for it); null until `aisolate deploy` brings it. */
-  jar: Code | null;
   /** The username of who created it; `created_by_name` is the name shown. */
   created_by: string | null;
   created_by_name: string | null;
   created_at: string;
   updated_at: string;
+  form: VersionForm;
+  /** The LLM its `llm` names, and where that is defined; null while it names none it sees. */
+  main_llm: (Llm & { from: Origin }) | null;
+  /** Its code (the wire's name for it); null until `aisolate deploy` brings it. */
+  jar: Code | null;
 };
-
-export type AirlockForm = Omit<
-  Airlock,
-  | "space_id"
-  | "llms"
-  | "data_sources"
-  | "revision"
-  | "endpoint"
-  | "form"
-  | "main_llm"
-  | "jar"
-  | "created_by"
-  | "created_by_name"
-  | "created_at"
-  | "updated_at"
-> & { llms: LlmInput[]; data_sources: DataSourceInput[] };

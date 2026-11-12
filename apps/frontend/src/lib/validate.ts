@@ -3,6 +3,12 @@ import type { DataSourceInput, Llm } from "./types";
 /** Same rule as the backend's for data sources and LLMs: a data source's id becomes part of its Secret's name. */
 const ENTRY_ID = /^[a-z0-9][a-z0-9_-]{0,40}$/;
 
+/**
+ * Same rule as the backend: 1 to 31 characters, no dash at the end, since the name ends the
+ * endpoint and the Kubernetes names and labels of the version's resources.
+ */
+const VERSION_NAME = /^[a-z0-9]([a-z0-9-]{0,29}[a-z0-9])?$/;
+
 /** Row `i`'s id, in the backend's words: present, well formed, and the first of its spelling. */
 function idErrors(rows: { id: string }[], i: number, at: string): string[] {
   const id = rows[i].id.trim();
@@ -50,4 +56,20 @@ export function validateLlms(rows: Llm[]): string[] {
     }
     return errors;
   });
+}
+
+/** A new version's LLM: the backend refuses a version without one. */
+export const validateMainLlm = (id: string) =>
+  id.trim() ? [] : ["llm: name the model that answers, for example granite"];
+
+/**
+ * A new version's name, as the backend checks it; an edited version keeps its name. Keyed "name",
+ * the field of the form that asks for it.
+ */
+export function validateVersion(name: string): string[] {
+  const trimmed = name.trim();
+  if (!trimmed) return ["name: required"];
+  if (!VERSION_NAME.test(trimmed)) return ["name: lowercase letters, digits and dashes"];
+  // The page that creates a version sits at versions/new: one by that name could not be opened.
+  return trimmed === "new" ? ["name: new is reserved"] : [];
 }

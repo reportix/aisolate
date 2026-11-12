@@ -13,6 +13,7 @@ import {
   SpacesIcon,
   Tile,
   UserMenu,
+  VersionsIcon,
 } from "@aisolate/ui";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,6 +28,7 @@ const ICONS: Record<RailIcon, ComponentType<{ size?: number; className?: string 
   spaces: SpacesIcon,
   audit: AuditIcon,
   airlocks: AirlockIcon,
+  versions: VersionsIcon,
   llm: CpuIcon,
   "data-sources": DatabaseIcon,
   monitoring: ActivityIcon,

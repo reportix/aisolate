@@ -2,7 +2,7 @@ package com.reportix.aisolate.backend.domain.airlock;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.config.Llm;
 import com.reportix.aisolate.config.Names;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public record LlmFormDTO(
     provider = strip(provider);
     url = strip(url);
     model = strip(model);
-    secretRef = AirlockDocument.OPENAI.equals(provider) ? strip(secretRef) : "";
+    secretRef = AirlockVersionDocument.OPENAI.equals(provider) ? strip(secretRef) : "";
   }
 
   /** A document's model as a row: its Secret's name, if any, and no key. */
@@ -105,12 +105,12 @@ public record LlmFormDTO(
       } else if (!ids.add(row.id())) {
         errors.add(at + "id: " + row.id() + " is listed twice");
       }
-      String provider = AirlockDocument.providerProblem(row.provider());
+      String provider = AirlockVersionDocument.providerProblem(row.provider());
       if (row.provider().isEmpty()) {
         errors.add(at + "provider: required");
       } else if (provider != null) {
         errors.add(at + "provider: " + provider);
-      } else if (row.bringsCredentials() && !AirlockDocument.OPENAI.equals(row.provider())) {
+      } else if (row.bringsCredentials() && !AirlockVersionDocument.OPENAI.equals(row.provider())) {
         errors.add(at + "api_key: an Ollama model takes no API key");
       }
       if (row.url().isEmpty()) {

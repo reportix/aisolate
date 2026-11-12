@@ -7,8 +7,10 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class NamesTest {
@@ -85,6 +87,29 @@ class NamesTest {
 
     // Assert
     assertThat(problems).containsExactlyElementsOf(expected);
+  }
+
+  @Test
+  void givenSpace_whenMaxAirlockId_thenTheLongestIdWhoseV1StillFits() {
+    // Arrange: hr-acme-<id>-v1-mcp-server must fit 63 characters
+    String longest = "a".repeat(Names.maxAirlockId("hr-acme"));
+
+    // Act / Assert
+    assertThat(longest).hasSize(41);
+    assertThat(Names.clusterNameProblem("hr-acme", longest, "v1")).isNull();
+    assertThat(Names.clusterNameProblem("hr-acme", longest, "v10"))
+        .isEqualTo(
+            "it would run as hr-acme-"
+                + longest
+                + "-v10-mcp-server, 64 characters; Kubernetes allows 63 (shorten the space, the"
+                + " airlock or the version name)");
+  }
+
+  @ParameterizedTest
+  @CsvSource({"v1, true", "pilot, true", "2026-10, true", "V1, false", "v1-, false", "-v1, false"})
+  void givenVersionLabel_whenMatched_thenLowercaseNotEndingInADash(String label, boolean ok) {
+    // Arrange / Act / Assert
+    assertThat(Names.VERSION_LABEL.matcher(label).matches()).isEqualTo(ok);
   }
 
   static Stream<Arguments> emails() {

@@ -172,6 +172,15 @@ export const FileSearchIcon = (p: Props) => (
   </Icon>
 );
 
+export const VersionsIcon = (p: Props) => (
+  <Icon {...p}>
+    <path d="M6 3v12" />
+    <circle cx="18" cy="6" r="3" />
+    <circle cx="6" cy="18" r="3" />
+    <path d="M18 9a9 9 0 0 1-9 9" />
+  </Icon>
+);
+
 export const HistoryIcon = (p: Props) => (
   <Icon {...p}>
     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />

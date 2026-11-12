@@ -27,13 +27,15 @@ log = logging.getLogger("aisolate.toolserver")
 tracer = trace.get_tracer("aisolate.toolserver")
 
 QUERIES = Counter(
-    "aisolate_tool_queries", "Governed tool calls by outcome", ["airlock", "tool", "outcome"]
+    "aisolate_tool_queries", "Governed tool calls by outcome", ["airlock", "version", "tool", "outcome"]
 )
 
 
 @dataclass(frozen=True, slots=True)
 class Policy:
     airlock: str
+    version: str
+    """The version's label within its airlock, for example ``v1``."""
     revision: str
     access: Access
     tools: tuple[str, ...]
@@ -45,25 +47,26 @@ class Policy:
 
 
 class PolicySource:
-    """Every served airlock's gate inputs, found only by a complete pin at this pod's revision."""
+    """Every served version's gate inputs, found only by a complete pin at this pod's revision."""
 
     def __init__(self, revision: str, policies: Sequence[Policy]) -> None:
         self.revision = revision
-        self.policies = {p.airlock: p for p in policies}
+        self.policies = {(p.airlock, p.version): p for p in policies}
 
     @classmethod
     def of(cls, configuration: Configuration) -> PolicySource:
         return cls(
             configuration.revision,
-            [Policy(a.name, configuration.revision, a.access, a.tools) for a in configuration.airlocks.values()],
+            [Policy(v.airlock, v.label, configuration.revision, v.access, v.tools)
+             for v in configuration.versions.values()],
         )
 
     def find(self, meta: Mapping[str, Any] | None) -> Policy | None:
         """A pin is read only from JSON strings; anything else pins nothing."""
-        pins = [meta.get(key) if meta is not None else None for key in ("airlock", "revision")]
-        if not all(isinstance(pin, str) for pin in pins) or pins[1] != self.revision:
+        pins = [meta.get(key) if meta is not None else None for key in ("airlock", "version", "revision")]
+        if not all(isinstance(pin, str) for pin in pins) or pins[2] != self.revision:
             return None
-        return self.policies.get(pins[0])
+        return self.policies.get((pins[0], pins[1]))
 
 
 class Database(Protocol):
@@ -101,7 +104,7 @@ class GovernedQueries:
         self._tools = catalog.tools()
 
     def published(self) -> list[Tool]:
-        """What ``tools/list`` advertises: every tool a served airlock lists and a plugin publishes, by name."""
+        """What ``tools/list`` advertises: every tool a served version lists and a plugin publishes, by name."""
         listed = {name for policy in self.policies.policies.values() for name in policy.tools}
         return sorted((t for name, (_, t) in self._tools.items() if name in listed), key=lambda t: t.name)
 
@@ -121,7 +124,7 @@ class GovernedQueries:
         ``parent``: the request's trace context (the call runs on a worker thread)."""
         policy = self.policies.find(meta)
         with tracer.start_as_current_span(f"governed query {tool}", context=parent) as span:
-            for key in ("airlock", "revision"):
+            for key in ("airlock", "version", "revision"):
                 pin = meta.get(key) if meta is not None else None
                 _tag(span, f"aisolate.{key}", pin if isinstance(pin, str) else None)
             _tag(span, "aisolate.tool", tool)
@@ -138,7 +141,8 @@ class GovernedQueries:
             finally:
                 _tag(span, "aisolate.outcome", outcome)
                 # A caller cannot invent a label: the served policy's, else none.
-                QUERIES.labels(policy.airlock if policy else "none", tool, outcome).inc()
+                QUERIES.labels(policy.airlock if policy else "none", policy.version if policy else "none",
+                               tool, outcome).inc()
 
     def _answer(self, claims: Mapping[str, Any], policy: Policy | None, tool: str, arguments: dict[str, Any], span: Span) -> Result:
         if policy is None:
@@ -195,8 +199,9 @@ class _Bound:
         rule_set = self.owner.rule_sets.get(name)
         if entity is None or rule_set is None:
             log.warning(
-                "%s: entity '%s' declared=%s governed=%s; asked by a tool of plugin %s",
-                self.policy.airlock, name, entity is not None, rule_set is not None, self.plugin.name,
+                "%s/%s: entity '%s' declared=%s governed=%s; asked by a tool of plugin %s",
+                self.policy.airlock, self.policy.version, name, entity is not None, rule_set is not None,
+                self.plugin.name,
             )
             return Result.empty(name, self.policy.rule_version)
         obligations = rules.evaluate(self.principal, rule_set, action)
@@ -205,7 +210,7 @@ class _Bound:
         query = compile(entity, obligations)
         with tracer.start_as_current_span(f"sql {self.plugin.data_source}") as span:
             for key, value in (
-                ("airlock", self.policy.airlock), ("revision", self.policy.revision),
+                ("airlock", self.policy.airlock), ("version", self.policy.version), ("revision", self.policy.revision),
                 ("data_source", self.plugin.data_source), ("entity", entity.name),
             ):
                 _tag(span, f"aisolate.{key}", value)

@@ -13,7 +13,7 @@ sends `Accept: application/json` and gets the whole exchange as one document, un
 admission and the same rules:
 
 ```bash
-curl -s -X POST "$AISOLATE/v1/spaces/acme/airlocks/hr/chat" \
+curl -s -X POST "$AISOLATE/v1/spaces/acme/airlocks/hr/versions/v1/chat" \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Accept: application/json' \
   -H 'Content-Type: application/json' \

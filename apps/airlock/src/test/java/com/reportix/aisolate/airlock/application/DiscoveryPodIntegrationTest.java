@@ -77,7 +77,7 @@ class DiscoveryPodIntegrationTest {
     assertThat(response.body())
         .contains("founders-finance")
         .contains("\"space\":\"hr-acme\"")
-        .contains("/v1/spaces/hr-acme/airlocks/hr-assistant/chat");
+        .contains("/v1/spaces/hr-acme/airlocks/hr-assistant/versions/v1/chat");
   }
 
   @Test
@@ -98,8 +98,8 @@ class DiscoveryPodIntegrationTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "/v1/spaces/hr-acme/airlocks/hr-assistant/chat",
-        "/v1/spaces/hr-acme/airlocks/retired/chat"
+        "/v1/spaces/hr-acme/airlocks/hr-assistant/versions/v1/chat",
+        "/v1/spaces/hr-acme/airlocks/retired/versions/v1/chat"
       })
   void givenDiscoveryPod_whenChat_then404AndNoModelCall(String path) {
     // Arrange: a listed airlock whose own Ingress rule is missing, and one nobody lists

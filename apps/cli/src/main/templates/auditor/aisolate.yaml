@@ -1,8 +1,8 @@
-# The ${AIRLOCK} airlock: the audit assistant for one audited company, in the order an exchange
-# runs. The space it deploys into is AISOLATE_SPACE in .env; the space (the audit firm) is created
-# in the AIsolate UI, where it lists its auditors. The LLMs are the admin's, defined for all of
-# AIsolate or on the space: this file names one by id. The airlock is one per audited company; its
-# own data source ledger is set in the AIsolate UI.
+# The ${AIRLOCK} airlock and one version of it: the audit assistant for one audited company, in
+# the order an exchange runs. The space it deploys into is AISOLATE_SPACE in .env; the space (the
+# audit firm) is created in the AIsolate UI, where it lists its auditors. The LLMs are the
+# admin's, defined for all of AIsolate or on the space: this file names one by id. The airlock
+# is one per audited company; its own data source ledger is set in the AIsolate UI.
 # The Airlock below is created or updated on every deploy: each field it writes replaces
 # the airlock's, a field left out keeps what the AIsolate UI set.
 apiVersion: aisolate.dev/v1
@@ -13,6 +13,15 @@ spec:
   displayName: ${AIRLOCK_NAME}
   description: "${AIRLOCK_DESCRIPTION}"
   # No roles of its own: what the AIsolate UI set stays.
+---
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata:
+  name: ${AIRLOCK}-v1            # <airlock>-<version>
+spec:
+  airlock: ${AIRLOCK}
+  version: v1                    # any name: lowercase letters, digits and dashes
+  description: First version of the audit assistant for one audited company.
 
   # Pre-LLM, before the model sees the question: what shapes it, and what it reads.
   preLLM:

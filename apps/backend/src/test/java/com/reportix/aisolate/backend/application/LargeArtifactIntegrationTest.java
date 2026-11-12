@@ -81,10 +81,10 @@ class LargeArtifactIntegrationTest {
                           URI.create(
                               "http://localhost:"
                                   + auditIngestConnector.getLocalPort()
-                                  + "/v1/code/large-lab/hr-assistant/"
+                                  + "/v1/code/large-lab/hr-assistant/v1/"
                                   + digest)),
                       AuditIngestToken.ofCode(
-                          BackendTestConfig.INGEST_KEY, "large-lab", "hr-assistant"))
+                          BackendTestConfig.INGEST_KEY, "large-lab", "hr-assistant", "v1"))
                   .build(),
               HttpResponse.BodyHandlers.ofInputStream());
       fetchedStatus = fetched.statusCode();

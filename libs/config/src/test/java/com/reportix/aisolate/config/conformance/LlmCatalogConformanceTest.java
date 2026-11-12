@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.reportix.aisolate.config.Configuration;
 import com.reportix.aisolate.config.ConfigurationException;
 import com.reportix.aisolate.config.ConfigurationLoader;
-import com.reportix.aisolate.config.Llm;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,8 +24,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * {@code conformance/cases/llm/catalog.json}: the LLMs and data sources an airlock sees over the
- * three levels, its main LLM, and the loader's refusals; shared with the Python loader.
+ * {@code conformance/cases/llm/catalog.json}: the LLMs a version sees over the four levels, the
+ * data sources over three, its main LLM, and the loader's refusals; shared with the Python loader.
  */
 class LlmCatalogConformanceTest {
 
@@ -47,7 +46,7 @@ class LlmCatalogConformanceTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("cases")
-  void givenDocumentsOverThreeLevels_whenLoaded_thenTheAirlocksCatalogOrTheProblems(JsonNode c)
+  void givenDocumentsOverFourLevels_whenLoaded_thenTheVersionsCatalogOrTheProblems(JsonNode c)
       throws IOException {
     // Arrange
     Map<String, JsonNode> files = new LinkedHashMap<>();
@@ -79,11 +78,10 @@ class LlmCatalogConformanceTest {
     } else {
       assertThat(thrown).isNull();
       Configuration configuration = loaded[0];
-      assertThat((JsonNode) JSON.valueToTree(configuration.llmsOf("hr")))
+      assertThat((JsonNode) JSON.valueToTree(configuration.llmsOf("hr-v1")))
           .isEqualTo(expect.path("llms"));
-      Llm main = configuration.mainLlmOf("hr");
-      assertThat(main == null ? null : main.id()).isEqualTo(expect.path("main").asString(null));
-      assertThat((JsonNode) JSON.valueToTree(configuration.dataSourcesOf("hr")))
+      assertThat(configuration.mainLlmOf("hr-v1").id()).isEqualTo(expect.path("main").asString());
+      assertThat((JsonNode) JSON.valueToTree(configuration.dataSourcesOf("hr-v1")))
           .isEqualTo(expect.path("data_sources"));
     }
   }

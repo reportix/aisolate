@@ -36,6 +36,7 @@ public class TraceController {
       String event,
       String space,
       String airlock,
+      String version,
       String traceId,
       String user,
       String outcome,
@@ -56,6 +57,7 @@ public class TraceController {
           c.event(),
           c.space(),
           c.airlock(),
+          c.version(),
           c.traceId(),
           c.user(),
           c.outcome(),
@@ -90,6 +92,7 @@ public class TraceController {
   public PageDTO list(
       @RequestParam(required = false) String space,
       @RequestParam(required = false) String airlock,
+      @RequestParam(required = false) String version,
       @RequestParam(required = false) String q,
       @RequestParam(required = false) String from,
       @RequestParam(required = false) String to,
@@ -98,7 +101,7 @@ public class TraceController {
     // Another space's, asked by name: the 403 its pages give.
     if (space != null && !space.isBlank()) access.developer(space);
     TraceService.Page page =
-        traces.list(space, access.developedSpaces(), airlock, q, from, to, cursor, limit);
+        traces.list(space, access.developedSpaces(), airlock, version, q, from, to, cursor, limit);
     return new PageDTO(page.traces().stream().map(SummaryDTO::of).toList(), page.nextCursor());
   }
 

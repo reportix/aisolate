@@ -3,6 +3,7 @@ package com.reportix.aisolate.backend.domain.space;
 import com.reportix.aisolate.backend.domain.Creator;
 import com.reportix.aisolate.backend.domain.airlock.AirlockRepository;
 import com.reportix.aisolate.backend.domain.airlock.AirlockService;
+import com.reportix.aisolate.backend.domain.airlock.AirlockVersionRepository;
 import com.reportix.aisolate.backend.domain.airlock.ConflictException;
 import com.reportix.aisolate.backend.domain.airlock.DataSourceSecrets;
 import com.reportix.aisolate.backend.domain.airlock.Documents;
@@ -32,6 +33,7 @@ public class SpaceService {
 
   private final SpaceRepository spaces;
   private final AirlockRepository airlocks;
+  private final AirlockVersionRepository versions;
   private final AirlockService airlockService;
   private final DataSourceSecrets secrets;
   private final CredentialRepository rows;
@@ -79,8 +81,8 @@ public class SpaceService {
 
   /**
    * The stored row is read locked, so a concurrent save cannot keep a Secret this one replaces. A
-   * save that would leave an airlock without its main LLM or a data source its code reads is
-   * refused ({@link AirlockService#requireAirlocksStillResolve}).
+   * save that would leave a version without its main LLM or a data source its code reads is refused
+   * ({@link AirlockService#requireVersionsStillResolve}).
    *
    * @param ifMatch the {@code updated_at} the form was read at, or null ({@link
    *     ConflictException#requireUnchanged})
@@ -102,8 +104,13 @@ public class SpaceService {
       errors.addAll(secrets.problems(owner, form.llms(), stored.llms()));
       secrets.requireValid(owner, errors, form.dataSources(), stored.dataSources());
       Space updated = spaces.update(id, form);
-      airlockService.requireAirlocksStillResolve(
-          stored, updated, airlocks.list(id), airlock -> airlock, "on the airlock", "airlock");
+      airlockService.requireVersionsStillResolve(
+          stored,
+          updated,
+          airlocks.list(id),
+          airlock -> airlock,
+          "on the airlock",
+          "airlock or version");
       Space saved = storeCredentials(updated, form, owner);
       secrets.publishReplaced(stored.dataSources(), saved.dataSources());
       secrets.publishReplaced(stored.llms(), saved.llms());
@@ -131,8 +138,9 @@ public class SpaceService {
 
   private SpacesDeletedDTO deleteRows(List<CredentialRepository.Row> gone) {
     gone.addAll(rows.deleteSpacesAndAirlocks());
+    int versionCount = versions.deleteAll();
     int airlockCount = airlocks.deleteAll();
-    return new SpacesDeletedDTO(spaces.deleteAll(), airlockCount, null, null);
+    return new SpacesDeletedDTO(spaces.deleteAll(), airlockCount, versionCount, null, null);
   }
 
   private SpacesDeletedDTO.Monitoring clearMonitoring() {

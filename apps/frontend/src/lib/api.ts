@@ -24,6 +24,7 @@ import { type TraceDetail, type TraceFilters, type TracePage, tracesQuery } from
 import type {
   Airlock,
   AirlockForm,
+  AirlockVersion,
   DataSource,
   DataSourceInput,
   Global,
@@ -31,6 +32,7 @@ import type {
   LlmInput,
   Space,
   SpaceForm,
+  VersionInput,
 } from "./types";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
@@ -74,8 +76,8 @@ const call = async <T>(
 ) => (await (await send(token, method, path, body, headers)).json()) as T;
 
 /**
- * What a save's form was read at, the `updated_at` of a space or an airlock: the backend refuses
- * the save when another came between, rather than undo it.
+ * What a save's form was read at, the `updated_at` of a space, an airlock or a version: the
+ * backend refuses the save when another came between, rather than undo it.
  */
 const ifMatch = (readAt: string) => ({ "If-Match": `"${readAt}"` });
 
@@ -89,6 +91,8 @@ function unreachable(): never {
 const space = (id: string) => `/spaces/${encodeURIComponent(id)}`;
 const airlock = (spaceId: string, id: string) =>
   `${space(spaceId)}/airlocks/${encodeURIComponent(id)}`;
+const version = (spaceId: string, airlockId: string, name: string) =>
+  `${airlock(spaceId, airlockId)}/versions/${encodeURIComponent(name)}`;
 const llm = (id: string) => `/llms/${encodeURIComponent(id)}`;
 const dataSource = (id: string) => `/data-sources/${encodeURIComponent(id)}`;
 
@@ -129,6 +133,9 @@ const bodyOf = <T extends { llms: LlmInput[]; data_sources: DataSourceInput[] }>
   data_sources: form.data_sources.map(dataSourceBody),
 });
 
+/** A version save: the form as the version page read it; its models go through llmBody too. */
+const versionBody = (form: VersionInput) => ({ ...form, llms: form.llms.map(llmBody) });
+
 export const api = {
   /** AIsolate's own, which every space sees: an admin changes them, a developer of any space reads them. */
   llms: {
@@ -167,13 +174,13 @@ export const api = {
       ),
     verify: (t: string, space: string, airlock: string) =>
       call<ChainStatus>(t, "GET", `/audit/verify?${new URLSearchParams({ space, airlock })}`),
-    /** The data source the airlock's newest tool call could not read; null when it read them. */
-    dataError: async (t: string, space: string, airlock: string) =>
+    /** The data source the airlock's (or the version's) newest tool call could not read; null when it read them. */
+    dataError: async (t: string, space: string, airlock: string, version?: string) =>
       (
         await call<{ data_error: DataError | null }>(
           t,
           "GET",
-          `/audit/data-error?${new URLSearchParams({ space, airlock })}`,
+          `/audit/data-error?${new URLSearchParams({ space, airlock, ...(version && { version }) })}`,
         )
       ).data_error,
   },
@@ -201,11 +208,29 @@ export const api = {
   airlocks: {
     list: (t: string, spaceId: string) => call<Airlock[]>(t, "GET", `${space(spaceId)}/airlocks`),
     get: (t: string, spaceId: string, id: string) => call<Airlock>(t, "GET", airlock(spaceId, id)),
-    /** Its code, stages, LLM and prompt come from `aisolate deploy`. */
+    /** Its versions come from `aisolate deploy`, or from its page. */
     create: (t: string, spaceId: string, form: AirlockForm) =>
       call<Airlock>(t, "POST", `${space(spaceId)}/airlocks`, { ...bodyOf(form), id: undefined }),
     update: (t: string, spaceId: string, form: AirlockForm, readAt: string) =>
       call<Airlock>(t, "PUT", airlock(spaceId, form.id), bodyOf(form), ifMatch(readAt)),
+  },
+  versions: {
+    list: (t: string, spaceId: string, airlockId: string) =>
+      call<AirlockVersion[]>(t, "GET", `${airlock(spaceId, airlockId)}/versions`),
+    get: (t: string, spaceId: string, airlockId: string, name: string) =>
+      call<AirlockVersion>(t, "GET", version(spaceId, airlockId, name)),
+    /** Its code, stages and prompt come from `aisolate deploy`; the name and the LLM are typed. */
+    create: (t: string, spaceId: string, airlockId: string, form: VersionInput) =>
+      call<AirlockVersion>(t, "POST", `${airlock(spaceId, airlockId)}/versions`, versionBody(form)),
+    /** By the name it was created with; a version keeps it. */
+    update: (t: string, spaceId: string, airlockId: string, form: VersionInput, readAt: string) =>
+      call<AirlockVersion>(
+        t,
+        "PUT",
+        version(spaceId, airlockId, form.version),
+        versionBody(form),
+        ifMatch(readAt),
+      ),
   },
   credentials: {
     // The values stay in the component that asked, never in a cache.

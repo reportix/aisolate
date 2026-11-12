@@ -225,7 +225,7 @@ class TraceIntegrationTest {
     String line =
         """
         {"ts":"2026-10-19T09:11:57.006Z","event":"exchange","trace_id":"%s",\
-        "space":"%s","airlock":"%s","revision":"7b2280eab4b5",\
+        "space":"%s","airlock":"%s","version":"v1","revision":"7b2280eab4b5",\
         "user":"elena@example.com","client":"acme-chat","question":"%s",\
         "answer":"Your gross salary is 78,000 EUR.","outcome":"answered","reason":null,\
         "tools":[{"name":"read_records","args":{"entity":"hr.compensation"},\
@@ -244,7 +244,7 @@ class TraceIntegrationTest {
                             "http://localhost:"
                                 + auditIngestConnector.getLocalPort()
                                 + "/v1/audit/events")),
-                    AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock))
+                    AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(line))
                 .build());

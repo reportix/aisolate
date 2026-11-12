@@ -25,7 +25,7 @@ class DiscoveringAirlockCatalogTest {
     // Arrange: the kubelet's layout, every file a link through ..data to a timestamped directory
     swapTo(Documents.DIR, "..2026_10_01_1");
     DocumentsAirlockCatalog served =
-        new DocumentsAirlockCatalog(ConfigurationLoader.load(Documents.DIR), "hr-assistant");
+        new DocumentsAirlockCatalog(ConfigurationLoader.load(Documents.DIR), "hr-assistant", "v1");
     DiscoveringAirlockCatalog catalog = new DiscoveringAirlockCatalog(served, mount);
     List<String> before = ids(catalog.listAirlocks());
 
@@ -36,7 +36,7 @@ class DiscoveringAirlockCatalogTest {
     // Assert: discovery follows the mount; chat still answers from the pod's own documents
     assertThat(before).containsExactly("hr-assistant", "founders-finance");
     assertThat(after).containsExactly("acme-hr", "strict-app", "short-app", "closed-app");
-    assertThat(catalog.findAirlock("hr-assistant")).isPresent();
+    assertThat(catalog.findAirlock("hr-assistant", "v1")).isPresent();
   }
 
   /** The controller's projection of {@code documents}, as one space's file in the mount. */

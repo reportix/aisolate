@@ -3,7 +3,7 @@ package com.reportix.aisolate.backend.domain.deploy;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.reportix.aisolate.backend.domain.airlock.InvalidFormException;
-import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.plugins.CatalogCheck;
 import com.reportix.aisolate.plugins.HandlerCandidate;
 import com.reportix.aisolate.plugins.JarScan;
@@ -124,7 +124,12 @@ public final class JarInspector {
       List<RuleSet> ruleSets =
           rules.stream().map(set -> new RuleSet(set.entity(), set.rules().size())).toList();
       return new Contents(
-          digest(file), Files.size(file), tools, handlers, ruleSets, AirlockDocument.Jar.JAVA);
+          digest(file),
+          Files.size(file),
+          tools,
+          handlers,
+          ruleSets,
+          AirlockVersionDocument.Jar.JAVA);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

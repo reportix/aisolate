@@ -89,6 +89,9 @@ export function AuditEventView({
           <DefinitionRow label="Airlock">
             <Mono value={`${e.space}/${e.airlock}`} />
           </DefinitionRow>
+          <DefinitionRow label="Version">
+            <Mono value={e.version ?? ""} none="none: recorded before versions" />
+          </DefinitionRow>
           <DefinitionRow label="User">
             <Mono value={e.user ?? ""} />
           </DefinitionRow>

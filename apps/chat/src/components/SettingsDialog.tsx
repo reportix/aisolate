@@ -14,8 +14,8 @@ type Props = {
 };
 
 /**
- * Whether this browser is connected to AIsolate, and the airlocks it admits, each with its
- * endpoint. Native <dialog>: focus, Escape and backdrop are free.
+ * Whether this browser is connected to AIsolate, and the airlocks it admits, with the endpoint of
+ * each version. Native <dialog>: focus, Escape and backdrop are free.
  */
 export function SettingsDialog({ open, onClose, settings, user }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -133,7 +133,7 @@ function settingsReopenRequested(): boolean {
   }
 }
 
-/** The airlocks this user may ask, each with the URL a client posts its messages to. */
+/** The airlocks this user may ask, each version with the URL a client posts its messages to. */
 function AirlockEndpoints({ token, aisolateUrl }: { token: string; aisolateUrl: string }) {
   const [airlocks, setAirlocks] = useState<AirlockListing[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -170,18 +170,23 @@ function AirlockEndpoints({ token, aisolateUrl }: { token: string; aisolateUrl: 
         {airlocks?.map((airlock) => (
           <li key={airlock.id} className="rounded-2xl border border-hairline p-4">
             <p className="text-sm font-medium">{airlock.name}</p>
-            <div className="mt-2 flex items-start gap-2">
-              <code className="min-w-0 flex-1 break-all rounded-lg bg-desk px-2 py-1 font-mono text-xs text-ink">
-                POST {airlock.endpoint}
-              </code>
-              <button
-                type="button"
-                onClick={() => copy(airlock.endpoint)}
-                className="shrink-0 rounded-lg border border-hairline px-2 py-1 text-xs text-ink-secondary hover:bg-desk hover:text-ink"
-              >
-                {copied === airlock.endpoint ? "Copied" : "Copy"}
-              </button>
-            </div>
+            <ul className="mt-2 grid gap-2">
+              {airlock.versions.map((version) => (
+                <li key={version.version} className="flex items-start gap-2">
+                  <span className="shrink-0 pt-1 text-xs text-ink-tertiary">{version.version}</span>
+                  <code className="min-w-0 flex-1 break-all rounded-lg bg-desk px-2 py-1 font-mono text-xs text-ink">
+                    POST {version.endpoint}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => copy(version.endpoint)}
+                    className="shrink-0 rounded-lg border border-hairline px-2 py-1 text-xs text-ink-secondary hover:bg-desk hover:text-ink"
+                  >
+                    {copied === version.endpoint ? "Copied" : "Copy"}
+                  </button>
+                </li>
+              ))}
+            </ul>
           </li>
         ))}
       </ul>

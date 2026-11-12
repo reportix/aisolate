@@ -51,17 +51,17 @@ def rows_hash(rows: list[dict]) -> str:
     return hashlib.sha256(canonical_rows(rows).encode("utf-8")).hexdigest()
 
 
-def _line(ts, event, trace_id, space, airlock, revision, user, client, question, answer,
+def _line(ts, event, trace_id, space, airlock, version, revision, user, client, question, answer,
           outcome, reason, tools, evidence, verifiers, figures, grounding, model, duration_ms) -> dict:
     return {"ts": instant(ts), "event": event, "trace_id": trace_id, "space": space, "airlock": airlock,
-            "revision": revision, "user": user, "client": client, "question": question,
+            "version": version, "revision": revision, "user": user, "client": client, "question": question,
             "answer": answer, "outcome": outcome, "reason": reason, "tools": tools, "evidence": evidence,
             "verifiers": verifiers, "figures": figures, "grounding": grounding, "model": model,
             "duration_ms": duration_ms}
 
 
-def refusal(ts, trace_id, space, airlock, revision, user, client, question, reason, duration_ms) -> dict:
-    return _line(ts, "refusal", trace_id, space, airlock, revision, user, client, question, None,
+def refusal(ts, trace_id, space, airlock, version, revision, user, client, question, reason, duration_ms) -> dict:
+    return _line(ts, "refusal", trace_id, space, airlock, version, revision, user, client, question, None,
                  "refused", reason, [], [], [], None, None, None, duration_ms)
 
 
@@ -141,7 +141,7 @@ class ExchangeAudit:
             outcome = "dont_know" if is_dont_know(said) else "answered"
         error = outcome == "error"
         a = self.airlock
-        return _line(began, "exchange", trace_id, a.space, a.id, a.revision, self.user, self.client,
+        return _line(began, "exchange", trace_id, a.space, a.id, a.version, a.revision, self.user, self.client,
                      self.question, said, outcome, (self.failure or "internal") if error else None,
                      list(self.tools.values()), self._cited(said), self.verifiers,
                      None if error else self.figures, None if error else self.grounding,
@@ -183,11 +183,11 @@ def strip_row_values(node):
 
 
 # Labels in Micrometer's order, alphabetical, so the exposition reads as the Java pod's.
-EXCHANGES = Counter("aisolate_exchanges", "Requests to an airlock by outcome", ["airlock", "outcome"])
-REFUSALS = Counter("aisolate_refusals", "Refusals with a 403 by reason", ["airlock", "reason"])
-TOOL_CALLS = Counter("aisolate_tool_calls", "Tool calls the model made", ["airlock", "tool"])
+EXCHANGES = Counter("aisolate_exchanges", "Requests to a version by outcome", ["airlock", "version", "outcome"])
+REFUSALS = Counter("aisolate_refusals", "Refusals with a 403 by reason", ["airlock", "version", "reason"])
+TOOL_CALLS = Counter("aisolate_tool_calls", "Tool calls the model made", ["airlock", "version", "tool"])
 DURATION = Histogram("aisolate_exchange_duration_seconds", "Exchanges from admission to the last event",
-                     ["airlock"], buckets=(0.5, 1, 2, 5, 10, 20, 30, 60, 120, 240, 480))
+                     ["airlock", "version"], buckets=(0.5, 1, 2, 5, 10, 20, 30, 60, 120, 240, 480))
 BUFFERED = Gauge("aisolate_audit_buffered_bytes", "Audit lines not yet handed to the backend")
 DROPPED = Counter("aisolate_audit_dropped", "Audit lines dropped")
 
@@ -348,11 +348,11 @@ class AuditLog:
 
     @staticmethod
     def _count(line: dict) -> None:
-        airlock = line["airlock"]
-        EXCHANGES.labels(airlock=airlock, outcome=line["outcome"]).inc()
+        airlock, version = line["airlock"], line["version"]
+        EXCHANGES.labels(airlock=airlock, version=version, outcome=line["outcome"]).inc()
         if line["event"] == "refusal":
-            REFUSALS.labels(airlock=airlock, reason=line["reason"]).inc()
+            REFUSALS.labels(airlock=airlock, version=version, reason=line["reason"]).inc()
             return
         for tool in line["tools"]:
-            TOOL_CALLS.labels(airlock=airlock, tool=tool["name"]).inc()
-        DURATION.labels(airlock).observe(line["duration_ms"] / 1000)
+            TOOL_CALLS.labels(airlock=airlock, version=version, tool=tool["name"]).inc()
+        DURATION.labels(airlock, version).observe(line["duration_ms"] / 1000)

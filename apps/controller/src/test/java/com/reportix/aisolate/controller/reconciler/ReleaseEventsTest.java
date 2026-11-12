@@ -82,8 +82,12 @@ class ReleaseEventsTest {
   void givenSpaceChanged_whenMapped_thenOnlyItsAirlocks() {
     // Arrange
     InformerEventSourceConfiguration<Space> source =
-        ReleaseEvents.configureAirlocksOfSpace(
-            Space.class, s -> s.getMetadata().getName(), AIRLOCKS::stream);
+        ReleaseEvents.configureKeyed(
+            Space.class,
+            Airlock.class,
+            s -> s.getMetadata().getName(),
+            ReleaseEvents::spaceNamedBy,
+            AIRLOCKS::stream);
 
     // Act
     var airlocks = source.getSecondaryToPrimaryMapper().toPrimaryResourceIDs(space("hr"));
@@ -98,10 +102,14 @@ class ReleaseEventsTest {
   void givenAirlockWithoutSpec_whenMapped_thenNothing() {
     // Arrange
     InformerEventSourceConfiguration<Airlock> source =
-        ReleaseEvents.configureAirlocksOfSpace(
-            Airlock.class, ReleaseEvents::spaceNamedBy, AIRLOCKS::stream);
+        ReleaseEvents.configureKeyed(
+            Airlock.class,
+            Airlock.class,
+            ReleaseEvents::spaceNamedBy,
+            ReleaseEvents::spaceNamedBy,
+            AIRLOCKS::stream);
     InformerEventSourceConfiguration<Airlock> ofItsSpace =
-        ReleaseEvents.configureSpaceOf(Airlock.class, ReleaseEvents::spaceNamedBy);
+        ReleaseEvents.configureOneNamed(Airlock.class, Space.class, ReleaseEvents::spaceNamedBy);
 
     // Act
     var airlocks =
@@ -112,15 +120,19 @@ class ReleaseEventsTest {
     // Assert: no space named, no primary; an airlock in the cache with no spec matches nothing
     assertThat(airlocks).isEmpty();
     assertThat(spaces).isEmpty();
-    assertThat(ReleaseEvents.airlocksOf(null, AIRLOCKS.stream())).isEmpty();
-    assertThat(ReleaseEvents.airlocksOf("hr", Stream.of(airlockWithoutSpec("draft")))).isEmpty();
+    assertThat(ReleaseEvents.keyedBy(null, ReleaseEvents::spaceNamedBy, AIRLOCKS.stream()))
+        .isEmpty();
+    assertThat(
+            ReleaseEvents.keyedBy(
+                "hr", ReleaseEvents::spaceNamedBy, Stream.of(airlockWithoutSpec("draft"))))
+        .isEmpty();
   }
 
   @Test
   void givenAirlockChanged_whenMappedForSpaces_thenItsSpace() {
     // Arrange
     InformerEventSourceConfiguration<Airlock> source =
-        ReleaseEvents.configureSpaceOf(Airlock.class, ReleaseEvents::spaceNamedBy);
+        ReleaseEvents.configureOneNamed(Airlock.class, Space.class, ReleaseEvents::spaceNamedBy);
 
     // Act
     var spaces =
@@ -140,10 +152,14 @@ class ReleaseEventsTest {
     Space edited = space("hr");
     edited.getMetadata().setGeneration(4L);
     InformerEventSourceConfiguration<Space> airlocksOfSpace =
-        ReleaseEvents.configureAirlocksOfSpace(
-            Space.class, s -> s.getMetadata().getName(), AIRLOCKS::stream);
+        ReleaseEvents.configureKeyed(
+            Space.class,
+            Airlock.class,
+            s -> s.getMetadata().getName(),
+            ReleaseEvents::spaceNamedBy,
+            AIRLOCKS::stream);
     InformerEventSourceConfiguration<Space> spaceOf =
-        ReleaseEvents.configureSpaceOf(Space.class, s -> s.getMetadata().getName());
+        ReleaseEvents.configureOneNamed(Space.class, Space.class, s -> s.getMetadata().getName());
 
     // Act + Assert: like every document source, only a new generation is an event
     for (var source : List.of(airlocksOfSpace, spaceOf)) {
@@ -162,9 +178,7 @@ class ReleaseEventsTest {
 
   private static Airlock airlockIn(String name, String space) {
     Airlock airlock = airlockWithoutSpec(name);
-    airlock.setSpec(
-        new AirlockDocument.Spec(
-            space, null, null, null, null, null, null, null, null, null, null, null));
+    airlock.setSpec(new AirlockDocument.Spec(space, null, null, null, null, null));
     return airlock;
   }
 

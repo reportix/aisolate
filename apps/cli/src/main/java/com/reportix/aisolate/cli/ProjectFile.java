@@ -9,10 +9,11 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * The project as the CLI reads it: {@code aisolate.yaml}, the one Airlock it deploys, and {@code
- * .env}. The space is {@code AISOLATE_SPACE} from the shell, else from {@code .env}; the endpoint
- * is {@code AISOLATE_ENDPOINT} from the shell, else from {@code .env}, else {@code
- * http://localhost:8080}; plain http only to this machine.
+ * The project as the CLI reads it: {@code aisolate.yaml}, the one version of its airlock it deploys
+ * (an {@code AirlockVersion} and its {@code Airlock}), and {@code .env}. The space is {@code
+ * AISOLATE_SPACE} from the shell, else from {@code .env}; the endpoint is {@code AISOLATE_ENDPOINT}
+ * from the shell, else from {@code .env}, else {@code http://localhost:8080}; plain http only to
+ * this machine.
  *
  * @param documents the file's text as written: what {@code deploy} sends
  * @param envFile the {@code .env} values, empty without the file

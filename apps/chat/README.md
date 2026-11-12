@@ -12,8 +12,9 @@ npm run dev -w apps/chat  # http://localhost:3000
 
 Environment (`apps/chat/.env.local`, inlined at build time): `NEXT_PUBLIC_AISOLATE_URL` (the AIsolate URL) and optionally
 `NEXT_PUBLIC_AISOLATE_AIRLOCK_ID` (airlock to preselect). The composer's picker offers every airlock
-AIsolate admits for the signed-in user; the sidebar lists the saved chats, newest first, and a chat stays
-bound to the airlock it was started in. The last airlock, each user's own chats (dropped on sign-out) and the
+AIsolate admits for the signed-in user, and a second pill its versions once there are several (its newest
+unless another is picked); the sidebar lists the saved chats, newest first, and a chat stays bound to the
+airlock it was started in. The last airlock and version, each user's own chats (dropped on sign-out) and the
 registration live in the browser's localStorage; the registration keeps its RFC 7592 management
 token, which can read or drop only this browser's client. Access tokens stay in memory.
 

@@ -15,7 +15,7 @@ EXAMPLES = ["exchange.json", "refusal.json", "error.json", "tool-error.json"]
 OUTCOMES = read_case("audit", "outcome.json")["cases"]
 ROWS = read_case("audit", "rows-hash.json")["cases"]
 STRIPS = read_case("audit", "grounding-strip.json")["cases"]
-AIRLOCK = SimpleNamespace(space="acme", id="hr", revision="7b2280eab4b5", model="ollama")
+AIRLOCK = SimpleNamespace(space="acme", id="hr", version="v1", revision="7b2280eab4b5", model="ollama")
 
 
 def _rebuilt(fields: dict) -> str:
@@ -75,7 +75,7 @@ def test_given_tool_rows_when_hashed_then_canonical_text_and_hash_as_java(case):
 @pytest.mark.parametrize("case", STRIPS, ids=[c["id"] for c in STRIPS])
 def test_given_chat_grounding_when_recorded_then_line_keeps_it_without_cell_values(case):
     # Arrange
-    line = audit._line(datetime.now().astimezone(), "exchange", None, "acme", "hr", "r", None, None,
+    line = audit._line(datetime.now().astimezone(), "exchange", None, "acme", "hr", "v1", "r", None, None,
                        "q", "a", "answered", None, [], [], [], None, case["grounding"], None, 1)
     out = io.StringIO()
 
