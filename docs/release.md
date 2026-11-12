@@ -126,6 +126,13 @@ The tag's pipeline also builds the Windows CLI installer from source on the Wind
 tag's GitLab Release with `aisolate-cli-installer.exe`, `SHA256SUMS`, `aisolate-cli-linux-x64.tar.gz` and its
 `.sha256` as asset links to those jobs' artifacts, which never expire on a tag.
 
+### The release notes
+
+The Release's page is `docs/releases/<version>.md`, written before the tag and merged with the last change of
+the release: highlights, the downloads table, the images, what an upgrade means, the documentation links. The
+`gitlab-release` job reads it as the Release's description; the GitHub mirror's release gets the same text
+(`gh release create X.Y.Z --notes-file docs/releases/X.Y.Z.md …`). A tag without its file fails the job.
+
 ### Signing
 
 The tag's Windows installer and the binary inside it are Authenticode-signed through Azure Trusted Signing with
@@ -151,7 +158,7 @@ glab release upload X.Y.Z aisolate-cli-installer.pkg aisolate-cli-installer.pkg.
 ### The GitHub mirror
 
 The mirrored release carries the same assets, published by a maintainer: download the six files from the GitLab
-Release and `gh release create X.Y.Z --repo reportix/aisolate --title X.Y.Z --notes "AIsolate X.Y.Z"
+Release and `gh release create X.Y.Z --repo reportix/aisolate --title "AIsolate X.Y.Z" --notes-file docs/releases/X.Y.Z.md
 aisolate-cli-installer.exe SHA256SUMS aisolate-cli-linux-x64.tar.gz aisolate-cli-linux-x64.tar.gz.sha256
 aisolate-cli-installer.pkg aisolate-cli-installer.pkg.sha256`. The CLI guide links the mirror's latest release.
 

@@ -250,10 +250,8 @@ gitlab-release:
   release:
     tag_name: $CI_COMMIT_TAG
     name: $CI_COMMIT_TAG
-    description: >-
-      AIsolate $CI_COMMIT_TAG. Images: `docker-public.sonatype.reportix.com/aisolate/<app>:$CI_COMMIT_TAG`.
-      The Windows CLI installer and the Linux CLI archive are attached; the macOS installer is attached by a
-      maintainer (docs/release.md).
+    # The release notes, written for the tag before it is made: docs/releases/<version>.md (docs/release.md).
+    description: docs/releases/$CI_COMMIT_TAG.md
     assets:
       links:
         - name: aisolate-cli-installer.exe
