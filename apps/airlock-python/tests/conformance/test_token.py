@@ -79,7 +79,7 @@ async def test_given_bearer_when_chat_then_valid_or_401_with_the_challenge(case)
     headers = {"Accept": "application/json", **({"Authorization": f"Bearer {token}"} if token is not None else {})}
 
     # Act
-    response = await client.post("/v1/spaces/none/airlocks/none/chat", json={"message": "hi"},
+    response = await client.post("/v1/spaces/none/airlocks/none/versions/none/chat", json={"message": "hi"},
                                  headers=headers)
 
     # Assert

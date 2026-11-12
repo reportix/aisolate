@@ -15,15 +15,15 @@ from prometheus_client import Counter
 from aisolate_airlock import tracing
 
 TOKENS = Counter("gen_ai_client_token_usage", "Measures number of input and output tokens used",
-                 ["airlock", "gen_ai_operation_name", "gen_ai_request_model", "gen_ai_system", "gen_ai_token_type"])
+                 ["airlock", "version", "gen_ai_operation_name", "gen_ai_request_model", "gen_ai_system", "gen_ai_token_type"])
 
 
-def _count(airlock: str, operation: str, model: str, system: str,
+def _count(airlock: str, version: str, operation: str, model: str, system: str,
            counts: tuple[tuple[str, int | None], ...]) -> None:
     """Spring AI's ``ModelUsageMetricsGenerator``: one increment per token type the provider reported."""
     for kind, n in counts:
         if n is not None:
-            TOKENS.labels(airlock=airlock, gen_ai_token_type=kind,
+            TOKENS.labels(airlock=airlock, version=version, gen_ai_token_type=kind,
                           gen_ai_operation_name=operation, gen_ai_system=system, gen_ai_request_model=model).inc(n)
 
 
@@ -81,17 +81,17 @@ class Ollama(_Model):
         return {"model": self.model, "messages": messages, "stream": False,
                 "options": {"temperature": 0.1}, "keep_alive": "-1m", "think": False}
 
-    def _used(self, span, airlock: str, answer: dict) -> tuple[int | None, int | None]:
+    def _used(self, span, airlock: str, version: str, answer: dict) -> tuple[int | None, int | None]:
         input_tokens, output_tokens = answer.get("prompt_eval_count"), answer.get("eval_count")
         tracing.tag(span, "gen_ai.usage.input_tokens", input_tokens)
         tracing.tag(span, "gen_ai.usage.output_tokens", output_tokens)
         if input_tokens is not None or output_tokens is not None:
             i, o = input_tokens or 0, output_tokens or 0
-            _count(airlock, "chat", self.model, self.provider, (("input", i), ("output", o), ("total", i + o)))
+            _count(airlock, version, "chat", self.model, self.provider, (("input", i), ("output", o), ("total", i + o)))
         return input_tokens, output_tokens
 
     async def chat(self, messages: list[dict], tools: list[dict] | None = None, schema: str | None = None,
-                   airlock: str = "none") -> Reply:
+                   airlock: str = "none", version: str = "none") -> Reply:
         """The agent loop's turn; any failure is ModelUnavailable."""
         body = self._chat_body(messages)
         if tools:
@@ -109,10 +109,10 @@ class Ollama(_Model):
             except (httpx2.HTTPError, ValueError, KeyError, TypeError) as e:
                 raise ModelUnavailable(type(e).__name__) from None
             reply = Reply(message.get("content") or "", message.get("tool_calls") or [])
-            reply.input_tokens, reply.output_tokens = self._used(span, airlock, answer)
+            reply.input_tokens, reply.output_tokens = self._used(span, airlock, version, answer)
             return reply
 
-    def ask(self, prompt: str, airlock: str = "none") -> str:
+    def ask(self, prompt: str, airlock: str = "none", version: str = "none") -> str:
         """A handler's ``llm(id).chat``: synchronous, handlers run on worker threads."""
         with tracing.span(f"chat {self.model}", self._span()) as span:
             with httpx2.Client(timeout=self.timeout, transport=self._sync_transport) as http, tracing.span("http post"):
@@ -122,10 +122,10 @@ class Ollama(_Model):
                 raise self._cannot_chat()
             response.raise_for_status()
             answer = response.json()
-            self._used(span, airlock, answer)
+            self._used(span, airlock, version, answer)
             return answer["message"]["content"]
 
-    def embed(self, input: str | list[str], airlock: str = "none"):
+    def embed(self, input: str | list[str], airlock: str = "none", version: str = "none"):
         """A vector for a text, one per text for a list; synchronous, handlers run on worker threads."""
         with tracing.span("embedding", {"gen_ai.request.model": self.model, "aisolate.llm": self.id}) as span:
             with httpx2.Client(timeout=self.timeout, transport=self._sync_transport) as http, tracing.span("http post"):
@@ -137,7 +137,7 @@ class Ollama(_Model):
             tracing.tag(span, "gen_ai.usage.input_tokens", answer.get("prompt_eval_count"))
             # Spring AI's Ollama embedding reports DefaultUsage(prompt_eval_count or 0, 0).
             used = answer.get("prompt_eval_count") or 0
-            _count(airlock, "embedding", self.model, self.provider, (("input", used), ("output", 0), ("total", used)))
+            _count(airlock, version, "embedding", self.model, self.provider, (("input", used), ("output", 0), ("total", used)))
             vectors = [[float(x) for x in vector] for vector in answer["embeddings"]]
             return vectors[0] if isinstance(input, str) else vectors
 
@@ -187,7 +187,7 @@ class OpenAi(_Model):
             raise LlmError(f"{self.model} (model {self.id}): the API key was refused; "
                            "set it again on the model in AIsolate")
 
-    def _used(self, span, airlock: str, answer: dict) -> tuple[int | None, int | None]:
+    def _used(self, span, airlock: str, version: str, answer: dict) -> tuple[int | None, int | None]:
         usage = answer.get("usage") or {}
         input_tokens, output_tokens = usage.get("prompt_tokens"), usage.get("completion_tokens")
         tracing.tag(span, "gen_ai.usage.input_tokens", input_tokens)
@@ -195,12 +195,12 @@ class OpenAi(_Model):
         if input_tokens is not None or output_tokens is not None:
             i, o = input_tokens or 0, output_tokens or 0
             total = usage.get("total_tokens")
-            _count(airlock, "chat", self.model, self.provider,
+            _count(airlock, version, "chat", self.model, self.provider,
                    (("input", i), ("output", o), ("total", i + o if total is None else total)))
         return input_tokens, output_tokens
 
     async def chat(self, messages: list[dict], tools: list[dict] | None = None, schema: str | None = None,
-                   airlock: str = "none") -> Reply:
+                   airlock: str = "none", version: str = "none") -> Reply:
         """The agent loop's turn; any failure is ModelUnavailable."""
         body = self._body(_openai_messages(messages))
         if tools:
@@ -224,10 +224,10 @@ class OpenAi(_Model):
             except (httpx2.HTTPError, ValueError, KeyError, TypeError, IndexError) as e:
                 raise ModelUnavailable(type(e).__name__) from None
             reply = Reply(message.get("content") or "", calls)
-            reply.input_tokens, reply.output_tokens = self._used(span, airlock, answer)
+            reply.input_tokens, reply.output_tokens = self._used(span, airlock, version, answer)
             return reply
 
-    def ask(self, prompt: str, airlock: str = "none") -> str:
+    def ask(self, prompt: str, airlock: str = "none", version: str = "none") -> str:
         """A handler's ``llm(id).chat``: synchronous, handlers run on worker threads."""
         with tracing.span(f"chat {self.model}", self._span()) as span:
             with httpx2.Client(timeout=self.timeout, transport=self._sync_transport, headers=self._headers) as http, \
@@ -239,10 +239,10 @@ class OpenAi(_Model):
             self._key_refused(response)
             response.raise_for_status()
             answer = response.json()
-            self._used(span, airlock, answer)
+            self._used(span, airlock, version, answer)
             return answer["choices"][0]["message"]["content"]
 
-    def embed(self, input: str | list[str], airlock: str = "none"):
+    def embed(self, input: str | list[str], airlock: str = "none", version: str = "none"):
         """A vector for a text, one per text for a list, in the order of their index; synchronous."""
         with tracing.span("embedding", {"gen_ai.request.model": self.model, "aisolate.llm": self.id}) as span:
             with httpx2.Client(timeout=self.timeout, transport=self._sync_transport, headers=self._headers) as http, \
@@ -255,7 +255,7 @@ class OpenAi(_Model):
             answer = response.json()
             used = (answer.get("usage") or {}).get("prompt_tokens")
             tracing.tag(span, "gen_ai.usage.input_tokens", used)
-            _count(airlock, "embedding", self.model, self.provider,
+            _count(airlock, version, "embedding", self.model, self.provider,
                    (("input", used or 0), ("output", 0), ("total", used or 0)))
             vectors = [[float(x) for x in d["embedding"]] for d in sorted(answer["data"], key=lambda d: d["index"])]
             return vectors[0] if isinstance(input, str) else vectors

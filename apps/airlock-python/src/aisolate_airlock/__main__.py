@@ -1,4 +1,4 @@
-"""The airlock pod: read what the controller rendered (docs/configuration.md, "Airlock pod"), load the airlock and its code,
+"""The airlock pod: read what the controller rendered (docs/configuration.md, "Airlock pod"), load the version and its code,
 serve 8080 and the management port 9464. Any problem at start is one log line and exit 1."""
 
 from __future__ import annotations
@@ -46,12 +46,12 @@ def size(text: str) -> int:
     return int(match[1]) * 1024 ** ["B", "KB", "MB", "GB", "TB"].index((match[2] or "B").upper())
 
 
-def airlock_of(configuration: config.Configuration, airlock_id: str) -> Airlock:
-    """The one airlock this pod serves (``AirlockDefinition.from``)."""
-    v = configuration.airlock(airlock_id)
+def version_of(configuration: config.Configuration, airlock_id: str, label: str) -> Airlock:
+    """The one version this pod serves (``AirlockDefinition.from``)."""
+    v = configuration.version(airlock_id, label)
     if v is None:
-        raise ValueError(f"AISOLATE_AIRLOCK {airlock_id} is no served airlock")
-    return Airlock(space=v.space, id=v.name, revision=configuration.revision,
+        raise ValueError(f"AISOLATE_AIRLOCK {airlock_id} with AISOLATE_VERSION {label} is no served version")
+    return Airlock(space=v.space, id=v.airlock, version=v.label, revision=configuration.revision,
                    model=v.main_llm.provider, roles=tuple(v.access.roles), callers=tuple(v.access.callers),
                    tools=tuple(v.tools), data_sources=tuple(d.id for d in v.data_sources), system_prompt=v.prompt,
                    context_preparators=tuple(v.handlers[Stage.CONTEXT_PREPARATOR]),
@@ -66,7 +66,7 @@ def main(env=os.environ) -> None:
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     try:
         configuration = config.load(env.get("AISOLATE_CONFIG_DIR"), env.get("AISOLATE_CONFIG_REVISION"))
-        airlock = airlock_of(configuration, env.get("AISOLATE_AIRLOCK", ""))
+        airlock = version_of(configuration, env.get("AISOLATE_AIRLOCK", ""), env.get("AISOLATE_VERSION", ""))
         handlers = []
         if located := artifact.locate(env):
             catalog, _, _ = artifact.load(*located)

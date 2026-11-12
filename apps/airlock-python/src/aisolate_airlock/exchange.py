@@ -38,10 +38,12 @@ MODEL_UNAVAILABLE = {"message": prompts.ERROR_MODEL_UNAVAILABLE, "type": "error"
 
 @dataclass(frozen=True)
 class Airlock:
-    """One airlock as the runtime needs it (``AirlockDefinition``)."""
+    """One airlock version as the runtime needs it (``AirlockDefinition``)."""
 
     space: str
     id: str
+    version: str
+    """The version's label within its airlock, for example ``v1``: the chat path's segment and ``_meta.version``."""
     revision: str
     model: str
     roles: tuple[str, ...]
@@ -58,7 +60,7 @@ class Airlock:
 
     @property
     def pin(self) -> dict:
-        return {"airlock": self.id, "revision": self.revision}
+        return {"airlock": self.id, "version": self.version, "revision": self.revision}
 
 
 _WORDS = {"contextPreparator": "context preparator", "conversationMemory": "memory", "answerVerifier": "verifier"}
@@ -99,16 +101,17 @@ class ExchangeFailed(Exception):
 
 @dataclass(frozen=True)
 class _Llm:
-    """The SDK's ``Llm``: one catalog entry, its tokens counted under the exchange's airlock."""
+    """The SDK's ``Llm``: one catalog entry, its tokens counted under the exchange's airlock and version."""
 
     client: object
     airlock: str
+    version: str
 
     def embed(self, text):
-        return self.client.embed(text, self.airlock)
+        return self.client.embed(text, self.airlock, self.version)
 
     def chat(self, prompt: str) -> str:
-        return self.client.ask(prompt, self.airlock)
+        return self.client.ask(prompt, self.airlock, self.version)
 
 
 class NoDataSource(ValueError):
@@ -143,7 +146,7 @@ class Manager:
     def llm(self, id: str) -> _Llm:
         if id not in self._llms:
             raise LlmError(f"no model named {id} in this airlock's space or globally")
-        return _Llm(self._llms[id], self._airlock.airlock)
+        return _Llm(self._llms[id], self._airlock.airlock, self._airlock.version)
 
     @contextmanager
     def data_source(self, id: str):
@@ -320,7 +323,7 @@ class ChatExchange:
         self._within_budget()
         self.audit.model_called(self.model.model)
         reply = await self.model.chat(messages, tools=tools, schema=schema,
-                                      airlock=self.airlock.id)
+                                      airlock=self.airlock.id, version=self.airlock.version)
         self.audit.model_answered(reply.input_tokens, reply.output_tokens)
         return reply
 

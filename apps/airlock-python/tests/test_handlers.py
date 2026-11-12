@@ -187,7 +187,7 @@ def test_given_stage_handlers_when_resolved_then_by_order_then_name():
 
 def test_given_manager_when_unknown_data_source_then_value_error_naming_the_airlock():
     # Arrange
-    manager = Manager(Principal("u-1", "e@x", frozenset()), AirlockRef("acme", "hr", "r"))
+    manager = Manager(Principal("u-1", "e@x", frozenset()), AirlockRef("acme", "hr", "v1", "r"))
 
     # Act / Assert
     with pytest.raises(ValueError, match="^acme/hr has no data source crm$"):
@@ -230,7 +230,7 @@ async def test_given_verifier_naming_a_wrong_llm_when_answered_then_warn_note_ca
 
 def test_given_manager_when_unknown_llm_then_llm_error_at_once():
     # Arrange
-    manager = Manager(Principal("u-1", "e@x", frozenset()), AirlockRef("acme", "hr", "r"), llms={})
+    manager = Manager(Principal("u-1", "e@x", frozenset()), AirlockRef("acme", "hr", "v1", "r"), llms={})
 
     # Act / Assert
     with pytest.raises(LlmError, match="^no model named nomic in this airlock's space or globally$"):

@@ -13,10 +13,10 @@ from aisolate_airlock.exchange import AgentLoop, Airlock
 from aisolate_airlock.llm import ModelUnavailable, Reply
 from aisolate_airlock.mcp_client import ToolCallFailedException, ToolSpec
 
-AIRLOCK = Airlock(space="acme", id="hr", revision="7b2280eab4b5", model="ollama",
+AIRLOCK = Airlock(space="acme", id="hr", version="v1", revision="7b2280eab4b5", model="ollama",
                   roles=("employee",), callers=("acme-chat",), tools=("read_my_records",),
                   data_sources=("hr",), system_prompt="You answer HR questions.")
-PATH = "/v1/spaces/acme/airlocks/hr/chat"
+PATH = "/v1/spaces/acme/airlocks/hr/versions/v1/chat"
 GOOD = {"Authorization": "Bearer good"}
 SCHEMA = json.dumps({"type": "object", "properties": {"entity": {"type": "string"}, "limit": {"type": "integer"}}})
 SALARY = {"entity": "hr.compensation", "row_count": 1, "columns": ["self", "employee_id", "full_name", "gross_salary"],
@@ -43,7 +43,7 @@ class Model:
         self.replies = list(replies)
         self.calls = []
 
-    async def chat(self, messages, tools=None, schema=None, airlock="none"):
+    async def chat(self, messages, tools=None, schema=None, airlock="none", version="none"):
         self.calls.append({"messages": [dict(m) for m in messages], "tools": tools, "schema": schema})
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):

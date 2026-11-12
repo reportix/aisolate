@@ -123,7 +123,7 @@ def test_given_ingest_and_stdout_when_recorded_then_line_alone_on_stdout_and_buf
     sink.dir.mkdir(exist_ok=True)
     log = audit.AuditLog(sink, stdout=True, out=out)
     line = audit.refusal(datetime(2026, 10, 16, 20, 15, 30, 123000).astimezone(), None,
-                         "s", "a", "r", "u@x", "c", "hi", "user", 3)
+                         "s", "a", "v", "r", "u@x", "c", "hi", "user", 3)
 
     # Act
     log.record(line)

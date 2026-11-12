@@ -31,7 +31,7 @@ from aisolate_airlock.exchange import MODEL_UNAVAILABLE, NO_MODEL_ENDPOINT, Agen
 log = logging.getLogger("aisolate_airlock.app")
 
 MAX_QUESTION_LENGTH = 4000
-CHAT_ROUTE = "/v1/spaces/{spaceId}/airlocks/{airlockId}/chat"
+CHAT_ROUTE = "/v1/spaces/{spaceId}/airlocks/{airlockId}/versions/{version}/chat"
 _SERVER_SPAN = "http post " + CHAT_ROUTE
 
 
@@ -106,13 +106,13 @@ def create_app(airlock: Airlock, agent: AgentLoop, verifier, audit_log: audit.Au
         except Unauthorized:
             return None
 
-    def admit(space_id: str, airlock_id: str, user, question: str, path: str, exchange_span) -> None:
+    def admit(space_id: str, airlock_id: str, version: str, user, question: str, path: str, exchange_span) -> None:
         with tracing.span("admission") as span:
             if not audit_log.accepting():
                 raise AuditUnavailableException(problem(503, "audit unavailable", path))
             began = datetime.now(UTC)
             started = time.monotonic()
-            if (airlock_id, space_id) != (airlock.id, airlock.space):
+            if (airlock_id, version, space_id) != (airlock.id, airlock.version, airlock.space):
                 raise AirlockNotFoundException(problem(404, "unknown airlock", path))
             for target in (exchange_span, span):
                 for key, value in tracing.describe(airlock).items():
@@ -124,7 +124,7 @@ def create_app(airlock: Airlock, agent: AgentLoop, verifier, audit_log: audit.Au
                 tracing.tag(span, "aisolate.admitted", False)
                 tracing.tag(span, "aisolate.reason", reason)
                 tracing.tag(exchange_span, "aisolate.outcome", "refused")
-                audit_log.record(audit.refusal(began, tracing.trace_id(), airlock.space, airlock.id,
+                audit_log.record(audit.refusal(began, tracing.trace_id(), airlock.space, airlock.id, airlock.version,
                                                airlock.revision, user.email or user.sub, user.azp, question, reason,
                                                int((time.monotonic() - started) * 1000)))
                 # the reason, not the token's shape, picks the text: a machine client can be refused on its roles too
@@ -135,7 +135,7 @@ def create_app(airlock: Airlock, agent: AgentLoop, verifier, audit_log: audit.Au
 
     def manager_for(user) -> Manager:
         return Manager(SdkPrincipal(user.sub, user.email, frozenset(user.roles)),
-                       AirlockRef(airlock.space, airlock.id, airlock.revision), pools, llms)
+                       AirlockRef(airlock.space, airlock.id, airlock.version, airlock.revision), pools, llms)
 
     async def chat(request: Request) -> Response:
         path = request.url.path
@@ -153,7 +153,7 @@ def create_app(airlock: Airlock, agent: AgentLoop, verifier, audit_log: audit.Au
                                                 attributes={"http.route": CHAT_ROUTE, "http.request.method": "POST"})
         exchange_span = tracing.tracer.start_span(
             f"exchange {p['spaceId']}/{p['airlockId']}", context=trace.set_span_in_context(server_span),
-            attributes={tracing.SPACE: p["spaceId"], tracing.AIRLOCK: p["airlockId"]})
+            attributes={tracing.SPACE: p["spaceId"], tracing.AIRLOCK: p["airlockId"], tracing.VERSION: p["version"]})
 
         def end(status: int, error: BaseException | None = None) -> None:
             if error is not None:
@@ -167,7 +167,7 @@ def create_app(airlock: Airlock, agent: AgentLoop, verifier, audit_log: audit.Au
         attached = context.attach(trace.set_span_in_context(exchange_span))
         try:
             try:
-                admit(p["spaceId"], p["airlockId"], user, message, path, exchange_span)
+                admit(p["spaceId"], p["airlockId"], p["version"], user, message, path, exchange_span)
             except _Refused as refused:
                 end(refused.response.status_code, refused)
                 return refused.response

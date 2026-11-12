@@ -13,7 +13,7 @@ from conftest import SPANS, conformance_dir
 pytestmark = pytest.mark.anyio
 SCHEMA = json.loads((conformance_dir() / "audit" / "audit-event.schema.json").read_text(encoding="utf-8"))
 ASK = {"message": "What is my gross salary?"}
-_SERVER = "http post /v1/spaces/{spaceId}/airlocks/{airlockId}/chat"
+_SERVER = "http post /v1/spaces/{spaceId}/airlocks/{airlockId}/versions/{version}/chat"
 
 
 async def test_given_admitted_question_when_streamed_then_events_in_order_and_one_audit_line():
@@ -38,7 +38,7 @@ async def test_given_admitted_question_when_streamed_then_events_in_order_and_on
     assert events[3][1]["provenance"] == {"status": "all_sourced", "sourced": 1, "computed": 0, "unsourced": 0,
                                           "mismatch": 0}
     assert tools.calls == [("read_my_records", {"entity": "hr.compensation"}, "good",
-                            {"airlock": "hr", "revision": "7b2280eab4b5"})]
+                            {"airlock": "hr", "version": "v1", "revision": "7b2280eab4b5"})]
     shown = model.calls[1]["messages"][-1]["content"]
     assert shown == ('{"evidence_id":"ev-1","row_count":1,"rows":[{"row":"r1","self":true,"employee_id":3,'
                      '"full_name":"Elena Varga","gross_salary":78000.00}]}')
@@ -96,7 +96,7 @@ async def test_given_unlisted_role_or_client_when_asked_then_403_and_one_refusal
     # Arrange
     model = Model()
     client, out = harness(model, verifier=Verifier(**claims))
-    before = audit.REFUSALS.labels(airlock="hr", reason=reason)._value.get()
+    before = audit.REFUSALS.labels(airlock="hr", version="v1", reason=reason)._value.get()
 
     # Act
     response = await client.post(PATH, json=ASK, headers=GOOD)
@@ -108,7 +108,7 @@ async def test_given_unlisted_role_or_client_when_asked_then_403_and_one_refusal
     assert (line["event"], line["outcome"], line["reason"], line["question"]) == (
         "refusal", "refused", reason, ASK["message"])
     assert model.calls == []
-    assert audit.REFUSALS.labels(airlock="hr", reason=reason)._value.get() == before + 1
+    assert audit.REFUSALS.labels(airlock="hr", version="v1", reason=reason)._value.get() == before + 1
 
 
 @pytest.mark.parametrize(("azp", "status", "logged"), [("knime", 200, None), ("n8n", 403, "acme/hr does not admit client n8n")],
@@ -128,12 +128,13 @@ async def test_given_machine_client_when_asked_then_admitted_by_its_client_id_al
 
 
 @pytest.mark.parametrize(("path", "body", "status", "detail"), [
-    ("/v1/spaces/other/airlocks/hr/chat", ASK, 404, "unknown airlock"),
-    ("/v1/spaces/acme/airlocks/sales/chat", ASK, 404, "unknown airlock"),
+    ("/v1/spaces/other/airlocks/hr/versions/v1/chat", ASK, 404, "unknown airlock"),
+    ("/v1/spaces/acme/airlocks/sales/versions/v1/chat", ASK, 404, "unknown airlock"),
+    ("/v1/spaces/acme/airlocks/hr/versions/v2/chat", ASK, 404, "unknown airlock"),
     (PATH, {"message": "  "}, 400, "message is blank or too long"),
     (PATH, {"message": "x" * 4001}, 400, "message is blank or too long"),
     (PATH, {"other": "x"}, 400, "message is blank or too long"),
-], ids=["space", "airlock", "blank", "too-long", "missing"])
+], ids=["space", "airlock", "version", "blank", "too-long", "missing"])
 async def test_given_unknown_airlock_or_bad_message_when_asked_then_problem_and_no_audit_line(path, body, status,
                                                                                              detail):
     # Arrange
