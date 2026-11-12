@@ -55,7 +55,7 @@ def test_given_rendered_files_when_loaded_then_version_resolved_from_its_airlock
     assert version.handlers[Stage.ANSWER_VERIFIER] == ("SalaryVerifier",)
     assert version.code.language == "java" and version.code.digest.startswith("sha256:")
     assert (version.llm, [llm.id for llm in version.llms]) == ("granite", ["granite", "nomic", "qwen"])
-    assert version.access.roles == ("hr", "employee") and version.access.callers == ("*",) and version.access.clients == ()
+    assert version.access.roles == ("ceo", "hr", "employee") and version.access.callers == ("*",) and version.access.clients == ()
     assert [ds.id for ds in version.data_sources] == ["acme_hr", "audit_log", "hr-documents"]
 
 
