@@ -16,6 +16,8 @@ export type AuditSummary = {
   event: "exchange" | "refusal";
   space: string;
   airlock: string;
+  /** The version that answered; null on lines written before versions. */
+  version: string | null;
   revision: string | null;
   trace_id: string | null;
   user: string | null;

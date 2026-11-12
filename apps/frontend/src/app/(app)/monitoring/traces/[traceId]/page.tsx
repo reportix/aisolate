@@ -52,7 +52,7 @@ function Trace({ detail }: { detail: TraceDetail }) {
         <p className="flex flex-wrap gap-2 text-sm text-ink-tertiary">
           {e.user && <span>{e.user}</span>}
           {e.user && <span aria-hidden>·</span>}
-          <span>{`${space} / ${e.airlock}`}</span>
+          <span>{`${space} / ${e.airlock}${e.version ? ` / ${e.version}` : ""}`}</span>
           <span aria-hidden>·</span>
           <time dateTime={e.ts}>{when(e.ts)}</time>
         </p>

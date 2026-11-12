@@ -27,6 +27,7 @@ describe("AuditTable", () => {
     // Assert
     expect(html).toContain('href="/audit/1042"');
     expect(html).toContain(">hr<");
+    expect(html).toContain(">v1<");
     expect(html).toContain("2026-10-18 09:11<");
     expect(html).toContain("1 sourced");
     expect(html).toContain("1 unsourced");

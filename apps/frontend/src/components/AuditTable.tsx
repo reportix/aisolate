@@ -7,11 +7,21 @@ import { shortId } from "@/lib/text";
 // Important: the kit's cells set px-4, and cx joins classes without merging them.
 const pad = "px-3! first:pl-4! last:pr-4!";
 
-const HEADS = ["Time (UTC)", "Space", "Airlock", "User", "Client", "Outcome", "Figures", "Tokens"];
+const HEADS = [
+  "Time (UTC)",
+  "Space",
+  "Airlock",
+  "Version",
+  "User",
+  "Client",
+  "Outcome",
+  "Figures",
+  "Tokens",
+];
 
 /**
- * The audit lines, newest first; the time is the link to the event. Space and airlock by id, as the
- * filters take them and as an auditor, who reads no space, sees them too.
+ * The audit lines, newest first; the time is the link to the event. Space, airlock and version by
+ * id, as the filters take them and as an auditor, who reads no space, sees them too.
  */
 export function AuditTable({ events }: { events: AuditSummary[] }) {
   return (
@@ -44,6 +54,7 @@ export function AuditTable({ events }: { events: AuditSummary[] }) {
             </Td>
             <Td className={pad}>{e.space}</Td>
             <Td className={pad}>{e.airlock}</Td>
+            <Td className={pad}>{e.version ?? "—"}</Td>
             <Td className={pad}>{e.user ?? "—"}</Td>
             <Td className={pad} title={e.client ?? undefined}>
               {e.client ? shortId(e.client) : "—"}

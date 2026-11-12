@@ -11,6 +11,8 @@ export type TraceSummary = {
   event: "exchange" | "refusal";
   space: string;
   airlock: string;
+  /** The version that answered; null on lines written before versions. */
+  version: string | null;
   trace_id: string | null;
   user: string | null;
   outcome: Outcome;
@@ -276,7 +278,7 @@ export function detailsOf(rows: Row[], index: number, event: AuditLine): Details
       kind = "Exchange";
       add(
         "Airlock",
-        `${event.space}/${event.airlock}${event.revision ? ` · revision ${event.revision}` : ""}`,
+        `${event.space}/${event.airlock}${event.version ? `/${event.version}` : ""}${event.revision ? ` · revision ${event.revision}` : ""}`,
       );
       add("Client", a["aisolate.client"]);
       add("Outcome", outcomeLabel(event));
