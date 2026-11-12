@@ -6,7 +6,7 @@ type Props = {
   streaming: boolean;
   /** No airlock to send to: the box stays visible, so the reason next to it is read in place. */
   disabled?: boolean;
-  /** Which airlock answers, at the foot of the box. */
+  /** Which airlock answers, and which of its versions, at the foot of the box. */
   picker: ReactNode;
   onSend: (text: string) => void;
   onStop: () => void;
@@ -54,7 +54,7 @@ export function Composer({ streaming, disabled = false, picker, onSend, onStop }
         }}
       />
       <div className="flex items-center justify-between gap-3 pt-1">
-        <div className="min-w-0">{picker}</div>
+        <div className="flex min-w-0 items-center gap-1">{picker}</div>
         <div className="flex shrink-0 items-center gap-2">
           {streaming ? (
             <IconButton label="Stop" tone="stop" onClick={onStop}>

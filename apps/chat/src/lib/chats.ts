@@ -6,6 +6,8 @@ export type Chat = {
   id: string;
   title: string;
   airlockId: string;
+  /** Which of the airlock's versions answers; switchable, the airlock is not. */
+  version: string;
   messages: Message[];
   updatedAt: number;
 };
@@ -81,7 +83,7 @@ export function upsertChat(chat: Chat) {
 }
 
 /** A chat's first save, on its first message: the airlock it is bound to is fixed from here on. */
-export function startChat(chat: Pick<Chat, "id" | "title" | "airlockId">) {
+export function startChat(chat: Pick<Chat, "id" | "title" | "airlockId" | "version">) {
   upsertChat({ ...chat, messages: [], updatedAt: Date.now() });
 }
 
@@ -89,11 +91,11 @@ export function startChat(chat: Pick<Chat, "id" | "title" | "airlockId">) {
  * The chat a message goes to: the one open now, else a new one started for it. Read when the message
  * is sent, never from an older render, so retrying a failed first message stays in its chat.
  */
-export function chatFor(text: string, airlockId: string): string {
+export function chatFor(text: string, target: Pick<Chat, "airlockId" | "version">): string {
   const open = activeChatStore.getSnapshot();
   if (open && chatsStore.getSnapshot()[open]) return open;
   const id = crypto.randomUUID();
-  startChat({ id, title: titleFrom(text), airlockId });
+  startChat({ id, title: titleFrom(text), ...target });
   activeChatStore.set(id);
   return id;
 }

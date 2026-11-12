@@ -1,10 +1,14 @@
-import type { AirlockListing } from "./api";
+import type { AirlockListing, AirlockVersion } from "./api";
 import { env } from "./env";
 
-/** Where the chat talks to: AIsolate's URL and the deployed airlock. */
+/**
+ * Where the chat talks to: AIsolate's URL, the deployed airlock, and which of its versions by name.
+ * `version` "" is unset: the airlock's newest, resolved once its versions are known.
+ */
 export type Settings = {
   aisolateUrl: string;
   airlockId: string;
+  version: string;
 };
 
 const KEY = "aisolate.settings";
@@ -13,6 +17,7 @@ export function defaultSettings(): Settings {
   return {
     aisolateUrl: env.aisolateUrl,
     airlockId: env.airlockId,
+    version: "",
   };
 }
 
@@ -27,6 +32,7 @@ export function loadSettings(storage: Storage | undefined = safeStorage()): Sett
       // Always the image's: Settings has no field for it, so a stored one would stick for good.
       aisolateUrl: defaults.aisolateUrl,
       airlockId: typeof parsed.airlockId === "string" ? parsed.airlockId : defaults.airlockId,
+      version: typeof parsed.version === "string" ? parsed.version : defaults.version,
     };
   } catch {
     return defaults;
@@ -83,4 +89,32 @@ export const settingsStore = {
 export function pickAirlock(configured: string, available: AirlockListing[]): string {
   if (available.some((a) => a.id === configured)) return configured;
   return available.length === 1 ? available[0].id : "";
+}
+
+/**
+ * The (airlock, version) the chat should talk to: the airlock as `pickAirlock` says; of its versions
+ * the configured one while the airlock still lists it, else the newest, else nothing.
+ */
+export function pickAirlockVersion(
+  configured: Pick<Settings, "airlockId" | "version">,
+  available: AirlockListing[],
+): Pick<Settings, "airlockId" | "version"> {
+  const airlockId = pickAirlock(configured.airlockId, available);
+  const versions = available.find((a) => a.id === airlockId)?.versions ?? [];
+  const kept =
+    airlockId === configured.airlockId && versions.some((v) => v.version === configured.version);
+  return { airlockId, version: kept ? configured.version : newest(versions) };
+}
+
+// Version names are slugs (a-z, 0-9, -), on which a numeric collation is libs/config's
+// VERSION_ORDER: digit runs compare by value, so v10 is newer than v9, the rest character by character.
+const byVersion = new Intl.Collator("en", { numeric: true }).compare;
+
+function newest(versions: AirlockVersion[]): string {
+  return (
+    versions
+      .map((v) => v.version)
+      .sort(byVersion)
+      .at(-1) ?? ""
+  );
 }
