@@ -28,10 +28,14 @@ public final class McpTestClient {
         bearer,
         tool,
         args,
-        Map.of("airlock", "hr-assistant", "revision", ToolServerTestConfig.REVISION));
+        Map.of(
+            "airlock", "hr-assistant", "version", "v1", "revision", ToolServerTestConfig.REVISION));
   }
 
-  /** {@code meta} is the MCP {@code _meta}; the airlock pod puts the airlock and revision there. */
+  /**
+   * {@code meta} is the MCP {@code _meta}; the airlock pod puts the airlock, version and revision
+   * there.
+   */
   public HttpResponse<String> callTool(
       String bearer, String tool, Map<String, Object> args, Map<String, Object> meta) {
     return callTool(bearer, tool, args, meta, Map.of());

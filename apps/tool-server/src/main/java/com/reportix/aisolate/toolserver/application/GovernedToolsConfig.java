@@ -27,11 +27,11 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * Publishes the tools the served airlocks offer, one per name as the plugin publishing it describes
+ * Publishes the tools the served versions offer, one per name as the plugin publishing it describes
  * it, each behind the same gates: identity comes from the validated token on this request, never
- * from the arguments; the airlock and the revision come from the call's {@code _meta}; the handler
- * reaches the data only through the governed query bound to that user. AIsolate itself defines no
- * tool.
+ * from the arguments; the airlock, the version's label and the revision come from the call's {@code
+ * _meta}; the handler reaches the data only through the governed query bound to that user. AIsolate
+ * itself defines no tool.
  */
 @Configuration
 @RequiredArgsConstructor
@@ -81,6 +81,7 @@ public class GovernedToolsConfig {
                     governedQuery.call(
                         resolveUserToken(),
                         readPin(request.meta(), "airlock"),
+                        readPin(request.meta(), "version"),
                         readPin(request.meta(), "revision"),
                         name,
                         request.arguments() == null ? Map.of() : request.arguments())));

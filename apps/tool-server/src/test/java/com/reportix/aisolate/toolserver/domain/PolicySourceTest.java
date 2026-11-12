@@ -30,10 +30,11 @@ class PolicySourceTest {
     String loadedRevision = CONFIGURATION.revision();
 
     // Act
-    Policy policy = source.findPolicy("hr-assistant", loadedRevision).orElseThrow();
+    Policy policy = source.findPolicy("hr-assistant", "v1", loadedRevision).orElseThrow();
 
     // Assert
     assertThat(policy.id()).isEqualTo("hr-assistant");
+    assertThat(policy.version()).isEqualTo("v1");
     assertThat(policy.revision()).isEqualTo(CONFIGURATION.revision());
     assertThat(policy.ruleVersion()).isEqualTo(CONFIGURATION.revision());
     assertThat(policy.access().roles()).containsExactly("ceo", "employee");
@@ -46,7 +47,8 @@ class PolicySourceTest {
   void givenAirlockListingOneClient_whenAskedThroughAClient_thenAdmittedThroughThatOneAlone(
       String azp, boolean expected) {
     // Arrange: founders-finance admits the space's ceo, asking through the Acme chat only
-    Policy policy = source.findPolicy("founders-finance", CONFIGURATION.revision()).orElseThrow();
+    Policy policy =
+        source.findPolicy("founders-finance", "v1", CONFIGURATION.revision()).orElseThrow();
 
     // Act
     boolean admitted = admitted(policy, azp, "ceo");
@@ -68,7 +70,7 @@ class PolicySourceTest {
       String role, String airlock, boolean expected) {
     // Arrange: ceo is the space's role, employee hr-assistant's own, founder nobody's, roles match
     // exactly
-    Policy policy = source.findPolicy(airlock, CONFIGURATION.revision()).orElseThrow();
+    Policy policy = source.findPolicy(airlock, "v1", CONFIGURATION.revision()).orElseThrow();
 
     // Act
     boolean admitted = admitted(policy, "acme-chat", role);
@@ -92,7 +94,9 @@ class PolicySourceTest {
     }
     Configuration closed = ConfigurationLoader.parse(files);
     Policy policy =
-        new PolicySource(closed).findPolicy("founders-finance", closed.revision()).orElseThrow();
+        new PolicySource(closed)
+            .findPolicy("founders-finance", "v1", closed.revision())
+            .orElseThrow();
 
     // Act
     boolean admitted = admitted(policy, "acme-chat", role);
@@ -103,8 +107,8 @@ class PolicySourceTest {
   }
 
   @Test
-  void givenConfiguration_whenListPolicies_thenEveryServedAirlockOnce() {
-    // Arrange: the fixtures hold three airlocks
+  void givenConfiguration_whenListPolicies_thenEveryServedVersionOnce() {
+    // Arrange: the fixtures hold three airlocks, one version each
 
     // Act
     var listed = source.listPolicies();
@@ -116,15 +120,20 @@ class PolicySourceTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"hr-assistant, other-revision", "nowhere, REVISION"})
-  void givenOtherRevisionOrUnknownAirlock_whenFound_thenEmpty(String airlock, String revision) {
+  @CsvSource({
+    "hr-assistant, v1, other-revision",
+    "nowhere, v1, REVISION",
+    "hr-assistant, v9, REVISION"
+  })
+  void givenOtherRevisionOrUnknownAirlockOrVersion_whenFound_thenEmpty(
+      String airlock, String version, String revision) {
     // Arrange: a stale pod or a stranger names what this release does not hold
     String asked = revision.equals("REVISION") ? CONFIGURATION.revision() : revision;
 
     // Act
-    var found = source.findPolicy(airlock, asked);
+    var found = source.findPolicy(airlock, version, asked);
 
-    // Assert: silent deny, exactly like an airlock AIsolate never served
+    // Assert: silent deny, exactly like a version AIsolate never served
     assertThat(found).isEmpty();
   }
 

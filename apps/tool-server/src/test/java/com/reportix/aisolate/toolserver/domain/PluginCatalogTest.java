@@ -17,6 +17,7 @@ class PluginCatalogTest {
   private static Policy policy(String airlock, String... tools) {
     return new Policy(
         airlock,
+        "v1",
         "1",
         new AirlockDocument.Access(List.of("eric@example.com"), List.of("*")),
         List.of(tools));

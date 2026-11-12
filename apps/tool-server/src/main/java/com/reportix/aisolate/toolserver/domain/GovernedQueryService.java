@@ -27,20 +27,20 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
 /**
- * The data boundary, the same for every plugin: which airlock, is this user admitted to it, does it
- * declare this tool, which plugin answers it, identity join; then, for each query the tool makes,
- * rule evaluation, SQL compilation and execution on the plugin's data source through its read-only
- * role. A denied user gets zero rows, never an error the model could see. Who may call (its space's
- * roles and its own, through its callers) and which tools an airlock declares come from its policy
- * ({@link PolicySource}); the tools, the entities and the rule sets from the airlock's code ({@link
- * PluginCatalog}); each plugin's data source from this pod's {@link CustomerDataSources}. This
- * server has no connection to AIsolate's database.
+ * The data boundary, the same for every plugin: which airlock version, is this user admitted to it,
+ * does it declare this tool, which plugin answers it, identity join; then, for each query the tool
+ * makes, rule evaluation, SQL compilation and execution on the plugin's data source through its
+ * read-only role. A denied user gets zero rows, never an error the model could see. Who may call
+ * (its space's roles and its own, through its callers) and which tools an airlock declares come
+ * from its policy ({@link PolicySource}); the tools, the entities and the rule sets from the
+ * airlock's code ({@link PluginCatalog}); each plugin's data source from this pod's {@link
+ * CustomerDataSources}. This server has no connection to AIsolate's database.
  *
  * <p>Each call is the span {@code governed query <tool>} of the airlock's trace, each statement a
  * {@code sql <data source>} span under it: names, counts and the outcome, never a row or a
- * statement. Each call also counts once in {@code aisolate.tool.queries} by airlock, tool and
- * outcome; the airlock is the served policy's, {@code none} when the caller named none this server
- * serves, so a caller cannot invent a label.
+ * statement. Each call also counts once in {@code aisolate.tool.queries} by airlock, version, tool
+ * and outcome; the airlock and the version are the served policy's, {@code none} when the caller
+ * named none this server serves, so a caller cannot invent a label.
  */
 @Service
 @RequiredArgsConstructor
@@ -61,6 +61,8 @@ public class GovernedQueryService {
    * a {@link GovernedQuery} bound to this user, this airlock and that plugin's data source.
    *
    * @param airlockId from the call's {@code _meta}; null when the caller named none
+   * @param version the version's label, from the call's {@code _meta}; null when the caller named
+   *     none
    * @param revision from the call's {@code _meta}; null when the caller named none
    * @param toolName a published tool: {@code tools/list} offers no other
    * @throws IllegalArgumentException the arguments do not fit: a tool error for the model
@@ -69,6 +71,7 @@ public class GovernedQueryService {
   public Result call(
       UserToken user,
       String airlockId,
+      String version,
       String revision,
       String toolName,
       Map<String, Object> arguments) {
@@ -76,9 +79,10 @@ public class GovernedQueryService {
         Observation.createNotStarted("aisolate.trace.query", observations)
             .contextualName("governed query " + toolName);
     tag(span, "aisolate.airlock", airlockId);
+    tag(span, "aisolate.version", version);
     tag(span, "aisolate.revision", revision);
     tag(span, "aisolate.tool", toolName);
-    Policy policy = findPinnedPolicy(airlockId, revision);
+    Policy policy = findPinnedPolicy(airlockId, version, revision);
     return span.observe(() -> {
       String outcome = "error";
       try {
@@ -95,6 +99,8 @@ public class GovernedQueryService {
                 "aisolate.tool.queries",
                 "airlock",
                 policy == null ? "none" : policy.id(),
+                "version",
+                policy == null ? "none" : policy.version(),
                 "tool",
                 toolName,
                 "outcome",
@@ -166,15 +172,16 @@ public class GovernedQueryService {
   }
 
   /**
-   * The policy of the airlock the caller pins. A caller that names no revision gets nothing,
-   * exactly as one that names no airlock: the policy is pinned to both or not read at all.
+   * The policy of the version the caller pins. A caller that names no version or revision gets
+   * nothing, exactly as one that names no airlock: the policy is pinned to all three or not read at
+   * all.
    *
-   * @return null when the pin is incomplete or AIsolate does not serve that airlock
+   * @return null when the pin is incomplete or AIsolate does not serve that version
    */
-  private Policy findPinnedPolicy(String airlockId, String revision) {
-    return airlockId == null || revision == null
+  private Policy findPinnedPolicy(String airlockId, String version, String revision) {
+    return airlockId == null || version == null || revision == null
         ? null
-        : policies.findPolicy(airlockId, revision).orElse(null);
+        : policies.findPolicy(airlockId, version, revision).orElse(null);
   }
 
   /**
@@ -262,8 +269,9 @@ public class GovernedQueryService {
       RuleSet ruleSet = catalog.findRuleSet(entityName).orElse(null);
       if (entity == null || ruleSet == null) {
         log.warn(
-            "{}: entity '{}' declared={} governed={}; asked by a tool of plugin {}",
+            "{}/{}: entity '{}' declared={} governed={}; asked by a tool of plugin {}",
             policy.id(),
+            policy.version(),
             entityName,
             entity != null,
             ruleSet != null,
@@ -279,6 +287,7 @@ public class GovernedQueryService {
           Observation.createNotStarted("aisolate.trace.sql", observations)
               .contextualName("sql " + plugin.dataSource());
       tag(sql, "aisolate.airlock", policy.id());
+      tag(sql, "aisolate.version", policy.version());
       tag(sql, "aisolate.revision", policy.revision());
       tag(sql, "aisolate.data_source", plugin.dataSource());
       tag(sql, "aisolate.entity", entity.name());
