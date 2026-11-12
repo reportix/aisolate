@@ -2,6 +2,7 @@ package com.reportix.aisolate.controller;
 
 import com.reportix.aisolate.controller.reconciler.Releases;
 import com.reportix.aisolate.controller.reconciler.airlock.AirlockReconciler;
+import com.reportix.aisolate.controller.reconciler.airlockversion.AirlockVersionReconciler;
 import com.reportix.aisolate.controller.reconciler.global.GlobalReconciler;
 import com.reportix.aisolate.controller.reconciler.space.SpaceReconciler;
 import com.reportix.aisolate.controller.render.ControllerProperties;
@@ -17,7 +18,7 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * The AIsolate controller: one per installation, in the data-plane namespace, namespace-scoped,
- * leader-elected, no cluster rights. Three reconcilers, one per kind, on the Java Operator SDK.
+ * leader-elected, no cluster rights. Four reconcilers, one per kind, on the Java Operator SDK.
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
@@ -43,6 +44,7 @@ public class ControllerApplication {
     Releases releases =
         new Releases(
             client, new Renderer(settings), namespace, Releases.BY_SERVER_SIDE_APPLY, settings);
+    operator.register(new AirlockVersionReconciler(releases), o -> o.settingNamespace(namespace));
     operator.register(new AirlockReconciler(releases), o -> o.settingNamespace(namespace));
     operator.register(new SpaceReconciler(releases), o -> o.settingNamespace(namespace));
     operator.register(new GlobalReconciler(settings), o -> o.settingNamespace(namespace));

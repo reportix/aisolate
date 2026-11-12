@@ -49,7 +49,7 @@ class SpaceReconcilerTest {
     // Act
     UpdateControl<Space> control = reconciler.reconcile(get("hr-acme"), context());
 
-    // Assert: no airlock's pod; discovery's own, beside what it lists
+    // Assert: no version's pod; discovery's own, beside what it lists
     ResourceStatus status = control.getResource().orElseThrow().getStatus();
     assertThat(status.phase()).isEqualTo(ResourceStatus.READY);
     assertThat(status.revision()).isEqualTo(FIXTURES.revision());
@@ -83,10 +83,10 @@ class SpaceReconcilerTest {
   }
 
   @Test
-  void givenOneAirlockInvalid_whenSpaceReconciled_thenReadyNamingTheAirlockHeldBack() {
+  void givenOneVersionInvalid_whenSpaceReconciled_thenReadyNamingTheVersionHeldBack() {
     // Arrange
     TestResources.applyFixtures(client);
-    TestResources.breakJarDigest(client, "founders-finance");
+    TestResources.breakJarDigest(client, "founders-finance-v1");
 
     // Act
     UpdateControl<Space> control = reconciler.reconcile(get("hr-acme"), context());
@@ -95,8 +95,8 @@ class SpaceReconcilerTest {
     ResourceStatus status = control.getResource().orElseThrow().getStatus();
     assertThat(status.phase()).isEqualTo(ResourceStatus.READY);
     assertThat(status.problems())
-        .containsExactly("Airlock founders-finance is held back: " + Releases.HELD_BACK);
-    assertThat(status.conditions().getFirst().getMessage()).contains("founders-finance");
+        .containsExactly("AirlockVersion founders-finance-v1 is held back: " + Releases.HELD_BACK);
+    assertThat(status.conditions().getFirst().getMessage()).contains("founders-finance-v1");
   }
 
   @Test

@@ -5,15 +5,16 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "192feb393eee"
-  name: "hr-acme-hr-assistant-config"
+    aisolate.dev/revision: "b8f208fef4fe"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-config"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 data:
   Global-aisolate.yaml: |
     ---
@@ -73,6 +74,25 @@ data:
         - hr
         callers:
         - '*'
+      llms:
+      - id: nomic
+        provider: ollama
+        url: http://host.minikube.internal:11434
+        model: nomic-embed-text:v1.5
+      dataSources:
+      - id: hr-documents
+        url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
+        secretRef: hr-acme-hr-assistant-ds-hr-documents-d4e5f6
+  AirlockVersion-hr-assistant-v1.yaml: |
+    ---
+    apiVersion: aisolate.dev/v1
+    kind: AirlockVersion
+    metadata:
+      name: hr-assistant-v1
+    spec:
+      airlock: hr-assistant
+      version: v1
+      description: "Pay from the tools, policies from the HR documents."
       preLLM:
         contextPreparator:
           handlers:
@@ -90,15 +110,7 @@ data:
         answerVerifier:
           handlers:
           - SalaryVerifier
-      llms:
-      - id: nomic
-        provider: ollama
-        url: http://host.minikube.internal:11434
-        model: nomic-embed-text:v1.5
-      dataSources:
-      - id: hr-documents
-        url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
-        secretRef: hr-acme-hr-assistant-ds-hr-documents-d4e5f6
+      llms: []
       jar:
         digest: sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f
         tools:
@@ -112,16 +124,17 @@ metadata:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-hr-assistant-audit"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-audit"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 data:
-  token: "Q1lPY1BwX0QwM1haS1pZeEk1dmtQUmhUX3ZDdkwycHkxb0lieUEyNjNSVQ=="
+  token: "M0pMcGVSa3dwUmIxX0NMS2Y0VzlOXzgwWUVkNmNsT0x3RUVpUXpyYTBPWQ=="
 type: "Opaque"
 ---
 apiVersion: "v1"
@@ -131,16 +144,17 @@ metadata:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-hr-assistant-code"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-code"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 data:
-  token: "OHgzVmQzUGlWaXB0bURiUlNiekZrZXl3Ynp5VXpseEpuSzh5WDNTemNhTQ=="
+  token: "SWxnSklONzdXUXdzX2NxRlJzb3hEam1QbDJudkthcDV6ZE1CRlE4dThzaw=="
 type: "Opaque"
 ---
 apiVersion: "networking.k8s.io/v1"
@@ -149,16 +163,17 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "192feb393eee"
+    aisolate.dev/revision: "b8f208fef4fe"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-hr-assistant-airlock"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-airlock"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 spec:
   egress:
   - ports:
@@ -204,6 +219,7 @@ spec:
         matchLabels:
           aisolate.dev/airlock: "hr-assistant"
           aisolate.dev/role: "tool-server"
+          aisolate.dev/version: "v1"
   - ports:
     - port: 8085
       protocol: "TCP"
@@ -248,6 +264,7 @@ spec:
     matchLabels:
       aisolate.dev/airlock: "hr-assistant"
       aisolate.dev/role: "airlock"
+      aisolate.dev/version: "v1"
   policyTypes:
   - "Ingress"
   - "Egress"
@@ -258,16 +275,17 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "192feb393eee"
+    aisolate.dev/revision: "b8f208fef4fe"
     aisolate.dev/role: "tool-server"
-  name: "hr-acme-hr-assistant-mcp-server"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-mcp-server"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 spec:
   egress:
   - ports:
@@ -329,6 +347,7 @@ spec:
         matchLabels:
           aisolate.dev/airlock: "hr-assistant"
           aisolate.dev/role: "airlock"
+          aisolate.dev/version: "v1"
     ports:
     - port: 8081
       protocol: "TCP"
@@ -344,6 +363,7 @@ spec:
     matchLabels:
       aisolate.dev/airlock: "hr-assistant"
       aisolate.dev/role: "tool-server"
+      aisolate.dev/version: "v1"
   policyTypes:
   - "Ingress"
   - "Egress"
@@ -354,52 +374,57 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "192feb393eee"
+    aisolate.dev/revision: "b8f208fef4fe"
     aisolate.dev/role: "airlock"
     aisolate.dev/space: "hr-acme"
-  name: "hr-acme-hr-assistant-airlock"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-airlock"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 spec:
   replicas: 1
   selector:
     matchLabels:
       aisolate.dev/airlock: "hr-assistant"
       aisolate.dev/role: "airlock"
+      aisolate.dev/version: "v1"
   strategy:
     type: "Recreate"
   template:
     metadata:
       annotations:
-        aisolate.dev/revision: "192feb393eee"
+        aisolate.dev/revision: "b8f208fef4fe"
       labels:
         aisolate.dev/airlock: "hr-assistant"
         aisolate.dev/managed-by: "controller"
         aisolate.dev/role: "airlock"
         aisolate.dev/space: "hr-acme"
+        aisolate.dev/version: "v1"
     spec:
       automountServiceAccountToken: false
       containers:
       - env:
         - name: "AISOLATE_AIRLOCK"
           value: "hr-assistant"
+        - name: "AISOLATE_VERSION"
+          value: "v1"
         - name: "AISOLATE_CONFIG_DIR"
           value: "/etc/aisolate"
         - name: "AISOLATE_CONFIG_REVISION"
-          value: "192feb393eee"
+          value: "b8f208fef4fe"
         - name: "AISOLATE_CODE_URL"
-          value: "http://backend.aisolate.svc:8085/v1/code/hr-acme/hr-assistant/sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f"
+          value: "http://backend.aisolate.svc:8085/v1/code/hr-acme/hr-assistant/v1/sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f"
         - name: "AISOLATE_CODE_DIGEST"
           value: "sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f"
         - name: "AISOLATE_CODE_TOKEN_FILE"
           value: "/var/run/aisolate/code/token"
         - name: "AISOLATE_TOOL_SERVER_URL"
-          value: "http://hr-acme-hr-assistant-mcp-server:8081/mcp"
+          value: "http://hr-acme-hr-assistant-v1-mcp-server:8081/mcp"
         - name: "AISOLATE_PUBLIC_URL"
           value: "http://aisolate.localtest.me"
         - name: "AISOLATE_CORS_ALLOWED_ORIGINS"
@@ -556,17 +581,17 @@ spec:
           type: "RuntimeDefault"
       volumes:
       - configMap:
-          name: "hr-acme-hr-assistant-config"
+          name: "hr-acme-hr-assistant-v1-config"
         name: "config"
       - name: "code-token"
         secret:
-          secretName: "hr-acme-hr-assistant-code"
+          secretName: "hr-acme-hr-assistant-v1-code"
       - emptyDir:
           sizeLimit: "2Gi"
         name: "tmp"
       - name: "audit-token"
         secret:
-          secretName: "hr-acme-hr-assistant-audit"
+          secretName: "hr-acme-hr-assistant-v1-audit"
       - emptyDir:
           sizeLimit: "96Mi"
         name: "audit-buffer"
@@ -577,16 +602,17 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "192feb393eee"
+    aisolate.dev/revision: "b8f208fef4fe"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-hr-assistant-airlock"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-airlock"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 spec:
   ports:
   - name: "http"
@@ -596,6 +622,7 @@ spec:
   selector:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/role: "airlock"
+    aisolate.dev/version: "v1"
 ---
 apiVersion: "networking.k8s.io/v1"
 kind: "Ingress"
@@ -606,16 +633,17 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "192feb393eee"
+    aisolate.dev/revision: "b8f208fef4fe"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-hr-assistant-airlock"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-airlock"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 spec:
   ingressClassName: "nginx"
   rules:
@@ -624,10 +652,10 @@ spec:
       paths:
       - backend:
           service:
-            name: "hr-acme-hr-assistant-airlock"
+            name: "hr-acme-hr-assistant-v1-airlock"
             port:
               number: 8080
-        path: "/v1/spaces/hr-acme/airlocks/hr-assistant/"
+        path: "/v1/spaces/hr-acme/airlocks/hr-assistant/versions/v1/"
         pathType: "Prefix"
 ---
 apiVersion: "apps/v1"
@@ -636,34 +664,37 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "192feb393eee"
+    aisolate.dev/revision: "b8f208fef4fe"
     aisolate.dev/role: "tool-server"
     aisolate.dev/space: "hr-acme"
-  name: "hr-acme-hr-assistant-mcp-server"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-mcp-server"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 spec:
   replicas: 1
   selector:
     matchLabels:
       aisolate.dev/airlock: "hr-assistant"
       aisolate.dev/role: "tool-server"
+      aisolate.dev/version: "v1"
   strategy:
     type: "Recreate"
   template:
     metadata:
       annotations:
-        aisolate.dev/revision: "192feb393eee"
+        aisolate.dev/revision: "b8f208fef4fe"
       labels:
         aisolate.dev/airlock: "hr-assistant"
         aisolate.dev/managed-by: "controller"
         aisolate.dev/role: "tool-server"
         aisolate.dev/space: "hr-acme"
+        aisolate.dev/version: "v1"
     spec:
       automountServiceAccountToken: false
       containers:
@@ -671,9 +702,9 @@ spec:
         - name: "AISOLATE_CONFIG_DIR"
           value: "/etc/aisolate"
         - name: "AISOLATE_CONFIG_REVISION"
-          value: "192feb393eee"
+          value: "b8f208fef4fe"
         - name: "AISOLATE_CODE_URL"
-          value: "http://backend.aisolate.svc:8085/v1/code/hr-acme/hr-assistant/sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f"
+          value: "http://backend.aisolate.svc:8085/v1/code/hr-acme/hr-assistant/v1/sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f"
         - name: "AISOLATE_CODE_DIGEST"
           value: "sha256:784c6018d0c0bb8d5ca5bf7e112fddd4a7f6df85f8517b1669c75e7b159aa24f"
         - name: "AISOLATE_CODE_TOKEN_FILE"
@@ -788,11 +819,11 @@ spec:
           type: "RuntimeDefault"
       volumes:
       - configMap:
-          name: "hr-acme-hr-assistant-config"
+          name: "hr-acme-hr-assistant-v1-config"
         name: "config"
       - name: "code-token"
         secret:
-          secretName: "hr-acme-hr-assistant-code"
+          secretName: "hr-acme-hr-assistant-v1-code"
       - emptyDir:
           sizeLimit: "2Gi"
         name: "tmp"
@@ -803,16 +834,17 @@ metadata:
   labels:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "192feb393eee"
+    aisolate.dev/revision: "b8f208fef4fe"
     aisolate.dev/role: "tool-server"
-  name: "hr-acme-hr-assistant-mcp-server"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-hr-assistant-v1-mcp-server"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "hr-assistant"
-    uid: "uid-hr"
+    name: "hr-assistant-v1"
+    uid: "uid-v1"
 spec:
   ports:
   - name: "http"
@@ -822,6 +854,7 @@ spec:
   selector:
     aisolate.dev/airlock: "hr-assistant"
     aisolate.dev/role: "tool-server"
+    aisolate.dev/version: "v1"
 ---
 apiVersion: "v1"
 kind: "ConfigMap"
@@ -829,15 +862,16 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "bdf88dafa691"
-  name: "hr-acme-founders-finance-config"
+    aisolate.dev/revision: "fa6a2e48eb62"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-founders-finance-v1-config"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "founders-finance"
-    uid: "uid-ff"
+    name: "founders-finance-v1"
+    uid: "uid-v2"
 data:
   Global-aisolate.yaml: |
     ---
@@ -895,15 +929,25 @@ data:
         - founder
         callers:
         - '*'
-      llm: qwen
-      prompt: |
-        You answer the founders only.
-      tools: []
       llms: []
       dataSources:
       - id: acme_hr
         url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr
         secretRef: hr-acme-founders-finance-ds-acme-hr-g7h8i9
+  AirlockVersion-founders-finance-v1.yaml: |
+    ---
+    apiVersion: aisolate.dev/v1
+    kind: AirlockVersion
+    metadata:
+      name: founders-finance-v1
+    spec:
+      airlock: founders-finance
+      version: v1
+      llm: qwen
+      prompt: |
+        You answer the founders only.
+      tools: []
+      llms: []
       jar:
         digest: sha256:72b809e39ab62fe6d73761c68268c80699a7b45bac07f07be1ea02646e09e412
         tools:
@@ -916,16 +960,17 @@ metadata:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-founders-finance-audit"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-founders-finance-v1-audit"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "founders-finance"
-    uid: "uid-ff"
+    name: "founders-finance-v1"
+    uid: "uid-v2"
 data:
-  token: "YmVzZFdoSkxDVndnMjhfSF9IQTFDMXVhZlkySlVrQ09BZ2ZfMUFOY19TNA=="
+  token: "QWZWZEZyUVQxeTluN29nRlpJMXFfSnV2dmlJYVZOQlVIcldUM0R2a0hFYw=="
 type: "Opaque"
 ---
 apiVersion: "v1"
@@ -935,16 +980,17 @@ metadata:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-founders-finance-code"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-founders-finance-v1-code"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "founders-finance"
-    uid: "uid-ff"
+    name: "founders-finance-v1"
+    uid: "uid-v2"
 data:
-  token: "STVUT1BHeHZEQXNTMFFWajhTTFJrY2xpaDlKUGxXMzlET3hpemhodXNMVQ=="
+  token: "bklLbFNZaDJRY3lYU3A3dWp1VW9JdEk0STNuQ0IyYjFlcjctdVNkcVdQSQ=="
 type: "Opaque"
 ---
 apiVersion: "networking.k8s.io/v1"
@@ -953,16 +999,17 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "bdf88dafa691"
+    aisolate.dev/revision: "fa6a2e48eb62"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-founders-finance-airlock"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-founders-finance-v1-airlock"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "founders-finance"
-    uid: "uid-ff"
+    name: "founders-finance-v1"
+    uid: "uid-v2"
 spec:
   egress:
   - ports:
@@ -1044,6 +1091,7 @@ spec:
     matchLabels:
       aisolate.dev/airlock: "founders-finance"
       aisolate.dev/role: "airlock"
+      aisolate.dev/version: "v1"
   policyTypes:
   - "Ingress"
   - "Egress"
@@ -1054,46 +1102,51 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "bdf88dafa691"
+    aisolate.dev/revision: "fa6a2e48eb62"
     aisolate.dev/role: "airlock"
     aisolate.dev/space: "hr-acme"
-  name: "hr-acme-founders-finance-airlock"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-founders-finance-v1-airlock"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "founders-finance"
-    uid: "uid-ff"
+    name: "founders-finance-v1"
+    uid: "uid-v2"
 spec:
   replicas: 1
   selector:
     matchLabels:
       aisolate.dev/airlock: "founders-finance"
       aisolate.dev/role: "airlock"
+      aisolate.dev/version: "v1"
   strategy:
     type: "Recreate"
   template:
     metadata:
       annotations:
-        aisolate.dev/revision: "bdf88dafa691"
+        aisolate.dev/revision: "fa6a2e48eb62"
       labels:
         aisolate.dev/airlock: "founders-finance"
         aisolate.dev/managed-by: "controller"
         aisolate.dev/role: "airlock"
         aisolate.dev/space: "hr-acme"
+        aisolate.dev/version: "v1"
     spec:
       automountServiceAccountToken: false
       containers:
       - env:
         - name: "AISOLATE_AIRLOCK"
           value: "founders-finance"
+        - name: "AISOLATE_VERSION"
+          value: "v1"
         - name: "AISOLATE_CONFIG_DIR"
           value: "/etc/aisolate"
         - name: "AISOLATE_CONFIG_REVISION"
-          value: "bdf88dafa691"
+          value: "fa6a2e48eb62"
         - name: "AISOLATE_CODE_URL"
-          value: "http://backend.aisolate.svc:8085/v1/code/hr-acme/founders-finance/sha256:72b809e39ab62fe6d73761c68268c80699a7b45bac07f07be1ea02646e09e412"
+          value: "http://backend.aisolate.svc:8085/v1/code/hr-acme/founders-finance/v1/sha256:72b809e39ab62fe6d73761c68268c80699a7b45bac07f07be1ea02646e09e412"
         - name: "AISOLATE_CODE_DIGEST"
           value: "sha256:72b809e39ab62fe6d73761c68268c80699a7b45bac07f07be1ea02646e09e412"
         - name: "AISOLATE_CODE_TOKEN_FILE"
@@ -1238,17 +1291,17 @@ spec:
           type: "RuntimeDefault"
       volumes:
       - configMap:
-          name: "hr-acme-founders-finance-config"
+          name: "hr-acme-founders-finance-v1-config"
         name: "config"
       - name: "code-token"
         secret:
-          secretName: "hr-acme-founders-finance-code"
+          secretName: "hr-acme-founders-finance-v1-code"
       - emptyDir:
           sizeLimit: "2Gi"
         name: "tmp"
       - name: "audit-token"
         secret:
-          secretName: "hr-acme-founders-finance-audit"
+          secretName: "hr-acme-founders-finance-v1-audit"
       - emptyDir:
           sizeLimit: "96Mi"
         name: "audit-buffer"
@@ -1259,16 +1312,17 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "bdf88dafa691"
+    aisolate.dev/revision: "fa6a2e48eb62"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-founders-finance-airlock"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-founders-finance-v1-airlock"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "founders-finance"
-    uid: "uid-ff"
+    name: "founders-finance-v1"
+    uid: "uid-v2"
 spec:
   ports:
   - name: "http"
@@ -1278,6 +1332,7 @@ spec:
   selector:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/role: "airlock"
+    aisolate.dev/version: "v1"
 ---
 apiVersion: "networking.k8s.io/v1"
 kind: "Ingress"
@@ -1288,16 +1343,17 @@ metadata:
   labels:
     aisolate.dev/airlock: "founders-finance"
     aisolate.dev/managed-by: "controller"
-    aisolate.dev/revision: "bdf88dafa691"
+    aisolate.dev/revision: "fa6a2e48eb62"
     aisolate.dev/role: "airlock"
-  name: "hr-acme-founders-finance-airlock"
+    aisolate.dev/version: "v1"
+  name: "hr-acme-founders-finance-v1-airlock"
   namespace: "aisolate"
   ownerReferences:
   - apiVersion: "aisolate.dev/v1"
-    kind: "Airlock"
+    kind: "AirlockVersion"
     controller: true
-    name: "founders-finance"
-    uid: "uid-ff"
+    name: "founders-finance-v1"
+    uid: "uid-v2"
 spec:
   ingressClassName: "nginx"
   rules:
@@ -1306,8 +1362,8 @@ spec:
       paths:
       - backend:
           service:
-            name: "hr-acme-founders-finance-airlock"
+            name: "hr-acme-founders-finance-v1-airlock"
             port:
               number: 8080
-        path: "/v1/spaces/hr-acme/airlocks/founders-finance/"
+        path: "/v1/spaces/hr-acme/airlocks/founders-finance/versions/v1/"
         pathType: "Prefix"

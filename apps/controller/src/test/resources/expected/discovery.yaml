@@ -14,10 +14,12 @@ metadata:
 data:
   hr-acme.json: "[{\"id\":\"hr-assistant\",\"space\":\"hr-acme\",\"name\":\"Acme HR\
     \ assistant\",\"description\":\"Answers people, pay and HR document questions.\"\
-    ,\"roles\":[\"ceo\",\"hr\",\"employee\"],\"callers\":[\"*\"],\"tools\":[\"read_records\"\
-    ,\"aggregate_records\"]},{\"id\":\"founders-finance\",\"space\":\"hr-acme\",\"\
-    name\":\"Founders finance\",\"description\":\"\",\"roles\":[\"ceo\",\"hr\",\"\
-    founder\"],\"callers\":[\"*\"],\"tools\":[]}]"
+    ,\"roles\":[\"ceo\",\"hr\",\"employee\"],\"callers\":[\"*\"],\"versions\":[{\"\
+    version\":\"v1\",\"description\":\"Pay from the tools, policies from the HR documents.\"\
+    ,\"tools\":[\"read_records\",\"aggregate_records\"]}]},{\"id\":\"founders-finance\"\
+    ,\"space\":\"hr-acme\",\"name\":\"Founders finance\",\"description\":\"\",\"roles\"\
+    :[\"ceo\",\"hr\",\"founder\"],\"callers\":[\"*\"],\"versions\":[{\"version\":\"\
+    v1\",\"description\":\"\",\"tools\":[]}]}]"
 ---
 apiVersion: "networking.k8s.io/v1"
 kind: "NetworkPolicy"

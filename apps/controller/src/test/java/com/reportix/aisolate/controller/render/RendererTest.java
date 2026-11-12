@@ -3,7 +3,7 @@ package com.reportix.aisolate.controller.render;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.config.AuditIngestToken;
 import com.reportix.aisolate.config.Configuration;
 import com.reportix.aisolate.config.ConfigurationLoader;
@@ -23,6 +23,7 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.TolerationBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.client.utils.Serialization;
@@ -44,30 +45,32 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** The objects of each fixture airlock, pinned as golden YAML. */
+/** The objects of each fixture version, pinned as golden YAML. */
 class RendererTest {
 
   private static final Path DOCUMENTS = Path.of("src/test/resources/documents");
   private static final Configuration RELEASE = TestResources.FIXTURES;
   private static final Path EXPECTED = Path.of("src/test/resources/expected/release.yaml");
-  private static final String HR = "hr-assistant";
-  private static final String HR_POD = "hr-acme-hr-assistant-airlock";
-  private static final String HR_MCP = "hr-acme-hr-assistant-mcp-server";
-  private static final String FF = "founders-finance";
-  private static final String FF_POD = "hr-acme-founders-finance-airlock";
+  private static final String HR_V1 = "hr-assistant-v1";
+  private static final String HR_POD = "hr-acme-hr-assistant-v1-airlock";
+  private static final String HR_MCP = "hr-acme-hr-assistant-v1-mcp-server";
+  private static final String FF_V1 = "founders-finance-v1";
+  private static final String FF_POD = "hr-acme-founders-finance-v1-airlock";
 
   static final Owners OWNERS =
       new Owners(
-          Map.of("Airlock/" + HR, owner(HR, "uid-hr"), "Airlock/" + FF, owner(FF, "uid-ff")));
+          Map.of(
+              "AirlockVersion/" + HR_V1, owner(HR_V1, "uid-v1"),
+              "AirlockVersion/" + FF_V1, owner(FF_V1, "uid-v2")));
 
   private final Renderer renderer = new Renderer(TestSettings.SETTINGS);
 
   @Test
-  void givenFixtureRelease_whenEveryAirlockRendered_thenMatchesExpectedYaml() throws IOException {
+  void givenFixtureRelease_whenEveryVersionRendered_thenMatchesExpectedYaml() throws IOException {
     // Arrange / Act
     String actual =
-        RELEASE.airlocks().keySet().stream()
-            .flatMap(airlock -> renderer.render(RELEASE, airlock, OWNERS).stream())
+        RELEASE.airlockVersions().keySet().stream()
+            .flatMap(version -> renderer.render(RELEASE, version, OWNERS).stream())
             .map(Serialization::asYaml)
             .collect(Collectors.joining());
 
@@ -99,12 +102,53 @@ class RendererTest {
     assertThat(actual).isEqualTo(Files.readString(expected));
   }
 
+  // Survives beside the golden as a regeneration guard: what names a version stays in place.
+  @Test
+  void givenVersion_whenRendered_thenItsFourDocumentsItsLabelItsEnvAndItsIngressPathNameIt() {
+    // Arrange / Act
+    List<HasMetadata> objects = renderer.render(RELEASE, HR_V1, OWNERS);
+
+    // Assert: the Global, its space, its airlock and itself, whole; the pods, Services and
+    // Secrets by version; the chat path under the version
+    ConfigMap config = of(objects, ConfigMap.class).getFirst();
+    assertThat(config.getMetadata().getName()).isEqualTo("hr-acme-hr-assistant-v1-config");
+    assertThat(config.getData())
+        .containsOnlyKeys(
+            "Global-aisolate.yaml",
+            "Space-hr-acme.yaml",
+            "Airlock-hr-assistant.yaml",
+            "AirlockVersion-hr-assistant-v1.yaml");
+    assertThat(ConfigurationLoader.parse(config.getData()).airlockVersions().get(HR_V1))
+        .isEqualTo(RELEASE.airlockVersions().get(HR_V1));
+    assertThat(objects)
+        .allSatisfy(o ->
+            assertThat(o.getMetadata().getLabels())
+                .containsEntry(Renderer.AIRLOCK, "hr-assistant")
+                .containsEntry(Renderer.VERSION, "v1"));
+    assertThat(names(objects, "Deployment")).containsExactly(HR_POD, HR_MCP);
+    assertThat(names(objects, "Secret"))
+        .containsExactly("hr-acme-hr-assistant-v1-audit", "hr-acme-hr-assistant-v1-code");
+    Deployment airlock = findDeployment(objects, HR_POD);
+    assertThat(findEnv(airlock, "AISOLATE_AIRLOCK")).isEqualTo("hr-assistant");
+    assertThat(findEnv(airlock, "AISOLATE_VERSION")).isEqualTo("v1");
+    assertThat(findEnv(airlock, "AISOLATE_TOOL_SERVER_URL"))
+        .isEqualTo("http://" + HR_MCP + ":8081/mcp");
+    assertThat(of(objects, Ingress.class))
+        .singleElement()
+        .satisfies(ingress -> {
+          var path = ingress.getSpec().getRules().getFirst().getHttp().getPaths().getFirst();
+          assertThat(path.getPath())
+              .isEqualTo("/v1/spaces/hr-acme/airlocks/hr-assistant/versions/v1/");
+          assertThat(path.getBackend().getService().getName()).isEqualTo(HR_POD);
+        });
+  }
+
   // Survives beside the golden as a regeneration guard: pods stay restricted and revisioned.
   @Test
-  void givenAirlock_whenRendered_thenEveryPodIsRestrictedAndCarriesItsRevision() {
+  void givenVersion_whenRendered_thenEveryPodIsRestrictedAndCarriesItsRevision() {
     // Arrange / Act
-    List<HasMetadata> objects = renderer.render(RELEASE, HR, OWNERS);
-    String revision = Renderer.selectServedDocuments(RELEASE, HR).revision();
+    List<HasMetadata> objects = renderer.render(RELEASE, HR_V1, OWNERS);
+    String revision = Renderer.selectServedDocuments(RELEASE, HR_V1).revision();
 
     // Assert
     for (Deployment deployment : of(objects, Deployment.class)) {
@@ -120,8 +164,7 @@ class RendererTest {
       assertThat(container.getSecurityContext().getCapabilities().getDrop()).containsExactly("ALL");
       assertThat(findEnv(deployment, "AISOLATE_CONFIG_REVISION")).isEqualTo(revision);
       assertThat(deployment.getMetadata().getLabels())
-          .containsEntry("aisolate.dev/revision", revision)
-          .doesNotContainKey("aisolate.dev/version");
+          .containsEntry("aisolate.dev/revision", revision);
     }
   }
 
@@ -144,10 +187,15 @@ class RendererTest {
                 List.of(compatible),
                 space.spec().dataSources())));
     Configuration release =
-        new Configuration(RELEASE.revision(), RELEASE.global(), spaces, RELEASE.airlocks());
+        new Configuration(
+            RELEASE.revision(),
+            RELEASE.global(),
+            spaces,
+            RELEASE.airlocks(),
+            RELEASE.airlockVersions());
 
     // Act
-    List<HasMetadata> objects = renderer.render(release, HR, OWNERS);
+    List<HasMetadata> objects = renderer.render(release, HR_V1, OWNERS);
 
     // Assert: qwen is entry 2 after granite and nomic, which carry no key
     Deployment airlock = findDeployment(objects, HR_POD);
@@ -163,19 +211,21 @@ class RendererTest {
 
   @ParameterizedTest
   @CsvSource({"airlock", "mcp-server"})
-  void givenAirlockWithCode_whenRendered_thenEachOfItsPodsFetchesItWithItsCodeToken(String pod) {
+  void givenVersionWithCode_whenRendered_thenEachOfItsPodsFetchesItWithItsVersionsCodeToken(
+      String pod) {
     // Arrange
-    AirlockDocument.Jar jar = RELEASE.airlocks().get(HR).spec().jar();
+    AirlockVersionDocument.Jar jar = RELEASE.airlockVersions().get(HR_V1).spec().jar();
 
     // Act
-    List<HasMetadata> objects = renderer.render(RELEASE, HR, OWNERS);
+    List<HasMetadata> objects = renderer.render(RELEASE, HR_V1, OWNERS);
 
-    // Assert: the backend's URL for this airlock and digest, the token read-only, no code mounted
-    String name = "hr-acme-" + HR + "-" + pod;
+    // Assert: the backend's URL for this version and digest, the token read-only, no code mounted
+    String name = "hr-acme-" + HR_V1 + "-" + pod;
     Deployment deployment = findDeployment(objects, name);
     var spec = deployment.getSpec().getTemplate().getSpec();
     assertThat(findEnv(deployment, "AISOLATE_CODE_URL"))
-        .isEqualTo("http://backend.aisolate.svc:8085/v1/code/hr-acme/hr-assistant/" + jar.digest());
+        .isEqualTo(
+            "http://backend.aisolate.svc:8085/v1/code/hr-acme/hr-assistant/v1/" + jar.digest());
     assertThat(findEnv(deployment, "AISOLATE_CODE_DIGEST")).isEqualTo(jar.digest());
     assertThat(findEnv(deployment, "AISOLATE_CODE_TOKEN_FILE"))
         .isEqualTo("/var/run/aisolate/code/token");
@@ -185,7 +235,7 @@ class RendererTest {
           assertThat(m.getMountPath()).isEqualTo("/var/run/aisolate/code");
           assertThat(m.getReadOnly()).isTrue();
         });
-    assertThat(secretVolumes(deployment)).contains("hr-acme-hr-assistant-code");
+    assertThat(secretVolumes(deployment)).contains("hr-acme-hr-assistant-v1-code");
     assertThat(spec.getVolumes())
         .noneMatch(v -> v.getConfigMap() != null && v.getName().equals("plugins"));
     assertThat(listEnvNames(deployment)).noneMatch(n -> n.startsWith("AISOLATE_PLUGIN"));
@@ -193,20 +243,20 @@ class RendererTest {
         .contains("app=backend:" + Renderer.AUDIT_INGEST_PORT);
     Secret token =
         of(objects, Secret.class).stream()
-            .filter(x -> x.getMetadata().getName().equals("hr-acme-hr-assistant-code"))
+            .filter(x -> x.getMetadata().getName().equals("hr-acme-hr-assistant-v1-code"))
             .findFirst()
             .orElseThrow();
     assertThat(new String(Base64.getDecoder().decode(token.getData().get("token"))))
-        .isEqualTo(AuditIngestToken.ofCode("test-ingest-key", "hr-acme", "hr-assistant"));
+        .isEqualTo(AuditIngestToken.ofCode("test-ingest-key", "hr-acme", "hr-assistant", "v1"));
   }
 
   @Test
-  void givenAirlockWithCodeAndNoBackend_whenRendered_thenItsPodsCarryTheDigestAlone() {
+  void givenVersionWithCodeAndNoBackend_whenRendered_thenItsPodsCarryTheDigestAlone() {
     // Arrange
     Renderer headless = new Renderer(TestSettings.withoutAuditIngest(TestSettings.SETTINGS));
 
     // Act
-    List<HasMetadata> objects = headless.render(RELEASE, HR, OWNERS);
+    List<HasMetadata> objects = headless.render(RELEASE, HR_V1, OWNERS);
 
     // Assert: the pod refuses to start, naming the missing backend
     assertThat(of(objects, Secret.class)).isEmpty();
@@ -235,12 +285,12 @@ class RendererTest {
     // Arrange
     Configuration release =
         parse(
-            "airlocks.yaml",
+            "airlock-versions.yaml",
             y -> y.replaceFirst("(jar: \\{digest: \"sha256:784c[^}]*)\\}", "$1" + language + "}"));
     Renderer withProxy = new Renderer(TestSettings.withProxy(TestSettings.SETTINGS, true));
 
     // Act
-    List<HasMetadata> objects = withProxy.render(release, HR, OWNERS);
+    List<HasMetadata> objects = withProxy.render(release, HR_V1, OWNERS);
 
     // Assert: the one pod shape on the language's images; Python reads the proxy from its own env
     Deployment airlock = findDeployment(objects, HR_POD);
@@ -265,14 +315,15 @@ class RendererTest {
   }
 
   @Test
-  void givenAirlockWithoutAJar_whenRendered_thenNoPluginVolumeNoPluginEnvNoMcpServer()
+  void givenVersionWithoutAJar_whenRendered_thenNoPluginVolumeNoPluginEnvNoMcpServer()
       throws IOException {
-    // Arrange: founders-finance as the AIsolate UI saves it, before its first deploy
+    // Arrange: founders-finance-v1 as the AIsolate UI saves it, before its first deploy
     Configuration release =
-        parse("airlocks.yaml", y -> y.replaceAll("\\n  jar: \\{digest: \"sha256:72b8.*", ""));
+        parse(
+            "airlock-versions.yaml", y -> y.replaceAll("\\n  jar: \\{digest: \"sha256:72b8.*", ""));
 
     // Act
-    List<HasMetadata> objects = renderer.render(release, FF, OWNERS);
+    List<HasMetadata> objects = renderer.render(release, FF_V1, OWNERS);
     Deployment airlock = findDeployment(objects, FF_POD);
 
     // Assert
@@ -292,7 +343,7 @@ class RendererTest {
     Renderer withProxy = new Renderer(TestSettings.withProxy(TestSettings.SETTINGS, enabled));
 
     // Act
-    List<Deployment> deployments = of(withProxy.render(RELEASE, HR, OWNERS), Deployment.class);
+    List<Deployment> deployments = of(withProxy.render(RELEASE, HR_V1, OWNERS), Deployment.class);
 
     // Assert: a policy route to the proxy is useless unless the JVM is told to use it
     assertThat(deployments)
@@ -308,9 +359,9 @@ class RendererTest {
   @Test
   void givenSettings_whenRendered_thenEveryContainerHasLimitsAndTmpIsCapped() {
     // Arrange / Act
-    List<Deployment> deployments = of(renderer.render(RELEASE, HR, OWNERS), Deployment.class);
+    List<Deployment> deployments = of(renderer.render(RELEASE, HR_V1, OWNERS), Deployment.class);
 
-    // Assert: one airlock's code or load must not starve the node or fill its disk
+    // Assert: one version's code or load must not starve the node or fill its disk
     assertThat(deployments)
         .hasSize(2)
         .allSatisfy(d -> {
@@ -337,7 +388,7 @@ class RendererTest {
     String collector = "app=tempo:4318";
 
     // Act
-    List<HasMetadata> objects = tracing.render(RELEASE, HR, OWNERS);
+    List<HasMetadata> objects = tracing.render(RELEASE, HR_V1, OWNERS);
 
     // Assert: the endpoint as it is (the pod adds /v1/traces), and a route to its host
     assertThat(of(objects, Deployment.class))
@@ -358,7 +409,7 @@ class RendererTest {
         new Renderer(TestSettings.withRuntimeClass(TestSettings.SETTINGS, setting));
 
     // Act
-    List<HasMetadata> airlock = sandboxed.render(RELEASE, HR, OWNERS);
+    List<HasMetadata> airlock = sandboxed.render(RELEASE, HR_V1, OWNERS);
     List<HasMetadata> discovery =
         sandboxed.renderDiscovery(List.of(RELEASE), List.of(spaceOwner("hr-acme")));
 
@@ -391,7 +442,7 @@ class RendererTest {
                     : null));
 
     // Act
-    List<HasMetadata> airlock = scheduled.render(RELEASE, HR, OWNERS);
+    List<HasMetadata> airlock = scheduled.render(RELEASE, HR_V1, OWNERS);
     List<HasMetadata> discovery =
         scheduled.renderDiscovery(List.of(RELEASE), List.of(spaceOwner("hr-acme")));
 
@@ -421,7 +472,7 @@ class RendererTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  void givenAuditIngest_whenRendered_thenOnlyTheAirlockPodHoldsItsTokenAndReachesIt(
+  void givenAuditIngest_whenRendered_thenOnlyTheAirlockPodHoldsItsVersionsTokenAndReachesIt(
       boolean ingest) {
     // Arrange
     Renderer audit =
@@ -431,9 +482,9 @@ class RendererTest {
                 : TestSettings.withoutAuditIngest(TestSettings.SETTINGS));
 
     // Act
-    List<HasMetadata> objects = audit.render(RELEASE, HR, OWNERS);
+    List<HasMetadata> objects = audit.render(RELEASE, HR_V1, OWNERS);
 
-    // Assert: the token is this airlock's alone, and only its airlock pod mounts it
+    // Assert: the token is this version's alone, and only its airlock pod mounts it
     List<Secret> secrets = of(objects, Secret.class);
     Deployment airlockPod =
         of(objects, Deployment.class).stream()
@@ -448,7 +499,7 @@ class RendererTest {
     NetworkPolicy airlockPolicy = findPolicy(objects, airlockPod.getMetadata().getName());
     assertThat(egressPeers(airlockPolicy).contains("app=backend:" + Renderer.AUDIT_INGEST_PORT))
         .isEqualTo(ingest);
-    assertThat(secretVolumes(mcpServer)).doesNotContain("hr-acme-hr-assistant-audit");
+    assertThat(secretVolumes(mcpServer)).doesNotContain("hr-acme-hr-assistant-v1-audit");
     if (!ingest) {
       assertThat(secrets).isEmpty();
       assertThat(secretVolumes(airlockPod)).isEmpty();
@@ -457,10 +508,10 @@ class RendererTest {
     }
     Secret token =
         secrets.stream()
-            .filter(x -> x.getMetadata().getName().equals("hr-acme-hr-assistant-audit"))
+            .filter(x -> x.getMetadata().getName().equals("hr-acme-hr-assistant-v1-audit"))
             .findFirst()
             .orElseThrow();
-    String expected = AuditIngestToken.of("test-ingest-key", "hr-acme", "hr-assistant");
+    String expected = AuditIngestToken.of("test-ingest-key", "hr-acme", "hr-assistant", "v1");
     assertThat(new String(Base64.getDecoder().decode(token.getData().get("token"))))
         .isEqualTo(expected);
     assertThat(secretVolumes(airlockPod)).contains(token.getMetadata().getName());
@@ -480,31 +531,37 @@ class RendererTest {
     return Stream.of(
         Arguments.of(
             "another airlock's description",
+            "airlocks.yaml",
             (UnaryOperator<String>) y -> y.replace("Founders finance", "Founders"),
             false),
         Arguments.of(
-            "another airlock's prompt",
+            "another version's prompt",
+            "airlock-versions.yaml",
             (UnaryOperator<String>) y -> y.replace("founders only", "founders, only"),
             false),
         Arguments.of(
-            "the airlock's roles", (UnaryOperator<String>) y -> y.replace(", hr]", "]"), true),
+            "the airlock's roles",
+            "airlocks.yaml",
+            (UnaryOperator<String>) y -> y.replace(", hr]", "]"),
+            true),
         Arguments.of(
-            "the airlock's jar digest",
+            "the version's jar digest",
+            "airlock-versions.yaml",
             (UnaryOperator<String>) y -> y.replace("sha256:784c", "sha256:884c"),
             true));
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("changes")
-  void givenOneAirlockChanged_whenRendered_thenOnlyTheAirlockServingItGetsANewRevision(
-      String change, UnaryOperator<String> edit, boolean restarts) throws IOException {
+  void givenOneDocumentChanged_whenRendered_thenOnlyAVersionServingItGetsANewRevision(
+      String change, String file, UnaryOperator<String> edit, boolean restarts) throws IOException {
     // Arrange: a fixture string that drifted would leave the release as it is
-    Configuration changed = parse("airlocks.yaml", edit);
+    Configuration changed = parse(file, edit);
     assertThat(changed.revision()).isNotEqualTo(RELEASE.revision());
 
     // Act
-    String before = Renderer.selectServedDocuments(RELEASE, HR).revision();
-    String after = Renderer.selectServedDocuments(changed, HR).revision();
+    String before = Renderer.selectServedDocuments(RELEASE, HR_V1).revision();
+    String after = Renderer.selectServedDocuments(changed, HR_V1).revision();
 
     // Assert: a pod restarts when what it serves changes, never for a sibling's change
     assertThat(after.equals(before)).isEqualTo(!restarts);
@@ -525,9 +582,11 @@ class RendererTest {
     String listed = discovery.getData().get("hr-acme.json");
     assertThat(DiscoveredAirlock.fromJson(listed))
         .extracting(DiscoveredAirlock::id)
-        .containsExactly(HR, FF);
+        .containsExactly("hr-assistant", "founders-finance");
     assertThat(listed)
         .contains("\"roles\":[\"ceo\",\"hr\",\"employee\"")
+        .contains("\"versions\":[{\"version\":\"v1\",\"description\":\"Pay from the tools")
+        .contains("\"tools\":[\"read_records\",\"aggregate_records\"]}]")
         .doesNotContain("@example.com")
         .doesNotContain("You are the Acme HR assistant")
         .doesNotContain("jdbc:")
@@ -538,14 +597,14 @@ class RendererTest {
 
   // Survives beside the golden as a regeneration guard: discovery pods hold no airlock's code.
   @Test
-  void givenRelease_whenDiscoveryRendered_thenItsPodsRunNoAirlocksCodeDataOrModel() {
+  void givenRelease_whenDiscoveryRendered_thenItsPodsRunNoVersionsCodeDataOrModel() {
     // Arrange
     OwnerReference space = spaceOwner("hr-acme");
 
     // Act
     List<HasMetadata> objects = renderer.renderDiscovery(List.of(RELEASE), List.of(space));
 
-    // Assert: the shared Service's pods: the mount alone, so no airlock's code holds a token
+    // Assert: the shared Service's pods: the mount alone, so no version's code holds a token
     Deployment pods = findDeployment(objects, Renderer.DISCOVERY);
     assertThat(pods.getSpec().getSelector().getMatchLabels())
         .containsExactly(Map.entry(Renderer.ROLE, Renderer.DISCOVERY_ROLE));
@@ -563,6 +622,7 @@ class RendererTest {
         .noneMatch(name ->
             name.equals("AISOLATE_CONFIG_DIR")
                 || name.equals("AISOLATE_AIRLOCK")
+                || name.equals("AISOLATE_VERSION")
                 || name.startsWith("AISOLATE_PLUGIN")
                 || name.startsWith("AISOLATE_DATASOURCE_")
                 || name.startsWith("AISOLATE_LLM")
@@ -607,7 +667,7 @@ class RendererTest {
   private static OwnerReference owner(String name, String uid) {
     return new OwnerReferenceBuilder()
         .withApiVersion("aisolate.dev/v1")
-        .withKind("Airlock")
+        .withKind("AirlockVersion")
         .withName(name)
         .withUid(uid)
         .withController(true)

@@ -1,6 +1,7 @@
 package com.reportix.aisolate.controller.render;
 
 import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import com.reportix.aisolate.config.AuditIngestToken;
 import com.reportix.aisolate.config.Configuration;
 import com.reportix.aisolate.config.ConfigurationLoader;
@@ -56,13 +57,13 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 
 /**
- * The objects of one airlock, every one owned by its Airlock: a ConfigMap with only the documents
- * that airlock serves, and a pod pair, each with its Deployment, Service and NetworkPolicy: the
- * airlock pod (and its Ingress rule) and the MCP server only that pod reaches, all named {@code
- * <space>-<airlock>-...}. An airlock's revision covers the Global, its Space and itself, so a
- * sibling's change restarts none of its pods, a change to its space restarts every airlock of the
- * space and a change to the Global every airlock. Pure: documents and settings in, objects out; the
- * golden test pins the output.
+ * The objects of one airlock version, every one owned by its AirlockVersion: a ConfigMap with only
+ * the documents that version serves, and a pod pair, each with its Deployment, Service and
+ * NetworkPolicy: the airlock pod (and its Ingress rule) and the MCP server only that pod reaches,
+ * all named {@code <space>-<airlock>-<version>-...}. A version's revision covers the Global, its
+ * Space, its Airlock and itself, so a sibling's change restarts none of its pods, a change to its
+ * space restarts every version of the space and a change to the Global every version. Pure:
+ * documents and settings in, objects out; the golden test pins the output.
  */
 @RequiredArgsConstructor
 public final class Renderer {
@@ -72,6 +73,7 @@ public final class Renderer {
   public static final String ROLE = Names.ROLE_LABEL;
   public static final String SPACE = Names.SPACE_LABEL;
   public static final String AIRLOCK = "aisolate.dev/airlock";
+  public static final String VERSION = "aisolate.dev/version";
 
   /** The fixed label of the pods that may read {@code /actuator/prometheus}, in any namespace. */
   public static final String SCRAPER = "aisolate.dev/scraper";
@@ -85,8 +87,8 @@ public final class Renderer {
   static final String AUDIT_BUFFER_DIR = "/var/lib/aisolate/audit";
 
   /**
-   * The backend's ingest port: an airlock pod hands its audit lines over there, both pods of an
-   * airlock with code fetch it there. No pod reaches the backend's API.
+   * The backend's ingest port: an airlock pod hands its audit lines over there, both pods of a
+   * version with code fetch it there. No pod reaches the backend's API.
    */
   public static final int AUDIT_INGEST_PORT = 8085;
 
@@ -99,14 +101,14 @@ public final class Renderer {
    */
   public static final String DISCOVERY = "aisolate-discovery";
 
-  /** The pods behind the release's {@code aisolate} Service: discovery only, no airlock's code. */
+  /** The pods behind the release's {@code aisolate} Service: discovery only, no version's code. */
   public static final String DISCOVERY_ROLE = "discovery";
 
   static final String DISCOVERY_DIR = "/etc/aisolate-discovery";
 
   static final String TMP_SIZE_LIMIT = "256Mi";
 
-  // An airlock's pods fetch their artifact into /tmp, and a Python pod extracts it there too.
+  // A version's pods fetch their artifact into /tmp, and a Python pod extracts it there too.
   static final String CODE_TMP_SIZE_LIMIT = "2Gi";
 
   /** At most 63 characters: a Service name is one DNS label. */
@@ -114,42 +116,44 @@ public final class Renderer {
 
   private final ControllerProperties settings;
 
-  /** The airlock pod of one airlock, named so {@code kubectl get pods} reads. */
-  public static String airlockPodName(String space, String airlock) {
-    return space + "-" + airlock + "-airlock";
+  /** The airlock pod of one version, named so {@code kubectl get pods} reads. */
+  public static String airlockPodName(String space, String airlock, String version) {
+    return space + "-" + airlock + "-" + version + "-airlock";
   }
 
-  /** The MCP server (tool server) of one airlock, reached by its airlock pod alone. */
-  public static String mcpServerName(String space, String airlock) {
-    return Names.mcpServerName(space, airlock);
+  /** The MCP server (tool server) of one version, reached by that version's airlock pod alone. */
+  public static String mcpServerName(String space, String airlock, String version) {
+    return Names.mcpServerName(space, airlock, version);
   }
 
-  /** The Secret of one airlock's audit ingest token, mounted by its airlock pod alone. */
-  public static String auditSecretName(String space, String airlock) {
-    return space + "-" + airlock + "-audit";
+  /** The Secret of one version's audit ingest token, mounted by its airlock pod alone. */
+  public static String auditSecretName(String space, String airlock, String version) {
+    return space + "-" + airlock + "-" + version + "-audit";
   }
 
-  /** The Secret of one airlock's code token, mounted by both of its pods. */
-  public static String codeSecretName(String space, String airlock) {
-    return space + "-" + airlock + "-code";
+  /** The Secret of one version's code token, mounted by both of its pods. */
+  public static String codeSecretName(String space, String airlock, String version) {
+    return space + "-" + airlock + "-" + version + "-code";
   }
 
-  /** The ConfigMap of one airlock's documents, mounted by its two pods. */
-  public static String configMapName(String space, String airlock) {
-    return space + "-" + airlock + "-config";
+  /** The ConfigMap of one version's documents, mounted by its two pods. */
+  public static String configMapName(String space, String airlock, String version) {
+    return space + "-" + airlock + "-" + version + "-config";
   }
 
-  /** The objects of {@code airlock}, the name of one of the release's Airlocks. */
-  public List<HasMetadata> render(Configuration release, String airlock, Owners owners) {
-    Configuration served = selectServedDocuments(release, airlock);
+  /** The objects of {@code version}, the name of one of the release's AirlockVersions. */
+  public List<HasMetadata> render(Configuration release, String version, Owners owners) {
+    Configuration served = selectServedDocuments(release, version);
+    AirlockDocument airlock = served.airlockOf(version);
     Target t =
         new Target(
-            served.spaceOf(airlock),
-            served.airlocks().get(airlock),
+            served.spaceOf(airlock.name()),
+            airlock,
+            served.airlockVersions().get(version),
             served,
-            served.llmsOf(airlock),
-            served.dataSourcesOf(airlock),
-            owners.of("Airlock", airlock));
+            served.llmsOf(version),
+            served.dataSourcesOf(version),
+            owners.of("AirlockVersion", version));
     // Applied in this order: a narrower policy is in force before the pods it narrows start.
     List<HasMetadata> objects = new ArrayList<>();
     objects.add(buildConfigMap(t));
@@ -174,14 +178,18 @@ public final class Renderer {
   }
 
   /**
-   * The documents one airlock's pods serve, alone: the Global, its Space and itself, whole. The
-   * pods check their files against this revision.
+   * The documents one version's pods serve, alone: the Global, its Space, its Airlock and itself,
+   * whole. The pods check their files against this revision.
    */
-  public static Configuration selectServedDocuments(Configuration release, String airlock) {
+  public static Configuration selectServedDocuments(Configuration release, String version) {
+    AirlockDocument airlock = release.airlockOf(version);
     return ConfigurationLoader.parse(
         buildFiles(
             Stream.of(
-                release.global(), release.spaceOf(airlock), release.airlocks().get(airlock))));
+                release.global(),
+                release.spaceOf(airlock.name()),
+                airlock,
+                release.airlockVersions().get(version))));
   }
 
   /**
@@ -281,23 +289,29 @@ public final class Renderer {
   }
 
   /**
-   * One airlock as its pods see it: its space, its documents, its LLMs and data sources as resolved
-   * (in id order: their env index), its owner.
+   * One version as its pods see it: its space and airlock, its documents, its LLMs and data sources
+   * as resolved (in id order: their env index), its owner.
    */
   private record Target(
       SpaceDocument space,
       AirlockDocument airlock,
+      AirlockVersionDocument version,
       Configuration served,
       List<Llm> llms,
       List<DataSource> dataSources,
       Optional<OwnerReference> owner) {
 
-    /** The code deployed to it; null before its first deploy. */
-    AirlockDocument.Jar jar() {
-      return airlock.spec().jar();
+    /** Its name within its airlock, for example {@code v1}. */
+    String label() {
+      return version.spec().version();
     }
 
-    /** Python code runs on the Python images; an airlock without code on the Java ones. */
+    /** The code deployed to it; null before its first deploy. */
+    AirlockVersionDocument.Jar jar() {
+      return version.spec().jar();
+    }
+
+    /** Python code runs on the Python images; a version without code on the Java ones. */
     boolean python() {
       return jar() != null && jar().python();
     }
@@ -307,11 +321,11 @@ public final class Renderer {
     }
 
     String airlockPod() {
-      return airlockPodName(space.name(), airlock.name());
+      return airlockPodName(space.name(), airlock.name(), label());
     }
 
     String mcpServer() {
-      return mcpServerName(space.name(), airlock.name());
+      return mcpServerName(space.name(), airlock.name(), label());
     }
 
     /**
@@ -319,7 +333,7 @@ public final class Renderer {
      * either way, for its handlers.
      */
     boolean runsMcpServer() {
-      return airlock.hasCode() && !airlock.tools().isEmpty();
+      return version.hasCode() && !version.tools().isEmpty();
     }
   }
 
@@ -327,8 +341,8 @@ public final class Renderer {
     return new ConfigMapBuilder()
         .withMetadata(
             buildMeta(
-                configMapName(t.space().name(), t.airlock().name()),
-                Map.of(AIRLOCK, t.airlock().name()),
+                configMapName(t.space().name(), t.airlock().name(), t.label()),
+                Map.of(AIRLOCK, t.airlock().name(), VERSION, t.label()),
                 t.revision(),
                 t.owner()))
         .withData(buildFiles(documentsOf(t.served())))
@@ -343,32 +357,43 @@ public final class Renderer {
     return files;
   }
 
-  /** The Global, then the spaces, then the airlocks. */
+  /** The Global, then the spaces, then the airlocks, then the versions. */
   private static Stream<?> documentsOf(Configuration configuration) {
     return Stream.of(
             List.of(configuration.global()),
             configuration.spaces().values(),
-            configuration.airlocks().values())
+            configuration.airlocks().values(),
+            configuration.airlockVersions().values())
         .flatMap(Collection::stream);
   }
 
   /**
-   * What selects one airlock's airlock pod: role and airlock, both immutable. The role keeps it
-   * apart from the MCP server of the same airlock, which carries the airlock too. Every map the
-   * objects carry is sorted, so the YAML is the same every run ({@code Map.of} iterates in an order
-   * salted per JVM).
+   * What selects one version's airlock pod: role, airlock and version, all immutable. The role
+   * keeps it apart from the MCP server of the same version, which carries the airlock and version
+   * too. Every map the objects carry is sorted, so the YAML is the same every run ({@code Map.of}
+   * iterates in an order salted per JVM).
    */
   private static Map<String, String> buildAirlockSelector(Target t) {
-    return new TreeMap<>(Map.of(ROLE, Names.AIRLOCK_ROLE, AIRLOCK, t.airlock().name()));
+    return new TreeMap<>(
+        Map.of(ROLE, Names.AIRLOCK_ROLE, AIRLOCK, t.airlock().name(), VERSION, t.label()));
   }
 
   private static Map<String, String> buildMcpServerSelector(Target t) {
-    return new TreeMap<>(Map.of(ROLE, Names.TOOL_SERVER_ROLE, AIRLOCK, t.airlock().name()));
+    return new TreeMap<>(
+        Map.of(ROLE, Names.TOOL_SERVER_ROLE, AIRLOCK, t.airlock().name(), VERSION, t.label()));
   }
 
   private HasMetadata buildMcpServerDeployment(Target t) {
     Map<String, String> labels =
-        Map.of(ROLE, Names.TOOL_SERVER_ROLE, SPACE, t.space().name(), AIRLOCK, t.airlock().name());
+        Map.of(
+            ROLE,
+            Names.TOOL_SERVER_ROLE,
+            SPACE,
+            t.space().name(),
+            AIRLOCK,
+            t.airlock().name(),
+            VERSION,
+            t.label());
     CodeWiring code = buildCodeWiring(t);
     List<EnvVar> env = new ArrayList<>();
     env.add(buildEnv("AISOLATE_CONFIG_DIR", CONFIG_DIR));
@@ -401,10 +426,19 @@ public final class Renderer {
 
   private HasMetadata buildAirlockDeployment(Target t) {
     Map<String, String> labels =
-        Map.of(ROLE, Names.AIRLOCK_ROLE, AIRLOCK, t.airlock().name(), SPACE, t.space().name());
+        Map.of(
+            ROLE,
+            Names.AIRLOCK_ROLE,
+            AIRLOCK,
+            t.airlock().name(),
+            SPACE,
+            t.space().name(),
+            VERSION,
+            t.label());
     CodeWiring code = buildCodeWiring(t);
     List<EnvVar> env = new ArrayList<>();
     env.add(buildEnv("AISOLATE_AIRLOCK", t.airlock().name()));
+    env.add(buildEnv("AISOLATE_VERSION", t.label()));
     env.add(buildEnv("AISOLATE_CONFIG_DIR", CONFIG_DIR));
     env.add(buildEnv("AISOLATE_CONFIG_REVISION", t.revision()));
     env.addAll(code.env());
@@ -433,7 +467,7 @@ public final class Renderer {
           new VolumeBuilder()
               .withName("audit-token")
               .withNewSecret()
-              .withSecretName(auditSecretName(t.space().name(), t.airlock().name()))
+              .withSecretName(auditSecretName(t.space().name(), t.airlock().name(), t.label()))
               .endSecret()
               .build());
       volumes.add(buildEmptyDir("audit-buffer", AUDIT_BUFFER_SIZE_LIMIT));
@@ -447,7 +481,7 @@ public final class Renderer {
             env,
             mounts);
     PodSpec pod = buildPod(List.of(container), volumes, settings.airlockPods().runtimeClassName());
-    // The selector is immutable: it names the airlock, which the Deployment name carries.
+    // The selector is immutable: it names the airlock version, which the Deployment name carries.
     return buildDeployment(
         t.airlockPod(),
         labels,
@@ -474,7 +508,14 @@ public final class Renderer {
         .withHost(settings.ingress().host())
         .withNewHttp()
         .addNewPath()
-        .withPath("/v1/spaces/" + t.space().name() + "/airlocks/" + t.airlock().name() + "/")
+        .withPath(
+            "/v1/spaces/"
+                + t.space().name()
+                + "/airlocks/"
+                + t.airlock().name()
+                + "/versions/"
+                + t.label()
+                + "/")
         .withPathType("Prefix")
         .withNewBackend()
         .withNewService()
@@ -531,7 +572,7 @@ public final class Renderer {
         .build();
   }
 
-  /** The backend's ingest port, where an airlock's code is fetched and audit lines handed over. */
+  /** The backend's ingest port, where a version's code is fetched and audit lines handed over. */
   private static NetworkPolicyEgressRule buildBackendIngestEgress() {
     return new NetworkPolicyEgressRuleBuilder()
         .withTo(
@@ -609,18 +650,18 @@ public final class Renderer {
         .toList();
   }
 
-  /** The backend hands this airlock's code to its pods: it has code and the install a backend. */
+  /** The backend hands this version's code to its pods: it has code and the install a backend. */
   private boolean delivers(Target t) {
-    return t.airlock().hasCode() && settings.codeEnabled();
+    return t.version().hasCode() && settings.codeEnabled();
   }
 
   /**
-   * What a pod needs to fetch the airlock's code at start: the digest it must have, the backend's
-   * URL for it and the airlock's code token, read-only on {@code /var/run/aisolate/code}. No code,
+   * What a pod needs to fetch the version's code at start: the digest it must have, the backend's
+   * URL for it and the version's code token, read-only on {@code /var/run/aisolate/code}. No code,
    * none of it; no backend (headless), the digest alone, and the pod refuses to start.
    */
   private CodeWiring buildCodeWiring(Target t) {
-    if (!t.airlock().hasCode()) {
+    if (!t.version().hasCode()) {
       return new CodeWiring(List.of(), List.of(), List.of());
     }
     EnvVar digest = buildEnv("AISOLATE_CODE_DIGEST", t.jar().digest());
@@ -633,12 +674,13 @@ public final class Renderer {
             settings.code().url().strip().replaceAll("/+$", ""),
             t.space().name(),
             t.airlock().name(),
+            t.label(),
             t.jar().digest());
     Volume token =
         new VolumeBuilder()
             .withName("code-token")
             .withNewSecret()
-            .withSecretName(codeSecretName(t.space().name(), t.airlock().name()))
+            .withSecretName(codeSecretName(t.space().name(), t.airlock().name(), t.label()))
             .endSecret()
             .build();
     return new CodeWiring(
@@ -651,12 +693,12 @@ public final class Renderer {
   }
 
   /**
-   * The LLM that answers by id, and every LLM the airlock sees, indexed in id order: the airlock
+   * The LLM that answers by id, and every LLM the version sees, indexed in id order: the airlock
    * pod reads its catalog here, never from the documents. An API key stays in its Secret.
    */
   private static List<EnvVar> buildLlmEnv(Target t) {
     List<EnvVar> env = new ArrayList<>();
-    env.add(buildEnv("AISOLATE_LLM", t.airlock().spec().llm()));
+    env.add(buildEnv("AISOLATE_LLM", t.version().spec().llm()));
     for (int i = 0; i < t.llms().size(); i++) {
       Llm llm = t.llms().get(i);
       String prefix = "AISOLATE_LLM_" + i + "_";
@@ -688,7 +730,7 @@ public final class Renderer {
     return env;
   }
 
-  /** A pod's code additions; each list is empty when the airlock has no code. */
+  /** A pod's code additions; each list is empty when the version has no code. */
   private record CodeWiring(List<EnvVar> env, List<VolumeMount> mounts, List<Volume> volumes) {}
 
   /** The code additions between {@code config} and {@code tmp}, where both pods keep them. */
@@ -772,23 +814,24 @@ public final class Renderer {
   }
 
   /**
-   * The airlock's ingest token: the backend takes from this pod only lines naming this airlock.
+   * The version's ingest token: the backend takes from this pod only lines naming this version.
    * Derived, so the render stays a function of the documents and the settings.
    */
   private HasMetadata buildAuditSecret(Target t) {
     return buildTokenSecret(
         t,
-        auditSecretName(t.space().name(), t.airlock().name()),
-        AuditIngestToken.of(settings.audit().ingestKey(), t.space().name(), t.airlock().name()));
+        auditSecretName(t.space().name(), t.airlock().name(), t.label()),
+        AuditIngestToken.of(
+            settings.audit().ingestKey(), t.space().name(), t.airlock().name(), t.label()));
   }
 
-  /** The airlock's code token: it fetches this airlock's code, nothing else. */
+  /** The version's code token: it fetches this version's code, nothing else. */
   private HasMetadata buildCodeSecret(Target t) {
     return buildTokenSecret(
         t,
-        codeSecretName(t.space().name(), t.airlock().name()),
+        codeSecretName(t.space().name(), t.airlock().name(), t.label()),
         AuditIngestToken.ofCode(
-            settings.audit().ingestKey(), t.space().name(), t.airlock().name()));
+            settings.audit().ingestKey(), t.space().name(), t.airlock().name(), t.label()));
   }
 
   private HasMetadata buildTokenSecret(Target t, String name, String token) {
@@ -979,7 +1022,7 @@ public final class Renderer {
     return new VolumeBuilder()
         .withName("config")
         .withNewConfigMap()
-        .withName(configMapName(t.space().name(), t.airlock().name()))
+        .withName(configMapName(t.space().name(), t.airlock().name(), t.label()))
         .endConfigMap()
         .build();
   }
