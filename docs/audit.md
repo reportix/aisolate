@@ -47,7 +47,8 @@ client, outcome, reason, question, answer, figure counts, tokens, duration), and
 The table is partitioned by month (UTC) of receipt. The backend keeps the current month and
 `platform.audit.retentionMonths` months before it (default 84, seven years) and drops older months whole, at
 start and every six hours. Dropping a
-month is the only way a line leaves, and it runs as the table's owner, not as the writer. After a drop, the
+month is the only way a line leaves, and it runs as the table's owner, not as the writer; `DELETE /v1/spaces`, the
+install's clean slate, drops every month. After a drop, the
 oldest month kept anchors the chain: verify starts at its first line.
 
 ### Reading it

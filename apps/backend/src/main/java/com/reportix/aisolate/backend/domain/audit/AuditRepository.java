@@ -229,6 +229,10 @@ public class AuditRepository {
         .listOfRows();
   }
 
+  public int countAll() {
+    return db.sql("SELECT count(*)::int FROM audit_events").query(Integer.class).single();
+  }
+
   public int dropBefore(Instant keepFrom) {
     return db.sql("SELECT audit_events_drop_before((? AT TIME ZONE 'UTC')::date)")
         .param(Timestamp.from(keepFrom))

@@ -3,27 +3,38 @@ package com.reportix.aisolate.backend.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.reportix.aisolate.backend.BackendApplication;
+import com.reportix.aisolate.backend.domain.audit.AuditRepository;
+import com.reportix.aisolate.backend.domain.audit.AuditService;
 import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
 import com.reportix.aisolate.backend.domain.space.SpacesDeletedDTO;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
 import com.reportix.aisolate.backend.support.BackendTestConfig;
 import com.reportix.aisolate.backend.support.OwnDatabase;
+import com.reportix.aisolate.config.AuditIngestToken;
 import com.reportix.aisolate.identity.testing.Http;
 import com.reportix.aisolate.identity.testing.Tokens;
 import com.reportix.aisolate.plugins.testing.PluginJars;
+import com.sun.net.httpserver.HttpServer;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -38,11 +49,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-/** DELETE /spaces, the clean-slate endpoint: the database emptied, then the cluster cleared. */
+/**
+ * DELETE /spaces, the clean-slate endpoint: the database emptied, then the cluster cleared, then
+ * the audit trail and the metrics store.
+ */
 // The mock extension first: it injects the client Spring's context (built per class) hands out.
 @EnableKubernetesMockClient(crud = true)
 @SpringBootTest(
@@ -58,6 +74,19 @@ class SpacesResetIntegrationTest {
 
   static KubernetesClient client; // injected by the mock server extension
   static KubernetesMockServer server;
+
+  /** Prometheus's admin API: what the backend asked, answered as told. */
+  static final Queue<String> ADMIN = new ConcurrentLinkedQueue<>();
+
+  static volatile int adminStatus = 204;
+  static final HttpServer PROMETHEUS = prometheus();
+
+  @DynamicPropertySource
+  static void metricsStore(DynamicPropertyRegistry registry) {
+    registry.add(
+        "aisolate.metrics.query-url",
+        () -> "http://localhost:" + PROMETHEUS.getAddress().getPort());
+  }
 
   @TestConfiguration
   static class MockCluster {
@@ -110,6 +139,8 @@ class SpacesResetIntegrationTest {
   private final String rita = Tokens.forOperator("andrew", "password");
   @Autowired ClusterSyncService clusterSync;
   @Autowired CredentialRepository rows;
+  @Autowired AuditService audit;
+  @Autowired AuditRepository auditRows;
 
   @ParameterizedTest
   @Order(1)
@@ -198,6 +229,55 @@ class SpacesResetIntegrationTest {
 
   @Test
   @Order(5)
+  void givenAuditLinesAndAMetricsStore_whenAllSpacesDeleted_thenTheTrailAndTheSeriesGo() {
+    // Arrange: one line of an airlock, as its pod hands it in; the store's admin API is on
+    String token =
+        AuditIngestToken.of(BackendTestConfig.INGEST_KEY, "reset-lab", "reset-assistant");
+    audit.ingest(token, line("What is my notice period?"));
+    assertThat(auditRows.countAll()).isEqualTo(1);
+    ADMIN.clear();
+    adminStatus = 204;
+
+    // Act
+    HttpResponse<String> response = deleteAllSpaces(rita);
+
+    // Assert: the trail empty, the product's series deleted, and the next line chains again
+    assertThat(response.statusCode()).isEqualTo(200);
+    JsonNode monitoring = JSON.readTree(response.body()).path("monitoring");
+    assertThat(monitoring.path("audit_lines").asInt()).isEqualTo(1);
+    assertThat(monitoring.path("metrics_cleared").asBoolean()).isTrue();
+    assertThat(monitoring.path("problem").isNull()).isTrue();
+    assertThat(ADMIN)
+        .containsExactly(
+            "POST /api/v1/admin/tsdb/delete_series match[]={__name__=~\"aisolate_.*|gen_ai_.*\"}",
+            "POST /api/v1/admin/tsdb/clean_tombstones ");
+    assertThat(auditRows.countAll()).isZero();
+    assertThat(audit.ingest(token, line("And my salary?")).repeat()).isFalse();
+    assertThat(auditRows.countAll()).isEqualTo(1);
+  }
+
+  @Test
+  @Order(6)
+  void
+      givenMetricsStoreWithoutItsAdminApi_whenAllSpacesDeleted_thenTheTrailGoesAndTheStoreIsNamed() {
+    // Arrange: Prometheus without --web.enable-admin-api; the line the test before left
+    adminStatus = 503;
+
+    // Act
+    HttpResponse<String> response = deleteAllSpaces(rita);
+
+    // Assert
+    assertThat(response.statusCode()).isEqualTo(200);
+    JsonNode monitoring = JSON.readTree(response.body()).path("monitoring");
+    assertThat(monitoring.path("audit_lines").asInt()).isEqualTo(1);
+    assertThat(monitoring.path("metrics_cleared").asBoolean()).isFalse();
+    assertThat(monitoring.path("problem").asString())
+        .isEqualTo("HTTP 503 from /api/v1/admin/tsdb/delete_series: admin APIs disabled");
+    assertThat(auditRows.countAll()).isZero();
+  }
+
+  @Test
+  @Order(7)
   void givenAirlockPodOutlivingTheWait_whenCleared_thenPodsNotGoneWithoutProblem() {
     // Arrange: the mock has no garbage collector, so this pod stays
     pod("reset-lab-reset-assistant-airlock-0", "airlock");
@@ -211,7 +291,7 @@ class SpacesResetIntegrationTest {
   }
 
   @Test
-  @Order(6)
+  @Order(8)
   void givenApiServerGone_whenAllSpacesDeleted_thenRowsGoneAndProblemReported() {
     // Arrange: the database is the source of truth; the cluster is reported, never required
     create(
@@ -300,6 +380,55 @@ class SpacesResetIntegrationTest {
 
   private String base() {
     return "http://localhost:" + port + "/v1";
+  }
+
+  /** An exchange line of the reset lab's airlock, as its pod writes it. */
+  private static String line(String question) {
+    return """
+    {"ts":"2026-10-18T09:11:57.006Z","event":"exchange","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736",\
+    "space":"reset-lab","airlock":"reset-assistant","revision":"7b2280eab4b5",\
+    "user":"jasmine@example.com","client":"acme-chat","question":"%s",\
+    "answer":"Three months.","outcome":"answered","reason":null,\
+    "tools":[{"name":"read_my_records","args":{"entity":"hr.contracts"},\
+    "data_source":"hr-documents","rows":1,"rule_version":"1.7b2280eab4b5","sql_hash":"3f9a1c0d2b7e",\
+    "rows_hash":"5c1e"}],"evidence":["ev-1"],"verifiers":[],\
+    "figures":{"sourced":0,"computed":0,"unsourced":0,"mismatch":0},"grounding":null,\
+    "model":{"provider":"ollama","name":"granite4.1:8b","calls":1,"input_tokens":184,\
+    "output_tokens":21},"duration_ms":611}\
+    """
+        .formatted(question);
+  }
+
+  private static HttpServer prometheus() {
+    try {
+      HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+      server.createContext(
+          "/api/v1/admin/",
+          exchange -> {
+            String form =
+                new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            ADMIN.add(
+                exchange.getRequestMethod()
+                    + " "
+                    + exchange.getRequestURI().getPath()
+                    + " "
+                    + URLDecoder.decode(form, StandardCharsets.UTF_8));
+            if (adminStatus == 204) {
+              exchange.sendResponseHeaders(204, -1);
+            } else {
+              byte[] body =
+                  "{\"status\":\"error\",\"errorType\":\"unavailable\",\"error\":\"admin APIs disabled\"}"
+                      .getBytes(StandardCharsets.UTF_8);
+              exchange.sendResponseHeaders(adminStatus, body.length);
+              exchange.getResponseBody().write(body);
+            }
+            exchange.close();
+          });
+      server.start();
+      return server;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private static ResourceDefinitionContext context(String kind, String plural) {
