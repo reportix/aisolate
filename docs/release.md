@@ -119,6 +119,29 @@ being `backend`, `controller`, `airlock`, `tool-server`, `airlock-python`, `tool
 (Keycloak with AIsolate's login themes). The UI and the chat are not published yet: they bake their deployment's
 URLs in at build time, so a deployment builds them from `apps/frontend/Dockerfile` and `apps/chat/Dockerfile`.
 
+The tag's pipeline also builds the Windows CLI installer from source on the Windows runner
+(`cli-windows-installer`: a GraalVM native image, then NSIS) and creates the tag's GitLab Release with
+`aisolate-cli-installer.exe` and `SHA256SUMS` as asset links to that job's artifacts, which never expire on a tag.
+
+### The macOS installer
+
+No macOS runner exists, so a maintainer builds the `.pkg` on a Mac from the tag's checkout and attaches it to the
+same release with its checksum:
+
+```bash
+git checkout X.Y.Z
+GRAALVM_HOME=<GraalVM 25 home> ./gradlew :apps:cli:createMacosInstaller
+cd apps/cli/build && shasum -a 256 aisolate-cli-installer.pkg > aisolate-cli-installer.pkg.sha256
+glab release upload X.Y.Z aisolate-cli-installer.pkg aisolate-cli-installer.pkg.sha256
+```
+
+### The GitHub mirror
+
+The mirrored release carries the same assets, published by a maintainer: download the four files from the GitLab
+Release and `gh release create X.Y.Z --repo reportix/aisolate --title X.Y.Z --notes "AIsolate X.Y.Z"
+aisolate-cli-installer.exe SHA256SUMS aisolate-cli-installer.pkg aisolate-cli-installer.pkg.sha256`. The CLI
+guide links the mirror's latest release.
+
 `./gradlew :apps:controller:syncCrds` writes the CRDs into `crds/` from the controller's resource classes; a
 change to those classes commits the regenerated files with it. The chart is released on its own, with a version
 of its own, in [`aisolate-chart`](https://github.com/reportix/aisolate-chart): its pin script sets the chart's
