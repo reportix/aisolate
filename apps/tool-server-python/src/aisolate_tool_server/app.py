@@ -43,8 +43,8 @@ LOCAL_HOSTS = ("127.0.0.1", "localhost", "[::1]")
 
 
 def service_hosts(configuration: Configuration) -> list[str]:
-    """The hosts the airlock reaches this pod by: each served airlock's Service (``Names.mcpServerName``)."""
-    return sorted({f"{a.space}-{a.name}-mcp-server" for a in configuration.airlocks.values()})
+    """The hosts the airlock reaches this pod by: each served version's Service (``Names.mcpServerName``)."""
+    return sorted({f"{v.space}-{v.airlock}-{v.label}-mcp-server" for v in configuration.versions.values()})
 
 
 def create_app(queries: GovernedQueries, verifier: TokenVerifier, hosts: list[str] | None = None) -> ASGIApp:
