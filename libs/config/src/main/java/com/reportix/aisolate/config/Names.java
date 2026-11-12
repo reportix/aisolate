@@ -27,6 +27,16 @@ public final class Names {
       "use 2 to 41 lowercase letters, digits or hyphens, starting with a letter and not ending"
           + " with a hyphen";
 
+  /**
+   * A version's label within its airlock, for example {@code v1}: 1 to 31 characters. It ends
+   * Kubernetes resource names and label values, so it does not end in a dash.
+   */
+  public static final Pattern VERSION_LABEL =
+      Pattern.compile("^[a-z0-9]([a-z0-9-]{0,29}[a-z0-9])?$");
+
+  public static final String VERSION_RULE =
+      "1 to 31 lowercase letters, digits or dashes, not starting or ending with a dash";
+
   /** A data source's id; it becomes part of its Secret's name, {@code _} as {@code -}. */
   public static final Pattern DATA_SOURCE_ID = Pattern.compile("^[a-z0-9][a-z0-9_-]{0,40}$");
 
@@ -56,19 +66,19 @@ public final class Names {
   public static final int MAX_NAME = 63;
 
   /**
-   * The MCP server (tool server) of one airlock, reached by that airlock's pod alone: the longest
-   * name the controller gives an airlock's objects.
+   * The MCP server (tool server) of one version, reached by that version's airlock pod alone: the
+   * longest name the controller gives a version's objects.
    */
-  public static String mcpServerName(String space, String airlock) {
-    return space + "-" + airlock + "-mcp-server";
+  public static String mcpServerName(String space, String airlock, String version) {
+    return space + "-" + airlock + "-" + version + "-mcp-server";
   }
 
   /**
-   * The sentence refusing an airlock whose objects would be named past {@link #MAX_NAME}; null when
+   * The sentence refusing a version whose objects would be named past {@link #MAX_NAME}; null when
    * they fit. The backend refuses it at create, the controller at render.
    */
-  public static String clusterNameProblem(String space, String airlock) {
-    String service = mcpServerName(space, airlock);
+  public static String clusterNameProblem(String space, String airlock, String version) {
+    String service = mcpServerName(space, airlock, version);
     return service.length() <= MAX_NAME
         ? null
         : "it would run as "
@@ -77,12 +87,15 @@ public final class Names {
             + service.length()
             + " characters; Kubernetes allows "
             + MAX_NAME
-            + " (shorten the space or the airlock name)";
+            + " (shorten the space, the airlock or the version name)";
   }
 
-  /** The longest airlock id whose objects still fit beside {@code space}. */
+  /**
+   * The longest airlock id that leaves {@code space} room for the first version, {@code v1}, the
+   * one every template and the migration name.
+   */
   public static int maxAirlockId(String space) {
-    return MAX_NAME - mcpServerName(space, "").length();
+    return MAX_NAME - mcpServerName(space, "", "v1").length();
   }
 
   private static final Pattern WHITESPACE = Pattern.compile("\\s");
@@ -160,14 +173,14 @@ public final class Names {
   }
 
   /**
-   * The listed names an airlock's code does not carry, each in one sentence.
+   * The listed names a version's code does not carry, each in one sentence.
    *
    * @param what what each name should be, for example {@code a tool}
    */
   public static List<String> notInCode(String what, List<String> listed, Collection<String> code) {
     return listed.stream()
         .filter(name -> name != null && !name.isBlank() && !code.contains(name))
-        .map(name -> name + " is not " + what + " of this airlock's code")
+        .map(name -> name + " is not " + what + " of this version's code")
         .toList();
   }
 }

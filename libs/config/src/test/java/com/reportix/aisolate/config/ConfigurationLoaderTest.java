@@ -18,6 +18,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ConfigurationLoaderTest {
 
@@ -29,7 +30,7 @@ class ConfigurationLoaderTest {
   private static final Llm NOMIC = new Llm("nomic", "ollama", LLM_URL, "nomic-embed-text:v1.5");
 
   @Test
-  void givenFixtureDirectory_whenLoad_thenThreeKindsResolved() {
+  void givenFixtureDirectory_whenLoad_thenFourKindsResolved() {
     // Arrange / Act
     Configuration configuration = ConfigurationLoader.load(FIXTURES);
 
@@ -39,6 +40,8 @@ class ConfigurationLoaderTest {
         .containsExactly(GRANITE, new Llm("nomic", "ollama", LLM_URL, "nomic-embed-text"));
     assertThat(configuration.spaces()).containsOnlyKeys("hr-acme");
     assertThat(configuration.airlocks()).containsOnlyKeys("hr-assistant", "founders-finance");
+    assertThat(configuration.airlockVersions())
+        .containsOnlyKeys("hr-assistant-v1", "founders-finance-v1");
     SpaceDocument space = configuration.spaces().get("hr-acme");
     assertThat(space.spec().description())
         .isEqualTo("Acme people and compensation data for the HR assistant.");
@@ -54,36 +57,48 @@ class ConfigurationLoaderTest {
     assertThat(airlock.spec().access())
         .isEqualTo(new AirlockDocument.Access(List.of("employee", "hr"), List.of("*")));
     assertThat(airlock.spec().llms()).isEmpty();
-    assertThat(configuration.spaceOf("hr-assistant").name()).isEqualTo("hr-acme");
-    assertThat(airlock.contextPreparatorHandlers()).containsExactly("HrDocumentsContextPreparator");
-    assertThat(airlock.memoryHandlers()).containsExactly("SessionMemory");
-    assertThat(airlock.spec().llm()).isEqualTo("granite");
-    assertThat(airlock.spec().prompt())
-        .isEqualTo("You are the Acme HR assistant. All amounts are in EUR.\n");
-    assertThat(airlock.tools()).containsExactly("read_records", "aggregate_records");
-    assertThat(airlock.verifierHandlers()).containsExactly("SalaryVerifier");
     assertThat(airlock.spec().dataSources())
         .containsExactly(
             new DataSource("hr-documents", DB_URL, "hr-acme-hr-assistant-ds-hr-documents-d4e5f6"));
-    assertThat(airlock.spec().jar())
+    assertThat(configuration.airlocks().get("founders-finance").spec().llms())
+        .containsExactly(new Llm("granite", "ollama", FOUNDERS_LLM_URL, "granite4.1:8b"));
+    assertThat(configuration.spaceOf("hr-assistant").name()).isEqualTo("hr-acme");
+    assertThat(configuration.versionsOf("hr-assistant"))
+        .extracting(AirlockVersionDocument::name)
+        .containsExactly("hr-assistant-v1");
+    AirlockVersionDocument version = configuration.airlockVersions().get("hr-assistant-v1");
+    assertThat(configuration.airlockOf(version.name()).name()).isEqualTo("hr-assistant");
+    assertThat(version.spec().airlock()).isEqualTo("hr-assistant");
+    assertThat(version.spec().version()).isEqualTo("v1");
+    assertThat(version.spec().description())
+        .isEqualTo("Pay from the tools, policies from the HR documents.");
+    assertThat(version.contextPreparatorHandlers()).containsExactly("HrDocumentsContextPreparator");
+    assertThat(version.memoryHandlers()).containsExactly("SessionMemory");
+    assertThat(version.spec().llm()).isEqualTo("granite");
+    assertThat(version.spec().prompt())
+        .isEqualTo("You are the Acme HR assistant. All amounts are in EUR.\n");
+    assertThat(version.tools()).containsExactly("read_records", "aggregate_records");
+    assertThat(version.verifierHandlers()).containsExactly("SalaryVerifier");
+    assertThat(version.spec().llms()).isEmpty();
+    assertThat(version.spec().jar())
         .isEqualTo(
-            new AirlockDocument.Jar(
+            new AirlockVersionDocument.Jar(
                 "sha256:9f2c", List.of("read_records", "aggregate_records"), null));
-    assertThat(airlock.hasCode()).isTrue();
-    assertThat(configuration.llmsOf("hr-assistant")).containsExactly(GRANITE, NOMIC);
-    assertThat(configuration.mainLlmOf("hr-assistant")).isEqualTo(GRANITE);
-    assertThat(configuration.dataSourcesOf("hr-assistant"))
+    assertThat(version.hasCode()).isTrue();
+    assertThat(configuration.llmsOf("hr-assistant-v1")).containsExactly(GRANITE, NOMIC);
+    assertThat(configuration.mainLlmOf("hr-assistant-v1")).isEqualTo(GRANITE);
+    assertThat(configuration.dataSourcesOf("hr-assistant-v1"))
         .extracting(DataSource::id)
         .containsExactly("acme_hr", "audit", "hr-documents");
-    AirlockDocument founders = configuration.airlocks().get("founders-finance");
+    AirlockVersionDocument founders = configuration.airlockVersions().get("founders-finance-v1");
     assertThat(founders.hasCode()).isFalse();
     assertThat(founders.tools()).isEmpty();
-    assertThat(configuration.llmsOf("founders-finance"))
+    assertThat(configuration.llmsOf("founders-finance-v1"))
         .containsExactly(
             new Llm("granite", "ollama", FOUNDERS_LLM_URL, "granite4.1:8b"),
             NOMIC,
             new Llm("qwen", "ollama", FOUNDERS_LLM_URL, "qwen3.6:27b-q4_K_M"));
-    assertThat(configuration.mainLlmOf("founders-finance").id()).isEqualTo("qwen");
+    assertThat(configuration.mainLlmOf("founders-finance-v1").id()).isEqualTo("qwen");
   }
 
   @ParameterizedTest
@@ -93,14 +108,15 @@ class ConfigurationLoaderTest {
     // Arrange
     Map<String, String> files = read(FIXTURES);
     files.computeIfPresent(
-        "airlocks.yaml",
+        "airlock-versions.yaml",
         (file, text) -> text.replace("aggregate_records]}", "aggregate_records]" + language + "}"));
 
     // Act
     Configuration loaded = ConfigurationLoader.parse(files);
 
     // Assert
-    assertThat(loaded.airlocks().get("hr-assistant").spec().jar().python()).isEqualTo(python);
+    assertThat(loaded.airlockVersions().get("hr-assistant-v1").spec().jar().python())
+        .isEqualTo(python);
   }
 
   @ParameterizedTest
@@ -110,8 +126,8 @@ class ConfigurationLoaderTest {
         "global.yaml|nomic-embed-text}|nomic-embed-text:v2}",
         "space.yaml|HR Acme|HR Acme!",
         "airlocks.yaml|Founders finance|Founders' finance",
-        "airlocks.yaml|You answer the founders only.|You answer the founders.",
-        "airlocks.yaml|aggregate_records]}|aggregate_records], language: python}"
+        "airlock-versions.yaml|You answer the founders only.|You answer the founders.",
+        "airlock-versions.yaml|aggregate_records]}|aggregate_records], language: python}"
       })
   void givenAChangedValueInAnyKind_whenParsed_thenAnotherRevision(
       String file, String from, String to) throws IOException {
@@ -141,6 +157,7 @@ class ConfigurationLoaderTest {
                 .replace("displayName: HR Acme", "displayName: \"HR Acme\""));
     files.put("a-airlocks.yaml", read(FIXTURES).get("airlocks.yaml"));
     files.put("b-global.yaml", read(FIXTURES).get("global.yaml"));
+    files.put("m-versions.yaml", read(FIXTURES).get("airlock-versions.yaml"));
 
     // Act
     Configuration reformatted = ConfigurationLoader.parse(files);
@@ -167,7 +184,7 @@ class ConfigurationLoaderTest {
   @CsvSource(
       delimiter = '|',
       value = {
-        "kind: Airlock|kind: Pipeline|unknown kind Pipeline",
+        "kind: AirlockVersion|kind: Pipeline|unknown kind Pipeline",
         "apiVersion: aisolate.dev/v1|apiVersion: ''|apiVersion  is not aisolate.dev/v1",
         "apiVersion: aisolate.dev/v1|apiVersion: aisolate.dev/v1alpha1|apiVersion"
             + " aisolate.dev/v1alpha1 is not aisolate.dev/v1",
@@ -176,6 +193,25 @@ class ConfigurationLoaderTest {
         // Kubernetes refuses the name, so every sync of its space would fail.
         "name: hr-assistant}|name: hr-assistant-}|metadata.name 'hr-assistant-': use 2 to 41",
         "space: hr-acme|space: \" \"|hr-assistant: spec.space is required",
+        "airlock: hr-assistant|airlock: \" \"|hr-assistant-v1: spec.airlock is required",
+        "airlock: hr-assistant|airlock: nowhere|hr-assistant-v1: spec.airlock nowhere is no"
+            + " Airlock",
+        "version: v1|version: \" \"|hr-assistant-v1: spec.version is required",
+        "version: v1|version: V1|hr-assistant-v1: spec.version V1: 1 to 31 lowercase letters,"
+            + " digits or dashes, not starting or ending with a dash",
+        // metadata.name follows the label, so the trailing dash is the document's only problem
+        "'name: hr-assistant-v1}\nspec:\n  airlock: hr-assistant\n  version: v1'"
+            + "|'name: hr-assistant-v1-}\nspec:\n  airlock: hr-assistant\n  version: v1-'"
+            + "|hr-assistant-v1-: spec.version v1-: 1 to 31 lowercase letters, digits or dashes,"
+            + " not starting or ending with a dash",
+        "name: hr-assistant-v1}|name: hr-assistant-v2}|hr-assistant-v2: metadata.name must be"
+            + " hr-assistant-v1",
+        // Who may ask is the airlock's: a version carrying it is refused
+        "version: v1|'version: v1\n  access: {roles: [ceo]}'"
+            + "|hr-assistant-v1: Unrecognized property \"access\"",
+        // What runs is the version's: an airlock carrying it is refused
+        "access: {roles: [founder], callers: [\"*\"]}|'access: {roles: [founder], callers:"
+            + " [\"*\"]}\n  llm: granite'|founders-finance: Unrecognized property \"llm\"",
         // The space's roles sit in a block, the airlocks' in a flow: the block is the space's
         // alone.
         "'access:\n    roles: [ceo, hr]'|'access:\n    roles: [ceo, ceo]'"
@@ -195,9 +231,10 @@ class ConfigurationLoaderTest {
             + " spec.access.clients must not contain a blank client id",
         "callers: [\"*\"]}|callers: [\"*\"], clients: [\"kn ime\"]}|hr-assistant:"
             + " spec.access.clients \"kn ime\" has a space in it",
-        "provider: ollama|provider: gpt|founders-finance: spec.llms[0].provider gpt is not"
+        // The versions file comes first in name order: the first provider is founders-finance-v1's
+        "provider: ollama|provider: gpt|founders-finance-v1: spec.llms[0].provider gpt is not"
             + " one of [ollama, openai]",
-        "provider: ollama|provider: \" \"|founders-finance: spec.llms[0].provider is required",
+        "provider: ollama|provider: \" \"|founders-finance-v1: spec.llms[0].provider is required",
         "url: http://ollama.aisolate.svc:11434|url: http://ollama.aisolate.svc:11434/?apiKey=x"
             + "|Global aisolate: spec.llms[0].url carries the parameter apiKey",
         "url: http://ollama.aisolate.svc:11434|url: ollama|Global aisolate: spec.llms[0].url has"
@@ -206,9 +243,9 @@ class ConfigurationLoaderTest {
             + " required",
         "- {id: nomic, provider|- {id: granite, provider|Global aisolate: spec.llms[1].id"
             + " granite is listed twice",
-        "{id: qwen,|{id: Qwen,|founders-finance: spec.llms[0].id Qwen: 1 to 41 lowercase"
+        "{id: qwen,|{id: Qwen,|founders-finance-v1: spec.llms[0].id Qwen: 1 to 41 lowercase"
             + " letters, digits, _ or -, starting with a letter or digit",
-        "{id: qwen, |{|founders-finance: spec.llms[0].id is required",
+        "{id: qwen, |{|founders-finance-v1: spec.llms[0].id is required",
         // A document names the Secret of a key, never the key
         "model: nomic-embed-text}|model: nomic-embed-text, apiKey: x}|Unrecognized property"
             + " \"apiKey\"",
@@ -217,31 +254,39 @@ class ConfigurationLoaderTest {
             + " lowercase letters, digits, _ or -, starting with a letter or digit",
         "url: http://ollama-founders.aisolate.svc:11434, model: \"granite4.1:8b\"}|url:"
             + " http://ollama-founders.aisolate.svc:11434, model: \" \"}|founders-finance:"
-            + " spec.llms[1].model is required",
-        "handlers: [HrDocumentsContextPreparator]|handlers: [\" \"]|hr-assistant:"
+            + " spec.llms[0].model is required",
+        "handlers: [HrDocumentsContextPreparator]|handlers: [\" \"]|hr-assistant-v1:"
             + " spec.preLLM.contextPreparator.handlers must not contain a blank name",
-        "handlers: [SessionMemory]|handlers: [SessionMemory, SessionMemory]|hr-assistant:"
+        "handlers: [SessionMemory]|handlers: [SessionMemory, SessionMemory]|hr-assistant-v1:"
             + " spec.preLLM.conversationMemory.handlers lists SessionMemory twice",
-        "handlers: [SalaryVerifier]|handlers: [\" \"]|hr-assistant:"
+        "handlers: [SalaryVerifier]|handlers: [\" \"]|hr-assistant-v1:"
             + " spec.postLLM.answerVerifier.handlers must not contain a blank name",
+        "prompt: You answer the founders only.|prompt: \" \"|founders-finance-v1: spec.prompt"
+            + " is required",
+        "llm: qwen|llm: \" \"|founders-finance-v1: spec.llm is required",
         "url: http://ollama-founders.aisolate.svc:11434, model: \"qwen|url:"
-            + " http://localhost:11434/?apiKey=x, model: \"qwen|founders-finance:"
+            + " http://localhost:11434/?apiKey=x, model: \"qwen|founders-finance-v1:"
             + " spec.llms[0].url carries the parameter apiKey",
-        "tools: [read_records, aggregate_records]|tools: [read_records, \" \"]|hr-assistant:"
+        "tools: [read_records, aggregate_records]|tools: [read_records, \" \"]|hr-assistant-v1:"
             + " spec.tools must not contain a blank name",
         "id: hr-documents|id: _hr-documents|hr-assistant: spec.dataSources[0].id _hr-documents:"
             + " 1 to 41 lowercase letters, digits, _ or -, starting with a letter or digit",
         "url: jdbc:postgresql://acme-db.aisolate.svc:5432/acme_hr|url: acme-db"
             + "|hr-assistant: spec.dataSources[0].url has no host",
-        "digest: \"sha256:9f2c\"|digest: \" \"|hr-assistant: spec.jar.digest is required",
-        "digest: \"sha256:9f2c\"|digest: \"sha256:9f2c\", language: ruby|hr-assistant:"
+        // A data source needs a login: a version holds none
+        "tools: []|'tools: []\n"
+            + "  dataSources: [{id: hr-documents, url:"
+            + " \"jdbc:postgresql://db:5432/a\"}]'|founders-finance-v1: Unrecognized property"
+            + " \"dataSources\"",
+        "digest: \"sha256:9f2c\"|digest: \" \"|hr-assistant-v1: spec.jar.digest is required",
+        "digest: \"sha256:9f2c\"|digest: \"sha256:9f2c\", language: ruby|hr-assistant-v1:"
             + " spec.jar.language ruby is not java or python",
         "tools: [read_records, aggregate_records]|tools: [read_records, export_payslips]"
-            + "|hr-assistant: spec.tools export_payslips is not a tool of this airlock's code",
-        "tools: []|tools: [read_records]|founders-finance: lists tools or handlers but has no"
+            + "|hr-assistant-v1: spec.tools export_payslips is not a tool of this version's code",
+        "tools: []|tools: [read_records]|founders-finance-v1: lists tools or handlers but has no"
             + " jar",
-        "llm: granite|llm: gemma|hr-assistant: llm gemma is no model of it, of Space hr-acme or"
-            + " of AIsolate",
+        "llm: granite|llm: gemma|hr-assistant-v1: llm gemma is no model of it, of Airlock"
+            + " hr-assistant, of Space hr-acme or of AIsolate",
         // The last of two lists would load, silently
         "'    roles: [ceo, hr]'|'    roles: [ceo]\n    roles: [hr]'|Duplicate Object property"
             + " \"roles\"",
@@ -326,7 +371,7 @@ class ConfigurationLoaderTest {
   }
 
   @Test
-  void givenAirlockWithoutLlmOrPrompt_whenLoad_thenAcceptedAndRunsNothing() throws IOException {
+  void givenAirlockWithoutVersions_whenLoad_thenAccepted() throws IOException {
     // Arrange: the AIsolate UI creates an airlock before its first deploy
     Map<String, String> files = read(FIXTURES);
     files.put(
@@ -339,11 +384,7 @@ class ConfigurationLoaderTest {
     Configuration configuration = ConfigurationLoader.parse(files);
 
     // Assert
-    AirlockDocument onboarding = configuration.airlocks().get("onboarding");
-    assertThat(onboarding.hasCode()).isFalse();
-    assertThat(onboarding.tools()).isEmpty();
-    assertThat(configuration.mainLlmOf("onboarding")).isNull();
-    assertThat(configuration.llmsOf("onboarding")).containsExactly(GRANITE, NOMIC);
+    assertThat(configuration.versionsOf("onboarding")).isEmpty();
   }
 
   @Test
@@ -417,27 +458,42 @@ class ConfigurationLoaderTest {
   }
 
   @Test
-  void givenRelease_whenDiscovered_thenEachAirlockWithItsDescriptionAndToolsNoPromptOrModel() {
-    // Arrange
-    Configuration configuration = ConfigurationLoader.load(FIXTURES);
+  void givenRelease_whenDiscovered_thenEachAirlockWithItsVersionsInOrderNoPromptOrModel()
+      throws IOException {
+    // Arrange: two more versions of hr-assistant, listed out of order
+    Map<String, String> files = read(FIXTURES);
+    files.put(
+        "more.yaml",
+        "{apiVersion: aisolate.dev/v1, kind: AirlockVersion, metadata: {name: hr-assistant-v10},"
+            + " spec: {airlock: hr-assistant, version: v10, llm: granite, prompt: hi}}\n"
+            + "---\n"
+            + "{apiVersion: aisolate.dev/v1, kind: AirlockVersion, metadata: {name:"
+            + " hr-assistant-v2}, spec: {airlock: hr-assistant, version: v2, description: Second,"
+            + " llm: granite, prompt: hi}}");
+    Configuration configuration = ConfigurationLoader.parse(files);
 
     // Act
     List<DiscoveredAirlock> discovered = DiscoveredAirlock.of(configuration);
 
-    // Assert: founders-finance has no description and no code yet
+    // Assert: founders-finance has no description, its version neither and no code yet
     assertThat(discovered)
-        .extracting(
-            DiscoveredAirlock::id,
-            DiscoveredAirlock::name,
-            DiscoveredAirlock::description,
-            DiscoveredAirlock::tools)
+        .extracting(DiscoveredAirlock::id, DiscoveredAirlock::name, DiscoveredAirlock::description)
         .containsExactly(
             tuple(
                 "hr-assistant",
                 "Acme HR assistant",
-                "Answers people, pay and HR document questions.",
+                "Answers people, pay and HR document questions."),
+            tuple("founders-finance", "Founders finance", ""));
+    assertThat(discovered.get(0).versions())
+        .containsExactly(
+            new DiscoveredAirlock.Version(
+                "v1",
+                "Pay from the tools, policies from the HR documents.",
                 List.of("read_records", "aggregate_records")),
-            tuple("founders-finance", "Founders finance", "", List.of()));
+            new DiscoveredAirlock.Version("v2", "Second", List.of()),
+            new DiscoveredAirlock.Version("v10", "", List.of()));
+    assertThat(discovered.get(1).versions())
+        .containsExactly(new DiscoveredAirlock.Version("v1", "", List.of()));
     assertThat(discovered)
         .extracting(DiscoveredAirlock::roles)
         .containsExactly(List.of("ceo", "hr", "employee"), List.of("ceo", "hr", "founder"));
@@ -464,6 +520,26 @@ class ConfigurationLoaderTest {
                         "airlocks.yaml: Airlock hr-assistant: spec.space nowhere is no Space"));
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"pilot", "2026-10"})
+  void givenVersionLabelWithinTheRule_whenLoad_thenAccepted(String label) throws IOException {
+    // Arrange: the fixtures carry only v1; metadata.name follows the label
+    Map<String, String> files = read(FIXTURES);
+    files.put(
+        "extra.yaml",
+        "{apiVersion: aisolate.dev/v1, kind: AirlockVersion, metadata: {name: hr-assistant-"
+            + label
+            + "}, spec: {airlock: hr-assistant, version: "
+            + label
+            + ", llm: granite, prompt: hi}}");
+
+    // Act
+    Configuration configuration = ConfigurationLoader.parse(files);
+
+    // Assert
+    assertThat(configuration.airlockVersions()).containsKey("hr-assistant-" + label);
+  }
+
   @Test
   void givenDocumentsWithAJarConfigMap_whenLoad_thenTheConfigMapIsSkipped() throws IOException {
     // Arrange: a release directory may hold other API groups' objects beside the documents
@@ -471,8 +547,8 @@ class ConfigurationLoaderTest {
     Map<String, String> files = read(FIXTURES);
     files.put(
         "jars.yaml",
-        "apiVersion: v1\nkind: ConfigMap\nmetadata: {name: hr-acme-hr-assistant-jar}\n"
-            + "binaryData: {hr-assistant.jar: UEsDBA==}\n");
+        "apiVersion: v1\nkind: ConfigMap\nmetadata: {name: hr-acme-hr-assistant-v1-jar}\n"
+            + "binaryData: {hr-assistant-v1.jar: UEsDBA==}\n");
 
     // Act
     Configuration loaded = ConfigurationLoader.parse(files);
@@ -496,14 +572,16 @@ class ConfigurationLoaderTest {
             + "|onboarding: spec.access.callers must name at least one calling client",
         "{apiVersion: aisolate.dev/v1, kind: Airlock, spec: {space: hr-acme}}"
             + "|extra.yaml: Airlock: metadata.name '': use 2 to 41",
-        "{apiVersion: aisolate.dev/v1, kind: Airlock, metadata: {name: onboarding},"
-            + " spec: {space: hr-acme, access: {callers: [\"*\"]},"
+        "{apiVersion: aisolate.dev/v1, kind: AirlockVersion,"
+            + " spec: {airlock: hr-assistant, version: v2, llm: granite, prompt: hi}}"
+            + "|extra.yaml: AirlockVersion: metadata.name is required",
+        "{apiVersion: aisolate.dev/v1, kind: AirlockVersion, metadata: {name: hr-assistant-v2},"
+            + " spec: {airlock: hr-assistant, version: v2}}"
+            + "|hr-assistant-v2: spec.llm is required",
+        "{apiVersion: aisolate.dev/v1, kind: AirlockVersion, metadata: {name: hr-assistant-v2},"
+            + " spec: {airlock: hr-assistant, version: v2, llm: granite, prompt: hi,"
             + " preLLM: {contextPreparator: {handlers: [HrDocumentsContextPreparator]}}}}"
-            + "|onboarding: lists tools or handlers but has no jar",
-        // An llm without a prompt is checked all the same
-        "{apiVersion: aisolate.dev/v1, kind: Airlock, metadata: {name: onboarding},"
-            + " spec: {space: hr-acme, access: {callers: [\"*\"]}, llm: gemma}}"
-            + "|onboarding: llm gemma is no model of it, of Space hr-acme or of AIsolate",
+            + "|hr-assistant-v2: lists tools or handlers but has no jar",
         "{apiVersion: aisolate.dev/v1, kind: Global, metadata: {name: other}}"
             + "|extra.yaml: Global other: metadata.name must be aisolate",
         "{apiVersion: aisolate.dev/v1, kind: Global, metadata: {name: aisolate}}"
@@ -533,7 +611,9 @@ class ConfigurationLoaderTest {
                 configuration.global(),
                 configuration.spaces().get("hr-acme"),
                 configuration.airlocks().get("hr-assistant"),
-                configuration.airlocks().get("founders-finance")));
+                configuration.airlocks().get("founders-finance"),
+                configuration.airlockVersions().get("hr-assistant-v1"),
+                configuration.airlockVersions().get("founders-finance-v1")));
     Configuration reloaded = ConfigurationLoader.parse(Map.of("documents.yaml", yaml));
 
     // Assert
@@ -541,10 +621,12 @@ class ConfigurationLoaderTest {
         .contains("kind: Global")
         .contains("kind: Space")
         .contains("kind: Airlock")
+        .contains("kind: AirlockVersion")
         .contains("preLLM:")
         .contains("postLLM:")
         .contains("dataSources:")
         .contains("jar:");
+    assertThat(reloaded.airlockVersions()).isEqualTo(configuration.airlockVersions());
     assertThat(reloaded.airlocks()).isEqualTo(configuration.airlocks());
     assertThat(reloaded.spaces().get("hr-acme")).isEqualTo(configuration.spaces().get("hr-acme"));
     assertThat(reloaded.revision()).isEqualTo(configuration.revision());
@@ -552,7 +634,7 @@ class ConfigurationLoaderTest {
 
   @Test
   void givenNoGlobal_whenLoad_thenAnEmptyOneAndOnlyTheGlobalLlmIsMissing() throws IOException {
-    // Arrange: a space's documents load alone; its airlocks then see no global LLM
+    // Arrange: a space's documents load alone; its versions then see no global LLM
     Map<String, String> files = read(FIXTURES);
     files.remove("global.yaml");
 
@@ -566,8 +648,9 @@ class ConfigurationLoaderTest {
             e ->
                 assertThat(e.problems())
                     .containsExactly(
-                        "airlocks.yaml: Airlock hr-assistant: llm granite is no model of it, of"
-                            + " Space hr-acme or of AIsolate"));
+                        "airlock-versions.yaml: AirlockVersion hr-assistant-v1: llm granite is no"
+                            + " model of it, of Airlock hr-assistant, of Space hr-acme or of"
+                            + " AIsolate"));
   }
 
   @Test

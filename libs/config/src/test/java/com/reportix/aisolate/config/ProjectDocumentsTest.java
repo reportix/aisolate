@@ -45,8 +45,6 @@ class ProjectDocumentsTest {
       spec:
         space: hr-acme
         access: {roles: [employee], callers: ["*"]}
-        llm: granite
-        prompt: Answer from the tools.
         llms:
           - {id: granite, provider: ollama, url: "${OLLAMA_URL:-http://localhost:11434}", model: "granite4.1:8b"}
         dataSources:
@@ -58,6 +56,15 @@ class ProjectDocumentsTest {
             url: jdbc:postgresql://acme-db:5432/acme_hr
             username: preparator
             password: ${DOCS_PASSWORD}
+      ---
+      apiVersion: aisolate.dev/v1
+      kind: AirlockVersion
+      metadata: {name: hr-assistant-v1}
+      spec:
+        airlock: hr-assistant
+        version: v1
+        llm: granite
+        prompt: Answer from the tools.
       """;
 
   @Test
@@ -93,8 +100,9 @@ class ProjectDocumentsTest {
         .doesNotContain("username");
     Configuration loaded = ConfigurationLoader.parse(Map.of("deploy.yaml", split.documents()));
     assertThat(loaded.airlocks()).containsOnlyKeys("hr-assistant");
-    assertThat(loaded.mainLlmOf("hr-assistant").url()).isEqualTo("http://localhost:11434");
-    assertThat(loaded.dataSourcesOf("hr-assistant"))
+    assertThat(loaded.airlockVersions()).containsOnlyKeys("hr-assistant-v1");
+    assertThat(loaded.mainLlmOf("hr-assistant-v1").url()).isEqualTo("http://localhost:11434");
+    assertThat(loaded.dataSourcesOf("hr-assistant-v1"))
         .extracting(DataSource::id)
         .containsExactly("acme_hr", "hr-documents", "payroll");
   }

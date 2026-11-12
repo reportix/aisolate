@@ -107,10 +107,11 @@ public final class ConfigurationLoader {
     }
     GlobalDocument global = documents.global();
     return new Configuration(
-        revision(global, documents.spaces, documents.airlocks),
+        revision(global, documents.spaces, documents.airlocks, documents.airlockVersions),
         global,
         documents.spaces,
-        documents.airlocks);
+        documents.airlocks,
+        documents.airlockVersions);
   }
 
   /** YAML, one document per object, {@code ---} between them. */
@@ -144,7 +145,10 @@ public final class ConfigurationLoader {
     return kind(document) + "-" + name(document) + ".yaml";
   }
 
-  /** The Kubernetes kind of a document record: {@code Global}, {@code Space}, {@code Airlock}. */
+  /**
+   * The Kubernetes kind of a document record: {@code Global}, {@code Space}, {@code Airlock},
+   * {@code AirlockVersion}.
+   */
   public static String kind(Object document) {
     return document.getClass().getSimpleName().replace("Document", "");
   }
@@ -157,13 +161,15 @@ public final class ConfigurationLoader {
   static String revision(
       GlobalDocument global,
       Map<String, SpaceDocument> spaces,
-      Map<String, AirlockDocument> airlocks) {
+      Map<String, AirlockDocument> airlocks,
+      Map<String, AirlockVersionDocument> airlockVersions) {
     try {
       MessageDigest sha = MessageDigest.getInstance("SHA-256");
       List<Object> all = new ArrayList<>();
       all.add(global);
       all.addAll(spaces.values());
       all.addAll(airlocks.values());
+      all.addAll(airlockVersions.values());
       all.sort(
           Comparator.comparing(ConfigurationLoader::kind).thenComparing(ConfigurationLoader::name));
       for (Object document : all) {
@@ -182,6 +188,7 @@ public final class ConfigurationLoader {
       case GlobalDocument g -> g.name();
       case SpaceDocument s -> s.name();
       case AirlockDocument a -> a.name();
+      case AirlockVersionDocument v -> v.name();
       default -> throw new IllegalArgumentException("not a document: " + document.getClass());
     };
   }
@@ -200,6 +207,7 @@ public final class ConfigurationLoader {
     final Map<String, GlobalDocument> globals = new LinkedHashMap<>();
     final Map<String, SpaceDocument> spaces = new LinkedHashMap<>();
     final Map<String, AirlockDocument> airlocks = new LinkedHashMap<>();
+    final Map<String, AirlockVersionDocument> airlockVersions = new LinkedHashMap<>();
     final Map<String, String> fileOf = new LinkedHashMap<>();
     final List<String> problems = new ArrayList<>();
     int count;
@@ -223,7 +231,12 @@ public final class ConfigurationLoader {
         problems.add(where + ": apiVersion " + apiVersion + " is not " + API_VERSION);
         return;
       }
-      if (!Names.SLUG.matcher(name).matches()) {
+      // A version's name is <airlock>-<version>, checked against both once they are read.
+      if ("AirlockVersion".equals(kind) && blank(name)) {
+        problems.add(where + ": metadata.name is required");
+        return;
+      }
+      if (!"AirlockVersion".equals(kind) && !Names.SLUG.matcher(name).matches()) {
         problems.add(where + ": metadata.name '" + name + "': " + Names.SLUG_RULE);
         return;
       }
@@ -239,6 +252,13 @@ public final class ConfigurationLoader {
               put(spaces, YAML.treeToValue(body, SpaceDocument.class), name, file, where);
           case "Airlock" ->
               put(airlocks, YAML.treeToValue(body, AirlockDocument.class), name, file, where);
+          case "AirlockVersion" ->
+              put(
+                  airlockVersions,
+                  YAML.treeToValue(body, AirlockVersionDocument.class),
+                  name,
+                  file,
+                  where);
           default -> problems.add(where + ": unknown kind " + kind);
         }
       } catch (RuntimeException invalid) {
@@ -292,17 +312,28 @@ public final class ConfigurationLoader {
           problems.add(where + ": spec is required");
           continue;
         }
-        SpaceDocument space = blank(spec.space()) ? null : spaces.get(spec.space());
         if (blank(spec.space())) {
           problems.add(where + ": spec.space is required");
-        } else if (space == null) {
+        } else if (!spaces.containsKey(spec.space())) {
           problems.add(where + ": spec.space " + spec.space() + " is no Space");
         }
         validateAirlockAccess(spec.access(), where);
-        validateRun(airlock, where);
-        validateCode(airlock, where);
-        if (space != null && space.spec() != null && !blank(spec.llm())) {
-          validateMainLlm(airlock, space, where);
+        validateLlms(spec.llms(), where + ": spec.llms");
+        validateDataSources(spec.dataSources(), where + ": spec.dataSources");
+      }
+      for (AirlockVersionDocument version : airlockVersions.values()) {
+        String where = where(version, "AirlockVersion", version.name());
+        if (version.spec() == null) {
+          problems.add(where + ": spec is required");
+          continue;
+        }
+        AirlockDocument airlock = validateIdentity(version, where);
+        validateVersion(version, where);
+        validateCode(version, where);
+        SpaceDocument space =
+            airlock == null || airlock.spec() == null ? null : spaces.get(airlock.spec().space());
+        if (space != null && space.spec() != null && !blank(version.spec().llm())) {
+          validateMainLlm(version, airlock, space, where);
         }
       }
     }
@@ -327,31 +358,59 @@ public final class ConfigurationLoader {
           .forEach(problem -> problems.add(where + ": spec.access.clients " + problem));
     }
 
-    /** What an exchange runs, in its order; the llm and the prompt may still be absent. */
-    private void validateRun(AirlockDocument airlock, String where) {
-      AirlockDocument.Spec spec = airlock.spec();
+    /**
+     * The Airlock the version names, or null. The name is checked only against a known airlock and
+     * a valid label: a typo in either would otherwise also read as a wrong name.
+     */
+    private AirlockDocument validateIdentity(AirlockVersionDocument version, String where) {
+      AirlockVersionDocument.Spec spec = version.spec();
+      AirlockDocument airlock = blank(spec.airlock()) ? null : airlocks.get(spec.airlock());
+      if (blank(spec.airlock())) {
+        problems.add(where + ": spec.airlock is required");
+      } else if (airlock == null) {
+        problems.add(where + ": spec.airlock " + spec.airlock() + " is no Airlock");
+      }
+      String name = spec.airlock() + "-" + spec.version();
+      if (blank(spec.version())) {
+        problems.add(where + ": spec.version is required");
+      } else if (!Names.VERSION_LABEL.matcher(spec.version()).matches()) {
+        problems.add(where + ": spec.version " + spec.version() + ": " + Names.VERSION_RULE);
+      } else if (airlock != null && !version.name().equals(name)) {
+        problems.add(where + ": metadata.name must be " + name);
+      }
+      return airlock;
+    }
+
+    /** What an exchange runs, in its order: a version always names its llm and its prompt. */
+    private void validateVersion(AirlockVersionDocument version, String where) {
+      AirlockVersionDocument.Spec spec = version.spec();
       validateNames(
           "name",
-          airlock.contextPreparatorHandlers(),
+          version.contextPreparatorHandlers(),
           where + ": spec.preLLM.contextPreparator.handlers");
       validateNames(
-          "name", airlock.memoryHandlers(), where + ": spec.preLLM.conversationMemory.handlers");
+          "name", version.memoryHandlers(), where + ": spec.preLLM.conversationMemory.handlers");
+      if (blank(spec.llm())) {
+        problems.add(where + ": spec.llm is required");
+      }
+      if (blank(spec.prompt())) {
+        problems.add(where + ": spec.prompt is required");
+      }
       validateNames("name", spec.tools(), where + ": spec.tools");
-      validateNames(
-          "name", airlock.verifierHandlers(), where + ": spec.postLLM.answerVerifier.handlers");
       validateLlms(spec.llms(), where + ": spec.llms");
-      validateDataSources(spec.dataSources(), where + ": spec.dataSources");
+      validateNames(
+          "name", version.verifierHandlers(), where + ": spec.postLLM.answerVerifier.handlers");
     }
 
     /** Tools and handlers are the code's: none without a jar, only the jar's tools with one. */
-    private void validateCode(AirlockDocument airlock, String where) {
-      AirlockDocument.Jar jar = airlock.spec().jar();
+    private void validateCode(AirlockVersionDocument version, String where) {
+      AirlockVersionDocument.Jar jar = version.spec().jar();
       if (jar == null) {
         if (Stream.of(
-                airlock.tools(),
-                airlock.contextPreparatorHandlers(),
-                airlock.memoryHandlers(),
-                airlock.verifierHandlers())
+                version.tools(),
+                version.contextPreparatorHandlers(),
+                version.memoryHandlers(),
+                version.verifierHandlers())
             .anyMatch(names -> !names.isEmpty())) {
           problems.add(where + ": lists tools or handlers but has no jar");
         }
@@ -361,23 +420,29 @@ public final class ConfigurationLoader {
         problems.add(where + ": spec.jar.digest is required");
       }
       if (jar.language() != null
-          && !jar.language().equals(AirlockDocument.Jar.JAVA)
+          && !jar.language().equals(AirlockVersionDocument.Jar.JAVA)
           && !jar.python()) {
         problems.add(where + ": spec.jar.language " + jar.language() + " is not java or python");
       }
-      Names.notInCode("a tool", airlock.tools(), jar.tools())
+      Names.notInCode("a tool", version.tools(), jar.tools())
           .forEach(problem -> problems.add(where + ": spec.tools " + problem));
     }
 
-    /** The LLM that answers is defined on the airlock, its space or globally. */
-    private void validateMainLlm(AirlockDocument airlock, SpaceDocument space, String where) {
-      Configuration resolved = new Configuration(null, global(), spaces, airlocks);
-      if (resolved.mainLlmOf(airlock.name()) == null) {
+    /** The LLM that answers is defined on the version, its airlock, its space or globally. */
+    private void validateMainLlm(
+        AirlockVersionDocument version,
+        AirlockDocument airlock,
+        SpaceDocument space,
+        String where) {
+      Configuration resolved = new Configuration(null, global(), spaces, airlocks, airlockVersions);
+      if (resolved.mainLlmOf(version.name()) == null) {
         problems.add(
             where
                 + ": llm "
-                + airlock.spec().llm()
-                + " is no model of it, of Space "
+                + version.spec().llm()
+                + " is no model of it, of Airlock "
+                + airlock.name()
+                + ", of Space "
                 + space.name()
                 + " or of AIsolate");
       }
@@ -396,7 +461,7 @@ public final class ConfigurationLoader {
         } else if (!ids.add(llm.id())) {
           problems.add(entry + ".id " + llm.id() + " is listed twice");
         }
-        String provider = AirlockDocument.providerProblem(llm.provider());
+        String provider = AirlockVersionDocument.providerProblem(llm.provider());
         if (blank(llm.provider())) {
           problems.add(entry + ".provider is required");
         } else if (provider != null) {
