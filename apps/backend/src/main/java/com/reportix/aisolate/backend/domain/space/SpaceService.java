@@ -138,8 +138,9 @@ public class SpaceService {
 
   private SpacesDeletedDTO deleteRows(List<CredentialRepository.Row> gone) {
     gone.addAll(rows.deleteSpacesAndAirlocks());
+    int versionCount = versions.deleteAll();
     int airlockCount = airlocks.deleteAll();
-    return new SpacesDeletedDTO(spaces.deleteAll(), airlockCount, null, null);
+    return new SpacesDeletedDTO(spaces.deleteAll(), airlockCount, versionCount, null, null);
   }
 
   private SpacesDeletedDTO.Monitoring clearMonitoring() {

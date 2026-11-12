@@ -99,6 +99,8 @@ class SpacesResetIntegrationTest {
 
   static final ResourceDefinitionContext SPACES = context("Space", "spaces");
   static final ResourceDefinitionContext AIRLOCKS = context("Airlock", "airlocks");
+  static final ResourceDefinitionContext AIRLOCK_VERSIONS =
+      context("AirlockVersion", "airlockversions");
   static final JsonMapper JSON = JsonMapper.builder().build();
   static final String DB = "jdbc:postgresql://acme-db:5432/acme_hr";
 
@@ -124,14 +126,21 @@ class SpacesResetIntegrationTest {
       kind: Airlock
       metadata: {name: reset-assistant}
       spec:
-        llm: granite
-        prompt: Answer from the tools.
-        tools: [read_records, aggregate_records]
         dataSources:
           - id: acme_hr
             url: jdbc:postgresql://acme-db:5432/acme_hr
             username: reader
             password: ${HR_PASSWORD}
+      ---
+      apiVersion: aisolate.dev/v1
+      kind: AirlockVersion
+      metadata: {name: reset-assistant-v1}
+      spec:
+        airlock: reset-assistant
+        version: v1
+        llm: granite
+        prompt: Answer from the tools.
+        tools: [read_records, aggregate_records]
       """;
 
   @LocalServerPort int port;
@@ -163,6 +172,7 @@ class SpacesResetIntegrationTest {
     // Arrange: the seeded hr-acme and a space deployed here, a Secret owned by each of the two
     // resources, and the controller's own pod, not one to wait for
     setUpResetLab();
+    assertThat(resource(AIRLOCK_VERSIONS, "reset-assistant-v1")).isNotNull();
     List<String> secrets =
         List.of(
             secretRefOf(resource(SPACES, "reset-lab")),
@@ -180,7 +190,7 @@ class SpacesResetIntegrationTest {
     JsonNode body = JSON.readTree(response.body());
     assertThat(body.path("spaces").asInt()).isGreaterThanOrEqualTo(2);
     assertThat(body.path("airlocks").asInt()).isGreaterThanOrEqualTo(1);
-    assertThat(body.has("versions")).isFalse();
+    assertThat(body.path("versions").asInt()).isGreaterThanOrEqualTo(1);
     assertThat(listSpaces().size()).isZero();
     JsonNode cluster = body.path("cluster");
     assertThat(cluster.path("pods_gone").asBoolean()).isTrue();
@@ -189,11 +199,11 @@ class SpacesResetIntegrationTest {
     assertThat(secrets)
         .allSatisfy(name ->
             assertThat(client.secrets().inNamespace("aisolate").withName(name).get()).isNull());
-    assertThat(
-            client.genericKubernetesResources(AIRLOCKS).inNamespace("aisolate").list().getItems())
-        .isEmpty();
-    assertThat(client.genericKubernetesResources(SPACES).inNamespace("aisolate").list().getItems())
-        .isEmpty();
+    for (ResourceDefinitionContext kind : List.of(AIRLOCK_VERSIONS, AIRLOCKS, SPACES)) {
+      assertThat(client.genericKubernetesResources(kind).inNamespace("aisolate").list().getItems())
+          .as(kind.getKind())
+          .isEmpty();
+    }
   }
 
   @Test
@@ -232,7 +242,7 @@ class SpacesResetIntegrationTest {
   void givenAuditLinesAndAMetricsStore_whenAllSpacesDeleted_thenTheTrailAndTheSeriesGo() {
     // Arrange: one line of an airlock, as its pod hands it in; the store's admin API is on
     String token =
-        AuditIngestToken.of(BackendTestConfig.INGEST_KEY, "reset-lab", "reset-assistant");
+        AuditIngestToken.of(BackendTestConfig.INGEST_KEY, "reset-lab", "reset-assistant", "v1");
     audit.ingest(token, line("What is my notice period?"));
     assertThat(auditRows.countAll()).isEqualTo(1);
     ADMIN.clear();
@@ -386,7 +396,7 @@ class SpacesResetIntegrationTest {
   private static String line(String question) {
     return """
     {"ts":"2026-10-18T09:11:57.006Z","event":"exchange","trace_id":"4bf92f3577b34da6a3ce929d0e0e4736",\
-    "space":"reset-lab","airlock":"reset-assistant","revision":"7b2280eab4b5",\
+    "space":"reset-lab","airlock":"reset-assistant","version":"v1","revision":"7b2280eab4b5",\
     "user":"jasmine@example.com","client":"acme-chat","question":"%s",\
     "answer":"Three months.","outcome":"answered","reason":null,\
     "tools":[{"name":"read_my_records","args":{"entity":"hr.contracts"},\

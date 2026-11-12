@@ -8,7 +8,8 @@ import tools.jackson.databind.annotation.JsonNaming;
  * from Monitoring's stores last.
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public record SpacesDeletedDTO(int spaces, int airlocks, Cluster cluster, Monitoring monitoring) {
+public record SpacesDeletedDTO(
+    int spaces, int airlocks, int versions, Cluster cluster, Monitoring monitoring) {
 
   /**
    * Null when no cluster is configured (the laptop).
@@ -28,10 +29,10 @@ public record SpacesDeletedDTO(int spaces, int airlocks, Cluster cluster, Monito
   public record Monitoring(int auditLines, Boolean metricsCleared, String problem) {}
 
   public SpacesDeletedDTO withCluster(Cluster cluster) {
-    return new SpacesDeletedDTO(spaces, airlocks, cluster, monitoring);
+    return new SpacesDeletedDTO(spaces, airlocks, versions, cluster, monitoring);
   }
 
   public SpacesDeletedDTO withMonitoring(Monitoring monitoring) {
-    return new SpacesDeletedDTO(spaces, airlocks, cluster, monitoring);
+    return new SpacesDeletedDTO(spaces, airlocks, versions, cluster, monitoring);
   }
 }
