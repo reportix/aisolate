@@ -5,21 +5,23 @@ import { CopyButton } from "@/components/CopyButton";
 import { DataSourceTable } from "@/components/DataSourceTable";
 import { DefinitionRow, Mono, MonoChips } from "@/components/Definition";
 import { Source } from "@/components/InheritedFrom";
-import { NO_CODE, endpointUrl, handlersOf, noLlm } from "@/lib/airlock";
 import { env } from "@/lib/env";
 import { catalogOf, originLabel } from "@/lib/resolve";
 import type { Stage } from "@/lib/types";
-import { useAirlock } from "@/lib/useAirlock";
+import { useVersion } from "@/lib/useVersion";
+import { NO_CODE, endpointUrl, handlersOf, noLlm } from "@/lib/version";
 
-/** The Details tab: the airlock's endpoint, its stages and the LLM that answers, its code, and its data sources as they resolve. */
-export default function AirlockDetailsPage() {
-  const { space, airlock, dataSources: globals } = useAirlock();
-  const { form, jar: code } = airlock;
+/** The Details tab: the version's endpoint, its stages and the LLM that answers, its code, and the data sources its code reads as they resolve. */
+export default function VersionDetailsPage() {
+  const { space, airlock, version, dataSources: globals } = useVersion();
+  const { form, jar: code } = version;
+  // A version defines no data source: its code reads the airlock's, the space's and the platform's.
   const dataSources = catalogOf([
     ["airlock", airlock.data_sources],
     ["space", space.data_sources],
     ["global", globals],
   ]);
+  const names = { airlock: airlock.name, space: space.name };
   const dsBase = `/spaces/${space.id}`;
   const handlers = (stage: Stage, listed: string[]) => (
     <MonoChips
@@ -27,7 +29,7 @@ export default function AirlockDetailsPage() {
       none={code ? "none" : NO_CODE}
     />
   );
-  const endpoint = endpointUrl(airlock.endpoint, env.aisolateUrl);
+  const endpoint = endpointUrl(version.endpoint, env.aisolateUrl);
 
   return (
     <div className="grid gap-6">
@@ -55,18 +57,14 @@ export default function AirlockDetailsPage() {
 
       <Section
         title="Model"
-        description="The model that answers, as the project names it, and what it is told, from the project."
+        description="The model that answers, as the project names it and as it resolves from the airlock, the space or the platform, and what it is told, from the project."
       >
         <dl className="divide-y divide-hairline">
           <DefinitionRow label="Name">
             <Mono
-              value={airlock.main_llm?.model ?? ""}
+              value={version.main_llm?.model ?? ""}
               none={noLlm(form.llm)}
-              from={
-                airlock.main_llm
-                  ? originLabel(airlock.main_llm.from, { space: space.name })
-                  : undefined
-              }
+              from={version.main_llm ? originLabel(version.main_llm.from, names) : undefined}
             />
           </DefinitionRow>
           <DefinitionRow label="Prompt">
@@ -121,12 +119,18 @@ export default function AirlockDetailsPage() {
       >
         <DataSourceTable
           rows={dataSources}
-          empty="This airlock reads no data sources."
+          empty="This version reads no data sources."
           source={(d) => (
             <Source
               row={d}
-              own="airlock"
-              owners={{ space: { name: space.name, href: `${dsBase}/data-sources` } }}
+              own="version"
+              owners={{
+                airlock: {
+                  name: airlock.name,
+                  href: `${dsBase}/airlocks/${airlock.id}/data-sources`,
+                },
+                space: { name: space.name, href: `${dsBase}/data-sources` },
+              }}
             />
           )}
         />

@@ -2,7 +2,8 @@
 
 import { Field, cx, fieldClass } from "@aisolate/ui";
 import { useState, useSyncExternalStore } from "react";
-import { validateName } from "@/lib/validate";
+import type { Llm } from "@/lib/types";
+import { validateMainLlm, validateName, validateVersion } from "@/lib/validate";
 import { RoleList, roleProblem } from "./RoleList";
 import { FormColumn, useProblems, type Labels } from "./FormProblems";
 
@@ -10,6 +11,8 @@ export type Identity = {
   id?: string;
   name: string;
   description: string;
+  /** A new version's LLM that answers, by id; only where the form asks for one. */
+  llm?: string;
   /** A space's developers (e-mails) and the roles that may ask; only where the form shows them. */
   developers?: string[];
   roles?: string[];
@@ -21,6 +24,7 @@ const emailProblem = (e: string) =>
 const FIELDS: Labels = {
   id: "Id",
   name: "Name",
+  llm: "Model",
   description: "Description",
   developers: "Developers",
   roles: "Roles",
@@ -35,9 +39,15 @@ type Props = {
   id?: "new" | "fixed";
   /** With `id`: the field's label ("Space URL") and the path before the id ("/spaces/"). */
   url?: { label: string; path: string };
-  /** The primary's words: "Save space" on a new one, "Save" in place. */
+  /** A name fixed once created (a version's) shows on a desk ground and cannot be typed in. */
+  nameReadOnly?: boolean;
+  /** A version's name is a machine name, checked as the backend checks it. */
+  versionName?: boolean;
+  /** A new version's LLM to pick, from those its airlock sees. */
+  llms?: Llm[];
   /** The chip lists to show after the description: a space has both, an airlock roles. */
   lists?: ("developers" | "roles")[];
+  /** The primary's words: "Save space" on a new one, "Save" in place. */
   label: string;
   errors: string[];
   busy: boolean;
@@ -46,14 +56,17 @@ type Props = {
 };
 
 /**
- * The name and description of a space or an airlock (its URL read-only once saved): asked for on
- * its create page, and edited in place under its header. Everything else of the entity has a page
- * of its own.
+ * The name and description of a space or an airlock (its URL read-only once saved), or of a
+ * version (its name fixed once saved, its LLM picked when new): asked for on its create page, and
+ * edited in place under its header. Everything else of the entity has a page of its own.
  */
 export function IdentityForm({
   initial,
   id,
   url,
+  nameReadOnly,
+  versionName,
+  llms,
   lists = [],
   label,
   errors,
@@ -64,6 +77,7 @@ export function IdentityForm({
   const [draft, setDraft] = useState({
     ...initial,
     id: initial.id ?? "",
+    llm: initial.llm ?? llms?.[0]?.id ?? "",
     developers: initial.developers ?? [],
     roles: initial.roles ?? [],
   });
@@ -73,11 +87,10 @@ export function IdentityForm({
     () => window.location.host,
     () => "",
   );
-  const problems = useProblems(
-    url ? { ...FIELDS, id: url.label } : FIELDS,
-    validateName(draft.name),
-    errors,
-  );
+  const found = versionName
+    ? [...validateVersion(draft.name), ...(llms ? validateMainLlm(draft.llm) : [])]
+    : validateName(draft.name);
+  const problems = useProblems(url ? { ...FIELDS, id: url.label } : FIELDS, found, errors);
 
   return (
     <FormColumn
@@ -86,6 +99,7 @@ export function IdentityForm({
         onSubmit({
           name: draft.name.trim(),
           description: draft.description.trim(),
+          ...(llms && { llm: draft.llm }),
           ...(lists.includes("developers") && { developers: draft.developers }),
           ...(lists.includes("roles") && { roles: draft.roles }),
         })
@@ -94,10 +108,19 @@ export function IdentityForm({
       label={label}
       onCancel={onCancel}
     >
-      <Field {...problems.field("name")} label="Name">
+      <Field
+        {...problems.field("name")}
+        label="Name"
+        help={
+          versionName && !nameReadOnly
+            ? "Lowercase letters, digits and dashes; the project's aisolate.yaml names it in version."
+            : undefined
+        }
+      >
         <input
           {...problems.control("name")}
-          className={fieldClass}
+          className={cx(fieldClass, "read-only:bg-desk")}
+          readOnly={nameReadOnly}
           value={draft.name}
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
         />
@@ -120,6 +143,26 @@ export function IdentityForm({
               value={draft.id}
             />
           </div>
+        </Field>
+      )}
+      {llms && (
+        <Field
+          {...problems.field("llm")}
+          label="Model"
+          help="The model that answers, until aisolate deploy brings the one the project's aisolate.yaml names."
+        >
+          <select
+            {...problems.control("llm")}
+            className={fieldClass}
+            value={draft.llm}
+            onChange={(e) => setDraft({ ...draft, llm: e.target.value })}
+          >
+            {llms.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.id} · {l.model}
+              </option>
+            ))}
+          </select>
         </Field>
       )}
       <Field {...problems.field("description")} label="Description" optional>

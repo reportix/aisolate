@@ -21,6 +21,28 @@ const form = (
     }),
   );
 
+const GRANITE = {
+  id: "granite",
+  provider: "ollama",
+  url: "http://ollama:11434",
+  model: "granite4.1:8b",
+};
+
+const versionForm = (initial: Identity, nameReadOnly = false) =>
+  renderToStaticMarkup(
+    createElement(IdentityForm, {
+      initial,
+      versionName: true,
+      nameReadOnly,
+      llms: nameReadOnly ? undefined : [GRANITE],
+      label: "Save",
+      errors: [],
+      busy: false,
+      onSubmit: () => undefined,
+      onCancel: () => undefined,
+    }),
+  );
+
 const labels = (html: string) => [...html.matchAll(/<label[^>]*>([^<]+)/g)].map((m) => m[1].trim());
 const values = (html: string) => [...html.matchAll(/<input[^>]*value="([^"]*)"/g)].map((m) => m[1]);
 
@@ -70,5 +92,33 @@ describe("IdentityForm of a space or an airlock", () => {
     expect(values(html)).toEqual([name, entityId]);
     const idInput = html.match(new RegExp(`<input[^>]*value="${entityId}"[^>]*>`))?.[0] ?? "";
     expect(idInput.toLowerCase()).toContain("readonly");
+  });
+});
+
+describe("IdentityForm of a version", () => {
+  it("givenANewVersion_whenCreated_thenNameThenTheModelToPickThenOptionalDescription", () => {
+    // Arrange
+    const initial = { name: "", description: "" };
+
+    // Act
+    const html = versionForm(initial);
+
+    // Assert
+    expect(labels(html)).toEqual(["Name", "Model", "Description"]);
+    expect(html).toContain("granite · granite4.1:8b");
+    expect(html).toContain("names it in version");
+  });
+
+  it("givenAVersion_whenEdited_thenItsNameIsReadOnlyAndNoModelIsAsked", () => {
+    // Arrange
+    const initial = { name: "v1", description: "First version." };
+
+    // Act
+    const html = versionForm(initial, true);
+
+    // Assert
+    expect(labels(html)).toEqual(["Name", "Description"]);
+    const nameInput = html.match(/<input[^>]*value="v1"[^>]*>/)?.[0] ?? "";
+    expect(nameInput.toLowerCase()).toContain("readonly");
   });
 });

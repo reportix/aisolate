@@ -1,10 +1,10 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { Airlock, DataSource, Space } from "./types";
+import type { Airlock, AirlockVersion, Space } from "./types";
 
-/** The airlock with its space, and AIsolate's data sources, which its code may read too. */
-export type LoadedAirlock = { space: Space; airlock: Airlock; dataSources: DataSource[] };
+/** The airlock with its space and its versions. */
+export type LoadedAirlock = { space: Space; airlock: Airlock; versions: AirlockVersion[] };
 
 /** Set by the airlock's layout, which loads it once for its tabs. */
 export const AirlockContext = createContext<LoadedAirlock | null>(null);

@@ -3,7 +3,7 @@ import type { Overview } from "./useOverview";
 
 type RailContext = "top" | "space" | "airlock";
 export type RailIcon =
-  "home" | "spaces" | "audit" | "airlocks" | "llm" | "data-sources" | "monitoring";
+  "home" | "spaces" | "audit" | "airlocks" | "versions" | "llm" | "data-sources" | "monitoring";
 
 export type RailRow = {
   key: string;
@@ -20,6 +20,7 @@ export type Rail = { context: RailContext; label: "Space" | "Airlock" | null; ro
 /** A section's key is also the path segment it lives at, under its space or airlock. */
 const SECTIONS = {
   airlocks: { label: "Airlocks", icon: "airlocks" },
+  versions: { label: "Versions", icon: "versions" },
   llms: { label: "Models", icon: "llm" },
   "data-sources": { label: "Data sources", icon: "data-sources" },
 } as const satisfies Record<string, { label: string; icon: RailIcon }>;
@@ -27,10 +28,7 @@ const SECTIONS = {
 type Section = keyof typeof SECTIONS;
 
 const SPACE_SECTIONS: Section[] = ["airlocks", "llms", "data-sources"];
-const AIRLOCK_SECTIONS: Section[] = ["llms", "data-sources"];
-
-/** The airlock's own tabs, under its row in the trail; the rail lights its row for them. */
-const TABS: Record<string, string> = { details: "Details", tools: "Tools" };
+const AIRLOCK_SECTIONS: Section[] = ["versions", "llms", "data-sources"];
 
 /** What an add or edit page of a section is about: "Add model", "Edit data source". */
 const NOUNS: Partial<Record<Section, string>> = { llms: "model", "data-sources": "data source" };
@@ -99,8 +97,9 @@ function contextRail(
 
 /**
  * The rail a path shows: one context per level. Top (Dashboard, Spaces, Models, Data sources,
- * Audit), a space (its row, then Airlocks, Models, Data sources) or an airlock (its row, then Models,
- * Data sources). Entity rows carry the name from the overview, the id until it arrives.
+ * Audit), a space (its row, then Airlocks, Models, Data sources) or an airlock (its row, then
+ * Versions, Models, Data sources; a version's pages light Versions). Entity rows carry the name
+ * from the overview, the id until it arrives.
  */
 export function railOf(pathname: string, overview: Overview | null, viewer: Viewer = NOBODY): Rail {
   const [root, spaceId, segment, airlockId, section] = pathname.split("/").filter(Boolean);
@@ -132,9 +131,9 @@ export type Trail = { crumbs: Crumb[]; heading: boolean };
 
 /**
  * The top bar's trail for a path, read from it as the rail is: Spaces › space [› Airlocks ›
- * airlock] › section › form, or AIsolate's Models or Data sources › form; names from the overview,
- * ids until it arrives. Every page but the dashboard has a title of its own, so only the
- * dashboard's crumb is its heading. A trace's crumb is its id cut to its ends, as its title.
+ * airlock [› version]] › section › form, or AIsolate's Models or Data sources › form; names from
+ * the overview, ids until it arrives. Every page but the dashboard has a title of its own, so only
+ * the dashboard's crumb is its heading. A trace's crumb is its id cut to its ends, as its title.
  */
 export function trailOf(pathname: string, overview: Overview | null): Trail {
   const [root, spaceId, ...rest] = pathname.split("/").filter(Boolean);
@@ -187,12 +186,16 @@ export function trailOf(pathname: string, overview: Overview | null): Trail {
   }
   // The entity's own page: its crumb ends the trail, unlinked.
   if (!segment) return end(crumbs.pop()!.label);
+  // A version's page, any of its tabs, or the new one: the version's name ends the trail.
+  if (segment === "versions" && tail.length > 0) {
+    return end(tail[0] === "new" ? "New version" : tail[0]);
+  }
   return sectionTrail(crumbs, base, segment, tail);
 }
 
 /** A section's crumb under `base`, then its add or edit page's. */
 function sectionTrail(crumbs: Crumb[], base: string, segment: string, tail: string[]): Trail {
-  const label = SECTIONS[segment as Section]?.label ?? TABS[segment] ?? segment;
+  const label = SECTIONS[segment as Section]?.label ?? segment;
   const end = (last: string) => ({ crumbs: [...crumbs, { label: last }], heading: false });
   if (tail.length === 0) return end(label);
   crumbs = [...crumbs, { label, href: `${base}/${segment}` }];

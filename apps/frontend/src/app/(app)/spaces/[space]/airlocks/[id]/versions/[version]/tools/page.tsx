@@ -1,9 +1,9 @@
 "use client";
 
 import { ChevronRightIcon, Muted, Section, Table, Td, Th, Tr } from "@aisolate/ui";
-import { NO_CODE } from "@/lib/airlock";
 import { leadOf } from "@/lib/text";
-import { useAirlock } from "@/lib/useAirlock";
+import { useVersion } from "@/lib/useVersion";
+import { NO_CODE } from "@/lib/version";
 
 /** A tool's one-line lead; the full text the model reads opens under it. */
 function Description({ text }: { text: string }) {
@@ -23,10 +23,10 @@ function Description({ text }: { text: string }) {
   );
 }
 
-/** The Tools tab: the tools the airlock offers the model. */
-export default function AirlockToolsPage() {
-  const { jar: code, form } = useAirlock().airlock;
-  // Only what the airlock lists is callable; the code's other tools stay unmentioned.
+/** The Tools tab: the tools the version offers the model. */
+export default function VersionToolsPage() {
+  const { jar: code, form } = useVersion().version;
+  // Only what the version lists is callable; the code's other tools stay unmentioned.
   const offered = (code?.tools.filter((t) => form.tools.includes(t.name)) ?? []).sort((a, b) =>
     a.name.localeCompare(b.name),
   );
@@ -36,7 +36,7 @@ export default function AirlockToolsPage() {
     <div className="grid gap-6">
       <Section
         title="Tools"
-        description="What the model may call: the tools this airlock offers, each over its plugin's data source."
+        description="What the model may call: the tools this version offers, each over its plugin's data source."
       >
         {offered.length > 0 ? (
           <Table>

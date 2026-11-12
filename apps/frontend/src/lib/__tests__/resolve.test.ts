@@ -77,12 +77,13 @@ describe("catalogOf", () => {
 
 describe("originLabel", () => {
   it.each<[Origin, string]>([
-    ["airlock", "Direct"],
+    ["version", "Direct"],
+    ["airlock", "Inherited from HR"],
     ["space", "Inherited from Acme"],
     ["global", "Inherited from the platform"],
   ])("givenFrom_%s_whenOriginLabel_then_%s", (from, expected) => {
     // Arrange / Act
-    const label = originLabel(from, { space: "Acme" });
+    const label = originLabel(from, { airlock: "HR", space: "Acme" });
 
     // Assert
     expect(label).toBe(expected);
