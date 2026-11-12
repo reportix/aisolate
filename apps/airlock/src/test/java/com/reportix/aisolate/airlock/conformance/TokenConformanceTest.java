@@ -144,8 +144,8 @@ class TokenConformanceTest {
     boolean rejected = !token.path("expect").isString();
     String path =
         rejected
-            ? "/v1/spaces/hr-acme/airlocks/acme-hr/chat"
-            : "/v1/spaces/none/airlocks/none/chat";
+            ? "/v1/spaces/hr-acme/airlocks/acme-hr/versions/v1/chat"
+            : "/v1/spaces/none/airlocks/none/versions/none/chat";
     String bearer = bearer(token);
     HttpRequest.Builder request =
         HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))

@@ -11,9 +11,9 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 /**
- * One line of the audit trail: who asked what of which airlock, what came of it and what it cost.
- * Written once per exchange and once per refused request. It holds provenance, never rows. Every
- * field is described once, in docs/security.md, Audit trail.
+ * One line of the audit trail: who asked what of which airlock version, what came of it and what it
+ * cost. Written once per exchange and once per refused request. It holds provenance, never rows.
+ * Every field is described once, in docs/security.md, Audit trail.
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AuditEvent(
@@ -22,6 +22,7 @@ public record AuditEvent(
     String traceId,
     String space,
     String airlock,
+    String version,
     String revision,
     String user,
     String client,
@@ -116,6 +117,7 @@ public record AuditEvent(
       String traceId,
       String space,
       String airlock,
+      String version,
       String revision,
       String user,
       String client,
@@ -128,6 +130,7 @@ public record AuditEvent(
         traceId,
         space,
         airlock,
+        version,
         revision,
         user,
         client,

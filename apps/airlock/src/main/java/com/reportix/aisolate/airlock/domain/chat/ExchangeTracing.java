@@ -18,9 +18,10 @@ import org.springframework.ai.model.observation.ModelObservationContext;
 /**
  * The spans of one exchange, in plain words, so a trace reads the way the exchange ran: {@code
  * exchange <space>/<airlock>}, then {@code admission}, one span per handler, Spring AI's model and
- * tool-call spans, {@code tool <name>} and one span per verifier. Each carries the airlock as
- * {@code aisolate.space}, {@code aisolate.airlock} and {@code aisolate.revision}. No span holds a
- * prompt, an answer, a row or the user: the audit line, which names the trace, says who asked.
+ * tool-call spans, {@code tool <name>} and one span per verifier. Each carries the version as
+ * {@code aisolate.space}, {@code aisolate.airlock}, {@code aisolate.version} and {@code
+ * aisolate.revision}. No span holds a prompt, an answer, a row or the user: the audit line, which
+ * names the trace, says who asked.
  *
  * <p>Observations, not a tracer: Spring AI's spans nest under the current observation, so ours have
  * to be observations for its model calls to land inside the exchange. Every attribute is high
@@ -34,6 +35,7 @@ public final class ExchangeTracing {
 
   public static final String SPACE = "aisolate.space";
   public static final String AIRLOCK = "aisolate.airlock";
+  public static final String VERSION = "aisolate.version";
   public static final String REVISION = "aisolate.revision";
   static final String OUTCOME = "aisolate.outcome";
   static final String CLIENT = "aisolate.client";
@@ -53,15 +55,16 @@ public final class ExchangeTracing {
 
   /**
    * Spring AI's model-call meters, its token counter {@code gen_ai.client.token.usage} among them,
-   * by {@code airlock}: a low-cardinality tag read from the exchange a call runs in, {@code none}
-   * outside one, since every series of a meter needs the same tags. Applied before the meters are
-   * taken, when the call's observation stops.
+   * by {@code airlock} and {@code version}: low-cardinality tags read from the exchange a call runs
+   * in, {@code none} outside one, since every series of a meter needs the same tags. Applied before
+   * the meters are taken, when the call's observation stops.
    */
   public static final ObservationFilter MODEL_CALLS_BY_AIRLOCK =
       context -> {
         if (context instanceof ModelObservationContext<?, ?>) {
           Observation.ContextView exchange = findExchange(context);
           context.addLowCardinalityKeyValue(KeyValue.of("airlock", valueOf(exchange, AIRLOCK)));
+          context.addLowCardinalityKeyValue(KeyValue.of("version", valueOf(exchange, VERSION)));
         }
         return context;
       };
@@ -78,15 +81,17 @@ public final class ExchangeTracing {
   }
 
   /**
-   * The root span of one request to an airlock, current while {@code body} runs; admission and the
+   * The root span of one request to a version, current while {@code body} runs; admission and the
    * exchange open their spans under it.
    */
   public <T, E extends Throwable> T exchange(
-      String spaceId, String airlockId, Observation.CheckedCallable<T, E> body) throws E {
+      String spaceId, String airlockId, String version, Observation.CheckedCallable<T, E> body)
+      throws E {
     return Observation.createNotStarted(EXCHANGE, registry)
         .contextualName("exchange " + spaceId + "/" + airlockId)
         .highCardinalityKeyValue(SPACE, spaceId)
         .highCardinalityKeyValue(AIRLOCK, airlockId)
+        .highCardinalityKeyValue(VERSION, version)
         .observeChecked(body);
   }
 
@@ -110,7 +115,7 @@ public final class ExchangeTracing {
       this.admission = admission;
     }
 
-    /** The airlock asked and the calling client; never the user. */
+    /** The version asked and the calling client; never the user. */
     public void asked(AirlockDefinition airlock, String client) {
       describe(exchange, airlock);
       describe(admission, airlock);
@@ -225,6 +230,7 @@ public final class ExchangeTracing {
   private static void describe(Observation span, AirlockDefinition airlock) {
     tag(span, SPACE, airlock.spaceId());
     tag(span, AIRLOCK, airlock.id());
+    tag(span, VERSION, airlock.version());
     tag(span, REVISION, airlock.revision());
   }
 

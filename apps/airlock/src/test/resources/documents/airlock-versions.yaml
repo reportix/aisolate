@@ -1,0 +1,28 @@
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata: {name: hr-assistant-v1}
+spec:
+  airlock: hr-assistant
+  version: v1
+  description: First version of the HR assistant.
+  llm: qwen
+  prompt: |
+    You are the Acme HR assistant. All amounts are in EUR.
+  tools: [read_records, aggregate_records]
+  jar:
+    digest: "sha256:9f2c"
+    tools: [read_records, aggregate_records]
+---
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata: {name: founders-finance-v1}
+spec:
+  airlock: founders-finance
+  version: v1
+  llm: qwen
+  prompt: |
+    You answer the founders only.
+  tools: [aggregate_records]
+  jar:
+    digest: "sha256:7e1a"
+    tools: [aggregate_records]

@@ -52,7 +52,7 @@ public class ExchangeManagerFactory {
         com.reportix.aisolate.identity.Principal.of(jwt.getClaims(), rolesClaim);
     return new ExchangeManager(
         new Principal(principal.sub(), principal.email(), principal.roles()),
-        new AirlockRef(airlock.spaceId(), airlock.id(), airlock.revision()),
+        new AirlockRef(airlock.spaceId(), airlock.id(), airlock.version(), airlock.revision()),
         llms,
         dataSources,
         tracing);

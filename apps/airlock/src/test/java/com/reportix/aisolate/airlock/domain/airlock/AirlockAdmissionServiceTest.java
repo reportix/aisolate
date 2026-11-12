@@ -29,9 +29,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Discovery: each token sees the airlocks that admit one of its roles (a role of their space or one
- * of their own) and its client, each with its endpoint and tools, none before its first deploy. In
- * the fixtures the space lists ceo; hr-assistant lists employee as its own role; founders-finance
- * lists no role of its own.
+ * of their own) and its client, each with its versions, none before its first deploy. In the
+ * fixtures the space lists ceo; hr-assistant lists employee as its own role; founders-finance lists
+ * no role of its own.
  */
 class AirlockAdmissionServiceTest {
 
@@ -72,8 +72,29 @@ class AirlockAdmissionServiceTest {
         space: hr-acme
         displayName: Machine
         access: {roles: [], callers: [acme-chat], clients: [knime]}
+      ---
+      apiVersion: aisolate.dev/v1
+      kind: AirlockVersion
+      metadata: {name: machine-v1}
+      spec:
+        airlock: machine
+        version: v1
         llm: qwen
         prompt: You answer the workflow tool.
+      """;
+
+  /** The one version of chat-only, once deployed. */
+  private static final String CHAT_ONLY_V1 =
+      """
+      ---
+      apiVersion: aisolate.dev/v1
+      kind: AirlockVersion
+      metadata: {name: chat-only-v1}
+      spec:
+        airlock: chat-only
+        version: v1
+        llm: qwen
+        prompt: You answer the chat.
       """;
 
   @Test
@@ -97,7 +118,7 @@ class AirlockAdmissionServiceTest {
 
     try {
       // Act / Assert: an admitted question's line could not be kept
-      assertThatThrownBy(() -> service.admit("hr-acme", "hr-assistant", nora, "q"))
+      assertThatThrownBy(() -> service.admit("hr-acme", "hr-assistant", "v1", nora, "q"))
           .isInstanceOf(AuditUnavailableException.class);
     } finally {
       full.close();
@@ -110,7 +131,8 @@ class AirlockAdmissionServiceTest {
   }
 
   private static AirlockAdmissionService service(AuditLog auditLog, String... moreDocuments) {
-    AirlockCatalog catalog = new DocumentsAirlockCatalog(Documents.parseWith(moreDocuments), null);
+    AirlockCatalog catalog =
+        new DocumentsAirlockCatalog(Documents.parseWith(moreDocuments), null, null);
     IdentityProperties properties =
         new IdentityProperties("https://aisolate.example", Principal.DEFAULT_ROLES_CLAIM, null);
     return new AirlockAdmissionService(
@@ -142,7 +164,7 @@ class AirlockAdmissionServiceTest {
     // Act
     List<AirlockSummaryDTO> airlocks = admission.listAdmittedAirlocks(eric);
 
-    // Assert: the airlock admits him, so its endpoint and tools are his to see
+    // Assert: the airlock admits him, so its versions' endpoints and tools are his to see
     assertThat(airlocks)
         .containsExactly(
             new AirlockSummaryDTO(
@@ -150,8 +172,12 @@ class AirlockAdmissionServiceTest {
                 "hr-acme",
                 "Acme HR assistant",
                 "Answers people, pay and HR document questions.",
-                "https://aisolate.example/v1/spaces/hr-acme/airlocks/hr-assistant/chat",
-                List.of("read_records", "aggregate_records")));
+                List.of(
+                    new AirlockSummaryDTO.Version(
+                        "v1",
+                        "First version of the HR assistant.",
+                        "https://aisolate.example/v1/spaces/hr-acme/airlocks/hr-assistant/versions/v1/chat",
+                        List.of("read_records", "aggregate_records")))));
   }
 
   @ParameterizedTest
@@ -196,13 +222,12 @@ class AirlockAdmissionServiceTest {
     // Act
     List<AirlockSummaryDTO> airlocks = admission.listAdmittedAirlocks(viaPartner);
 
-    // Assert: hidden from that client, listed through the chat, without tools before its deploy
+    // Assert: hidden from that client, listed through the chat, without versions before its deploy
     assertThat(airlocks).extracting(AirlockSummaryDTO::id).containsExactly("hr-assistant");
     assertThat(admission.listAdmittedAirlocks(token("eric@example.com", "employee")))
-        .extracting(AirlockSummaryDTO::id, AirlockSummaryDTO::tools)
-        .containsExactly(
-            tuple("hr-assistant", List.of("read_records", "aggregate_records")),
-            tuple("chat-only", List.of()));
+        .extracting(
+            AirlockSummaryDTO::id, a -> a.versions().stream().map(v -> v.version()).toList())
+        .containsExactly(tuple("hr-assistant", List.of("v1")), tuple("chat-only", List.of()));
   }
 
   @ParameterizedTest
@@ -228,7 +253,7 @@ class AirlockAdmissionServiceTest {
     AirlockAdmissionService admission = service(MACHINE);
 
     // Act
-    AirlockDefinition airlock = admission.admit("hr-acme", "machine", machine("knime"), "q");
+    AirlockDefinition airlock = admission.admit("hr-acme", "machine", "v1", machine("knime"), "q");
 
     // Assert
     assertThat(airlock.access().clients()).containsExactly("knime");
@@ -241,7 +266,7 @@ class AirlockAdmissionServiceTest {
 
     // Act
     Throwable thrown =
-        catchThrowable(() -> admission.admit("hr-acme", "machine", machine("n8n"), "q"));
+        catchThrowable(() -> admission.admit("hr-acme", "machine", "v1", machine("n8n"), "q"));
 
     // Assert: no roles, so ROLE comes first
     assertThat(thrown)
@@ -252,8 +277,7 @@ class AirlockAdmissionServiceTest {
   @Test
   void givenRoleOfTheSpaceFromUnlistedCaller_whenAdmitting_thenRefusedNamingTheClient() {
     // Arrange: nora holds ceo, but this deployed airlock lists acme-chat alone
-    AirlockAdmissionService admission =
-        service(CHAT_ONLY + "  llm: qwen\n  prompt: You answer the chat.\n");
+    AirlockAdmissionService admission = service(CHAT_ONLY + CHAT_ONLY_V1);
     Jwt viaPartner =
         jwt(
             Map.of(
@@ -268,7 +292,7 @@ class AirlockAdmissionServiceTest {
 
     // Act
     Throwable thrown =
-        catchThrowable(() -> admission.admit("hr-acme", "chat-only", viaPartner, "q"));
+        catchThrowable(() -> admission.admit("hr-acme", "chat-only", "v1", viaPartner, "q"));
 
     // Assert
     assertThat(thrown)
@@ -290,7 +314,7 @@ class AirlockAdmissionServiceTest {
     AirlockAdmissionService admission = service(capturing, MACHINE);
 
     // Act
-    catchThrowable(() -> admission.admit("hr-acme", "machine", machine("n8n"), "q"));
+    catchThrowable(() -> admission.admit("hr-acme", "machine", "v1", machine("n8n"), "q"));
 
     // Assert
     assertThat(recorded).extracting(AuditEvent::user).containsExactly("sa-1");

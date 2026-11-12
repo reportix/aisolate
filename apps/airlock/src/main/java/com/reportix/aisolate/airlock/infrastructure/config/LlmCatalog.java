@@ -1,7 +1,7 @@
 package com.reportix.aisolate.airlock.infrastructure.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.reportix.aisolate.config.AirlockDocument;
+import com.reportix.aisolate.config.AirlockVersionDocument;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -73,14 +73,14 @@ public record LlmCatalog(String main, List<Entry> entries) {
       if (!ids.add(entry.id())) {
         throw new IllegalStateException("model " + entry.id() + " is defined twice");
       }
-      if (!AirlockDocument.PROVIDERS.contains(entry.provider())) {
+      if (!AirlockVersionDocument.PROVIDERS.contains(entry.provider())) {
         throw new IllegalStateException(
             "model "
                 + entry.id()
                 + ": provider "
                 + entry.provider()
                 + " is not one of "
-                + AirlockDocument.PROVIDERS);
+                + AirlockVersionDocument.PROVIDERS);
       }
       entries.add(entry);
     }

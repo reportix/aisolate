@@ -79,7 +79,7 @@ class ModelUnavailableIntegrationTest {
                         URI.create(
                             "http://localhost:"
                                 + port
-                                + "/v1/spaces/hr-acme/airlocks/acme-hr/chat"))
+                                + "/v1/spaces/hr-acme/airlocks/acme-hr/versions/v1/chat"))
                     .timeout(Duration.ofSeconds(15))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")

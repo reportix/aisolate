@@ -309,7 +309,10 @@ class ChatEndpointSecurityTest {
     String callers = CALLERS_TRACE;
     HttpRequest.Builder request =
         HttpRequest.newBuilder(
-                URI.create("http://localhost:" + port + "/v1/spaces/hr-acme/airlocks/acme-hr/chat"))
+                URI.create(
+                    "http://localhost:"
+                        + port
+                        + "/v1/spaces/hr-acme/airlocks/acme-hr/versions/v1/chat"))
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString("{\"message\":\"hi\"}"));
@@ -378,13 +381,15 @@ class ChatEndpointSecurityTest {
     // Assert: the series the example dashboard queries; the trace's observations make none
     assertThat(metrics.statusCode()).isEqualTo(200);
     String airlock = "airlock=\"acme-hr\",";
+    String version = ",version=\"v1\"}";
     assertThat(metrics.body())
-        .contains("aisolate_exchanges_total{" + airlock + "outcome=\"answered\"}")
-        .contains("aisolate_exchanges_total{" + airlock + "outcome=\"refused\"}")
-        .contains("aisolate_refusals_total{" + airlock + "reason=\"role\"}")
-        .contains("aisolate_tool_calls_total{" + airlock + "tool=\"read_records\"}")
-        .contains("aisolate_exchange_duration_seconds_bucket{" + airlock + "le=\"")
+        .contains("aisolate_exchanges_total{" + airlock + "outcome=\"answered\"" + version)
+        .contains("aisolate_exchanges_total{" + airlock + "outcome=\"refused\"" + version)
+        .contains("aisolate_refusals_total{" + airlock + "reason=\"role\"" + version)
+        .contains("aisolate_tool_calls_total{" + airlock + "tool=\"read_records\"" + version)
+        .contains("aisolate_exchange_duration_seconds_bucket{" + airlock + "version=\"v1\",le=\"")
         .contains("gen_ai_client_token_usage_total{" + airlock)
+        .contains("gen_ai_token_type=\"total\"" + version)
         .contains("spring_ai_tool_definition_name=\"unknown\"")
         .doesNotContain("x_invented_by_the_user")
         .doesNotContain("aisolate_trace");
@@ -612,7 +617,10 @@ class ChatEndpointSecurityTest {
     // Arrange
     HttpRequest request =
         HttpRequest.newBuilder(
-                URI.create("http://localhost:" + port + "/v1/spaces/hr-acme/airlocks/acme-hr/chat"))
+                URI.create(
+                    "http://localhost:"
+                        + port
+                        + "/v1/spaces/hr-acme/airlocks/acme-hr/versions/v1/chat"))
             .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
             .header("Origin", "http://localhost:3000")
             .header("Access-Control-Request-Method", "POST")
@@ -652,7 +660,7 @@ class ChatEndpointSecurityTest {
                         + space
                         + "/airlocks/"
                         + airlockId
-                        + "/chat"))
+                        + "/versions/v1/chat"))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(body));
     if (accept != null) {

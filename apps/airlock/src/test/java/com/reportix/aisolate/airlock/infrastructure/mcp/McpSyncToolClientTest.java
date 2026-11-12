@@ -94,6 +94,7 @@ class McpSyncToolClientTest {
                         null,
                         null,
                         null,
+                        null,
                         new AirlockProperties.ToolServer(origin),
                         List.of(),
                         null),
@@ -116,14 +117,14 @@ class McpSyncToolClientTest {
     String evidence = client.callTool("read_records", Map.of(), AIRLOCK);
 
     // Assert: every request the SDK sent carried it, the lazy handshake included; the call named
-    // the airlock and its revision, both from the admitted airlock
+    // the airlock, its version and its revision, all from the admitted version
     assertThat(evidence).isEqualTo("Bearer t1-token");
     assertThat(authorizationHeaders).containsOnly("Bearer t1-token").hasSize(requests.get());
     JsonNode meta = JSON.readTree(metas.getFirst());
     assertThat(metas).hasSize(1);
     assertThat(meta.path("airlock").asString()).isEqualTo("acme-hr");
     assertThat(meta.path("revision").asString()).isEqualTo("7");
-    assertThat(meta.has("version")).isFalse();
+    assertThat(meta.path("version").asString()).isEqualTo("v1");
   }
 
   @Test

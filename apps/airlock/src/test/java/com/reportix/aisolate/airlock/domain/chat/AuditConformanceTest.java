@@ -138,6 +138,7 @@ class AuditConformanceTest {
             null,
             "acme",
             "hr",
+            "v1",
             "7b2280eab4b5",
             null,
             null,
@@ -164,6 +165,7 @@ class AuditConformanceTest {
   private static AirlockDefinition airlock() {
     return new AirlockDefinition(
         "hr",
+        "v1",
         "",
         "7b2280eab4b5",
         "acme",

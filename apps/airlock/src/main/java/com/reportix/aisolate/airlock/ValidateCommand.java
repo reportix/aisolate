@@ -24,7 +24,9 @@ public final class ValidateCommand {
               + ", spaces "
               + configuration.spaces().keySet()
               + ", airlocks "
-              + configuration.airlocks().keySet());
+              + configuration.airlocks().keySet()
+              + ", airlock versions "
+              + configuration.airlockVersions().keySet());
       return 0;
     } catch (ConfigurationException invalid) {
       invalid.problems().forEach(out::println);

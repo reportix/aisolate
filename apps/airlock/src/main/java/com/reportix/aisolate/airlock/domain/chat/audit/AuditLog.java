@@ -21,8 +21,9 @@ import tools.jackson.databind.node.ObjectNode;
  *
  * <p>The pod's metrics are counted from the same lines, so the two never disagree: {@code
  * aisolate.exchanges} by outcome (refusals included), {@code aisolate.refusals} by reason, {@code
- * aisolate.tool.calls} by tool and the {@code aisolate.exchange.duration} timer, each by airlock.
- * Every label comes from a closed set: the served airlock's names, its tools, the enums.
+ * aisolate.tool.calls} by tool and the {@code aisolate.exchange.duration} timer, each by airlock
+ * and version. Every label comes from a closed set: the served version's names, its tools, the
+ * enums.
  */
 @Slf4j
 public class AuditLog {
@@ -84,21 +85,39 @@ public class AuditLog {
 
   private void count(AuditEvent event) {
     String airlock = event.airlock();
+    String version = event.version();
     meters
-        .counter("aisolate.exchanges", "airlock", airlock, "outcome", event.outcome().json())
+        .counter(
+            "aisolate.exchanges",
+            "airlock",
+            airlock,
+            "version",
+            version,
+            "outcome",
+            event.outcome().json())
         .increment();
     if (event.event() == AuditEvent.Event.REFUSAL) {
-      meters.counter("aisolate.refusals", "airlock", airlock, "reason", event.reason()).increment();
+      meters
+          .counter(
+              "aisolate.refusals", "airlock", airlock, "version", version, "reason", event.reason())
+          .increment();
       return;
     }
     event
         .tools()
         .forEach(tool ->
             meters
-                .counter("aisolate.tool.calls", "airlock", airlock, "tool", tool.name())
+                .counter(
+                    "aisolate.tool.calls",
+                    "airlock",
+                    airlock,
+                    "version",
+                    version,
+                    "tool",
+                    tool.name())
                 .increment());
     Timer.builder("aisolate.exchange.duration")
-        .tags("airlock", airlock)
+        .tags("airlock", airlock, "version", version)
         .publishPercentileHistogram()
         .register(meters)
         .record(Duration.ofMillis(event.durationMs()));

@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ContextConfiguration;
 
 /**
- * The airlock pod as the controller renders it: the airlocks from a directory of documents, pinned
+ * The airlock pod as the controller renders it: the versions from a directory of documents, pinned
  * to one of them, and no AIsolate UI endpoint. The model and the tool server are the same stubs as
  * in {@link ChatEndpointSecurityTest}.
  */
@@ -48,6 +48,7 @@ class AirlockIntegrationTest {
               "aisolate.config.dir=" + Documents.DIR.toAbsolutePath(),
               "aisolate.config.revision=" + REVISION,
               "aisolate.airlock=hr-assistant",
+              "aisolate.version=v1",
               "aisolate.tool-server.url=http://hr-acme-hr-assistant-mcp-server:8081/mcp")
           .applyTo(context);
     }
@@ -72,7 +73,7 @@ class AirlockIntegrationTest {
   @Test
   void givenPinnedAirlock_whenChatOtherAirlock_then404() {
     // Arrange: founders-finance admits nora, but this process serves hr-assistant
-    String path = "/v1/spaces/hr-acme/airlocks/founders-finance/chat";
+    String path = "/v1/spaces/hr-acme/airlocks/founders-finance/versions/v1/chat";
 
     // Act
     HttpResponse<String> response = post(nora, path, "{\"message\":\"hi\"}");
@@ -85,7 +86,7 @@ class AirlockIntegrationTest {
   @Test
   void givenPinnedAirlock_whenChatIt_then200AndMetaPinsItAtTheReleaseRevision() {
     // Arrange
-    String path = "/v1/spaces/hr-acme/airlocks/hr-assistant/chat";
+    String path = "/v1/spaces/hr-acme/airlocks/hr-assistant/versions/v1/chat";
 
     // Act
     HttpResponse<String> response = post(eric, path, "{\"message\":\"what is my salary\"}");
@@ -111,7 +112,7 @@ class AirlockIntegrationTest {
     assertThat(response.statusCode()).isEqualTo(200);
     assertThat(response.body())
         .contains("founders-finance")
-        .contains("/v1/spaces/hr-acme/airlocks/hr-assistant/chat");
+        .contains("/v1/spaces/hr-acme/airlocks/hr-assistant/versions/v1/chat");
   }
 
   @Test

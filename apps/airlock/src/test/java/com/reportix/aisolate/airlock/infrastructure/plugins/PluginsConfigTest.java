@@ -45,8 +45,10 @@ class PluginsConfigTest {
    */
   private record Served(List<AirlockDefinition> airlocks) implements AirlockCatalog {
     @Override
-    public Optional<AirlockDefinition> findAirlock(String id) {
-      return airlocks.stream().filter(a -> a.id().equals(id)).findFirst();
+    public Optional<AirlockDefinition> findAirlock(String id, String version) {
+      return airlocks.stream()
+          .filter(a -> a.id().equals(id) && a.version().equals(version))
+          .findFirst();
     }
 
     @Override

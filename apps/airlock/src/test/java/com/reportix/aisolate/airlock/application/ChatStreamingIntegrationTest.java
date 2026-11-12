@@ -152,7 +152,10 @@ class ChatStreamingIntegrationTest {
 
   private HttpRequest chatRequest(String user) {
     return HttpRequest.newBuilder(
-            URI.create("http://localhost:" + port + "/v1/spaces/hr-acme/airlocks/acme-hr/chat"))
+            URI.create(
+                "http://localhost:"
+                    + port
+                    + "/v1/spaces/hr-acme/airlocks/acme-hr/versions/v1/chat"))
         .header("Content-Type", "application/json")
         .header("Accept", "text/event-stream")
         .header("Authorization", "Bearer " + Tokens.forUser(user, "password"))

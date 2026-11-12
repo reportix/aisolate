@@ -1,0 +1,48 @@
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata: {name: acme-hr-v1}
+spec:
+  airlock: acme-hr
+  version: v1
+  llm: scripted
+  prompt: >-
+    You are the Acme HR assistant. Answer questions about employees and compensation using
+    only the tools. All amounts are in EUR. Cite every figure with its evidence id in square
+    brackets, for example [ev-1]. When a tool returns no rows, reply exactly: I don't know.
+  tools: [read_records, aggregate_records]
+  jar:
+    digest: "sha256:9f2c"
+    tools: [read_records, aggregate_records]
+---
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata: {name: strict-app-v1}
+spec:
+  airlock: strict-app
+  version: v1
+  llm: scripted
+  prompt: >-
+    You are the Acme HR assistant. Answer questions about employees and compensation using
+    only the tools. All amounts are in EUR. Cite every figure with its evidence id in square
+    brackets, for example [ev-1]. When a tool returns no rows, reply exactly: I don't know.
+---
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata: {name: short-app-v1}
+spec:
+  airlock: short-app
+  version: v1
+  llm: scripted
+  prompt: >-
+    You are the Acme HR assistant. Answer questions about employees and compensation using
+    only the tools. All amounts are in EUR. Cite every figure with its evidence id in square
+    brackets, for example [ev-1]. When a tool returns no rows, reply exactly: I don't know.
+---
+apiVersion: aisolate.dev/v1
+kind: AirlockVersion
+metadata: {name: closed-app-v1}
+spec:
+  airlock: closed-app
+  version: v1
+  llm: scripted
+  prompt: You answer no one.
