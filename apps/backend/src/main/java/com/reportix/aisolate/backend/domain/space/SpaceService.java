@@ -7,13 +7,16 @@ import com.reportix.aisolate.backend.domain.airlock.ConflictException;
 import com.reportix.aisolate.backend.domain.airlock.DataSourceSecrets;
 import com.reportix.aisolate.backend.domain.airlock.Documents;
 import com.reportix.aisolate.backend.domain.airlock.InvalidFormException;
+import com.reportix.aisolate.backend.domain.audit.AuditRetention;
 import com.reportix.aisolate.backend.domain.credential.CredentialRepository;
 import com.reportix.aisolate.backend.domain.credential.CredentialRepository.Event;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterProperties;
 import com.reportix.aisolate.backend.infrastructure.cluster.ClusterSyncService;
+import com.reportix.aisolate.backend.infrastructure.metrics.PrometheusClient;
 import com.reportix.aisolate.backend.infrastructure.security.Access;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionOperations;
@@ -35,6 +38,8 @@ public class SpaceService {
   private final ClusterSyncService clusterSync;
   private final ClusterProperties cluster;
   private final TransactionOperations transactions;
+  private final AuditRetention audit;
+  private final Optional<PrometheusClient> metrics;
 
   public List<Space> listSpaces() {
     return spaces.list();
@@ -108,7 +113,8 @@ public class SpaceService {
 
   /**
    * Every space with all it holds, children first: no foreign key cascades. With a cluster, then
-   * everything applied there, once the delete committed.
+   * everything applied there, once the delete committed. Last, Monitoring's stores: the audit trail
+   * (its Tracing list and the Audit page) and the product's series in the metrics store.
    */
   public SpacesDeletedDTO deleteAll() {
     List<CredentialRepository.Row> gone = new ArrayList<>();
@@ -116,15 +122,28 @@ public class SpaceService {
     // After the commit: each event commits on its own, so none outlives a reset that rolled back.
     String actor = Access.caller();
     gone.forEach(r -> rows.record(Event.of(r, actor, "deleted", null)));
-    return cluster.enabled()
-        ? deleted.withCluster(clusterSync.clear(ClusterSyncService.PODS_PATIENCE))
-        : deleted;
+    if (cluster.enabled()) {
+      deleted = deleted.withCluster(clusterSync.clear(ClusterSyncService.PODS_PATIENCE));
+    }
+    // After the pods: their last audit lines are in by then.
+    return deleted.withMonitoring(clearMonitoring());
   }
 
   private SpacesDeletedDTO deleteRows(List<CredentialRepository.Row> gone) {
     gone.addAll(rows.deleteSpacesAndAirlocks());
     int airlockCount = airlocks.deleteAll();
-    return new SpacesDeletedDTO(spaces.deleteAll(), airlockCount, null);
+    return new SpacesDeletedDTO(spaces.deleteAll(), airlockCount, null, null);
+  }
+
+  private SpacesDeletedDTO.Monitoring clearMonitoring() {
+    int lines = audit.dropAll();
+    if (metrics.isEmpty()) return new SpacesDeletedDTO.Monitoring(lines, null, null);
+    try {
+      metrics.get().deleteAll();
+      return new SpacesDeletedDTO.Monitoring(lines, true, null);
+    } catch (PrometheusClient.UnavailableException kept) {
+      return new SpacesDeletedDTO.Monitoring(lines, false, kept.getMessage());
+    }
   }
 
   private Space storeCredentials(Space space, SpaceFormDTO form, DataSourceSecrets.Owner owner) {

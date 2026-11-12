@@ -34,6 +34,9 @@ public class PrometheusClient {
 
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
+  /** The series MetricsService asks for: the pods' own and Spring AI's token usage. */
+  private static final String PRODUCT_SERIES = "{__name__=~\"aisolate_.*|gen_ai_.*\"}";
+
   private final HttpClient http = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
   private final JsonMapper json;
   private final String base;
@@ -44,7 +47,13 @@ public class PrometheusClient {
   }
 
   /** The store did not answer, or not as Prometheus does; the log says how. */
-  public static class UnavailableException extends RuntimeException {}
+  public static class UnavailableException extends RuntimeException {
+    public UnavailableException() {}
+
+    public UnavailableException(String message) {
+      super(message);
+    }
+  }
 
   /**
    * One series: its labels, and its points as [epoch seconds, value]; NaN and infinite values left
@@ -69,25 +78,53 @@ public class PrometheusClient {
     return ask("/api/v1/query", "query=" + encode(query) + "&time=" + at.getEpochSecond());
   }
 
-  private List<Series> ask(String path, String form) {
-    HttpResponse<String> response;
+  /**
+   * The product's series, every one, gone: the install's clean slate ({@code DELETE /v1/spaces}).
+   * Prometheus's admin API, on with {@code --web.enable-admin-api}.
+   *
+   * @throws UnavailableException the store refused or did not answer; the message says how
+   */
+  public void deleteAll() {
+    admin("/api/v1/admin/tsdb/delete_series", "match[]=" + encode(PRODUCT_SERIES));
+    admin("/api/v1/admin/tsdb/clean_tombstones", "");
+  }
+
+  private void admin(String path, String form) {
+    HttpResponse<String> response = post(path, form);
+    if (response.statusCode() != 204) {
+      String why;
+      try {
+        why = json.readTree(response.body()).path("error").asString("");
+      } catch (JacksonException e) {
+        why = "";
+      }
+      log.warn("metrics store: {} answered HTTP {} {}", path, response.statusCode(), why);
+      throw new UnavailableException(
+          "HTTP " + response.statusCode() + " from " + path + (why.isEmpty() ? "" : ": " + why));
+    }
+  }
+
+  private HttpResponse<String> post(String path, String form) {
     try {
-      response =
-          http.send(
-              HttpRequest.newBuilder(URI.create(base + path))
-                  .timeout(TIMEOUT)
-                  .header("Content-Type", "application/x-www-form-urlencoded")
-                  .header("Accept", "application/json")
-                  .POST(HttpRequest.BodyPublishers.ofString(form))
-                  .build(),
-              HttpResponse.BodyHandlers.ofString());
+      return http.send(
+          HttpRequest.newBuilder(URI.create(base + path))
+              .timeout(TIMEOUT)
+              .header("Content-Type", "application/x-www-form-urlencoded")
+              .header("Accept", "application/json")
+              .POST(HttpRequest.BodyPublishers.ofString(form))
+              .build(),
+          HttpResponse.BodyHandlers.ofString());
     } catch (IOException e) {
       log.warn("metrics store: {} failed: {}", path, e.toString());
-      throw new UnavailableException();
+      throw new UnavailableException(path + " failed: " + e);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new UnavailableException();
+      throw new UnavailableException(path + " interrupted");
     }
+  }
+
+  private List<Series> ask(String path, String form) {
+    HttpResponse<String> response = post(path, form);
     if (response.statusCode() != 200) {
       log.warn("metrics store: {} answered HTTP {}", path, response.statusCode());
       throw new UnavailableException();

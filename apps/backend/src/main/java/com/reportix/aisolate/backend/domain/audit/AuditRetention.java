@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionOperations;
 
 /**
  * The months of the audit trail: this one and the next exist before a line needs them, and those
@@ -21,6 +22,7 @@ public class AuditRetention {
 
   private final AuditRepository repository;
   private final AuditProperties properties;
+  private final TransactionOperations transactions;
 
   @Scheduled(initialDelay = 0, fixedDelayString = "${aisolate.audit.retention-interval:PT6H}")
   public void run() {
@@ -34,6 +36,24 @@ public class AuditRetention {
           dropped,
           properties.retentionMonths());
     }
+  }
+
+  /**
+   * The install's clean slate ({@code DELETE /v1/spaces}): every month dropped, this one and the
+   * next back, in one transaction, so no line finds its partition gone.
+   *
+   * @return how many lines went
+   */
+  public int dropAll() {
+    return transactions.execute(status -> {
+      int lines = repository.countAll();
+      YearMonth month = YearMonth.now(ZoneOffset.UTC);
+      repository.dropBefore(start(month.plusMonths(2)));
+      repository.ensurePartition(start(month));
+      repository.ensurePartition(start(month.plusMonths(1)));
+      log.info("audit trail: the reset dropped {} lines", lines);
+      return lines;
+    });
   }
 
   private static Instant start(YearMonth month) {

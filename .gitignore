@@ -19,3 +19,6 @@ __pycache__/
 .gradle-home/
 .uv-cache/
 .vscode/
+# next dev writes it on every start
+apps/frontend/AGENTS.md
+apps/chat/AGENTS.md
