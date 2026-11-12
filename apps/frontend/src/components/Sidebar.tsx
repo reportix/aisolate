@@ -1,18 +1,19 @@
 "use client";
 
 import {
-  AIsolateLogo,
   ActivityIcon,
   AirlockIcon,
+  AIsolateLogo,
   AuditIcon,
   CpuIcon,
+  cx,
   DatabaseIcon,
   HomeIcon,
   PanelLeftIcon,
+  SettingsIcon,
   SpacesIcon,
   Tile,
   UserMenu,
-  cx,
 } from "@aisolate/ui";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,6 +30,7 @@ const ICONS: Record<RailIcon, ComponentType<{ size?: number; className?: string 
   llm: CpuIcon,
   "data-sources": DatabaseIcon,
   monitoring: ActivityIcon,
+  settings: SettingsIcon,
 };
 
 type Props = { rail: Rail; collapsed: boolean; onToggle: () => void };

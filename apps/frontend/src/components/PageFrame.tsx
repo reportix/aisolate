@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useEffectEvent, type ReactNode } from "react";
 import { logout } from "@/lib/auth";
-import { env } from "@/lib/env";
 import { NOT_APPLIED, setNotAppliedOn, useNotAppliedOn } from "@/lib/notice";
 import type { Trail } from "@/lib/rail";
 import { useSession } from "./Session";
@@ -41,14 +40,6 @@ export function PageFrame({ trail, children }: { trail: Trail; children: ReactNo
           {children}
         </div>
       </main>
-      <footer className="px-4 py-3 sm:px-6 lg:px-10">
-        <Muted className="text-xs">
-          AIsolate {env.version} ·{" "}
-          <a href={env.sourceUrl} className="underline hover:text-ink">
-            Source
-          </a>
-        </Muted>
-      </footer>
     </>
   );
 }
