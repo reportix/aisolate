@@ -1,6 +1,7 @@
 package com.reportix.aisolate.controller.crd;
 
 import com.reportix.aisolate.controller.api.v1.Airlock;
+import com.reportix.aisolate.controller.api.v1.AirlockVersion;
 import com.reportix.aisolate.controller.api.v1.Global;
 import com.reportix.aisolate.controller.api.v1.Space;
 import io.fabric8.crdv2.generator.CRDGenerator;
@@ -13,7 +14,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 /**
- * Writes the three CRDs from the resource classes: {@code ./gradlew :apps:controller:syncCrds
+ * Writes the four CRDs from the resource classes: {@code ./gradlew :apps:controller:syncCrds
  * <dir>}.
  */
 public final class CrdGeneration {
@@ -22,12 +23,15 @@ public final class CrdGeneration {
     generate(Path.of(args.length > 0 ? args[0] : "build/crds"));
   }
 
-  /** Generates {@code globals.yaml}, {@code spaces.yaml} and {@code airlocks.yaml}. */
+  /**
+   * Generates {@code globals.yaml}, {@code spaces.yaml}, {@code airlocks.yaml} and {@code
+   * airlockversions.yaml}.
+   */
   public static void generate(Path dir) {
     File out = dir.toFile();
     out.mkdirs();
     new CRDGenerator()
-        .customResourceClasses(Global.class, Space.class, Airlock.class)
+        .customResourceClasses(Global.class, Space.class, Airlock.class, AirlockVersion.class)
         .inOutputDir(out)
         .generate();
     try (Stream<Path> files = Files.list(dir)) {
