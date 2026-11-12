@@ -8,11 +8,11 @@ maintainers, is [how AIsolate itself is released](#how-aisolate-itself-is-releas
 
 ## Write the documents
 
-`<space>.yaml` in the organisation's deployment repository: the `Space` and `Airlock`
+`<space>.yaml` in the organisation's deployment repository: the `Space`, `Airlock` and `AirlockVersion`
 documents, with URLs and Secret names, never a credential ([Example documents](documents.md#example-documents)).
-An airlock's code is not in them: the pods fetch it from
+A version's code is not in them: the pods fetch it from
 the backend at start ([Where an airlock's code comes from](security.md#where-an-airlocks-code-comes-from)), so a
-headless install, which has no backend, runs airlocks without code only; one with code does not start.
+headless install, which has no backend, runs versions without code only; one with code does not start.
 
 ## Create the Secrets
 
@@ -47,47 +47,48 @@ rules are in [Validation](documents.md#validation).
 ## Check status
 
 ```bash
-kubectl -n aisolate get spaces,airlocks
-kubectl -n aisolate describe airlock hr
-kubectl -n aisolate logs deploy/acme-hr-airlock
+kubectl -n aisolate get spaces,airlocks,airlockversions
+kubectl -n aisolate describe airlockversion hr-v1
+kubectl -n aisolate logs deploy/acme-hr-v1-airlock
 ```
 
-An `Airlock` is `Pending` until both of its pods rolled out, then `Ready`, or `Invalid` with its
-problems. `kubectl get airlocks` shows each one's space, state, ready airlock pods and
-revision. A `Space` reports whether its release is valid, and lists each of its airlocks
-the controller holds back (`Airlock <name> is held back: …`); an `Airlock` without `llm` or `prompt` renders
-nothing, and its status says so (`no llm: aisolate deploy brings it`).
+An `AirlockVersion` is `Pending` until both of its pods rolled out, then `Ready`, or `Invalid` with its
+problems. `kubectl get airlockversions` shows each one's airlock, version name, state, ready airlock pods and
+revision. An `Airlock` and a `Space` report whether their release is valid, and list each of their versions
+the controller holds back (`AirlockVersion <name> is held back: …`); an `Airlock` without a version renders
+nothing and is `Ready`.
 
 ## What the controller renders
 
-Per `Airlock`, everything owned by it, named as [Names, ids and revision](documents.md#names-ids-and-revision)
+Per `AirlockVersion`, everything owned by it, named as [Names, ids and revision](documents.md#names-ids-and-revision)
 lists:
 
-- An airlock with code fetches it from the backend by `jar.digest` and refuses to start on any other bytes or a
-  failed fetch; without a backend (headless) it does not start. An airlock without code fetches nothing.
-- An airlock gets an MCP server only when it has code and lists a tool in `tools`.
+- A version with code fetches it from the backend by `jar.digest` and refuses to start on any other bytes or a
+  failed fetch; without a backend (headless) it does not start. A version without code fetches nothing.
+- A version gets an MCP server only when it has code and lists a tool in `tools`.
 - Once per namespace, owned by every `Space` so they go with the last one: discovery, `aisolate-discovery`.
 - With `platform.observability.otlpEndpoint` set, both pods get it as `MANAGEMENT_OTLP_TRACING_ENDPOINT` and
   send their traces there ([Observability](observability.md#traces)).
 
 ## What the controller checks
 
-Each space is its own release: the `Space` and the `Airlock`s that name it. A problem holds back its own
-scope and says why on the resource it names: an invalid `Airlock` is held back while its siblings run on, and
-only a problem of the `Space` or of the install's settings holds back the whole space. So removing a user from
-a `Space` reaches every valid airlock even while another airlock is broken. The problems:
+Each space is its own release: the `Space`, the `Airlock`s that name it and their `AirlockVersion`s. A problem
+holds back its own scope and says why on the resource it names: an invalid `AirlockVersion` is held back while
+its siblings run on, an invalid `Airlock` holds back its versions, and only a problem of the `Space` or of the
+install's settings holds back the whole space. So removing a role from a `Space` reaches every valid version
+even while another is broken. The problems:
 
 - a problem the loader finds ([Validation](documents.md#validation));
-- a data source an airlock resolves without its URL or its `secretRef`;
-- a host, of an LLM URL or of a data source URL an airlock or its space defines, neither mapped in
+- a data source a version resolves without its URL or its `secretRef`;
+- a host, of an LLM URL or of a data source URL a version, its airlock or its space defines, neither mapped in
   `platform.egress.hosts` nor proxied. Such a host of a global entry is a problem on the `Global`'s status
-  instead, and that entry is left out of every airlock's catalog, so one global typo stops no space; an airlock
+  instead, and that entry is left out of every version's catalog, so one global typo stops no space; a version
   whose main LLM it is is held back;
 - a `jar.digest` that is not `sha256:`;
 - a `platform.observability.otlpEndpoint` whose host is neither mapped nor proxied;
 - a Service name over 63 characters.
 
-A held-back airlock fails closed: the controller deletes everything it owns, so it serves no one until it is
+A held-back version fails closed: the controller deletes everything it owns, so it serves no one until it is
 valid again.
 
 ## Roll back

@@ -29,15 +29,15 @@ no backend, so there the stdout line is the only copy.
 ### Storage
 
 The table `audit_events` in the backend's PostgreSQL: the line itself (`body`, its JSON with sorted keys) and,
-read from it, the columns the filters use (time, space, airlock, revision, event, trace id, user,
+read from it, the columns the filters use (time, space, airlock, version, revision, event, trace id, user,
 client, outcome, reason, question, answer, figure counts, tokens, duration), and its link in the chain.
 
 - **Append-only.** The backend writes and reads it as the database role `aisolate_audit_writer`, which may INSERT
   and SELECT and nothing else; a trigger refuses UPDATE, DELETE and TRUNCATE whoever asks, the table's owner
   included.
 - **Tamper-evident.** Per airlock, every line is chained to the one before it:
-  `hash = sha256(prev_hash || body)`, the first line's `prev_hash` 64 zeros. Lines of all airlocks and replicas
-  of an airlock are chained one at a time. `GET /v1/audit/verify?space=&airlock=` walks the chain again and names
+  `hash = sha256(prev_hash || body)`, the first line's `prev_hash` 64 zeros. Lines of all airlocks, and of every
+  version and replica of an airlock, are chained one at a time. `GET /v1/audit/verify?space=&airlock=` walks the chain again and names
   the first line that fails: `altered` (its line or a column no longer gives its hash) or `removed` (it no
   longer follows the line before it). What that proves and what it does not: [Security, Audit
   trail](security.md#audit-trail).
@@ -59,7 +59,7 @@ oldest month kept anchors the chain: verify starts at its first line.
 | `aisolate-admin` (realm role) | The same, beside everything else the admin may do |
 | A developer of a space | The same for the spaces they develop: the list holds only their events, another space's event or chain is 403 |
 
-The **Audit** page lists the lines newest first (time, space, airlock, user, client, outcome, figures by
+The **Audit** page lists the lines newest first (time, space, airlock, version, user, client, outcome, figures by
 provenance, tokens), with filters; one opens the exchange: the question, the answer with each figure's
 provenance, the tools with their arguments and row counts, the verdicts, the tokens, its trace (Monitoring's trace page when
 the install has a trace store, else a configured trace viewer), and whether its airlock's chain is intact. **Export as**, next to **View trace**, downloads that exchange alone: a PDF to read, its line as JSON, or its XBRL report ([Export](#export)). The API: [The audit endpoints](api.md#the-audit-endpoints).
@@ -73,7 +73,7 @@ Taxonomy Package (`aisolate-audit-2026-10-26.zip`).
 A report is one XBRL 2.1 instance in XML (xBRL-XML), a single `.xbrl` file, of one organisation (the entity) and
 one period. Its facts form three tables, the taxonomy's three hypercubes:
 
-- **Exchanges**, one row per question put to an airlock: the space, the airlock, the time, the
+- **Exchanges**, one row per question put to an airlock: the space, the airlock, the version, the time, the
   user, the question, the answer (absent unless answered), the outcome (`answered`, `dont_know`, `refused`,
   `error`), the model, its input and output tokens and the duration.
 - **Tool calls**, one row per tool call of an exchange: the tool, the data source and the rows returned.

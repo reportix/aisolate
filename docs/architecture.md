@@ -46,10 +46,10 @@ pass; a case that fails for one runtime is a divergence to fix, never a case to 
 
 ## In the cluster
 
-- **The controller** is one Deployment per install. It watches the three kinds with the Java Operator SDK, one
-  reconciler each. For a valid `Airlock` it renders the airlock pod and, when the airlock has code and lists a
+- **The controller** is one Deployment per install. It watches the four kinds with the Java Operator SDK, one
+  reconciler each. For a valid `AirlockVersion` it renders the airlock pod and, when the version has code and lists a
   tool, its MCP server; the documents' ConfigMap; the code token Secret and the audit token Secret; the Services,
-  the Ingress rule for the airlock's path and one NetworkPolicy per pod.
+  the Ingress rule for the version's path and one NetworkPolicy per pod.
 - **The pod pair** runs under the restricted Pod Security Standard.
   The airlock pod reaches
   its own MCP server, the hosts of its LLMs and data sources, the identity provider, the backend's ingest port and

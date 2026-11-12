@@ -174,9 +174,9 @@ the rows it was given. What it takes:
 - **The same user.** The rules are the user's: the call carries a token of the line's `user`, from a client the
   airlock admits. Anyone else's token yields that person's rows, and another hash.
 - **The MCP server.** Its NetworkPolicy admits only its own airlock pod, so an operator of the namespace reaches it
-  with a port-forward: `kubectl port-forward -n <namespace> svc/<space>-<airlock>-mcp-server 8081`.
+  with a port-forward: `kubectl port-forward -n <namespace> svc/<space>-<airlock>-<version>-mcp-server 8081`.
 
-Then call the line's tool with its arguments and the line's airlock and revision in `_meta`, as the airlock pod did, and hash the
+Then call the line's tool with its arguments and the line's airlock, version and revision in `_meta`, as the airlock pod did, and hash the
 rows the way the airlock does (`LINE` holds the audit line, `TOKEN` the user's token; the first tool call here):
 
 ```bash

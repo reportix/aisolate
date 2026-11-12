@@ -40,13 +40,14 @@ The identity variables above (`AISOLATE_ISSUER_URI`, `AISOLATE_ROLES_CLAIM`, `AI
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `AISOLATE_CONFIG_DIR`, `AISOLATE_CONFIG_REVISION` | empty | The directory of the airlock's documents (the mount of its `<space>-<airlock>-config` ConfigMap: the `Global`, its `Space` and itself) and the revision the controller computed for them; an empty revision is the hash of the files as read |
+| `AISOLATE_CONFIG_DIR`, `AISOLATE_CONFIG_REVISION` | empty | The directory of the version's documents (the mount of its `<space>-<airlock>-<version>-config` ConfigMap: the `Global`, its `Space`, its `Airlock` and itself) and the revision the controller computed for them; an empty revision is the hash of the files as read |
 | `AISOLATE_CONFIG_DISCOVERY_DIR` | empty | The `aisolate-discovery` mount, what discovery lists of every valid space, re-read when the kubelet swaps the files; set without `AISOLATE_CONFIG_DIR`, the pod is a discovery pod, which serves no airlock and answers every chat path 404; empty: discovery lists the pod's own documents |
 | `AISOLATE_AIRLOCK` | empty | The one airlock this pod serves; every other id is 404 at the chat endpoint; a name the documents do not define refuses the start; empty serves every airlock (tests only) |
-| `AISOLATE_TOOL_SERVER_URL` | `http://localhost:8081/mcp` | This airlock's MCP server; the controller sets `http://<space>-<airlock>-mcp-server:8081/mcp` and leaves it out when the airlock runs no MCP server |
-| `AISOLATE_CODE_URL`, `AISOLATE_CODE_DIGEST`, `AISOLATE_CODE_TOKEN_FILE` | empty | The airlock's code: the backend's `http://backend.<namespace>.svc:8085/v1/code/<space>/<airlock>/<digest>`, its `sha256:` digest (`jar.digest`) and the airlock's code token the controller mounted, `/var/run/aisolate/code/token` ([The code](#the-code)); all unset for an airlock without code |
+| `AISOLATE_VERSION` | empty | The one version of that airlock this pod serves, its name (`v1`); any other version is 404 at the chat endpoint; a version the documents do not define refuses the start; empty serves every version (tests only) |
+| `AISOLATE_TOOL_SERVER_URL` | `http://localhost:8081/mcp` | This version's MCP server; the controller sets `http://<space>-<airlock>-<version>-mcp-server:8081/mcp` and leaves it out when the version runs no MCP server |
+| `AISOLATE_CODE_URL`, `AISOLATE_CODE_DIGEST`, `AISOLATE_CODE_TOKEN_FILE` | empty | The version's code: the backend's `http://backend.<namespace>.svc:8085/v1/code/<space>/<airlock>/<version>/<digest>`, its `sha256:` digest (`jar.digest`) and the version's code token the controller mounted, `/var/run/aisolate/code/token` ([The code](#the-code)); all unset for a version without code |
 | `AISOLATE_PLUGINS_DIR`, `AISOLATE_PLUGIN_DIGESTS` | empty | Local runs and tests only, without `AISOLATE_CODE_DIGEST`: a directory of code and the `sha256:` digests it must hold; nothing renders them in a cluster |
-| `AISOLATE_DATASOURCE_<i>_ID`, `_URL`, `_USERNAME`, `_PASSWORD` | unset | Every data source the airlock resolves, global ones included, `<i>` from 0 in the order of the ids: id and URL as values, user and password from that source's Secret. A handler reaches one through `aisolate.dataSource(id)` |
+| `AISOLATE_DATASOURCE_<i>_ID`, `_URL`, `_USERNAME`, `_PASSWORD` | unset | Every data source the version resolves (its airlock's, its space's and the global ones), `<i>` from 0 in the order of the ids: id and URL as values, user and password from that source's Secret. A handler reaches one through `aisolate.dataSource(id)` |
 | `AISOLATE_LLM` | required | The main LLM's id, the one that answers; always one of the `AISOLATE_LLM_<i>_ID` |
 | `AISOLATE_LLM_<i>_ID`, `_PROVIDER`, `_URL`, `_MODEL` | required | Every LLM the airlock sees (its own, its space's and the global ones, the nearest of an id), `<i>` from 0 in the order of the ids, read until the first missing `_ID`. A blank one, an id twice or a provider other than `ollama` or `openai` refuses the start; no default. Code reaches one through `aisolate.llm(id)` |
 | `AISOLATE_LLM_<i>_API_KEY` | unset | An `openai` LLM's API key, from its Secret: the bearer of its requests, none without one |
@@ -64,10 +65,10 @@ The identity variables above (`AISOLATE_ISSUER_URI`, `AISOLATE_ROLES_CLAIM`, `AI
 |---|---|---|
 | `AISOLATE_ISSUER_URI`, `AISOLATE_AUDIENCE` | as above, `aisolate` | Independent token validation |
 | `AISOLATE_ROLES_CLAIM` | `realm_access.roles` | Where the rules read the user's roles |
-| `AISOLATE_CONFIG_DIR`, `AISOLATE_CONFIG_REVISION` | required, empty | The same airlock's documents and revision as its airlock pod; the policy comes from there, parsed at start, and only that revision answers (any other is a silent deny) |
-| `AISOLATE_CODE_URL`, `AISOLATE_CODE_DIGEST`, `AISOLATE_CODE_TOKEN_FILE` | empty | As for the airlock pod: the airlock's code, fetched at start and checked against its digest |
+| `AISOLATE_CONFIG_DIR`, `AISOLATE_CONFIG_REVISION` | required, empty | The same version's documents and revision as its airlock pod; the policy comes from there, parsed at start, and only that revision answers (any other is a silent deny) |
+| `AISOLATE_CODE_URL`, `AISOLATE_CODE_DIGEST`, `AISOLATE_CODE_TOKEN_FILE` | empty | As for the airlock pod: the version's code, fetched at start and checked against its digest |
 | `AISOLATE_PLUGINS_DIR`, `AISOLATE_PLUGIN_DIGESTS` | empty | As for the airlock pod: local runs and tests only |
-| `AISOLATE_DATASOURCE_<i>_ID`, `_URL`, `_USERNAME`, `_PASSWORD` | none | Every data source the airlock resolves, the same entries as its airlock pod's; one connection pool per entry, the read-only role's user and password from that source's Secret |
+| `AISOLATE_DATASOURCE_<i>_ID`, `_URL`, `_USERNAME`, `_PASSWORD` | none | Every data source the version resolves, the same entries as its airlock pod's; one connection pool per entry, the read-only role's user and password from that source's Secret |
 | `MANAGEMENT_OTLP_TRACING_ENDPOINT` | unset | As for the airlock pod |
 
 At start the MCP server loads every plugin on its classpath and in the airlock's fetched code, and the rule sets
@@ -84,10 +85,10 @@ same code before it reached a pod:
 
 ## The pods of an airlock
 
-What the controller renders for airlock `a` of space `s`, the same shape for both languages: only the images differ
+What the controller renders for version `v` of airlock `a` of space `s`, the same shape for both languages: only the images differ
 (`aisolate/airlock` and `aisolate/tool-server`, or `aisolate/airlock-python` and `aisolate/tool-server-python` for a
-Python project's `jar.language`), and the egress proxy's variables. An airlock without `llm` or `prompt` gets no pod;
-the MCP server exists only when the airlock has code and lists a tool in `tools`. What both runtimes do with these
+Python project's `jar.language`), and the egress proxy's variables. An airlock without a version gets no pod;
+the MCP server exists only when the version has code and lists a tool in `tools`. What both runtimes do with these
 inputs is pinned, case by case, in [`conformance/cases`](../conformance/README.md).
 
 | | Airlock pod | MCP server |
@@ -107,32 +108,32 @@ inputs is pinned, case by case, in [`conformance/cases`](../conformance/README.m
   The only writable paths are emptyDirs: `/tmp` (2 GiB; 256 MiB on the discovery pods), which holds the fetched code,
   and the audit buffer.
 - **Labels and annotations**: `aisolate.dev/role` (`airlock`, `tool-server`, `discovery`), `aisolate.dev/space`,
-  `aisolate.dev/airlock` and `aisolate.dev/managed-by: controller` on every object; the pod template's
+  `aisolate.dev/airlock`, `aisolate.dev/version` and `aisolate.dev/managed-by: controller` on every object; the pod template's
   annotation `aisolate.dev/revision: <revision>`, so a new revision rolls the pods and a sibling's change rolls none.
-  The Ingress rule (path prefix `/v1/spaces/s/airlocks/a/`) carries `nginx.ingress.kubernetes.io/proxy-read-timeout:
+  The Ingress rule (path prefix `/v1/spaces/s/airlocks/a/versions/v/`) carries `nginx.ingress.kubernetes.io/proxy-read-timeout:
   "600"` and `nginx.ingress.kubernetes.io/proxy-buffering: "off"`: an exchange streams for minutes.
 
 | Mount | Path | Pods |
 |---|---|---|
-| `config`, the ConfigMap `s-a-config`, read-only | `/etc/aisolate`, `AISOLATE_CONFIG_DIR` | both |
-| `code-token`, the Secret `s-a-code`, read-only | `/var/run/aisolate/code/token`, `AISOLATE_CODE_TOKEN_FILE` | both, when the airlock has code and the install a backend |
+| `config`, the ConfigMap `s-a-v-config`, read-only | `/etc/aisolate`, `AISOLATE_CONFIG_DIR` | both |
+| `code-token`, the Secret `s-a-v-code`, read-only | `/var/run/aisolate/code/token`, `AISOLATE_CODE_TOKEN_FILE` | both, when the version has code and the install a backend |
 | `tmp`, emptyDir | `/tmp` | both |
-| `audit-token`, the Secret `s-a-audit`, read-only | `/var/run/aisolate/audit/token`, `AISOLATE_AUDIT_TOKEN_FILE` | the airlock pod, with the audit ingest |
+| `audit-token`, the Secret `s-a-v-audit`, read-only | `/var/run/aisolate/audit/token`, `AISOLATE_AUDIT_TOKEN_FILE` | the airlock pod, with the audit ingest |
 | `audit-buffer`, emptyDir of 96 MiB | `/var/lib/aisolate/audit`, `AISOLATE_AUDIT_BUFFER_DIR` | the airlock pod, with the audit ingest |
 
 The controller derives both tokens from the install's ingest key (`AISOLATE_CONTROLLER_AUDIT_INGESTKEY`, the chart's
 Secret `audit-ingest`),
-so each admits one airlock's lines or one airlock's code and nothing else. A pod only reads the file. An
+so each admits one version's lines or one version's code and nothing else. A pod only reads the file. An
 `openai` LLM's API key and a data source's login reach the pods as variables from their own Secrets
 (`AISOLATE_LLM_<i>_API_KEY`, `AISOLATE_DATASOURCE_<i>_USERNAME`, `_PASSWORD`), never as files.
 
 ### The code
 
-No code object reaches the cluster: the backend keeps an airlock's artifact (a jar, or a Python project's zip) and
-serves it on its cluster-internal port 8085, never on the API or the Ingress. A pod whose airlock has code, before it
+No code object reaches the cluster: the backend keeps a version's artifact (a jar, or a Python project's zip) and
+serves it on its cluster-internal port 8085, never on the API or the Ingress. A pod whose version has code, before it
 serves anything:
 
-1. sends `GET AISOLATE_CODE_URL` (`<backend>/v1/code/s/a/<digest>`) with the bearer read from
+1. sends `GET AISOLATE_CODE_URL` (`<backend>/v1/code/s/a/v/<digest>`) with the bearer read from
    `AISOLATE_CODE_TOKEN_FILE`. A connection failure, a 429 or a 5xx is retried;
    any other answer refuses at once;
 2. streams the body under `/tmp` (a jar to `/tmp/aisolate/code/aisolate-code.jar`, a Python zip to

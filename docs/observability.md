@@ -25,8 +25,8 @@ Every exchange is a trace: sampling is 1.0.
 An auditor's question to the `northbeck` airlock of the `auditor` template (21 spans):
 
 ```
-http post /v1/spaces/{spaceId}/airlocks/{airlockId}/chat
-└── exchange audit/northbeck                    aisolate.outcome, aisolate.client, aisolate.figures.sourced,
+http post /v1/spaces/{spaceId}/airlocks/{airlockId}/versions/{version}/chat
+└── exchange audit/northbeck/v1                 aisolate.outcome, aisolate.client, aisolate.figures.sourced,
     │                                           .computed, .unsourced and .mismatch (counts, never a value)
     ├── admission                               aisolate.admitted, aisolate.reason on a refusal
     ├── Read minutes and policies
@@ -60,7 +60,7 @@ http post /v1/spaces/{spaceId}/airlocks/{airlockId}/chat
 
 A refusal is three spans: the HTTP span (403), `exchange` and `admission`, both with status ERROR.
 
-- Every AIsolate span carries `aisolate.airlock` and `aisolate.revision`; the airlock pod's
+- Every AIsolate span carries `aisolate.airlock`, `aisolate.version` and `aisolate.revision`; the airlock pod's
   also carry `aisolate.space`.
 - `aisolate.outcome` on the `exchange` span is the audit line's: `answered`, `dont_know`, `refused` or `error`.
   On the tool server's span it is `rows`, `empty`, `denied` (no rule granted anything, the silent deny),
@@ -118,21 +118,21 @@ backend also answers `/readyz` on its API port, which the AIsolate UI probes.
 
 | Series | Labels | Counts |
 |---|---|---|
-| `aisolate_exchanges_total` | `airlock`, `outcome` | Requests to an airlock: `answered`, `dont_know`, `refused` or `error`, as the audit line says |
-| `aisolate_refusals_total` | `airlock`, `reason` | Refusals with a 403: `role` or `client` |
-| `aisolate_tool_calls_total` | `airlock`, `tool` | Tool calls the model made |
-| `aisolate_exchange_duration_seconds` | `airlock` | Exchanges from admission to the last event, a histogram (`_bucket`) |
-| `gen_ai_client_token_usage_total` | `airlock`, `gen_ai_token_type`, Spring AI's model labels | Tokens the model calls used: `input`, `output`, `total` |
-| `aisolate_tool_queries_total` | `airlock`, `tool`, `outcome` | Tool server calls: `rows`, `empty`, `denied`, `invalid` or `error`; `airlock` is `none` when the call named no airlock the tool server serves |
+| `aisolate_exchanges_total` | `airlock`, `version`, `outcome` | Requests to a version: `answered`, `dont_know`, `refused` or `error`, as the audit line says |
+| `aisolate_refusals_total` | `airlock`, `version`, `reason` | Refusals with a 403: `role` or `client` |
+| `aisolate_tool_calls_total` | `airlock`, `version`, `tool` | Tool calls the model made |
+| `aisolate_exchange_duration_seconds` | `airlock`, `version` | Exchanges from admission to the last event, a histogram (`_bucket`) |
+| `gen_ai_client_token_usage_total` | `airlock`, `version`, `gen_ai_token_type`, Spring AI's model labels | Tokens the model calls used: `input`, `output`, `total` |
+| `aisolate_tool_queries_total` | `airlock`, `version`, `tool`, `outcome` | Tool server calls: `rows`, `empty`, `denied`, `invalid` or `error`; `airlock` and `version` are `none` when the call named no version the tool server serves |
 
 The airlock pod counts from its audit lines, so the metrics and the trail agree. Every label comes from a
-closed set: the names the documents give, the tools an airlock lists, the outcomes and reasons above. Spring AI's
+closed set: the names the documents give, the tools a version lists, the outcomes and reasons above. Spring AI's
 tool series (`spring_ai_tool_seconds`) name a tool the model invents `unknown`. No
 e-mail, question or answer is ever a label. The trace's own observations (`aisolate.trace.*`) make no meters.
 
 The chart's `examples/grafana-dashboard.json` is an optional Grafana 11 dashboard over Prometheus: exchanges per
 minute and tokens by airlock, refusals by reason, tool calls by tool and the p95 exchange duration, each by space
-and airlock, with a Space and an Airlock picker. The series name the airlock, not the space: copy
+and airlock, with a Space and an Airlock picker. The series name the airlock and its version, not the space: copy
 the pod label `aisolate.dev/space` onto a `space` label when you scrape (Prometheus:
 `source_labels: [__meta_kubernetes_pod_label_aisolate_dev_space]`, `target_label: space`). Without it the panels
 still show every airlock, unsplit by space.

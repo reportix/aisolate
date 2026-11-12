@@ -1,12 +1,13 @@
 # Develop an airlock
 
-A project is one airlock: its code (tools, handlers and rule sets) and one `aisolate.yaml` with its
-`Airlock`. The space exists first, created in the AIsolate UI: it
+A project is one version of an airlock: its code (tools, handlers and rule sets) and one `aisolate.yaml` with its
+`AirlockVersion` and, the templates' way, its `Airlock`. The space exists first, created in the AIsolate UI: it
 lists the roles that may ask every airlock of it, and the LLM and the data sources its airlocks share are set
 there too. Every deploy creates the airlock from the file's `Airlock`, or updates each field the document
-writes. The `aisolate` CLI creates the project from a
+writes, and creates the version it names, `v1` in the templates, or updates it in place; a project that names
+another version runs beside the first. The `aisolate` CLI creates the project from a
 template and deploys it into that airlock, in a cluster installed with the AIsolate UI (`headless=false`).
-An airlock runs only as a pod: the deploy becomes a pod pair there, and a chat such as
+A version runs only as a pod: the deploy becomes a pod pair there, and a chat such as
 the sample in `apps/chat` asks it.
 
 ## Install the CLI
@@ -45,9 +46,9 @@ airlock it names. The CLI ships four templates:
 
 ```
 company-hr/
-  aisolate.yaml                     the Airlock: its name, its own roles, the four groups, its LLM by id
+  aisolate.yaml                     the Airlock (its name, its own roles) and its version v1: the three stages, its LLM by id
   .env, .env.example                  AISOLATE_ENDPOINT, AISOLATE_SPACE, no credential; .env is never committed
-  src/acme_hr/                      every class of the package belongs to this airlock
+  src/acme_hr/                      every class of the package belongs to this version
     pre_llm/contracts.py              ContractsContextPreparator, a @context_preparator: reads hr.documents on hr
     pre_llm/memory.py                 SessionMemory, a @memory
   tests/                              pytest, with tests/support's FakeAIsolateManager standing in for AIsolate
@@ -61,7 +62,7 @@ project depends on.
 
 ## Where code goes
 
-Every class of the project belongs to the airlock its `aisolate.yaml` names, in any package; nothing is
+Every class of the project belongs to the version its `aisolate.yaml` names, in any package; nothing is
 registered. The pods and the backend scan the classes, package-private or not; each plugin and handler needs a
 no-argument constructor. The templates' `pre_llm/`, `tools/` and `post_llm/` folders sort the classes by the
 stage they run in ([Stages](concepts.md#stages)), and nothing parses them.
@@ -140,21 +141,23 @@ builder. The deploy refuses code whose rule sets do not parse or sit anywhere bu
 
 ## Write the project file
 
-`aisolate.yaml` is the airlock's one `Airlock` document: its name, description and own roles,
-and the four groups: the LLM that answers by its
-id (`spec.llm: granite`) with the `prompt` and `tools` under `spec`. It holds no credential: the LLMs and the data
-sources its code reads by id are the admin's, for all of AIsolate, on the space or on the airlock. Who may ask: the space lists its roles in the AIsolate UI, the
-airlock its own and its callers, in the file or in the AIsolate UI. The file as the template writes it, and what the
-deploy checks, are in [The project file](documents.md#the-project-file). An airlock created in the AIsolate UI
-has a name, a description, its roles and no code; the deploy fills its code, stages, LLM, prompt and
+`aisolate.yaml` is two documents: the `Airlock`, its name, description and own roles, and the `AirlockVersion`
+named `<airlock>-<version>`, with the version's name (`spec.version: v1`), its description and the three stages:
+the LLM that answers by its id (`spec.llm: granite`) with the `prompt` and `tools` under `spec`. It holds no
+credential: the LLMs and the data sources its code reads by id are the admin's, for all of AIsolate, on the
+space or on the airlock. Who may ask: the space lists its roles in the AIsolate UI, the airlock its own and its
+callers, in the file or in the AIsolate UI; a version has no access of its own. The file as the template writes
+it, and what the deploy checks, are in [The project file](documents.md#the-project-file). A version created in
+the AIsolate UI has a name, a description and no code; the deploy fills its code, stages, LLM, prompt and
 tools from the project, and replaces its description with the project's `spec.description`, blank when
-the project has none.
+the project has none. To run a second version beside the first, change `spec.version` and `metadata.name`
+and deploy again: the first keeps answering at its own endpoint.
 
 ## Set the variables
 
 A value in `aisolate.yaml` may read a variable: `${NAME}`, or `${NAME:-fallback}` when NAME may stay unset.
-A data source an airlock defines itself gives its `username` and `password` this way, so no credential is ever
-committed; the templates define none.
+A data source the file's `Airlock` defines itself gives its `username` and `password` this way, so no credential
+is ever committed; the templates define none, and a version defines no data source.
 `aisolate deploy` reads `.env` at the project root; a variable set in the shell wins. It refuses, before the
 build, a variable that is unset or empty and has no fallback, and names it. `AISOLATE_SPACE` names the space
 the project deploys into; without it `login`, `logout`, `build` and `deploy` stop with
@@ -200,30 +203,32 @@ CPU refuses to start, naming the `--arch` to rebuild with.
 
 One call sends the built project and `aisolate.yaml` as written, with the values of the variables it reads,
 to `POST /v1/spaces/{space}/deploy`, the space being `AISOLATE_SPACE`.
-Nothing is deleted. The CLI prints the deploy's warnings, then the airlock with its change count
-(`revision 1`, one more on every save or deploy; not the [revision](concepts.md#vocabulary) of its documents):
+Nothing is deleted. The CLI prints the deploy's warnings, the airlock when this deploy created it, then the
+version with its change count (`revision 1`, one more on every save or deploy; not the
+[revision](concepts.md#vocabulary) of its documents):
 
 ```
 ⏺  Signed in as jasmine
 ⏺  Building company-hr
 ✔  Built build/libs/company-hr.jar
 ⏺  Deploying to space hr-space
-✔  hr-space/hr-contracts (created, revision 1)
-   POST https://aisolate.example.com/v1/spaces/hr-space/airlocks/hr-contracts/chat
+✔  airlock hr-space/hr-contracts (created)
+✔  version hr-space/hr-contracts/v1 (created, revision 1)
+   POST https://aisolate.example.com/v1/spaces/hr-space/airlocks/hr-contracts/versions/v1/chat
    code sha256:…; tools: none; handlers: ContractsContextPreparator, SessionMemory
-   cluster: applied, the status of the Airlock shows its pods
+   cluster: applied, the status of the AirlockVersion shows its pods
 ```
 
 A refusal prints its reasons and exits 1 ([The deploy call](api.md#the-deploy-call)). Without a terminal (CI,
 a pipe) a missing session stops the deploy before the build.
 Within a minute
-`kubectl -n aisolate get airlocks` shows `hr-contracts` Ready ([Check status](release.md#check-status)).
+`kubectl -n aisolate get airlockversions` shows `hr-contracts-v1` Ready ([Check status](release.md#check-status)).
 
 ## Define airlocks in the AIsolate UI
 
 The AIsolate UI is a view of the same objects a deploy writes. Who does what is GitLab's group model: the admin
 (`aisolate-admin`) creates a space and names its developers, by e-mail, and the roles that may ask it; a developer sees the
-spaces they develop, creates and edits their airlocks and deploys into them, and sees the space's
+spaces they develop, creates and edits their airlocks and their versions and deploys into them, and sees the space's
 own LLMs and Data sources read-only; anyone else only asks, in the chat, and sees no space here. Every list, add and edit is a page of its own with its own breadcrumb, and a save applies at once. The
 rail follows where you are: Dashboard and Spaces; inside a space, its LLMs and Data sources; inside an
 airlock, its Overview, Details, Tools, LLMs and Data sources. In the order a project is set up:
@@ -258,6 +263,6 @@ what ran: a line per verifier, with its note.
 
 ## Start over
 
-An admin calls `DELETE /spaces` ([API](api.md#endpoints)), which removes every space with its airlocks, their
-code, resources, Secrets and pods; it needs the `aisolate-admin` role, since it wipes every team's spaces. Create a
+An admin calls `DELETE /spaces` ([API](api.md#endpoints)), which removes every space with its airlocks and versions,
+their code, resources, Secrets and pods; it needs the `aisolate-admin` role, since it wipes every team's spaces. Create a
 space and its airlocks in the AIsolate UI before the next deploy.
