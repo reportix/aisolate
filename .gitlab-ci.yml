@@ -2,6 +2,8 @@
 # on every merge, to docker-public, which anyone can pull, on a tag X.Y.Z. Every merge request bumps `version` in
 # gradle.properties. After every merge, release-deploy pins the seven published images in the chart
 # (aisolate/charts/aisolate, its bot branch next, auto-merged to main); a release is promoted there by hand. The UI and the chat bake their deployment's URLs at build time, so deployments build them.
+# A tag's pipeline also builds the Windows CLI installer on the Windows runner (cli-windows-installer) and creates
+# the tag's GitLab Release with it attached (gitlab-release); the macOS installer is a maintainer's (docs/release.md).
 include:
   - component: $CI_SERVER_FQDN/reportix/ci-templates/release@1
     inputs:
@@ -88,27 +90,98 @@ python-test:
     - mise use -g python@3.13
   script: ./gradlew pythonTest --console=plain
 
-# The Windows CLI's installer. A native image is built on the system it runs on, so aisolate.exe is built on a
-# Windows machine; this job packages it with NSIS. Run it by hand with WINDOWS_EXE_URL (where the runner can
-# download that exe) and WINDOWS_EXE_SHA256 set.
-cli-windows-installer:
+# The Windows CLI's installer, built from source on the Windows runner: a native image is built on the system it
+# runs on, so aisolate.exe needs a Windows machine, and the image ships what the build needs (Liberica NIK 25 as
+# JAVA_HOME, which the GraalVM plugin picks up; the Visual Studio Build Tools; NSIS). The MSVC environment is
+# loaded by hand, as skye's core-platform does: native-image does not set it up itself.
+.cli-windows-installer:
   stage: package
   needs: []
   inherit:
+    # Neither the Linux cache nor GRADLE_USER_HOME: the image's default Gradle home has the wrapper's
+    # distribution, so the job downloads no Gradle.
     default: false
-  image: debian:bookworm-slim
-  rules:
-    - when: manual
-      allow_failure: true
+    variables: false
+  image: docker-internal.sonatype.reportix.com/reportix/ci-images/windows:latest
+  tags: [windows]
+  interruptible: true
+  retry:
+    max: 2
+    when: [runner_system_failure]
   before_script:
-    - apt-get update && apt-get install -y --no-install-recommends ca-certificates curl nsis
+    - |
+      $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+      $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+      if (-not $vsPath) { throw "VS C++ build tools not found via vswhere" }
+      cmd /c "`"$vsPath\VC\Auxiliary\Build\vcvars64.bat`" && set" | ForEach-Object {
+        if ($_ -match '^([^=]+)=(.*)$') { Set-Item -Path "env:$($matches[1])" -Value $matches[2] }
+      }
+    - makensis /VERSION
   script:
-    - test -n "$WINDOWS_EXE_URL" && test -n "$WINDOWS_EXE_SHA256" || { echo "Set WINDOWS_EXE_URL and WINDOWS_EXE_SHA256."; exit 1; }
-    - mkdir -p apps/cli/build/win-installer
-    - cp apps/cli/installer/windows/aisolate-cli-installer.nsi apps/cli/installer/LICENSE apps/cli/build/win-installer/
-    - curl -fsSL -o apps/cli/build/win-installer/aisolate.exe "$WINDOWS_EXE_URL"
-    - echo "$WINDOWS_EXE_SHA256  apps/cli/build/win-installer/aisolate.exe" | sha256sum -c -
-    - cd apps/cli/build/win-installer && makensis aisolate-cli-installer.nsi
+    # The same gate as the release component's verify-release: a tag is the version it builds.
+    - |
+      $declared = (Get-Content gradle.properties | Where-Object { $_ -match '^version=' }) -replace '^version=', ''
+      if ($env:CI_COMMIT_TAG -and $env:CI_COMMIT_TAG -ne $declared) { throw "tag $env:CI_COMMIT_TAG is not version=$declared in gradle.properties" }
+    - ./gradlew :apps:cli:createWindowsInstaller --console=plain; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    # sha256sum -c format, LF-terminated, so the file checks on macOS and Linux too.
+    - |
+      $hash = (Get-FileHash -Algorithm SHA256 apps/cli/build/aisolate-cli-installer.exe).Hash.ToLower()
+      [IO.File]::WriteAllText("$PWD\apps\cli\build\SHA256SUMS", "$hash  aisolate-cli-installer.exe`n")
+      Get-Content apps/cli/build/SHA256SUMS
   artifacts:
-    paths: [apps/cli/build/win-installer/aisolate-cli-installer.exe]
+    paths:
+      - apps/cli/build/aisolate-cli-installer.exe
+      - apps/cli/build/SHA256SUMS
+
+# On a tag: the release's assets, which gitlab-release links, so they never expire.
+cli-windows-installer:
+  extends: .cli-windows-installer
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
+  artifacts:
+    expire_in: never
+
+# On a branch, by hand: a build to try.
+cli-windows-installer-manual:
+  extends: .cli-windows-installer
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+      allow_failure: true
+  artifacts:
     expire_in: 30 days
+
+# The tag's GitLab Release. The release component verifies the tag and publishes the images but creates no
+# Release (release@1 has no release: step and no asset input), so this job does, after publish-release, with
+# the Windows installer and its checksum as asset links. The links are the tag's job artifacts, kept forever
+# (cli-windows-installer): no second upload and no package registry entry to keep in step with the artifact.
+# The permanent URLs are the direct asset paths, $CI_PROJECT_URL/-/releases/X.Y.Z/downloads/<file>. The macOS
+# installer is attached by hand, and the GitHub mirror's release is copied by hand (docs/release.md).
+gitlab-release:
+  stage: publish-release
+  needs: [publish-release, cli-windows-installer]
+  inherit:
+    default: false
+    variables: false
+  # The image the release keyword needs: it carries glab.
+  image: registry.gitlab.com/gitlab-org/cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
+  script:
+    - echo "Release $CI_COMMIT_TAG"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: $CI_COMMIT_TAG
+    description: >-
+      AIsolate $CI_COMMIT_TAG. Images: `docker-public.sonatype.reportix.com/aisolate/<app>:$CI_COMMIT_TAG`.
+      The Windows CLI installer is attached; the macOS installer is attached by a maintainer (docs/release.md).
+    assets:
+      links:
+        - name: aisolate-cli-installer.exe
+          url: $CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/apps/cli/build/aisolate-cli-installer.exe?job=cli-windows-installer
+          filepath: /aisolate-cli-installer.exe
+          link_type: package
+        - name: SHA256SUMS
+          url: $CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/apps/cli/build/SHA256SUMS?job=cli-windows-installer
+          filepath: /SHA256SUMS
+          link_type: other

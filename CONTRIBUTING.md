@@ -72,9 +72,11 @@ gets a test that fails when it breaks; a fix without such a test is not finished
 `check` (Spotless; lint, format, unit tests, build and `npm audit` of the web workspace), `test`
 (`./gradlew test` with Docker-in-Docker; `./gradlew pythonTest` with uv) and a version gate (every merge request
 bumps `version=` in `gradle.properties`) on every pipeline, and `package` (`cli-windows-installer`, the Windows
-CLI's installer) by hand. Every merge to `main` publishes the images as `<version>-<sha10>` to the internal
+CLI's installer built from source on the Windows runner) on every tag, by hand on a branch
+(`cli-windows-installer-manual`). Every merge to `main` publishes the images as `<version>-<sha10>` to the internal
 registry through the fleet's release component, and the fleet's vulnerability scan runs on `main`; a tag `X.Y.Z`
-publishes the public images ([Release](docs/release.md#how-aisolate-itself-is-released)).
+publishes the public images and creates the tag's GitLab Release with the Windows installer attached
+([Release](docs/release.md#how-aisolate-itself-is-released)).
 
 ## Conventions
 
