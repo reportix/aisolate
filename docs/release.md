@@ -120,8 +120,10 @@ being `backend`, `controller`, `airlock`, `tool-server`, `airlock-python`, `tool
 URLs in at build time, so a deployment builds them from `apps/frontend/Dockerfile` and `apps/chat/Dockerfile`.
 
 The tag's pipeline also builds the Windows CLI installer from source on the Windows runner
-(`cli-windows-installer`: a GraalVM native image, then NSIS) and creates the tag's GitLab Release with
-`aisolate-cli-installer.exe` and `SHA256SUMS` as asset links to that job's artifacts, which never expire on a tag.
+(`cli-windows-installer`: a GraalVM native image, then NSIS) and the Linux CLI archive on the Linux runners
+(`cli-linux-archive`: the native image and the licence in `aisolate-cli-linux-x64.tar.gz`), and creates the
+tag's GitLab Release with `aisolate-cli-installer.exe`, `SHA256SUMS`, `aisolate-cli-linux-x64.tar.gz` and its
+`.sha256` as asset links to those jobs' artifacts, which never expire on a tag.
 
 ### The macOS installer
 
@@ -137,10 +139,10 @@ glab release upload X.Y.Z aisolate-cli-installer.pkg aisolate-cli-installer.pkg.
 
 ### The GitHub mirror
 
-The mirrored release carries the same assets, published by a maintainer: download the four files from the GitLab
+The mirrored release carries the same assets, published by a maintainer: download the six files from the GitLab
 Release and `gh release create X.Y.Z --repo reportix/aisolate --title X.Y.Z --notes "AIsolate X.Y.Z"
-aisolate-cli-installer.exe SHA256SUMS aisolate-cli-installer.pkg aisolate-cli-installer.pkg.sha256`. The CLI
-guide links the mirror's latest release.
+aisolate-cli-installer.exe SHA256SUMS aisolate-cli-linux-x64.tar.gz aisolate-cli-linux-x64.tar.gz.sha256
+aisolate-cli-installer.pkg aisolate-cli-installer.pkg.sha256`. The CLI guide links the mirror's latest release.
 
 `./gradlew :apps:controller:syncCrds` writes the CRDs into `crds/` from the controller's resource classes; a
 change to those classes commits the regenerated files with it. The chart is released on its own, with a version

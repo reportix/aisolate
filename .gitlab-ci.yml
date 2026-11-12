@@ -2,7 +2,8 @@
 # on every merge, to docker-public, which anyone can pull, on a tag X.Y.Z. Every merge request bumps `version` in
 # gradle.properties. After every merge, release-deploy pins the seven published images in the chart
 # (aisolate/charts/aisolate, its bot branch next, auto-merged to main); a release is promoted there by hand. The UI and the chat bake their deployment's URLs at build time, so deployments build them.
-# A tag's pipeline also builds the Windows CLI installer on the Windows runner (cli-windows-installer) and creates
+# A tag's pipeline also builds the Windows CLI installer on the Windows runner (cli-windows-installer), the Linux CLI
+# archive on the Linux runners (cli-linux-archive) and creates
 # the tag's GitLab Release with it attached (gitlab-release); the macOS installer is a maintainer's (docs/release.md).
 include:
   - component: $CI_SERVER_FQDN/reportix/ci-templates/release@1
@@ -133,6 +134,49 @@ python-test:
       - apps/cli/build/aisolate-cli-installer.exe
       - apps/cli/build/SHA256SUMS
 
+# The Linux CLI's archive, built from source on the Linux runners: the java image ships Liberica NIK 25, whose
+# native-image the job selects as xbrl-server2's native jobs do. One archive, the binary and the licence.
+.cli-linux-archive:
+  stage: package
+  needs: []
+  image: docker-internal.sonatype.reportix.com/reportix/ci-images/java:latest
+  interruptible: true
+  retry:
+    max: 2
+    when: [runner_system_failure]
+  before_script:
+    - mise use -g java@liberica-nik-openjdk25
+    - native-image --version
+  script:
+    # The same gate as the release component's verify-release: a tag is the version it builds.
+    - |
+      declared=$(sed -n 's/^version=//p' gradle.properties)
+      if [ -n "$CI_COMMIT_TAG" ] && [ "$CI_COMMIT_TAG" != "$declared" ]; then echo "tag $CI_COMMIT_TAG is not version=$declared in gradle.properties"; exit 1; fi
+    - ./gradlew :apps:cli:createLinuxArchive --console=plain
+    - cd apps/cli/build && sha256sum aisolate-cli-linux-x64.tar.gz > aisolate-cli-linux-x64.tar.gz.sha256 && cat aisolate-cli-linux-x64.tar.gz.sha256
+  artifacts:
+    paths:
+      - apps/cli/build/aisolate-cli-linux-x64.tar.gz
+      - apps/cli/build/aisolate-cli-linux-x64.tar.gz.sha256
+
+# On a tag: the release's assets, which gitlab-release links, so they never expire.
+cli-linux-archive:
+  extends: .cli-linux-archive
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/
+  artifacts:
+    expire_in: never
+
+# On a branch, by hand: a build to try.
+cli-linux-archive-manual:
+  extends: .cli-linux-archive
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+      allow_failure: true
+  artifacts:
+    expire_in: 30 days
+
 # On a tag: the release's assets, which gitlab-release links, so they never expire.
 cli-windows-installer:
   extends: .cli-windows-installer
@@ -153,13 +197,14 @@ cli-windows-installer-manual:
 
 # The tag's GitLab Release. The release component verifies the tag and publishes the images but creates no
 # Release (release@1 has no release: step and no asset input), so this job does, after publish-release, with
-# the Windows installer and its checksum as asset links. The links are the tag's job artifacts, kept forever
-# (cli-windows-installer): no second upload and no package registry entry to keep in step with the artifact.
+# the Windows installer, the Linux archive and their checksums as asset links. The links are the tag's job
+# artifacts, kept forever (cli-windows-installer, cli-linux-archive): no second upload and no package registry
+# entry to keep in step with the artifacts.
 # The permanent URLs are the direct asset paths, $CI_PROJECT_URL/-/releases/X.Y.Z/downloads/<file>. The macOS
 # installer is attached by hand, and the GitHub mirror's release is copied by hand (docs/release.md).
 gitlab-release:
   stage: publish-release
-  needs: [publish-release, cli-windows-installer]
+  needs: [publish-release, cli-windows-installer, cli-linux-archive]
   inherit:
     default: false
     variables: false
@@ -174,7 +219,8 @@ gitlab-release:
     name: $CI_COMMIT_TAG
     description: >-
       AIsolate $CI_COMMIT_TAG. Images: `docker-public.sonatype.reportix.com/aisolate/<app>:$CI_COMMIT_TAG`.
-      The Windows CLI installer is attached; the macOS installer is attached by a maintainer (docs/release.md).
+      The Windows CLI installer and the Linux CLI archive are attached; the macOS installer is attached by a
+      maintainer (docs/release.md).
     assets:
       links:
         - name: aisolate-cli-installer.exe
@@ -184,4 +230,12 @@ gitlab-release:
         - name: SHA256SUMS
           url: $CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/apps/cli/build/SHA256SUMS?job=cli-windows-installer
           filepath: /SHA256SUMS
+          link_type: other
+        - name: aisolate-cli-linux-x64.tar.gz
+          url: $CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/apps/cli/build/aisolate-cli-linux-x64.tar.gz?job=cli-linux-archive
+          filepath: /aisolate-cli-linux-x64.tar.gz
+          link_type: package
+        - name: aisolate-cli-linux-x64.tar.gz.sha256
+          url: $CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/apps/cli/build/aisolate-cli-linux-x64.tar.gz.sha256?job=cli-linux-archive
+          filepath: /aisolate-cli-linux-x64.tar.gz.sha256
           link_type: other

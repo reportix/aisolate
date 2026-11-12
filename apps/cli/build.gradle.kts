@@ -206,6 +206,21 @@ tasks.register("createMacosInstaller") {
     }
 }
 
+// The Linux build: the native binary and the licence in one archive, unpacked onto the PATH.
+tasks.register<Tar>("createLinuxArchive") {
+    group = "distribution"
+    description = "Creates the Linux archive (aisolate-cli-linux-x64.tar.gz) with the native binary"
+    dependsOn("nativeCompile")
+    archiveFileName.set("aisolate-cli-linux-x64.tar.gz")
+    destinationDirectory.set(layout.buildDirectory)
+    compression = Compression.GZIP
+    from(layout.buildDirectory.file("native/nativeCompile/aisolate-runner")) {
+        rename { "aisolate" }
+        filePermissions { unix("rwxr-xr-x") }
+    }
+    from(rootProject.file("LICENSE"))
+}
+
 tasks.register("renameRunnerWindows") {
     dependsOn("nativeCompile")
     doLast {
