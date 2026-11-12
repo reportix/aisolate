@@ -113,7 +113,8 @@ public class AuditExport {
       pdf.field("Events", String.valueOf(rows.size()));
       for (AuditRepository.Row row : rows) {
         AuditLine.Columns c = row.columns();
-        pdf.block(UTC.format(c.ts()) + "    " + c.space() + " / " + c.airlock());
+        pdf.block(
+            UTC.format(c.ts()) + "    " + c.space() + " / " + c.airlock() + " / " + c.version());
         // A machine client asks without an e-mail: its client id says who.
         pdf.field("User", c.user() != null ? c.user() : c.client());
         pdf.field("Outcome", c.reason() == null ? c.outcome() : c.outcome() + ", " + c.reason());

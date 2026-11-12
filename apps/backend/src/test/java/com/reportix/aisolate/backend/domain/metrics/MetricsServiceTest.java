@@ -29,7 +29,7 @@ class MetricsServiceTest {
     List<String> list = spaces == null ? null : List.of(spaces.split(","));
 
     // Act
-    String built = MetricsService.selector(space, list, airlock);
+    String built = MetricsService.selector(space, list, airlock, null);
 
     // Assert
     assertThat(built).isEqualTo(selector);
@@ -65,6 +65,18 @@ class MetricsServiceTest {
   }
 
   @Test
+  void givenAVersion_whenTheSelectorIsBuilt_thenItNarrowsTheAirlock() {
+    // Arrange
+    String version = "v2";
+
+    // Act
+    String built = MetricsService.selector("hr-acme", null, "hr", version);
+
+    // Assert
+    assertThat(built).isEqualTo("space=\"hr-acme\", airlock=\"hr\", version=\"v2\"");
+  }
+
+  @Test
   void givenADeveloperOfNoSpace_whenCharted_thenNothingIsAskedOfTheStore() {
     // Arrange: a store that would fail any query
     MetricsService service =
@@ -75,7 +87,7 @@ class MetricsServiceTest {
                     tools.jackson.databind.json.JsonMapper.builder().build())));
 
     // Act
-    MetricsService.Charts charts = service.charts(null, List.of(), null, "1h", Instant.EPOCH);
+    MetricsService.Charts charts = service.charts(null, List.of(), null, null, "1h", Instant.EPOCH);
 
     // Assert
     assertThat(charts.exchangesPerMinute()).isEmpty();
@@ -96,7 +108,7 @@ class MetricsServiceTest {
     Instant now = Instant.parse("2026-10-19T15:00:00Z");
 
     // Act
-    MetricsService.Charts charts = service.charts(null, List.of(), null, period, now);
+    MetricsService.Charts charts = service.charts(null, List.of(), null, null, period, now);
 
     // Assert
     assertThat(charts.from()).isEqualTo(now.minusSeconds(rangeSeconds));

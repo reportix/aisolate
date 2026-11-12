@@ -46,7 +46,7 @@ public class AuditService {
   /**
    * @param token the bearer the pod sent; null without one
    * @throws AuditException 401 without a token, 400 for a body that is no audit line, 403 for a
-   *     token that is not the ingest token of the airlock the line names
+   *     token that is not the ingest token of the version the line names
    */
   public Appended ingest(String token, String json) {
     if (token == null || token.isBlank()) {
@@ -55,7 +55,8 @@ public class AuditService {
     if (json.length() > MAX_LINE) throw AuditException.invalid("larger than 1 MiB");
     AuditLine line = AuditLine.parse(json);
     AuditLine.Columns c = line.columns();
-    if (!AuditIngestToken.matches(properties.ingestKey(), token, c.space(), c.airlock())) {
+    if (!AuditIngestToken.matches(
+        properties.ingestKey(), token, c.space(), c.airlock(), c.version())) {
       throw new AuditException(HttpStatus.FORBIDDEN, "forbidden");
     }
     return transactions.execute(status -> {
@@ -77,8 +78,8 @@ public class AuditService {
   /**
    * @param spaces the only spaces to list, a developer's; null for every space
    * @param question only lines whose question holds it, case ignored
-   * @param search only lines whose space, airlock, user, client, trace id or question holds it,
-   *     case ignored
+   * @param search only lines whose space, airlock, version, user, client, trace id or question
+   *     holds it, case ignored
    * @param from inclusive, a date (its first instant, UTC) or an instant
    * @param to inclusive, a date (all of it) or an instant
    */
@@ -86,6 +87,7 @@ public class AuditService {
       String space,
       List<String> spaces,
       String airlock,
+      String version,
       String user,
       String outcome,
       String traceId,
@@ -112,6 +114,7 @@ public class AuditService {
             blankToNull(space),
             spaces,
             blankToNull(airlock),
+            blankToNull(version),
             blankToNull(user),
             outcome,
             blankToNull(traceId),
@@ -140,7 +143,9 @@ public class AuditService {
     String cursor = null;
     do {
       Page page =
-          list(space, spaces, null, null, null, null, null, search, from, to, cursor, MAX_PAGE);
+          list(
+              space, spaces, null, null, null, null, null, null, search, from, to, cursor,
+              MAX_PAGE);
       Map<Long, String> bodies =
           bodies(page.events().stream().map(AuditRepository.Row::id).toList());
       for (AuditRepository.Row r : page.events()) {
@@ -178,14 +183,15 @@ public class AuditService {
   private static final JsonMapper JSON = JsonMapper.builder().build();
 
   /**
-   * The first data source the airlock's newest exchange that called a tool could not read; empty
-   * when that exchange read its data, so a fixed password clears it with the next question.
+   * The first data source the airlock's (or, given, the version's) newest exchange that called a
+   * tool could not read; empty when that exchange read its data, so a fixed password clears it with
+   * the next question.
    */
-  public Optional<DataError> dataError(String space, String airlock) {
+  public Optional<DataError> dataError(String space, String airlock, String version) {
     Optional<AuditRepository.Row> row =
         transactions.execute(status -> {
           repository.becomeWriter();
-          return repository.latestToolExchange(space, airlock);
+          return repository.latestToolExchange(space, airlock, blankToNull(version));
         });
     return row.flatMap(r -> dataErrorOf(r.body(), r.columns().ts()));
   }

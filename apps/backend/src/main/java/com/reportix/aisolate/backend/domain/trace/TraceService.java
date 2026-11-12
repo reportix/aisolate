@@ -55,6 +55,7 @@ public class TraceService {
       String space,
       List<String> spaces,
       String airlock,
+      String version,
       String q,
       String from,
       String to,
@@ -62,7 +63,8 @@ public class TraceService {
       int limit) {
     store();
     AuditService.Page page =
-        audit.list(space, spaces, airlock, null, null, null, q, null, from, to, cursor, limit);
+        audit.list(
+            space, spaces, airlock, version, null, null, null, q, null, from, to, cursor, limit);
     Map<Long, String> bodies =
         audit.bodies(page.events().stream().map(AuditRepository.Row::id).toList());
     return new Page(
@@ -86,7 +88,7 @@ public class TraceService {
     if (!TRACE_ID.matcher(traceId).matches()) throw unknown();
     AuditRepository.Row listed =
         audit
-            .list(null, spaces, null, null, null, traceId, null, null, null, null, null, 1)
+            .list(null, spaces, null, null, null, null, traceId, null, null, null, null, null, 1)
             .events()
             .stream()
             .findFirst()

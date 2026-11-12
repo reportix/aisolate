@@ -1,7 +1,6 @@
 package com.reportix.aisolate.backend.application;
 
-import com.reportix.aisolate.backend.domain.airlock.Airlock;
-import com.reportix.aisolate.backend.domain.airlock.AirlockRepository;
+import com.reportix.aisolate.backend.domain.airlock.AirlockVersionRepository;
 import com.reportix.aisolate.backend.infrastructure.audit.AuditIngestPort;
 import com.reportix.aisolate.backend.infrastructure.audit.AuditProperties;
 import com.reportix.aisolate.config.AuditIngestToken;
@@ -20,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Where an airlock's pods get its code at start: the artifact by its digest, for the airlock's code
+ * Where a version's pods get its code at start: the artifact by its digest, for the version's code
  * token alone (docs/configuration.md, "The code"). No user calls it, so it has no AIsolate UI role;
  * served on the ingest port alone ({@link AuditIngestPort}). The pod checks the digest of what it
  * got.
@@ -32,15 +31,16 @@ public class CodeController {
   private static final String BEARER = "Bearer ";
   private static final JsonMapper JSON = JsonMapper.builder().build();
 
-  private final AirlockRepository airlocks;
+  private final AirlockVersionRepository versions;
   private final AuditProperties properties;
 
   // Written to the response itself: an async body would end at the container's async timeout.
-  @GetMapping(AuditIngestPort.CODE_PATH + "/{space}/{airlock}/{digest}")
+  @GetMapping(AuditIngestPort.CODE_PATH + "/{space}/{airlock}/{version}/{digest}")
   public void fetch(
       @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorization,
       @PathVariable String space,
       @PathVariable String airlock,
+      @PathVariable String version,
       @PathVariable String digest,
       HttpServletResponse response)
       throws IOException {
@@ -52,24 +52,24 @@ public class CodeController {
       refuse(response, HttpStatus.UNAUTHORIZED, "a code token is required");
       return;
     }
-    if (!AuditIngestToken.matchesCode(properties.ingestKey(), token, space, airlock)) {
+    if (!AuditIngestToken.matchesCode(properties.ingestKey(), token, space, airlock, version)) {
       refuse(response, HttpStatus.FORBIDDEN, "forbidden");
       return;
     }
     var code =
-        airlocks
-            .find(airlock)
+        versions
+            .find(airlock, version)
             .filter(row -> row.spaceId().equals(space))
-            .map(Airlock::jar)
+            .map(AirlockVersionRepository.Row::jar)
             .filter(Objects::nonNull)
             .filter(jar -> jar.digest().equalsIgnoreCase(digest));
     if (code.isEmpty()) {
-      refuse(response, HttpStatus.NOT_FOUND, "no such code: the airlock holds other code or none");
+      refuse(response, HttpStatus.NOT_FOUND, "no such code: the version holds other code or none");
       return;
     }
     response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
     response.setContentLengthLong(code.get().size());
-    airlocks.streamCode(airlock, response.getOutputStream());
+    versions.streamCode(airlock, version, response.getOutputStream());
   }
 
   private static void refuse(HttpServletResponse response, HttpStatus status, String detail)

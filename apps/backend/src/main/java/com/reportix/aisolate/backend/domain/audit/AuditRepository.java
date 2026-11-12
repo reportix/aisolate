@@ -29,8 +29,8 @@ public class AuditRepository {
   private static final int CHAIN_LOCK = 0x41554454; // "AUDT"
 
   private static final String COLUMNS =
-      "id, received_at, ts, space, airlock, revision, event, trace_id, user_email, client,"
-          + " outcome, reason, question, answer, figures_sourced, figures_computed,"
+      "id, received_at, ts, space, airlock, version, revision, event, trace_id, user_email,"
+          + " client, outcome, reason, question, answer, figures_sourced, figures_computed,"
           + " figures_unsourced, figures_mismatch, input_tokens, output_tokens, duration_ms";
 
   private final JdbcClient db;
@@ -51,6 +51,7 @@ public class AuditRepository {
       String space,
       List<String> spaces,
       String airlock,
+      String version,
       String user,
       String outcome,
       String traceId,
@@ -61,14 +62,14 @@ public class AuditRepository {
 
   /** What the Audit page's one search box looks in. */
   private static final List<String> SEARCHED =
-      List.of("space", "airlock", "user_email", "client", "trace_id", "question");
+      List.of("space", "airlock", "version", "user_email", "client", "trace_id", "question");
 
   /** Until the transaction ends. */
   public void becomeWriter() {
     db.sql("SET LOCAL ROLE aisolate_audit_writer").update();
   }
 
-  /** One airlock's lines are chained one at a time, across replicas. */
+  /** One airlock's lines are chained one at a time, across replicas and versions. */
   public void lockChain(String space, String airlock) {
     db.sql("SELECT pg_advisory_xact_lock(?, ?)")
         .params(CHAIN_LOCK, (space + "/" + airlock).hashCode())
@@ -97,15 +98,16 @@ public class AuditRepository {
   public long insert(AuditLine line, String prevHash, String hash) {
     AuditLine.Columns c = line.columns();
     return db.sql(
-            "INSERT INTO audit_events (ts, space, airlock, revision, event, trace_id,"
+            "INSERT INTO audit_events (ts, space, airlock, version, revision, event, trace_id,"
                 + " user_email, client, outcome, reason, question, answer, figures_sourced,"
                 + " figures_computed, figures_unsourced, figures_mismatch, input_tokens,"
                 + " output_tokens, duration_ms, body, digest, prev_hash, hash) VALUES (?, ?, ?, ?,"
-                + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id")
+                + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id")
         .params(
             Timestamp.from(c.ts()),
             c.space(),
             c.airlock(),
+            c.version(),
             c.revision(),
             c.event(),
             c.traceId(),
@@ -141,6 +143,7 @@ public class AuditRepository {
         "space = ANY(?)",
         f.spaces() == null ? null : f.spaces().toArray(String[]::new));
     add(where, params, "airlock = ?", f.airlock());
+    add(where, params, "version = ?", f.version());
     add(where, params, "lower(user_email) = lower(?)", f.user());
     add(where, params, "outcome = ?", f.outcome());
     add(where, params, "trace_id = ?", f.traceId());
@@ -168,15 +171,18 @@ public class AuditRepository {
         .list();
   }
 
-  /** The newest exchange of this airlock that called a tool, with its body. */
-  public Optional<Row> latestToolExchange(String space, String airlock) {
+  /**
+   * The newest exchange of this airlock that called a tool, with its body; of one version of it
+   * when {@code version} is given.
+   */
+  public Optional<Row> latestToolExchange(String space, String airlock, String version) {
     return db.sql(
             "SELECT "
                 + COLUMNS
                 + ", prev_hash, hash, body FROM audit_events WHERE space = ? AND airlock = ? AND"
-                + " event = 'exchange' AND body::jsonb -> 'tools' <> '[]'::jsonb"
-                + " ORDER BY id DESC LIMIT 1")
-        .params(space, airlock)
+                + " (?::text IS NULL OR version = ?) AND event = 'exchange' AND body::jsonb ->"
+                + " 'tools' <> '[]'::jsonb ORDER BY id DESC LIMIT 1")
+        .params(space, airlock, version, version)
         .query(AuditRepository::readRow)
         .optional();
   }
@@ -255,6 +261,7 @@ public class AuditRepository {
             rs.getObject("ts", OffsetDateTime.class).toInstant(),
             rs.getString("space"),
             rs.getString("airlock"),
+            rs.getString("version"),
             rs.getString("revision"),
             rs.getString("event"),
             rs.getString("trace_id"),

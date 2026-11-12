@@ -25,11 +25,17 @@ public class MetricsController {
   public MetricsService.Charts get(
       @RequestParam(required = false) String space,
       @RequestParam(required = false) String airlock,
+      @RequestParam(required = false) String version,
       @RequestParam(required = false) String period) {
     // Another space's, asked by name: the 403 its pages give.
     if (space != null && !space.isBlank()) access.developer(space);
     return metrics.charts(
-        blankToNull(space), access.developedSpaces(), blankToNull(airlock), period, Instant.now());
+        blankToNull(space),
+        access.developedSpaces(),
+        blankToNull(airlock),
+        blankToNull(version),
+        period,
+        Instant.now());
   }
 
   private static String blankToNull(String s) {

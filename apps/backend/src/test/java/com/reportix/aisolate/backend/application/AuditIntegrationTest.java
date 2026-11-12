@@ -50,7 +50,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The audit trail end to end: the ingest takes a line only with the ingest token of the airlock it
+ * The audit trail end to end: the ingest takes a line only with the ingest token of the version it
  * names, the table keeps what it took, the chain shows what changed, and the admin and the auditor
  * read all of it, a developer only their spaces' events.
  */
@@ -84,29 +84,30 @@ class AuditIntegrationTest {
   }
 
   /** Each gives the token sent for a line of the space under test. */
-  static Stream<Arguments> tokensNotTheAirlocks() {
+  static Stream<Arguments> tokensNotTheVersions() {
     String developer = Tokens.forOperator("jasmine", "password");
     return Stream.of(
-        arguments(named("another airlock's of the space", tokenFor("sales"))),
+        arguments(named("another airlock's of the space", tokenFor("sales", "v1"))),
+        arguments(named("another version's of the airlock", tokenFor("hr", "v2"))),
         arguments(
             named(
-                "the same airlock in another space",
+                "the same version in another space",
                 (UnaryOperator<String>)
-                    s -> AuditIngestToken.of(BackendTestConfig.INGEST_KEY, "other", "hr"))),
+                    s -> AuditIngestToken.of(BackendTestConfig.INGEST_KEY, "other", "hr", "v1"))),
         arguments(
             named(
                 "another install's",
-                (UnaryOperator<String>) s -> AuditIngestToken.of("other-key", s, "hr"))),
+                (UnaryOperator<String>) s -> AuditIngestToken.of("other-key", s, "hr", "v1"))),
         arguments(named("a developer's own token", (UnaryOperator<String>) s -> developer)));
   }
 
-  private static UnaryOperator<String> tokenFor(String airlock) {
-    return s -> AuditIngestToken.of(BackendTestConfig.INGEST_KEY, s, airlock);
+  private static UnaryOperator<String> tokenFor(String airlock, String version) {
+    return s -> AuditIngestToken.of(BackendTestConfig.INGEST_KEY, s, airlock, version);
   }
 
   @ParameterizedTest
-  @MethodSource("tokensNotTheAirlocks")
-  void givenATokenNotTheIngestTokenOfTheNamedAirlock_whenIngesting_then403AndNothingStored(
+  @MethodSource("tokensNotTheVersions")
+  void givenATokenNotTheIngestTokenOfTheNamedVersion_whenIngesting_then403AndNothingStored(
       UnaryOperator<String> token) {
     // Arrange
     String line = line(space, airlock, "q");
@@ -122,7 +123,7 @@ class AuditIntegrationTest {
   @Test
   void givenTheAirlocksToken_whenTwoLinesIngested_thenEachIsStoredAndTheSecondChainsToTheFirst() {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
 
     // Act
     HttpResponse<String> first = ingest(token, line(space, airlock, "first"));
@@ -143,7 +144,7 @@ class AuditIntegrationTest {
   @Test
   void givenALineStoredAlready_whenTheSameLineIsSentAgain_then200WithTheStoredId() {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     String line = line(space, airlock, "retried");
     long stored = JSON.readTree(ingest(token, line).body()).path("id").asLong();
 
@@ -163,11 +164,13 @@ class AuditIntegrationTest {
         "[]",
         "{\"event\":\"exchange\",\"space\":\"SPACE\",\"airlock\":\"hr\",\"outcome\":\"answered\"}",
         "{\"ts\":\"2026-10-18T09:00:00Z\",\"event\":\"chat\",\"space\":\"SPACE\",\"airlock\":\"hr\",\"outcome\":\"answered\"}",
-        "{\"ts\":\"2026-10-18T09:00:00Z\",\"event\":\"exchange\",\"space\":\"SPACE\",\"airlock\":\"hr\",\"outcome\":\"fine\"}"
+        "{\"ts\":\"2026-10-18T09:00:00Z\",\"event\":\"exchange\",\"space\":\"SPACE\",\"airlock\":\"hr\",\"outcome\":\"fine\"}",
+        // No version: a line of a pod from before versions is refused, never stored as one
+        "{\"ts\":\"2026-10-18T09:00:00Z\",\"event\":\"exchange\",\"space\":\"SPACE\",\"airlock\":\"hr\",\"outcome\":\"answered\"}"
       })
   void givenABodyThatIsNoAuditLine_whenIngested_then400(String body) {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
 
     // Act
     HttpResponse<String> response = ingest(token, body.replace("SPACE", space));
@@ -179,7 +182,7 @@ class AuditIntegrationTest {
   @Test
   void givenTheIngestPath_whenPostedToTheApiPort_then404() {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     HttpRequest request =
         HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/v1/audit/events"))
             .header("Authorization", "Bearer " + token)
@@ -223,7 +226,7 @@ class AuditIntegrationTest {
   @MethodSource("changes")
   void givenStoredLines_whenChangedOrRemovedInTheDatabase_thenRefused(String role, String sql) {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     ingest(token, line(space, airlock, "kept"));
 
     // Act / Assert
@@ -238,7 +241,7 @@ class AuditIntegrationTest {
   @Test
   void givenAnUntouchedChain_whenVerified_thenOk() {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     for (String q : List.of("a", "b", "c")) ingest(token, line(space, airlock, q));
 
     // Act
@@ -280,7 +283,7 @@ class AuditIntegrationTest {
   void givenALineTamperedBehindTheTrigger_whenVerified_thenBrokenAtTheFirstLineThatFails(
       String tamper, int brokenAt, String reason) throws SQLException {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     List<Long> ids =
         Stream.of("a", "b", "c")
             .map(q -> JSON.readTree(ingest(token, line(space, airlock, q)).body()))
@@ -303,7 +306,7 @@ class AuditIntegrationTest {
   @Test
   void givenThreeLines_whenListedTwoAtATime_thenNewestFirstOverTwoPages() {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     for (String q : List.of("a", "b", "c")) ingest(token, line(space, airlock, q));
 
     // Act
@@ -327,9 +330,30 @@ class AuditIntegrationTest {
   }
 
   @Test
+  void givenLinesOfTwoVersions_whenListedByVersion_thenOnlyItsLinesAndOneChainForTheAirlock() {
+    // Arrange: v1 and v2 of one airlock, each pod with its own token, chained as one airlock
+    String v1 = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
+    String v2 = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v2");
+    JsonNode first = JSON.readTree(ingest(v1, line(space, airlock, "v1", "a")).body());
+    JsonNode second = JSON.readTree(ingest(v2, line(space, airlock, "v2", "b")).body());
+
+    // Act
+    JsonNode page = get("/v1/audit/events?space=" + space + "&version=v2", auditor());
+    JsonNode verification = verify(space, airlock, auditor());
+
+    // Assert
+    assertThat(questions(page)).containsExactly("b");
+    assertThat(page.path("events").path(0).path("version").asString()).isEqualTo("v2");
+    assertThat(verification.path("status").asString()).isEqualTo("ok");
+    assertThat(verification.path("events").asLong()).isEqualTo(2);
+    assertThat(event(second.path("id").asLong()).path("prev_hash").asString())
+        .isEqualTo(event(first.path("id").asLong()).path("hash").asString());
+  }
+
+  @Test
   void givenATraceId_whenListed_thenOnlyThatExchange() {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     for (String q : List.of("a", "b")) ingest(token, line(space, airlock, q));
 
     // Act
@@ -352,7 +376,7 @@ class AuditIntegrationTest {
   void givenASearch_whenListed_thenLinesWhoseQuestionTraceUserOrClientHoldsIt(
       String q, String expected) {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     for (String question : List.of("salary", "leave")) {
       ingest(token, line(space, airlock, question));
     }
@@ -384,7 +408,7 @@ class AuditIntegrationTest {
   void givenAUser_whenReadingTheAudit_thenAllowedByRoleAndSpace(
       String username, int list, int event, int verify, int export, int seen) {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     long id = JSON.readTree(ingest(token, line(space, airlock, "q")).body()).path("id").asLong();
     String user = Tokens.forOperator(username, "password");
 
@@ -421,7 +445,7 @@ class AuditIntegrationTest {
   void givenALine_whenExported_thenAFileOfTheFormatNamedForToday(
       String format, String contentType, String extension, String marker) {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     ingest(token, line(space, airlock, "salary"));
 
     // Act
@@ -438,7 +462,7 @@ class AuditIntegrationTest {
   @Test
   void givenMoreLinesThanAPage_whenExportedAsJson_thenEveryLineNewestFirstWithItsLink() {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     IntStream.rangeClosed(1, 201).forEach(i -> ingest(token, line(space, airlock, "q" + i)));
 
     // Act
@@ -457,7 +481,7 @@ class AuditIntegrationTest {
   void givenASearchAndAPeriod_whenExportedAsPdf_thenItsHeadingAndABlockPerExchangeFound()
       throws IOException {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     for (String question : List.of("salary", "leave")) {
       ingest(token, line(space, airlock, question));
     }
@@ -477,7 +501,7 @@ class AuditIntegrationTest {
             "2026-10-18 to now",
             "by Audit Reader (auditor@example.com)",
             "2026-10-18 09:11:57 UTC",
-            space + " / hr",
+            space + " / hr / v1",
             "elena@example.com",
             "Your gross salary is 78,000 EUR.",
             "read_my_records (1 row)",
@@ -499,7 +523,7 @@ class AuditIntegrationTest {
   void givenTwoExchanges_whenExportedAsXbrl_thenAContextPerExchangeAndToolCallOverThePeriod(
       String bounds, String from, String to) throws Exception {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     for (String question : List.of("salary", "leave")) {
       ingest(token, line(space, airlock, question));
     }
@@ -528,7 +552,7 @@ class AuditIntegrationTest {
   void givenTwoExchanges_whenOneIsExportedAsXbrl_thenItsReportHoldsThatExchangeAlone()
       throws Exception {
     // Arrange
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     long salary =
         JSON.readTree(ingest(token, line(space, airlock, "salary")).body()).path("id").asLong();
     ingest(token, line(space, airlock, "leave"));
@@ -577,7 +601,7 @@ class AuditIntegrationTest {
   void givenTheNewestToolCallsError_whenAskingForTheDataError_thenOnlyALoginOrReachFailure(
       String error, String expected) {
     // Arrange: an older exchange that could not log in, the newest tool call, then a greeting
-    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock);
+    String token = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
     ingest(token, failedWith("login_refused", line(space, airlock, "older")));
     String newest = line(space, airlock, "newest");
     ingest(token, error.isEmpty() ? newest : failedWith(error, newest));
@@ -595,6 +619,24 @@ class AuditIntegrationTest {
       assertThat(dataError.path("error").asString()).isEqualTo(expected);
       assertThat(dataError.path("ts").asString()).isEqualTo("2026-10-18T09:11:57.006Z");
     }
+  }
+
+  @Test
+  void givenTwoVersions_whenAskingForTheDataErrorOfOne_thenItsNewestToolCallAlone() {
+    // Arrange: v1 could not log in; v2 read its data
+    String v1 = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v1");
+    String v2 = AuditIngestToken.of(BackendTestConfig.INGEST_KEY, space, airlock, "v2");
+    ingest(v1, failedWith("login_refused", line(space, airlock, "v1", "older")));
+    ingest(v2, line(space, airlock, "v2", "newest"));
+    String query = "/v1/audit/data-error?space=" + space + "&airlock=" + airlock;
+
+    // Act
+    JsonNode airlocks = get(query, auditor());
+    JsonNode v1s = get(query + "&version=v1", auditor());
+
+    // Assert: the airlock's newest exchange read its data; v1's newest did not
+    assertThat(airlocks.path("data_error").isNull()).isTrue();
+    assertThat(v1s.path("data_error").path("error").asString()).isEqualTo("login_refused");
   }
 
   @Test
@@ -618,11 +660,17 @@ class AuditIntegrationTest {
 
   // Helpers
 
-  /** An exchange line as the airlock writes it, its trace named after the space and question. */
+  /**
+   * An exchange line as v1 of the airlock writes it, its trace named after the space and question.
+   */
   private static String line(String space, String airlock, String question) {
+    return line(space, airlock, "v1", question);
+  }
+
+  private static String line(String space, String airlock, String version, String question) {
     return """
     {"ts":"2026-10-18T09:11:57.006Z","event":"exchange","trace_id":"trace-%s-%s",\
-    "space":"%s","airlock":"%s","revision":"7b2280eab4b5",\
+    "space":"%s","airlock":"%s","version":"%s","revision":"7b2280eab4b5",\
     "user":"elena@example.com","client":"acme-chat","question":"%s",\
     "answer":"Your gross salary is 78,000 EUR.","outcome":"answered","reason":null,\
     "tools":[{"name":"read_my_records","args":{"entity":"hr.compensation","limit":20.5},\
@@ -632,7 +680,7 @@ class AuditIntegrationTest {
     "model":{"provider":"ollama","name":"granite4.1:8b","calls":2,"input_tokens":1840,\
     "output_tokens":212},"duration_ms":6114}\
     """
-        .formatted(space, question, space, airlock, question);
+        .formatted(space, question, space, airlock, version, question);
   }
 
   /** The line's tool call as a failed one: no rows, its error category. */
