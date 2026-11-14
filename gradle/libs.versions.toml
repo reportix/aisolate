@@ -5,7 +5,7 @@ java = "25"
 spring-boot = "4.1.2"
 spring-ai = "2.0.2"
 # The MCP SDK Spring AI brings to the tool server; the airlock's client must speak the same.
-mcp = "2.1.0"
+mcp = "2.2.0"
 spotless = "8.11.0"
 archunit = "1.5.1"
 lombok-plugin = "9.8.3"
