@@ -3,7 +3,7 @@
 # dependencies: docker build -f apps/airlock-python/Dockerfile -t aisolate/airlock-python .
 # Non-root, numeric uid; only /tmp (and the audit buffer emptyDir) is ever written.
 FROM python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90 AS build
-COPY --from=ghcr.io/astral-sh/uv:0.13.8@sha256:5cc1805e2426484abca4ad46ea783bab281fdb225fd82d8ce6d66a81254bac85 /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.9@sha256:d3b601f0c7b118bc1753febf7c41cc80981df678445e0254284eecf84db79a7d /uv /bin/uv
 ENV UV_LINK_MODE=copy UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=never UV_PROJECT_ENVIRONMENT=/app/.venv
 COPY libs/sdk-python /src/libs/sdk-python
 COPY libs/runtime-python /src/libs/runtime-python
@@ -14,7 +14,7 @@ RUN uv sync --frozen --no-dev --no-editable
 
 # Distroless: the interpreter and its libraries, no shell, no package manager. The venv's own
 # interpreter is the build image's; the image's python3 runs the venv's site-packages instead.
-FROM gcr.io/distroless/python3-debian13:nonroot@sha256:6c4cb3bfa4b555429dd19541796a6ba6b30c84675b460bd0bd5072f7d5bdae71
+FROM gcr.io/distroless/python3-debian13:nonroot@sha256:e36c26ad81ef8c9da7605d717a22160193ab66cfbc55bd5977f429f01f6ead99
 COPY --from=build /app/.venv /app/.venv
 # uid 10001, numeric: runAsNonRoot checks it and no /etc/passwd entry is needed.
 USER 10001:10001
