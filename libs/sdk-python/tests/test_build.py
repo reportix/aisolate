@@ -258,11 +258,20 @@ def _wheel(index: Path, name: str, version: str, tag: str = "py3-none-any", requ
             wheel.writestr(path, text)
 
 
+def _runtime_pin(name: str) -> str:
+    """The version the runtime's pinned set (:data:`build.CONSTRAINTS`) holds ``name`` at, read as the build reads it."""
+    return dict(build._pin(line) for line in build.CONSTRAINTS.read_text().splitlines()
+                if line.strip() and not line.startswith("#"))[name]
+
+
+PYYAML = _runtime_pin("pyyaml")
+
+
 @pytest.fixture
 def index(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     wheels = tmp_path / "wheels"
     wheels.mkdir()
-    _wheel(wheels, "pyyaml", "6.0.3")
+    _wheel(wheels, "pyyaml", PYYAML)
     _wheel(wheels, "pyyaml", "5.4.1")
     for name, value in {"UV_NO_INDEX": "1", "UV_FIND_LINKS": str(wheels), "UV_NO_CACHE": "1"}.items():
         monkeypatch.setenv(name, value)
@@ -329,14 +338,14 @@ def test_given_pure_python_dependency_when_built_then_vendored_and_in_manifest(p
 @pytest.mark.parametrize("requirements", [["pyyaml==5.4.1"], ["oldyaml"]], ids=["direct", "transitive"])
 def test_given_dependency_on_another_version_of_a_pinned_package_when_built_then_refused_naming_both(
         project: Path, index: Path, requirements: list[str]) -> None:
-    # Arrange: the runtime pins pyyaml 6.0.3
+    # Arrange: the runtime pins pyyaml at PYYAML
     _wheel(index, "oldyaml", "1.0", requires=["pyyaml<6"])
     _depends(project, *requirements)
 
     # Act / Assert
     with pytest.raises(ValueError) as refused:
         build.build(project, arch="aarch64")
-    assert str(refused.value) == ("pyyaml 5.4.1 (the project's dependencies) clashes with pyyaml 6.0.3"
+    assert str(refused.value) == (f"pyyaml 5.4.1 (the project's dependencies) clashes with pyyaml {PYYAML}"
                                   " (the runtime's pinned set): depend on a version the runtime has")
 
 
