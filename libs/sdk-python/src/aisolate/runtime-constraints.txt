@@ -27,11 +27,11 @@ pg8000==1.31.6
 prometheus-client==0.26.0
 protobuf==7.36.2
 pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
-pydantic-core==2.50.4
-pydantic==2.14.3
+pydantic-core==2.50.5
+pydantic==2.14.4
 pyjwt==2.15.1
 python-dateutil==4.0.0
-python-multipart==0.0.33
+python-multipart==0.0.34
 pywin32==312 ; sys_platform == 'win32'
 pyyaml==6.0.3
 referencing==0.37.0
