@@ -29,6 +29,11 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
+// The rule sets ship at aisolate/rules/<entity>.json.
+tasks.named<ProcessResources>("processResources") {
+    from("rules") { into("aisolate/rules") }
+}
+
 // One jar, named after the template: what `aisolate deploy` sends.
 tasks.named<Jar>("jar") {
     archiveBaseName.set(rootProject.name)

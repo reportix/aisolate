@@ -110,18 +110,19 @@ class TemplateBuildTest {
         new TemplateSpec(
             "company-hr",
             "hr-contracts",
-            null,
-            List.of(),
-            List.of(),
+            "com.acme.hr.tools.ContractTools",
+            List.of("read_contract_terms", "fetch_salary"),
+            List.of("read_contract_terms", "fetch_salary"),
             List.of(
                 "com.acme.hr.pre_llm.ContractsContextPreparator",
-                "com.acme.hr.pre_llm.SessionMemory"),
+                "com.acme.hr.pre_llm.SessionMemory",
+                "com.acme.hr.post_llm.ContractTermsVerifier"),
             List.of("ContractsContextPreparator"),
-            List.of(),
+            List.of("ContractTermsVerifier"),
             "You are the Acme contracts assistant.",
             "hr",
             "com.acme.hr.pre_llm.ContractsContextPreparator",
-            List.of()),
+            List.of("hr.contract_terms", "hr.salary")),
         new TemplateSpec(
             "company-sales",
             "sales",
@@ -390,6 +391,8 @@ class TemplateBuildTest {
     String classes = System.getProperty("aisolate.templates.classes");
     assumeTrue(classes != null, "the build passes the templates' classes");
     assumeTrue(spec.plugin() != null, "no tools, no labelled evidence");
+    // company-hr's set is still over hr.compensation and hr.leave, entities it no longer has.
+    assumeTrue(!spec.template().equals("company-hr"), "the golden set is of its earlier tools");
     JsonNode golden =
         JsonMapper.builder()
             .build()

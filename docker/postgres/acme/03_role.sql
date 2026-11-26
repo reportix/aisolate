@@ -3,7 +3,8 @@
 -- reads its own schema, time-boxed, and writes nothing but the vectors of its documents.
 CREATE ROLE aisolate_hr LOGIN PASSWORD 'aisolate_hr';
 GRANT USAGE ON SCHEMA hr TO aisolate_hr;
-GRANT SELECT ON hr.employees, hr.compensation, hr.leave, hr.objectives, hr.documents TO aisolate_hr;
+GRANT SELECT ON hr.employees, hr.compensation, hr.leave, hr.objectives, hr.documents, hr.contract_terms
+    TO aisolate_hr;
 GRANT UPDATE (embedding) ON hr.documents TO aisolate_hr;
 ALTER ROLE aisolate_hr SET statement_timeout = '5s';
 

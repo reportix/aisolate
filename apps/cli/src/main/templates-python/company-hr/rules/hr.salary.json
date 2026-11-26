@@ -1,0 +1,10 @@
+{
+  "entity": "hr.salary",
+  "classification": "confidential",
+  "rules": [
+    {"name": "own-salary", "principals": {"role": "employee"}, "actions": ["read"], "effect": "allow",
+     "row_filter": "email == principal.email", "columns": {"email": "hide"}},
+    {"name": "ceo-all", "principals": {"role": "ceo"}, "actions": ["read"], "effect": "allow",
+     "row_filter": "true", "columns": {"email": "hide"}}
+  ]
+}
