@@ -16,11 +16,12 @@ import java.util.List;
 
 /**
  * Governed retrieval over Acme's employment contracts, read from the data source {@code hr} of
- * {@code aisolate.yaml}: the question is embedded with the LLM {@code nomic}, the closest contract
- * sections the asking user may read are added to the exchange under one evidence id, the asking
- * user's own marked as theirs. Who may read what is decided here, from the principal AIsolate hands
- * over: the CEO reads every contract, anyone else only the one that names their e-mail as owner.
- * One instance serves every exchange concurrently: no fields, one connection per call.
+ * {@code aisolate.yaml}: the question is embedded with the LLM {@code gpt-embedding}, the closest
+ * contract sections the asking user may read are added to the exchange under one evidence id, the
+ * asking user's own marked as theirs. Who may read what is decided here, from the principal
+ * AIsolate hands over: the CEO reads every contract, anyone else only the one that names their
+ * e-mail as owner. One instance serves every exchange concurrently: no fields, one connection per
+ * call.
  */
 @Description("Read employment contracts")
 @DataSources("hr")
@@ -56,7 +57,7 @@ public final class ContractsContextPreparator implements ContextPreparator {
       embedMissingSections(db, aisolate);
       String email = aisolate.principal().email() == null ? "" : aisolate.principal().email();
       String owner = ownerOf(aisolate.principal());
-      String vector = toVector(aisolate.llm("nomic").embed(exchange.question()));
+      String vector = toVector(aisolate.llm("gpt-embedding").embed(exchange.question()));
       List<Passage> passages = new ArrayList<>();
       try (PreparedStatement query = db.prepareStatement(SEARCH)) {
         query.setString(1, email);
@@ -77,7 +78,8 @@ public final class ContractsContextPreparator implements ContextPreparator {
       exchange.addEvidence(CONTEXT_PREPARATOR, passages);
     } catch (IllegalArgumentException | SQLException unavailable) {
       // Fail closed for documents: no passages, the model says it does not know. An
-      // IllegalArgumentException: no data source hr, or an LlmException: no model nomic, or one
+      // IllegalArgumentException: no data source hr, or an LlmException: no model gpt-embedding, or
+      // one
       // that cannot embed. Never a SQLException's message: it can echo the database's address.
       String cause =
           unavailable instanceof SQLException sql
@@ -113,7 +115,7 @@ public final class ContractsContextPreparator implements ContextPreparator {
                   + rows.getString("section")
                   + "\n"
                   + rows.getString("body");
-          update.setString(1, toVector(aisolate.llm("nomic").embed(text)));
+          update.setString(1, toVector(aisolate.llm("gpt-embedding").embed(text)));
           update.setLong(2, rows.getLong("id"));
           update.executeUpdate();
         }

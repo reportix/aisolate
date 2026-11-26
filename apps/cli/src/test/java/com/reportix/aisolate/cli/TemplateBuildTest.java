@@ -269,8 +269,8 @@ class TemplateBuildTest {
         metadata: {name: aisolate}
         spec:
           llms:
-            - {id: granite, provider: ollama, url: "%1$s", model: "granite4.1:8b"}
-            - {id: nomic, provider: ollama, url: "%1$s", model: nomic-embed-text}
+            - {id: gpt, provider: ollama, url: "%1$s", model: "granite4.1:8b"}
+            - {id: gpt-embedding, provider: ollama, url: "%1$s", model: nomic-embed-text}
           dataSources: [{id: %2$s, url: "%3$s", secretRef: ds-secret}]
         ---
         apiVersion: aisolate.dev/v1
@@ -310,10 +310,10 @@ class TemplateBuildTest {
     assertThat(loaded.airlockOf(v1.name()).name()).isEqualTo(spec.airlock());
     assertThat(v1.contextPreparatorHandlers()).containsExactlyElementsOf(spec.contextPreparators());
     assertThat(v1.memoryHandlers()).containsExactly("SessionMemory");
-    assertThat(v1.spec().llm()).isEqualTo("granite");
+    assertThat(v1.spec().llm()).isEqualTo("gpt");
     assertThat(v1.spec().llms()).isEmpty();
     assertThat(loaded.mainLlmOf(v1.name()))
-        .isEqualTo(new Llm("granite", "ollama", OLLAMA, "granite4.1:8b"));
+        .isEqualTo(new Llm("gpt", "ollama", OLLAMA, "granite4.1:8b"));
     assertThat(v1.spec().prompt()).startsWith(spec.promptStart());
     assertThat(v1.tools()).containsExactlyElementsOf(spec.tools());
     assertThat(v1.verifierHandlers()).containsExactlyElementsOf(spec.verifiers());
@@ -342,7 +342,7 @@ class TemplateBuildTest {
     }
     assertThat(Files.readString(sources.resolve(spec.retrieval().replace('.', '/') + ".java")))
         .contains("aisolate.dataSource(\"" + spec.dataSource() + "\")")
-        .contains("aisolate.llm(\"nomic\").embed(");
+        .contains("aisolate.llm(\"gpt-embedding\").embed(");
   }
 
   @ParameterizedTest

@@ -22,7 +22,7 @@ INDEX = "UPDATE clients.documents SET embedding = %s::vector WHERE id = %s"
 @context_preparator(order=1, description="Read client contracts", data_sources=["clients"])
 class SalesDocumentsContextPreparator:
     """Retrieval over Acme's client contracts and board memos, read from the data source
-    ``clients`` of ``aisolate.yaml``: the question is embedded with the LLM ``nomic``,
+    ``clients`` of ``aisolate.yaml``: the question is embedded with the LLM ``gpt-embedding``,
     the closest sections are added to the exchange under one evidence id. It filters nothing, by
     design: everyone the airlock admits reads every section, board memos included. Who may ask this
     airlock is its space's roles and its own, so a role put on the space to ask another airlock
@@ -34,13 +34,13 @@ class SalesDocumentsContextPreparator:
         try:
             with aisolate.data_source("clients") as db:
                 _embed_missing_sections(db, aisolate)
-                vector = to_vector(aisolate.llm("nomic").embed(exchange.question))
+                vector = to_vector(aisolate.llm("gpt-embedding").embed(exchange.question))
                 cursor = db.cursor()
                 cursor.execute(SEARCH, (CONTEXT_PREPARATOR, vector, MAX_DISTANCE, vector, TOP_K))
                 passages = [Passage(title, section, body) for title, section, body in cursor.fetchall()]
                 exchange.add_evidence(CONTEXT_PREPARATOR, passages)
         # Fail closed for documents: no passages, the model says it does not know. A ValueError:
-        # no data source clients, or an LlmError: no model nomic, or one that cannot embed.
+        # no data source clients, or an LlmError: no model gpt-embedding, or one that cannot embed.
         except (ValueError, DatabaseError) as unavailable:
             aisolate.log.warning("client-documents unavailable: %s", _cause(unavailable))
 
@@ -51,7 +51,7 @@ def _embed_missing_sections(db: Connection, aisolate: AIsolateManager) -> None:
     cursor = db.cursor()
     cursor.execute(UNINDEXED, (CONTEXT_PREPARATOR,))
     for row_id, title, section, body in cursor.fetchall():
-        cursor.execute(INDEX, (to_vector(aisolate.llm("nomic").embed(f"{title}\n{section}\n{body}")), row_id))
+        cursor.execute(INDEX, (to_vector(aisolate.llm("gpt-embedding").embed(f"{title}\n{section}\n{body}")), row_id))
     db.commit()
 
 

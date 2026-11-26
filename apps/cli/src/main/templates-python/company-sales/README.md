@@ -63,11 +63,11 @@ A rule set has `entity`, `classification` and `rules`, nothing else.
 ## The client documents
 
 `SalesDocumentsContextPreparator` reads the `clients.documents` table of the data source
-`clients`, PostgreSQL with pgvector, through `aisolate.data_source("clients")`. It embeds, with the LLM `nomic`
-(`aisolate.llm("nomic")`), the sections that have no embedding, then the question, and adds the closest sections: the
+`clients`, PostgreSQL with pgvector, through `aisolate.data_source("clients")`. It embeds, with the LLM `gpt-embedding`
+(`aisolate.llm("gpt-embedding")`), the sections that have no embedding, then the question, and adds the closest sections: the
 master agreements (pricing, service levels, term and termination) and the board memo. It filters
 nothing: every user the airlock admits reads every client document, so only the founders may
-ask the airlock. When the airlock sees no data source `clients` or no model `nomic` that embeds, or the database does not
+ask the airlock. When the airlock sees no data source `clients` or no model `gpt-embedding` that embeds, or the database does not
 answer within a few seconds, the handler logs one line, adds no passages and the model says it does not know.
 
 ## Commands

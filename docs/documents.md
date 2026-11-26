@@ -11,7 +11,7 @@ loader validates them in every process. The documents below are a complete examp
 ## Example documents
 
 The space `hr-space` after the `company-hr` template's deploy, into an install
-whose admin defined the LLMs `granite` and `nomic` and the data source `hr` for all of AIsolate, and a space that adds a larger model. It holds URLs and Secret names, never a credential, and no code: each version names its
+whose admin defined the LLMs `gpt` and `gpt-embedding` and the data source `hr` for all of AIsolate, and a space that adds a larger model. It holds URLs and Secret names, never a credential, and no code: each version names its
 code by digest, and its pods fetch it from the backend.
 
 ```yaml
@@ -20,8 +20,8 @@ kind: Global
 metadata: {name: aisolate}                       # the install's one, set by the admin in the AIsolate UI
 spec:
   llms:                                          # every space's, unless a nearer level defines the same id
-    - {id: granite, provider: ollama, url: http://ollama.example.com:11434, model: "granite4.1:8b"}
-    - {id: nomic, provider: ollama, url: http://ollama.example.com:11434, model: nomic-embed-text}
+    - {id: gpt, provider: ollama, url: http://ollama.example.com:11434, model: "granite4.1:8b"}
+    - {id: gpt-embedding, provider: ollama, url: http://ollama.example.com:11434, model: nomic-embed-text}
   dataSources:                                   # every space's too: the hr schema, which ContractsContextPreparator names
     - {id: hr, url: "jdbc:postgresql://acme-db.aisolate.svc:5432/acme", secretRef: aisolate-ds-hr-x7k2qa}   # keys username and password
 ---
@@ -63,7 +63,7 @@ spec:
       handlers: [ContractsContextPreparator]
     conversationMemory:
       handlers: [SessionMemory]
-  llm: granite                                   # the LLM that answers, by id: the global one here
+  llm: gpt                                   # the LLM that answers, by id: the global one here
   prompt: >-
     You are the Acme contracts assistant. Answer only from the employment contract passages
     provided to you; each passage's title names whose contract it is. Quote the words that
@@ -117,11 +117,11 @@ spec:
     conversationMemory:
       handlers: [SessionMemory]
 
-  # LLM, the model writes the answer: the LLM granite, by id. The admin defines the LLMs, for
+  # LLM, the model writes the answer: the LLM gpt, by id. The admin defines the LLMs, for
   # all of AIsolate or on the space or the airlock; the code names one the same way, as the
-  # context preparator's aisolate.llm("nomic") does to embed. No tools: the contracts are all
+  # context preparator's aisolate.llm("gpt-embedding") does to embed. No tools: the contracts are all
   # it reads.
-  llm: granite
+  llm: gpt
   prompt: >-
     You are the Acme contracts assistant. Answer only from the employment contract passages
     provided to you; each passage's title names whose contract it is. A question about my
@@ -144,7 +144,7 @@ spec:
 | `spec.airlock` | Required: an airlock of the space `AISOLATE_SPACE` names, or the file's `Airlock`. Without that document, an airlock the space does not have is refused (404): add its `Airlock` to the file, or create it in the AIsolate UI. An airlock id another space holds is refused (409). |
 | `spec.version`, `metadata.name` | The version's name ([Version name](#names-ids-and-revision)) and `<airlock>-<version>`. A name the airlock has no version of creates one; an existing name updates that version in place. The templates write `v1`; a project that names another version runs beside it. |
 | `spec.description` | Optional; shown with the version in the AIsolate UI and in discovery. |
-| `spec.llm` | Required: the id of the LLM that answers, defined by the file's `llms`, the airlock, the space or AIsolate (global), nearest first. One that resolves to nothing is refused, 400 `llm: no model named granite in this airlock's space or globally`. Ids that code names (`aisolate.llm("nomic")`) are not checked at deploy. |
+| `spec.llm` | Required: the id of the LLM that answers, defined by the file's `llms`, the airlock, the space or AIsolate (global), nearest first. One that resolves to nothing is refused, 400 `llm: no model named gpt in this airlock's space or globally`. Ids that code names (`aisolate.llm("gpt-embedding")`) are not checked at deploy. |
 | `spec.llms` | Optional, on the version and on the file's `Airlock`: `{id, provider, url, model}`, no type; the same id as an inherited LLM replaces it. `provider` is `ollama` (`url` the server, `http://ollama.aisolate.svc:11434`) or `openai`, any OpenAI-compatible server with its API version in the `url` (`https://api.openai.com/v1`, Ollama's own `http://…:11434/v1`); `model` is the name the server knows. A project's entry takes no key and names no Secret: an `openai` model's API key is typed once in the AIsolate UI, on the airlock, the space or the install ([Credentials](security.md#credentials)); a version's model takes none. |
 | `spec.access` | Not part of a version: who may ask is the space's `access.roles`, the airlock's own `access.roles`, its `access.callers` and its machine clients `access.clients`, set on the file's `Airlock` or in the AIsolate UI. One on the version is refused as an unknown field. |
 | `spec.dataSources` | Not part of a version: a data source needs a login, which belongs to the airlock, the space or the install, set in the AIsolate UI or on the file's `Airlock`. One on the version is refused as an unknown field. |
@@ -236,7 +236,7 @@ The loader refuses a set of documents and names the file, the document and the f
 - an `AirlockVersion` without `spec.airlock`, or whose `spec.airlock` is no `Airlock`; without `spec.version`,
   or with one that breaks the [version name](#names-ids-and-revision) rule; whose `metadata.name` is not
   `<airlock>-<version>`; without `prompt`; without `llm`, or whose `llm` resolves to nothing (`hr-contracts-v1:
-  llm granite is no model of it, of Airlock hr-contracts, of Space hr-space or of AIsolate`); with an `access`
+  llm gpt is no model of it, of Airlock hr-contracts, of Space hr-space or of AIsolate`); with an `access`
   or a `dataSources` of its own, unknown fields there;
 - a second `Global`, or one not named `aisolate`;
 - an LLM without an id, with a bad id or one its list holds twice, without a `url` or a `model`, or with a

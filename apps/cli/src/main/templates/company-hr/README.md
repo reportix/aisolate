@@ -41,12 +41,12 @@ database, opened as a role that reads `hr.documents` and writes nothing but its 
 `ContractsContextPreparator` reads the `hr.documents` table of the data source `hr`, PostgreSQL
 with pgvector, through `aisolate.dataSource("hr")`: one row per section of an employment contract
 (position and duties, compensation, working time and vacation, notice period, confidentiality),
-the employee's e-mail as its owner. It embeds, with the LLM `nomic` (`aisolate.llm("nomic")`), the
+the employee's e-mail as its owner. It embeds, with the LLM `gpt-embedding` (`aisolate.llm("gpt-embedding")`), the
 sections that have no embedding, then the question, and adds up to five of the closest sections
 the asking user may read: the CEO, the role `ceo`, reads every contract, anyone else only the
 contract that names their e-mail as owner. The asking user's own sections are marked as theirs, so
 "my notice period" is answered from their own contract. When the airlock sees no data source `hr`
-or no model `nomic` that embeds, or the database does not answer within a few seconds, the handler
+or no model `gpt-embedding` that embeds, or the database does not answer within a few seconds, the handler
 logs one line, adds no passages and the model says it does not know.
 
 ## Ask it

@@ -24,7 +24,7 @@ INDEX = "UPDATE audit.documents SET embedding = %s::vector WHERE id = %s"
 class AuditDocumentsContextPreparator:
     """Retrieval over the audited company's audit documents (board minutes, policies, the engagement
     letter), read from the data source ``ledger``, which the company's airlock defines: the question
-    is embedded with the LLM ``nomic``, the closest sections are added to the exchange
+    is embedded with the LLM ``gpt-embedding``, the closest sections are added to the exchange
     under one evidence id. Only an auditor reads them, as only an auditor reads the books: the rules
     bind the tools, this check binds the handler, which reads its data source directly. One instance
     serves every exchange concurrently: no fields, one connection per call."""
@@ -35,13 +35,13 @@ class AuditDocumentsContextPreparator:
         try:
             with aisolate.data_source("ledger") as db:
                 _embed_missing_sections(db, aisolate)
-                vector = to_vector(aisolate.llm("nomic").embed(exchange.question))
+                vector = to_vector(aisolate.llm("gpt-embedding").embed(exchange.question))
                 cursor = db.cursor()
                 cursor.execute(SEARCH, (CONTEXT_PREPARATOR, vector, MAX_DISTANCE, vector, TOP_K))
                 passages = [Passage(title, section, body) for title, section, body in cursor.fetchall()]
                 exchange.add_evidence(CONTEXT_PREPARATOR, passages)
         # Fail closed for documents: no passages, the model says it does not know. A ValueError:
-        # no data source ledger, or an LlmError: no model nomic, or one that cannot embed.
+        # no data source ledger, or an LlmError: no model gpt-embedding, or one that cannot embed.
         except (ValueError, DatabaseError) as unavailable:
             aisolate.log.warning("audit-documents unavailable: %s", _cause(unavailable))
 
@@ -52,7 +52,7 @@ def _embed_missing_sections(db: Connection, aisolate: AIsolateManager) -> None:
     cursor = db.cursor()
     cursor.execute(UNINDEXED, (CONTEXT_PREPARATOR,))
     for row_id, title, section, body in cursor.fetchall():
-        cursor.execute(INDEX, (to_vector(aisolate.llm("nomic").embed(f"{title}\n{section}\n{body}")), row_id))
+        cursor.execute(INDEX, (to_vector(aisolate.llm("gpt-embedding").embed(f"{title}\n{section}\n{body}")), row_id))
     db.commit()
 
 

@@ -25,7 +25,7 @@ INDEX = "UPDATE hr.documents SET embedding = %s::vector WHERE id = %s"
 @context_preparator(order=1, description="Read employment contracts", data_sources=["hr"])
 class ContractsContextPreparator:
     """Governed retrieval over Acme's employment contracts, read from the data source ``hr`` of
-    ``aisolate.yaml``: the question is embedded with the LLM ``nomic``, the closest contract sections
+    ``aisolate.yaml``: the question is embedded with the LLM ``gpt-embedding``, the closest contract sections
     the asking user may read are added to the exchange under one evidence id, the asking user's own
     marked as theirs. Who may read what is decided here, from the principal AIsolate hands over: the
     CEO reads every contract, anyone else only the one that names their e-mail as owner. One instance
@@ -36,7 +36,7 @@ class ContractsContextPreparator:
             with aisolate.data_source("hr") as db:
                 _embed_missing_sections(db, aisolate)
                 owner = owner_of(aisolate.principal)
-                vector = to_vector(aisolate.llm("nomic").embed(exchange.question))
+                vector = to_vector(aisolate.llm("gpt-embedding").embed(exchange.question))
                 cursor = db.cursor()
                 cursor.execute(
                     SEARCH,
@@ -57,7 +57,7 @@ class ContractsContextPreparator:
                 ]
                 exchange.add_evidence(CONTEXT_PREPARATOR, passages)
         # Fail closed for documents: no passages, the model says it does not know. A ValueError:
-        # no data source hr, or an LlmError: no model nomic, or one that cannot embed.
+        # no data source hr, or an LlmError: no model gpt-embedding, or one that cannot embed.
         except (ValueError, DatabaseError) as unavailable:
             aisolate.log.warning("contracts unavailable: %s", _cause(unavailable))
 
@@ -76,7 +76,7 @@ def _embed_missing_sections(db: Connection, aisolate: AIsolateManager) -> None:
     cursor = db.cursor()
     cursor.execute(UNINDEXED, (CONTEXT_PREPARATOR,))
     for row_id, title, section, body in cursor.fetchall():
-        cursor.execute(INDEX, (to_vector(aisolate.llm("nomic").embed(f"{title}\n{section}\n{body}")), row_id))
+        cursor.execute(INDEX, (to_vector(aisolate.llm("gpt-embedding").embed(f"{title}\n{section}\n{body}")), row_id))
     db.commit()
 
 

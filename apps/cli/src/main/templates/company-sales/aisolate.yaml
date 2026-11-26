@@ -29,10 +29,10 @@ spec:
     conversationMemory:
       handlers: [SessionMemory]
 
-  # LLM, the model writes the answer: the LLM granite, by id. The admin defines the LLMs, for
+  # LLM, the model writes the answer: the LLM gpt, by id. The admin defines the LLMs, for
   # all of AIsolate or on the space or the airlock; the code names one the same way, as the
-  # context preparator's aisolate.llm("nomic") does to embed.
-  llm: granite
+  # context preparator's aisolate.llm("gpt-embedding") does to embed.
+  llm: gpt
   prompt: >-
     You are the Acme sales assistant for the founders. Account, contract and invoice figures
     and dates come only from the tools; when a tool returns no rows, reply exactly: I don't

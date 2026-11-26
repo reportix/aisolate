@@ -32,7 +32,7 @@ http post /v1/spaces/{spaceId}/airlocks/{airlockId}/versions/{version}/chat
     ├── Read minutes and policies
     │   │                                       one span per context preparator and memory recall: aisolate.handler,
     │   │                                       aisolate.stage=pre_llm, aisolate.passages, aisolate.data_source
-    │   └── embedding nomic-embed-text          aisolate.llm("nomic").embed in a handler: aisolate.llm, gen_ai.request.model,
+    │   └── embedding nomic-embed-text          aisolate.llm("gpt-embedding").embed in a handler: aisolate.llm, gen_ai.request.model,
     │       │                                   gen_ai.usage.input_tokens
     │       └── http post                       to the model provider
     ├── Remember the conversation               SessionMemory's recall

@@ -26,7 +26,7 @@ INDEX = "UPDATE ehr.notes SET embedding = %s::vector WHERE id = %s"
 @context_preparator(order=1, description="Read clinical notes", data_sources=["ehr"])
 class ClinicalNotesContextPreparator:
     """Retrieval over the clinical notes of the health record, the data source ``ehr`` of the
-    department's airlock: the question is embedded with the LLM ``nomic``, the closest
+    department's airlock: the question is embedded with the LLM ``gpt-embedding``, the closest
     notes are added to the exchange under one evidence id. It reads the notes of one department, the
     one whose airlock the exchange runs on, about the patients on the asking doctor's care team
     there, and only for a doctor: the chief's statistics never come with a patient's notes. The code
@@ -42,7 +42,7 @@ class ClinicalNotesContextPreparator:
         try:
             with aisolate.data_source("ehr") as db:
                 _embed_missing_notes(db, department, aisolate)
-                vector = to_vector(aisolate.llm("nomic").embed(exchange.question))
+                vector = to_vector(aisolate.llm("gpt-embedding").embed(exchange.question))
                 cursor = db.cursor()
                 cursor.execute(
                     SEARCH,
@@ -52,7 +52,7 @@ class ClinicalNotesContextPreparator:
                 passages = [Passage(title, section, body) for title, section, body in cursor.fetchall()]
                 exchange.add_evidence(CONTEXT_PREPARATOR, passages)
         # Fail closed for notes: no passages, the model says it does not know. A ValueError:
-        # no data source ehr, or an LlmError: no model nomic, or one that cannot embed.
+        # no data source ehr, or an LlmError: no model gpt-embedding, or one that cannot embed.
         except (ValueError, DatabaseError) as unavailable:
             aisolate.log.warning("clinical-notes unavailable: %s", _cause(unavailable))
 
@@ -63,7 +63,7 @@ def _embed_missing_notes(db: Connection, department: str, aisolate: AIsolateMana
     cursor = db.cursor()
     cursor.execute(UNINDEXED, (department,))
     for row_id, title, body in cursor.fetchall():
-        cursor.execute(INDEX, (to_vector(aisolate.llm("nomic").embed(f"{title}\n{body}")), row_id))
+        cursor.execute(INDEX, (to_vector(aisolate.llm("gpt-embedding").embed(f"{title}\n{body}")), row_id))
     db.commit()
 
 
