@@ -45,10 +45,10 @@ vendor/**                   the project's own dependencies, installed for Linux 
   Pin the project's own
   dependencies (`tabulate==0.10.0`): an unpinned one vendors its newest version, so a later build gives another
   digest.
-- One architecture per artifact: `--arch x86_64|aarch64` (`amd64`, `arm64` alike), else `AISOLATE_ARCH`, else this
-  machine's CPU, as the local cluster runs on it (`aarch64` on Apple Silicon). For an `x86_64` cluster from a Mac:
-  `AISOLATE_ARCH=x86_64 aisolate deploy` (from the shell; `.env` does not reach the build). The manifest records it
-  (`arch`), and a pod on another CPU refuses to start.
+- One architecture per artifact: `--arch x86_64|aarch64` (`amd64`, `arm64` alike), else `AISOLATE_ARCH`, else
+  `x86_64`, whatever machine builds it: Windows, a Mac or Linux. For a cluster on `aarch64` nodes, a local one on
+  Apple Silicon among them: `AISOLATE_ARCH=aarch64 aisolate deploy` (from the shell; `.env` does not reach the
+  build). The manifest records it (`arch`), and a pod on another CPU refuses to start.
 - No symlinks, no absolute paths, no `..`: the backend and the runtimes refuse such an entry.
 
 ## The manifest
