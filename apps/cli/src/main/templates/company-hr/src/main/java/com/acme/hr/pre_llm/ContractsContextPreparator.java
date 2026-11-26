@@ -52,6 +52,11 @@ public final class ContractsContextPreparator implements ContextPreparator {
 
   private static final String INDEX = "UPDATE hr.documents SET embedding = ?::vector WHERE id = ?";
 
+  // The asking user by name, from their own contract terms: the model otherwise picks a name it
+  // saw in the passages (the CEO reads every contract) and filters on it for a question about "me".
+  private static final String WHO =
+      "SELECT employee FROM hr.contract_terms WHERE email = ? LIMIT 1";
+
   @Override
   public void prepare(Exchange exchange, AIsolateManager aisolate) {
     try (Connection db = aisolate.dataSource("hr").getConnection()) {
@@ -77,17 +82,34 @@ public final class ContractsContextPreparator implements ContextPreparator {
         }
       }
       exchange.addEvidence(CONTEXT_PREPARATOR, passages);
+      exchange.addContext(askingUser(db, email));
     } catch (IllegalArgumentException | SQLException unavailable) {
       // Fail closed for documents: no passages, the model says it does not know. An
-      // IllegalArgumentException: no data source hr, or an LlmException: no model gpt-embedding, or
-      // one
-      // that cannot embed. Never a SQLException's message: it can echo the database's address.
-      String cause =
-          unavailable instanceof SQLException sql
-              ? sql.getClass().getName() + " SQLState=" + sql.getSQLState()
-              : unavailable.getMessage();
-      aisolate.log().log(System.Logger.Level.WARNING, "contracts unavailable: " + cause);
+      // IllegalArgumentException: no data source hr, or an LlmException: no model gpt-embedding,
+      // or one that cannot embed.
+      aisolate.log().log(
+          System.Logger.Level.WARNING, "contracts unavailable: " + unavailableCause(unavailable));
     }
+  }
+
+  /**
+   * Who asks, for the model: a question about me, my or I is about this person, read unfiltered.
+   */
+  static String askingUser(Connection db, String email) throws SQLException {
+    String who = email.isEmpty() ? "an unknown user" : email;
+    try (PreparedStatement query = db.prepareStatement(WHO)) {
+      query.setString(1, email);
+      try (ResultSet rows = query.executeQuery()) {
+        if (rows.next()) {
+          who = rows.getString(1) + " (" + email + ")";
+        }
+      }
+    }
+    return "The asking user is "
+        + who
+        + ". A question about me, my or I is about this person alone: call the tool with no"
+        + " filters, their row is the one marked self, their passages the ones marked as theirs."
+        + " Never filter by a name from the passages for such a question.";
   }
 
   /**

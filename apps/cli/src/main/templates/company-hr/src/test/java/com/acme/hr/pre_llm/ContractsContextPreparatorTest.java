@@ -4,7 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.acme.hr.support.FakeAIsolateManager;
 import com.acme.hr.support.FakeExchange;
+import com.acme.hr.support.RecordingDataSource;
+import com.reportix.aisolate.sdk.AirlockRef;
 import com.reportix.aisolate.sdk.Principal;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,6 +65,31 @@ class ContractsContextPreparatorTest {
     // Assert
     assertThat(exchange.evidence).isEmpty();
     assertThat(exchange.context).isEmpty();
+  }
+
+  @Test
+  void givenTheAskingUsersContract_whenPrepare_thenTheModelIsToldWhoAsks() {
+    // Arrange: the CEO reads every contract, so the passages name others too; her own row names her
+    RecordingDataSource hr =
+        new RecordingDataSource(
+            Map.of("jane@acme.example", List.<Object[]>of(new Object[] {"Jane Doe"})));
+    FakeAIsolateManager jane =
+        new FakeAIsolateManager(
+            new Principal("jane", "jane@acme.example", Set.of("ceo")),
+            new AirlockRef("test-space", "hr", "v1", "test"),
+            hr.dataSource());
+    FakeExchange exchange = new FakeExchange("What is my salary?");
+
+    // Act
+    new ContractsContextPreparator().prepare(exchange, jane);
+
+    // Assert
+    assertThat(exchange.context)
+        .containsExactly(
+            "The asking user is Jane Doe (jane@acme.example). A question about me, my or I is about"
+                + " this person alone: call the tool with no filters, their row is the one marked"
+                + " self, their passages the ones marked as theirs. Never filter by a name from the"
+                + " passages for such a question.");
   }
 
   @Test
