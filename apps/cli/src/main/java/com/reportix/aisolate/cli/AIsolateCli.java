@@ -1,6 +1,5 @@
 package com.reportix.aisolate.cli;
 
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.http.HttpClient;
@@ -40,23 +39,19 @@ public final class AIsolateCli implements Runnable {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
     Path home = Session.home();
-    // A terminal signs in where it stands; a pipe or CI has nobody to press Enter: an error line.
+    // A terminal signs in where it stands; a pipe or CI has nobody at a browser: an error line.
     java.io.Console terminal = System.console();
     boolean interactive = terminal != null && terminal.isTerminal();
-    // Without a terminal `login` waits for no Enter: an open pipe (ssh without -t, CI) would
-    // otherwise hold the browser back for the whole timeout.
-    InputStream keys = interactive ? System.in : InputStream.nullInputStream();
     BrowserLogin.SignIn signIn =
         interactive
             ? auth ->
-                new BrowserLogin(auth, console, BrowserLogin::open, System.in, BrowserLogin.TIMEOUT)
-                    .login()
+                new BrowserLogin(auth, console, BrowserLogin::open, BrowserLogin.TIMEOUT).login()
             : null;
     return new CommandLine(new AIsolateCli())
         .addSubcommand("create", new CreateCommand(console))
         .addSubcommand(
             "login",
-            new LoginCommand(console, http, home, BrowserLogin::open, keys, BrowserLogin.TIMEOUT))
+            new LoginCommand(console, http, home, BrowserLogin::open, BrowserLogin.TIMEOUT))
         .addSubcommand("logout", new LogoutCommand(console, http, home))
         .addSubcommand("build", new BuildCommand(console))
         .addSubcommand("deploy", new DeployCommand(console, http, home, signIn));

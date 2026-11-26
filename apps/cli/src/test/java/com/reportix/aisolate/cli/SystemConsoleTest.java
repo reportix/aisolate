@@ -60,29 +60,6 @@ class SystemConsoleTest {
   }
 
   @ParameterizedTest
-  @CsvSource(
-      delimiter = '|',
-      value = {
-        // OSC 8, the terminal's hyperlink: the URL is the target, not printed text
-        "true | ' \u001b[38;5;33m❯\u001b[0m \u001b]8;;http://idp/auth?state=s\u001b\\Sign in with"
-            + " your account\u001b]8;;\u001b\\' | ''",
-        // No color links nothing: the URL follows, to copy
-        "false | ' ❯ Sign in with your account' | '   http://idp/auth?state=s'"
-      })
-  void givenColor_whenChoiceOffered_thenTheLabelLinkedOrFollowedByTheUrl(
-      boolean color, String line, String urlLine) {
-    // Arrange
-    Console console = console(color);
-
-    // Act
-    console.offerChoice("Sign in with your account", "http://idp/auth?state=s");
-
-    // Assert
-    assertThat(out.toString(StandardCharsets.UTF_8))
-        .isEqualTo(line + NL + (urlLine.isEmpty() ? "" : urlLine + NL));
-  }
-
-  @ParameterizedTest
   @CsvSource({", true", "UTF-8, true", "utf8, true", "Cp437, false", "windows-1252, false"})
   void givenStdoutEncoding_whenChecked_thenUnicodeOnlyForUtf8(String encoding, boolean unicode) {
     // Arrange

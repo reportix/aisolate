@@ -170,13 +170,14 @@ aisolate login     # once per endpoint
 aisolate logout
 ```
 
-`login` shows "Sign in with your account". Enter, or a click, opens your browser on the operators' identity provider's
-sign-in page (demo realm `aisolate`, client `aisolate-cli`, PKCE with a redirect to `127.0.0.1`); the URL is printed only when no
-browser can be opened. Sign in as a developer of the space you deploy into: the admin
-names you one of the space's developers.
+`login` opens your browser on the operators' identity provider's
+sign-in page (demo realm `aisolate`, client `aisolate-cli`, PKCE with a redirect to `127.0.0.1`) and prints the link
+under it: paste it into a browser on the same machine when none opened. Sign in as a developer of the space you
+deploy into: the admin names you one of the space's developers.
 The session is kept
 per endpoint in `~/.aisolate/session.json`, readable by you only (`AISOLATE_HOME` moves it), refreshed
-silently, and ends after 90 days unused or with `logout`.
+silently, and ends with the identity provider's own sign-in session or with `logout`; `deploy` in a terminal then signs
+you in again.
 
 ## Deploy
 

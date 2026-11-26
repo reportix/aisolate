@@ -2,10 +2,8 @@ package com.reportix.aisolate.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.http.HttpClient;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -89,12 +87,7 @@ class LoginCommandTest {
   private int login(Consumer<String> browser) {
     return new CommandLine(
             new LoginCommand(
-                console,
-                HttpClient.newHttpClient(),
-                home,
-                browser,
-                new ByteArrayInputStream("\n".getBytes(StandardCharsets.UTF_8)),
-                Duration.ofSeconds(10)))
+                console, HttpClient.newHttpClient(), home, browser, Duration.ofSeconds(10)))
         .execute("-p=" + project);
   }
 }

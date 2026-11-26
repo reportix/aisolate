@@ -32,8 +32,8 @@ import tools.jackson.databind.node.MissingNode;
 final class Auth {
 
   static final String CLIENT_ID = "aisolate-cli";
-  // offline_access: a refresh token that outlives the browser session, so a login lasts while used.
-  static final String SCOPE = "openid profile email offline_access";
+  // No offline_access: a provider grants it to chosen users only; login must not depend on it.
+  static final String SCOPE = "openid profile email";
   static final String NOT_LOGGED_IN = "You are not logged in. Run aisolate login to sign in.";
 
   /** Where the provider signs in, issues and revokes tokens; {@code revocationUrl} may be empty. */

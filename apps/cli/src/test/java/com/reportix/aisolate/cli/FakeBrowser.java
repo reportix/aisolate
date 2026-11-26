@@ -40,8 +40,8 @@ final class FakeBrowser implements Consumer<String> {
   }
 
   /**
-   * The page the CLI answered the redirect with. The login opens the browser from its key reader,
-   * so it may return before this fake has its page: wait for it.
+   * The page the CLI answered the redirect with. A fake visiting the printed link runs beside the
+   * login, which may return before this fake has its page: wait for it.
    */
   String page() {
     long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
