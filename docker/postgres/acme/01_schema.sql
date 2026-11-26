@@ -63,6 +63,26 @@ CREATE TABLE hr.documents (
     embedding          vector
 );
 
+-- The terms of each employment contract as the HR system keeps them, one row per employee with a
+-- contract, read by the company-hr template's tools: what the signed contract in hr.documents
+-- states, transcribed at signing and kept current by its amendments. A term the contract fixes in
+-- no number is NULL.
+CREATE TABLE hr.contract_terms (
+    id               integer PRIMARY KEY,
+    employee         text    NOT NULL,
+    email            text    NOT NULL UNIQUE,
+    position         text    NOT NULL,
+    department       text    NOT NULL,
+    start_date       date    NOT NULL,
+    salary_eur       integer NOT NULL,
+    bonus_eur        integer,
+    weekly_hours     integer,
+    vacation_days    integer NOT NULL,
+    probation_months integer NOT NULL,
+    notice_months    integer NOT NULL,
+    non_compete      text    NOT NULL CHECK (non_compete IN ('yes', 'no'))
+);
+
 CREATE SCHEMA clients;
 
 CREATE TABLE clients.accounts (

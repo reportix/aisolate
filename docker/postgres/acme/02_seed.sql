@@ -15,6 +15,15 @@ INSERT INTO hr.compensation (employee_id, gross_salary, currency, target_bonus, 
     (4,  96000.00, 'EUR',  8000.00, 'DE00 1000 0000 0000 0000 04', 'Retention bonus agreed for the risk engine release'),
     (5,  72000.00, 'EUR',  4000.00, 'DE00 1000 0000 0000 0000 05', NULL);
 
+-- The terms of the three employment contracts in hr.documents as the HR system keeps them: every
+-- term is what the contract states, the vacation days what hr.leave grants. The founders' contracts
+-- fix no weekly hours and no probation.
+INSERT INTO hr.contract_terms (id, employee, email, position, department, start_date, salary_eur, bonus_eur,
+                               weekly_hours, vacation_days, probation_months, notice_months, non_compete) VALUES
+    (1, 'Nora Varga',    'nora@example.com', 'Chief Executive Officer', 'Executive',   DATE '2019-01-15', 235000, 55000, NULL, 30, 0, 6, 'yes'),
+    (2, 'Eric Lindholm', 'eric@example.com', 'Software Engineer',       'Engineering', DATE '2023-03-01',  78000,  5000,   40, 30, 6, 3, 'no'),
+    (3, 'Leo Brandt',    'leo@example.com',  'Co-founder',              'Executive',   DATE '2019-01-15', 190000, 40000, NULL, 30, 0, 6, 'yes');
+
 -- This year's leave: 30 days each, plus what carried over, minus what was taken and what is booked.
 INSERT INTO hr.leave (employee_id, year, entitlement_days, carried_over_days, taken_days, planned_days)
 SELECT employee_id, extract(year FROM current_date)::integer, 30, carried_over_days, taken_days, planned_days

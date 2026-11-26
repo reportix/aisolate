@@ -3,9 +3,9 @@ from collections.abc import Sequence
 from aisolate import AIsolateManager, Connection, DatabaseError, Exchange, Passage, Principal, context_preparator
 
 CONTEXT_PREPARATOR = "contracts"
-# Two contracts of five short sections: up to five passages, an employee's whole contract. A question
-# in plain words lies up to 0.55 from the section that answers it ("Who reports to me?"), an unrelated
-# one ("What is the capital of France?") from 0.6 up.
+# Two contracts of five short sections, John's with an amendment: up to five passages, the ones
+# closest to the question. A question in plain words lies up to 0.55 from the section that answers
+# it ("Who reports to me?"), an unrelated one ("What is the capital of France?") from 0.6 up.
 TOP_K = 5
 MAX_DISTANCE = 0.6
 # The words the platform's prompt gives the model for "me" and "my".
@@ -20,6 +20,10 @@ SEARCH = (
 UNINDEXED = "SELECT id, title, section, body FROM hr.documents WHERE context_preparator = %s AND embedding IS NULL"
 
 INDEX = "UPDATE hr.documents SET embedding = %s::vector WHERE id = %s"
+
+# The asking user by name, from their own contract terms: the model otherwise picks a name it saw in
+# the passages (the CEO reads every contract) and filters on it for a question about "me".
+WHO = "SELECT employee FROM hr.contract_terms WHERE email = %s LIMIT 1"
 
 
 @context_preparator(order=1, description="Read employment contracts", data_sources=["hr"])
@@ -56,10 +60,11 @@ class ContractsContextPreparator:
                     for title, section, body, own in cursor.fetchall()
                 ]
                 exchange.add_evidence(CONTEXT_PREPARATOR, passages)
+                exchange.add_context(asking_user(db, aisolate.principal))
         # Fail closed for documents: no passages, the model says it does not know. A ValueError:
         # no data source hr, or an LlmError: no model gpt-embedding, or one that cannot embed.
         except (ValueError, DatabaseError) as unavailable:
-            aisolate.log.warning("contracts unavailable: %s", _cause(unavailable))
+            aisolate.log.warning("contracts unavailable: %s", unavailable_cause(unavailable))
 
 
 def owner_of(principal: Principal) -> str | None:
@@ -68,6 +73,19 @@ def owner_of(principal: Principal) -> str | None:
     if "ceo" in principal.roles:
         return None
     return principal.email or ""
+
+
+def asking_user(db: Connection, principal: Principal) -> str:
+    """Who asks, for the model: a question about me, my or I is about this person, read with no filter."""
+    cursor = db.cursor()
+    cursor.execute(WHO, (principal.email or "",))
+    rows = cursor.fetchall()
+    who = f"{rows[0][0]} ({principal.email})" if rows else (principal.email or "an unknown user")
+    return (
+        f"The asking user is {who}. A question about me, my or I is about this person alone: call the tool"
+        " with no filters, their row is the one marked self, their passages the ones marked as theirs."
+        " Never filter by a name from the passages for such a question."
+    )
 
 
 # Embeds on the request thread so the sample runs without an indexer; a real project indexes ahead
@@ -85,8 +103,8 @@ def to_vector(embedding: Sequence[float]) -> str:
 
 
 # Never a database error's message: it can echo the database's address. pg8000 carries the
-# SQLSTATE in args[0]["C"].
-def _cause(error: ValueError | DatabaseError) -> str:
+# SQLSTATE in args[0]["C"]. The verifier logs the same way.
+def unavailable_cause(error: ValueError | DatabaseError) -> str:
     if isinstance(error, ValueError):
         return str(error)
     fields = error.args[0] if error.args and isinstance(error.args[0], dict) else {}

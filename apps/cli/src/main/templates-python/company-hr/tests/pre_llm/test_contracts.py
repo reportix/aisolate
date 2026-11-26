@@ -61,3 +61,22 @@ def test_given_embedding_when_to_vector_then_pgvector_literal():
 
     # Assert
     assert vector == "[0.5,-1.0,2.25]"
+
+
+def test_given_the_asking_users_contract_when_prepare_then_the_model_is_told_who_asks():
+    # Arrange: the fake answers the name query with the rows filed under its last parameter, the e-mail
+    aisolate = FakeAIsolateManager(
+        principal=Principal("jane", "jane@acme.example", frozenset({"ceo"})),
+        contracts={"jane@acme.example": [("Jane Doe",)]},
+    )
+    exchange = FakeExchange("What is my gross salary?")
+
+    # Act
+    ContractsContextPreparator().prepare(exchange, aisolate)
+
+    # Assert
+    assert exchange.context == [
+        "The asking user is Jane Doe (jane@acme.example). A question about me, my or I is about this person"
+        " alone: call the tool with no filters, their row is the one marked self, their passages the ones"
+        " marked as theirs. Never filter by a name from the passages for such a question."
+    ]

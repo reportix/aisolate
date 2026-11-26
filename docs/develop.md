@@ -39,7 +39,7 @@ airlock it names. The CLI ships four templates:
 
 | Template | Airlock by default | Asked about |
 |---|---|---|
-| `company-hr` | `hr-contracts` | the employment contracts (position, pay, working time, notice, confidentiality): the CEO reads every contract, anyone else their own |
+| `company-hr` | `hr-contracts` | the employment contracts (position, pay, working time, notice, confidentiality) and their terms as the HR system keeps them, read by two tools and checked by a verifier: the CEO reads every contract and every row, anyone else their own |
 | `company-sales` | `sales` | client accounts, invoices and the client contracts, by the founders |
 | `auditor` | none: `--airlock=<company>` is required | one audited company's books, minutes and policies, by the audit firm's auditors: one airlock per company, each defining its own data source `ledger` in the AIsolate UI |
 | `hospital` | `cardiology` | one department's part of the hospital's one health record, the space's data source `ehr`: `--airlock=cardiology` or `--airlock=psychiatry` decides which tools the airlock offers and whose notes it reads |
@@ -51,6 +51,9 @@ company-hr/
   src/acme_hr/                      every class of the package belongs to this version
     pre_llm/contracts.py              ContractsContextPreparator, a @context_preparator: reads hr.documents on hr
     pre_llm/memory.py                 SessionMemory, a @memory
+    tools/contract_tools.py           ContractTools, a ToolPlugin: read_contract_terms and fetch_salary, on hr.contract_terms
+    post_llm/contract_terms.py        ContractTermsVerifier, a @verifier: a cited figure is what the signed contract states
+  rules/                              who reads which rows of each entity, by role: hr.contract_terms.json, hr.salary.json
   tests/                              pytest, with tests/support's FakeAIsolateManager standing in for AIsolate
   pyproject.toml                      the name, Python 3.13 and the one dependency, the SDK in libs/aisolate-sdk/
   README.md, .gitignore               what each file does; .gitignore keeps .env and build/ out of git
@@ -253,7 +256,7 @@ airlock, its Overview, Details, Tools, LLMs and Data sources. In the order a pro
 
 Sign in to a chat as an application user whose token carries a role the space or an airlock lists. Realm `acme` has an employee, the CEO (also a founder), a co-founder (an employee and a founder), an intern and a
 user without roles; `docker/keycloak/realm-acme.json` lists their logins. With a space `hr-space` that lists the role `ceo` and
-its `hr-contracts` airlock that lists `employee` as its own, a space that lists `founder` with a `sales`
+its `hr-contracts` airlock that lists `ceo` and `employee` as its own, a space that lists `founder` with a `sales`
 airlock with no roles of its own, and the two templates deployed, the chat lists the airlocks a user may ask (the
 employee sees `hr-contracts` alone, the CEO both, through the spaces), and shows the answer and, folded under it,
 what ran: a line per verifier, with its note.

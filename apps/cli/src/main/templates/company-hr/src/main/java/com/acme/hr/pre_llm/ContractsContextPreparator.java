@@ -31,10 +31,11 @@ public final class ContractsContextPreparator implements ContextPreparator {
     return 1;
   }
 
-  static final String CONTEXT_PREPARATOR = "contracts";
-  // Two contracts of five short sections: up to five passages, an employee's whole contract. A
-  // question in plain words lies up to 0.55 from the section that answers it ("Who reports to
-  // me?"), an unrelated one ("What is the capital of France?") from 0.6 up.
+  public static final String CONTEXT_PREPARATOR = "contracts";
+  // Two contracts of five short sections, John's with an amendment: up to five passages, the ones
+  // closest to the question. A question in plain words lies up to 0.55 from the section that
+  // answers it ("Who reports to me?"), an unrelated one ("What is the capital of France?") from 0.6
+  // up.
   static final int TOP_K = 5;
   static final double MAX_DISTANCE = 0.6;
   // The words the platform's prompt gives the model for "me" and "my".
@@ -121,6 +122,16 @@ public final class ContractsContextPreparator implements ContextPreparator {
         }
       }
     }
+  }
+
+  /**
+   * Never a SQLException's message: it can echo the database's address. The verifier logs the same
+   * way.
+   */
+  public static String unavailableCause(Exception unavailable) {
+    return unavailable instanceof SQLException sql
+        ? sql.getClass().getName() + " SQLState=" + sql.getSQLState()
+        : unavailable.getMessage();
   }
 
   static String toVector(float[] embedding) {
