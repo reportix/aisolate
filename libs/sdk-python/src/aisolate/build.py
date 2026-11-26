@@ -17,7 +17,6 @@ import io
 import json
 import os
 import pkgutil
-import platform
 import re
 import shutil
 import subprocess
@@ -357,8 +356,9 @@ def vendor(project_dir: Path, target: Path, arch: str | None = None) -> None:
 
 def linux_arch(arch: str | None = None) -> str:
     """The CPU the artifact is vendored for, ``x86_64`` or ``aarch64`` (``amd64``, ``arm64`` alike):
-    ``arch``, else ``AISOLATE_ARCH``, else this machine's, as the local cluster runs on it."""
-    chosen = arch or os.environ.get("AISOLATE_ARCH") or platform.machine()
+    ``arch``, else ``AISOLATE_ARCH``, else ``x86_64``, what most clusters run on. Never the building
+    machine's: a laptop's CPU says nothing about the cluster's, and a pod on another CPU refuses to start."""
+    chosen = arch or os.environ.get("AISOLATE_ARCH") or "x86_64"
     if chosen.lower() not in _ARCHES:
         raise ValueError(f"cannot vendor for {chosen}: set --arch or AISOLATE_ARCH to x86_64 or aarch64")
     return _ARCHES[chosen.lower()]

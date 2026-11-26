@@ -361,13 +361,13 @@ def test_given_dependency_without_linux_wheel_when_built_then_refused_naming_it(
 
 
 @pytest.mark.parametrize(
-    ("arch", "env", "machine", "expected"),
-    [("x86_64", None, "arm64", "x86_64"), ("arm64", None, "x86_64", "aarch64"), (None, "x86_64", "arm64", "x86_64"),
-     (None, None, "arm64", "aarch64"), (None, None, "x86_64", "x86_64")],
-    ids=["option", "option-alias", "env", "apple-silicon", "intel"],
+    ("arch", "env", "expected"),
+    [("x86_64", None, "x86_64"), ("arm64", None, "aarch64"), (None, "aarch64", "aarch64"), ("x86_64", "aarch64", "x86_64"),
+     (None, None, "x86_64")],
+    ids=["option", "option-alias", "env", "option-over-env", "default"],
 )
 def test_given_arch_choice_when_built_then_wheel_of_that_arch_vendored(
-        project: Path, index: Path, monkeypatch: pytest.MonkeyPatch, arch: str | None, env: str | None, machine: str,
+        project: Path, index: Path, monkeypatch: pytest.MonkeyPatch, arch: str | None, env: str | None,
         expected: str) -> None:
     # Arrange
     for cpu in ("x86_64", "aarch64"):
@@ -375,7 +375,6 @@ def test_given_arch_choice_when_built_then_wheel_of_that_arch_vendored(
     _depends(project, "archpkg")
     if env is not None:
         monkeypatch.setenv("AISOLATE_ARCH", env)
-    monkeypatch.setattr(build.platform, "machine", lambda: machine)
 
     # Act
     artifact = build.build(project, arch=arch)

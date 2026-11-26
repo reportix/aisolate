@@ -194,8 +194,8 @@ package, the rules and `aisolate-manifest.json`; the deploy sends that zip with 
 backend reads the manifest and never runs the project's code; the Python airlock and tool server import it.
 
 The project's own dependencies (`[project] dependencies` beyond the SDK) travel in the zip's `vendor/`: uv installs
-them as Linux binary wheels for Python 3.13 on the cluster's CPU, by default this machine's (`aarch64` on Apple
-Silicon; `AISOLATE_ARCH=x86_64 aisolate deploy` for an x86_64 cluster). The runtime's own packages
+them as Linux binary wheels for Python 3.13 on the cluster's CPU, by default `x86_64` whatever machine builds
+(`AISOLATE_ARCH=aarch64 aisolate deploy` for a cluster on aarch64 nodes, a local one on Apple Silicon among them). The runtime's own packages
 (`aisolate/runtime-constraints.txt`) come from the pods, never the zip: the build refuses a dependency that needs one of them
 at another version, naming the package and both versions, and a package without a Linux wheel, naming it
 ([python-artifact.md](python-artifact.md#the-zip)). Without uv, a project with dependencies of its own does not

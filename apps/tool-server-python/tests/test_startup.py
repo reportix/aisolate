@@ -1,4 +1,5 @@
 import json
+import platform
 from pathlib import Path
 from collections.abc import Iterator
 from typing import Any
@@ -56,7 +57,8 @@ def deployed(tmp_path_factory: pytest.TempPathFactory) -> Iterator[dict[str, Any
     (project / "rules").mkdir()
     (project / "rules" / "staff.people.json").write_text(json.dumps(RULES))
     plugins = root / "plugins"
-    artifact = build.build(project, out=plugins / "a.zip")
+    # This machine's CPU, where the test starts it; the default is x86_64, the usual cluster's.
+    artifact = build.build(project, out=plugins / "a.zip", arch=platform.machine())
     config_dir = root / "config"
     config_dir.mkdir()
     for name, text in DOCUMENTS.items():
