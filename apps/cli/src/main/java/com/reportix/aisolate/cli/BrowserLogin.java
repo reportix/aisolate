@@ -3,7 +3,6 @@ package com.reportix.aisolate.cli;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
@@ -28,9 +27,9 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * The browser half of {@code aisolate login}: the authorization code flow with PKCE (RFC 7636) and
- * a loopback redirect (RFC 8252). The CLI listens on 127.0.0.1 for the one redirect, the provider's
- * own page takes the password, and the code is worth nothing without the verifier this process
- * keeps.
+ * a loopback redirect (RFC 8252). The CLI listens on 127.0.0.1 for the one redirect, opens the
+ * browser and prints the link beside it, the provider's own page takes the password, and the code
+ * is worth nothing without the verifier this process keeps.
  */
 @RequiredArgsConstructor
 final class BrowserLogin {
@@ -46,9 +45,6 @@ final class BrowserLogin {
 
   /** Opens a URL in the browser; tests play the browser instead. */
   private final Consumer<String> browser;
-
-  /** The keyboard: Enter opens the browser; tests type instead. */
-  private final InputStream keys;
 
   private final Duration timeout;
 
@@ -78,12 +74,17 @@ final class BrowserLogin {
           buildAuthorizeUrl(
               endpoints.authorizationUrl(), redirectUri, state, computeChallenge(verifier));
       console.println("");
-      console.offerChoice("Sign in with your account", url);
-      console.println("   Press Enter to sign in · Ctrl+C to cancel");
-      // Enter opens the browser, a click on the choice opens it too: either ends at the redirect.
-      // Never interrupted: a read on the terminal is not interruptible, and a late Enter is a
-      // no-op.
-      Thread.ofVirtual().start(() -> openOnEnter(url, callback));
+      console.info("Opening your browser to sign in");
+      // Always the link: an opener that ran may still have shown nothing (ssh, no default browser).
+      console.println("   Browser didn't open? Use this link:");
+      console.println("   " + url);
+      console.println("   Ctrl+C to cancel");
+      try {
+        browser.accept(url);
+      } catch (RuntimeException cannotOpen) {
+        console.warn(
+            "the browser did not open (" + cannotOpen.getMessage() + "); use the link above");
+      }
       Callback answer = await(callback);
       if (answer.failure() != null) {
         throw new IllegalStateException(answer.failure());
@@ -91,29 +92,6 @@ final class BrowserLogin {
       return answer.session();
     } finally {
       server.stop(0);
-    }
-  }
-
-  // End of input is nobody typing (a pipe): open at once. A click may have finished it first.
-  private void openOnEnter(String url, CompletableFuture<Callback> callback) {
-    try {
-      int key;
-      do {
-        key = keys.read();
-      } while (key != '\n' && key != -1);
-    } catch (IOException noKeyboard) {
-      // open at once, as at the end of input
-    }
-    if (callback.isDone()) {
-      return;
-    }
-    try {
-      browser.accept(url);
-    } catch (RuntimeException cannotOpen) {
-      // Only now the URL itself: the wait goes on, and visiting it still completes the login.
-      console.warn(
-          "the browser did not open (" + cannotOpen.getMessage() + "); open this URL instead:");
-      console.println("   " + url);
     }
   }
 

@@ -4,11 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.within;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -59,7 +56,7 @@ class BrowserLoginTest {
     assertThat(browser.authorize)
         .containsEntry("client_id", "aisolate-cli")
         .containsEntry("response_type", "code")
-        .containsEntry("scope", "openid profile email offline_access")
+        .containsEntry("scope", "openid profile email")
         .containsEntry("code_challenge_method", "S256");
     assertThat(browser.authorize.get("redirect_uri"))
         .matches("http://127\\.0\\.0\\.1:\\d+/callback");
@@ -72,25 +69,25 @@ class BrowserLoginTest {
     assertThat(browser.page()).contains("Signed in to AIsolate");
     assertThat(console.lines)
         .containsExactly(
-            "", "❯ Sign in with your account", "   Press Enter to sign in · Ctrl+C to cancel");
-    assertThat(console.offered).startsWith(stub.authorizationUrl + "?client_id=aisolate-cli&");
+            "",
+            "⏺ Opening your browser to sign in",
+            "   Browser didn't open? Use this link:",
+            "   " + findPrintedUrl(),
+            "   Ctrl+C to cancel");
+    assertThat(findPrintedUrl()).startsWith(stub.authorizationUrl + "?client_id=aisolate-cli&");
   }
 
   @Test
-  void givenChoiceClickedInsteadOfEnter_whenLogin_thenSignedInWithoutOpeningTheBrowser()
-      throws Exception {
-    // Arrange: no Enter comes; the developer clicks the offered choice
-    FakeBrowser click = new FakeBrowser(SIGNED_IN);
-    AtomicInteger opened = new AtomicInteger();
-    Thread.ofVirtual().start(() -> click.accept(awaitLine(() -> console.offered)));
+  void givenOpenerShowsNothing_whenThePrintedLinkIsVisited_thenSignedIn() throws Exception {
+    // Arrange: the opener returns as if a browser came up; the developer pastes the printed link
+    FakeBrowser visitor = new FakeBrowser(SIGNED_IN);
+    Thread.ofVirtual().start(() -> visitor.accept(awaitLine(this::findPrintedUrl)));
 
     // Act
-    Session session =
-        login(url -> opened.incrementAndGet(), NO_KEYS, Duration.ofSeconds(10)).login();
+    Session session = login(url -> {}, Duration.ofSeconds(10)).login();
 
     // Assert
     assertThat(session.user()).isEqualTo("jasmine");
-    assertThat(opened.get()).isZero();
   }
 
   @ParameterizedTest
@@ -149,7 +146,7 @@ class BrowserLoginTest {
 
   @Test
   void givenBrowserCannotOpen_whenTheUrlIsVisitedAnyway_thenWarnedAndSignedIn() throws Exception {
-    // Arrange: the opener fails; the developer opens the URL printed only then
+    // Arrange: the opener fails; the developer pastes the link printed above the warning
     FakeBrowser visitor = new FakeBrowser(SIGNED_IN);
     Consumer<String> browser =
         url -> {
@@ -164,7 +161,7 @@ class BrowserLoginTest {
     assertThat(session.user()).isEqualTo("jasmine");
     assertThat(console.lines)
         .contains(
-            "! the browser did not open (cannot run xdg-open: not found); open this URL instead:");
+            "! the browser did not open (cannot run xdg-open: not found); use the link above");
   }
 
   @Test
@@ -201,31 +198,9 @@ class BrowserLoginTest {
   }
 
   private BrowserLogin login(Consumer<String> browser, Duration timeout) {
-    return login(browser, enter(), timeout);
-  }
-
-  private BrowserLogin login(Consumer<String> browser, InputStream keys, Duration timeout) {
     return new BrowserLogin(
-        new Auth(HttpClient.newHttpClient(), stub.url), console, browser, keys, timeout);
+        new Auth(HttpClient.newHttpClient(), stub.url), console, browser, timeout);
   }
-
-  private static InputStream enter() {
-    return new ByteArrayInputStream("\n".getBytes(StandardCharsets.UTF_8));
-  }
-
-  /** A terminal nobody types into: blocks until interrupted. */
-  private static final InputStream NO_KEYS =
-      new InputStream() {
-        @Override
-        public int read() {
-          try {
-            Thread.sleep(Long.MAX_VALUE);
-          } catch (InterruptedException stopped) {
-            Thread.currentThread().interrupt();
-          }
-          return -1;
-        }
-      };
 
   private String findPrintedUrl() {
     return console.lines.stream()

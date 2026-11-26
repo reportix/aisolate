@@ -1,6 +1,5 @@
 package com.reportix.aisolate.cli;
 
-import java.io.InputStream;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -26,7 +25,6 @@ final class LoginCommand implements Callable<Integer> {
   private final HttpClient http;
   private final Path home;
   private final Consumer<String> browser;
-  private final InputStream keys;
   private final Duration timeout;
 
   @Mixin ProjectCommand project;
@@ -38,7 +36,7 @@ final class LoginCommand implements Callable<Integer> {
         () -> {
           ProjectFile config = ProjectFile.read(project.dir);
           Session session =
-              new BrowserLogin(new Auth(http, config.endpoint()), console, browser, keys, timeout)
+              new BrowserLogin(new Auth(http, config.endpoint()), console, browser, timeout)
                   .login();
           session.save(home.resolve(Session.FILE));
           console.success(session.signedIn());

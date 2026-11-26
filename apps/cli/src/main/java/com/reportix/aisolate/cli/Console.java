@@ -17,10 +17,4 @@ interface Console {
 
   /** Why the command stops; on stderr. */
   void error(String line);
-
-  /**
-   * A choice taken by Enter or a click: the URL is what the click opens, as text only where no
-   * click can.
-   */
-  void offerChoice(String label, String url);
 }

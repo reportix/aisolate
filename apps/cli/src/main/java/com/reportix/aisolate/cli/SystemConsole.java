@@ -19,7 +19,6 @@ final class SystemConsole implements Console {
   static final String SUCCESS = UNICODE ? "✔︎" : "+";
   static final String WARNING = "!";
   static final String ERROR = UNICODE ? "✘︎" : "x";
-  static final String CHOICE = UNICODE ? "❯" : ">";
 
   private static final String BLUE = "38;5;33";
   private static final String GREEN = "38;5;42";
@@ -67,25 +66,6 @@ final class SystemConsole implements Console {
   @Override
   public void error(String line) {
     err.println(mark(ERROR, RED) + "  " + line);
-  }
-
-  // OSC 8, the terminal's hyperlink: a click opens the URL without the URL on screen. A terminal
-  // without color links nothing, so there the URL follows on its own line, to copy.
-  @Override
-  public void offerChoice(String label, String url) {
-    if (color) {
-      out.println(
-          " "
-              + mark(CHOICE, BLUE)
-              + " \u001b]8;;"
-              + url
-              + "\u001b\\"
-              + label
-              + "\u001b]8;;\u001b\\");
-    } else {
-      out.println(" " + CHOICE + " " + label);
-      out.println("   " + url);
-    }
   }
 
   private String mark(String symbol, String sgr) {
