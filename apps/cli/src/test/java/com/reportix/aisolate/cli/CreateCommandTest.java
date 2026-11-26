@@ -248,7 +248,8 @@ class CreateCommandTest {
     Path project = parent.resolve("company-hr");
     assertThat(project.resolve(".env")).hasSameTextualContentAs(project.resolve(".env.example"));
     assertThat(Files.readString(project.resolve(".env.example")))
-        .contains("AISOLATE_ENDPOINT=http://localhost:8080\n")
+        .contains("# AISOLATE_ENDPOINT=http://localhost:8080\n")
+        .doesNotContain("\nAISOLATE_ENDPOINT=")
         .contains("AISOLATE_SPACE=hr-lab\n")
         .doesNotContain("HR_USERNAME", "HR_PASSWORD", "LLM_URL", "HR_DOCUMENTS");
     if (POSIX) {

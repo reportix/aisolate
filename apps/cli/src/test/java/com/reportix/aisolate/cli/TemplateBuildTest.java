@@ -320,7 +320,8 @@ class TemplateBuildTest {
     // The admin's, resolved by id: the project names no database and holds no credential.
     assertThat(loaded.dataSourcesOf(v1.name()))
         .containsExactly(new DataSource(spec.dataSource(), DATABASE, "ds-secret"));
-    assertThat(variables).containsOnlyKeys("AISOLATE_ENDPOINT", "AISOLATE_SPACE");
+    // The endpoint is commented out: the shell's wins, and a project that names one hides it.
+    assertThat(variables).containsOnlyKeys("AISOLATE_SPACE");
     assertThat(file)
         .doesNotContain("${")
         .doesNotContain("username:", "password:", "secretRef", "jar:", "kind: Space");

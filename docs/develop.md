@@ -56,7 +56,9 @@ company-hr/
   README.md, .gitignore               what each file does; .gitignore keeps .env and build/ out of git
 ```
 
-`.env` holds `AISOLATE_ENDPOINT`, `AISOLATE_SPACE` and the variables the file reads
+`.env` holds `AISOLATE_SPACE`, the variables the file reads and `AISOLATE_ENDPOINT`, commented out: set it in
+your shell or your user's environment, which wins over the file, or uncomment the line; set in neither, it is
+`http://localhost:8080`
 ([.env](documents.md#env)). `libs/aisolate-sdk/` (`libs/aisolate-sdk.jar` in Java) is the one AIsolate library the
 project depends on.
 
