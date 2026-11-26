@@ -15,13 +15,13 @@ import java.util.List;
 
 /**
  * Retrieval over Acme's client contracts and board memos, read from the data source {@code clients}
- * of {@code aisolate.yaml}: the question is embedded with the LLM {@code nomic}, the closest
- * sections are added to the exchange under one evidence id. It filters nothing, by design: everyone
- * the airlock admits reads every section, board memos included. Who may ask this airlock is its
- * space's roles and its own, so a role put on the space to ask another airlock admits its holders
- * here too. The role lists are the boundary here: put on the space only roles whose holders may
- * read every document of every airlock. One instance serves every exchange concurrently: no fields,
- * one connection per call.
+ * of {@code aisolate.yaml}: the question is embedded with the LLM {@code gpt-embedding}, the
+ * closest sections are added to the exchange under one evidence id. It filters nothing, by design:
+ * everyone the airlock admits reads every section, board memos included. Who may ask this airlock
+ * is its space's roles and its own, so a role put on the space to ask another airlock admits its
+ * holders here too. The role lists are the boundary here: put on the space only roles whose holders
+ * may read every document of every airlock. One instance serves every exchange concurrently: no
+ * fields, one connection per call.
  */
 @Description("Read client contracts")
 @DataSources("clients")
@@ -53,7 +53,7 @@ public final class SalesDocumentsContextPreparator implements ContextPreparator 
   public void prepare(Exchange exchange, AIsolateManager aisolate) {
     try (Connection db = aisolate.dataSource("clients").getConnection()) {
       embedMissingSections(db, aisolate);
-      String vector = toVector(aisolate.llm("nomic").embed(exchange.question()));
+      String vector = toVector(aisolate.llm("gpt-embedding").embed(exchange.question()));
       List<Passage> passages = new ArrayList<>();
       try (PreparedStatement query = db.prepareStatement(SEARCH)) {
         query.setString(1, CONTEXT_PREPARATOR);
@@ -72,7 +72,8 @@ public final class SalesDocumentsContextPreparator implements ContextPreparator 
       exchange.addEvidence(CONTEXT_PREPARATOR, passages);
     } catch (IllegalArgumentException | SQLException unavailable) {
       // Fail closed for documents: no passages, the model says it does not know. An
-      // IllegalArgumentException: no data source clients, or an LlmException: no model nomic, or
+      // IllegalArgumentException: no data source clients, or an LlmException: no model
+      // gpt-embedding, or
       // one that cannot embed. Never a SQLException's message: it can echo the database's address.
       String cause =
           unavailable instanceof SQLException sql
@@ -97,7 +98,7 @@ public final class SalesDocumentsContextPreparator implements ContextPreparator 
                   + rows.getString("section")
                   + "\n"
                   + rows.getString("body");
-          update.setString(1, toVector(aisolate.llm("nomic").embed(text)));
+          update.setString(1, toVector(aisolate.llm("gpt-embedding").embed(text)));
           update.setLong(2, rows.getLong("id"));
           update.executeUpdate();
         }

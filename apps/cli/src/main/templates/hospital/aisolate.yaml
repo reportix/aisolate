@@ -33,10 +33,10 @@ spec:
     conversationMemory:
       handlers: [SessionMemory]
 
-  # LLM, the model writes the answer: the LLM granite, by id. The admin defines the LLMs, for
+  # LLM, the model writes the answer: the LLM gpt, by id. The admin defines the LLMs, for
   # all of AIsolate or on the space or the airlock; the code names one the same way, as the
-  # context preparator's aisolate.llm("nomic") does to embed.
-  llm: granite
+  # context preparator's aisolate.llm("gpt-embedding") does to embed.
+  llm: gpt
   prompt: >-
     You are the ${AIRLOCK} assistant of Aldermoor Hospital, for the department's clinicians.
     The department's records and the medications (drug, dose, how often) come only from your

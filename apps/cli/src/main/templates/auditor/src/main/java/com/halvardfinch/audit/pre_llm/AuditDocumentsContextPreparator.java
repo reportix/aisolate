@@ -16,10 +16,10 @@ import java.util.List;
 /**
  * Retrieval over the audited company's audit documents (board minutes, policies, the engagement
  * letter), read from the data source {@code ledger}, which the company's airlock defines: the
- * question is embedded with the LLM {@code nomic}, the closest sections are added to the exchange
- * under one evidence id. Only an auditor reads them, as only an auditor reads the books: the rules
- * bind the tools, this check binds the handler, which reads its data source directly. One instance
- * serves every exchange concurrently: no fields, one connection per call.
+ * question is embedded with the LLM {@code gpt-embedding}, the closest sections are added to the
+ * exchange under one evidence id. Only an auditor reads them, as only an auditor reads the books:
+ * the rules bind the tools, this check binds the handler, which reads its data source directly. One
+ * instance serves every exchange concurrently: no fields, one connection per call.
  */
 @Description("Read minutes and policies")
 @DataSources("ledger")
@@ -55,7 +55,7 @@ public final class AuditDocumentsContextPreparator implements ContextPreparator 
     }
     try (Connection db = aisolate.dataSource("ledger").getConnection()) {
       embedMissingSections(db, aisolate);
-      String vector = toVector(aisolate.llm("nomic").embed(exchange.question()));
+      String vector = toVector(aisolate.llm("gpt-embedding").embed(exchange.question()));
       List<Passage> passages = new ArrayList<>();
       try (PreparedStatement query = db.prepareStatement(SEARCH)) {
         query.setString(1, CONTEXT_PREPARATOR);
@@ -74,7 +74,8 @@ public final class AuditDocumentsContextPreparator implements ContextPreparator 
       exchange.addEvidence(CONTEXT_PREPARATOR, passages);
     } catch (IllegalArgumentException | SQLException unavailable) {
       // Fail closed for documents: no passages, the model says it does not know. An
-      // IllegalArgumentException: no data source ledger, or an LlmException: no model nomic, or one
+      // IllegalArgumentException: no data source ledger, or an LlmException: no model
+      // gpt-embedding, or one
       // that cannot embed. Never a SQLException's message: it can echo the database's address.
       String cause =
           unavailable instanceof SQLException sql
@@ -99,7 +100,7 @@ public final class AuditDocumentsContextPreparator implements ContextPreparator 
                   + rows.getString("section")
                   + "\n"
                   + rows.getString("body");
-          update.setString(1, toVector(aisolate.llm("nomic").embed(text)));
+          update.setString(1, toVector(aisolate.llm("gpt-embedding").embed(text)));
           update.setLong(2, rows.getLong("id"));
           update.executeUpdate();
         }

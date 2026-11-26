@@ -116,7 +116,7 @@ source the airlock resolves. An id the airlock does not resolve throws `IllegalA
 A handler reaches an LLM through `AIsolateManager.llm(id)`, by its id in the catalog the airlock sees: its own
 LLMs, its space's and the global ones ([Where LLMs and data sources are defined](concepts.md#where-llms-and-data-sources-are-defined)). The same
 LLM embeds (`embed(text)`, `embed(texts)`: one vector per text) and chats (`chat(prompt)`), as far as its model
-can: `aisolate.llm("nomic").embed(exchange.question())`. An unknown id, an embed on a model that cannot embed and a
+can: `aisolate.llm("gpt-embedding").embed(exchange.question())`. An unknown id, an embed on a model that cannot embed and a
 chat on one that cannot chat throw `LlmException`, an `IllegalArgumentException` with a plain message.
 Ids are known only at run time: a deploy never checks them.
 
@@ -145,7 +145,7 @@ builder. The deploy refuses code whose rule sets do not parse or sit anywhere bu
 
 `aisolate.yaml` is two documents: the `Airlock`, its name, description and own roles, and the `AirlockVersion`
 named `<airlock>-<version>`, with the version's name (`spec.version: v1`), its description and the three stages:
-the LLM that answers by its id (`spec.llm: granite`) with the `prompt` and `tools` under `spec`. It holds no
+the LLM that answers by its id (`spec.llm: gpt`) with the `prompt` and `tools` under `spec`. It holds no
 credential: the LLMs and the data sources its code reads by id are the admin's, for all of AIsolate, on the
 space or on the airlock. Who may ask: the space lists its roles in the AIsolate UI, the airlock its own and its
 callers, in the file or in the AIsolate UI; a version has no access of its own. The file as the template writes

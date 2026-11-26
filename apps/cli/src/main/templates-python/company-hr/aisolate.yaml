@@ -30,11 +30,11 @@ spec:
     conversationMemory:
       handlers: [SessionMemory]
 
-  # LLM, the model writes the answer: the LLM granite, by id. The admin defines the LLMs, for
+  # LLM, the model writes the answer: the LLM gpt, by id. The admin defines the LLMs, for
   # all of AIsolate or on the space or the airlock; the code names one the same way, as the
-  # context preparator's aisolate.llm("nomic") does to embed. No tools: the contracts are all
+  # context preparator's aisolate.llm("gpt-embedding") does to embed. No tools: the contracts are all
   # it reads.
-  llm: granite
+  llm: gpt
   prompt: >-
     You are the Acme contracts assistant. Answer only from the employment contract passages
     provided to you; each passage's title names whose contract it is. A question about my

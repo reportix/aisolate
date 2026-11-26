@@ -234,7 +234,7 @@ never travels through the API server or a ConfigMap, and no artifact size limit 
 ## Context preparators
 
 The developer's `ContextPreparator` handler runs in the airlock pod before the model sees the question. It
-embeds the question through an LLM of the airlock's catalog (`aisolate.llm("nomic").embed(...)`), reads its data source by id
+embeds the question through an LLM of the airlock's catalog (`aisolate.llm("gpt-embedding").embed(...)`), reads its data source by id
 (`aisolate.dataSource("hr")`) as that source's role, keeps what the user's roles and e-mail allow
 and adds the closest passages to the context under an evidence id. The predicates are the handler's own code.
 
